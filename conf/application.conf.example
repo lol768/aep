@@ -1,43 +1,21 @@
 include "defaults"
-
-app {
-  name.uppercase = "APP_NAME"
-  name.id = "app-name"
-}
+include "local-dev"
 
 domain = "changeme.warwick.ac.uk"
 
-play.http.secret.key="changeme"
-
-play.evolutions.enabled=true
-play.evolutions.db.default.autoApply=true
-play.evolutions.db.default.autoApplyDowns=true
-
-# For testing only!
-#slick.dbs.default {
-#  profile = "slick.jdbc.H2Profile$"
-#  db {
-#    driver = org.h2.Driver
-#    url = "jdbc:h2:mem:play;MODE=Oracle"
-#  }
-#}
-
 slick.dbs.default {
-  profile = "slick.jdbc.OracleProfile$"
   db {
-    driver = "oracle.jdbc.driver.OracleDriver"
-    url = "jdbc:oracle:thin:@//racd1.warwick.ac.uk:1521/racd1.warwick.ac.uk"
-    user = "..."
-    password = "..."
-    numThreads = 10
+    url = "jdbc:postgresql://localhost:5432/casemanagement"
+    user = "casemanagement"
+    password = this is where your password goes
   }
 }
 
 sso-client {
   credentials {
-    certificate = "file:/home/mat/.ssl/changeme.warwick.ac.uk.crt"
-    key = "file:/home/mat/.ssl/changeme.warwick.ac.uk.key"
-    chain = "file:/home/mat/.ssl/terena-sha2-ca.crt"
+    certificate = "file:/home/me/.ssl/changeme.warwick.ac.uk.crt"
+    key = "file:/home/me/.ssl/changeme.warwick.ac.uk.key"
+    chain = "file:/home/me/.ssl/terena-sha2-ca.crt"
   }
   trustedapps {
     publickey = "..."

@@ -1,32 +1,47 @@
 package domain.dao
 
+import java.time.{LocalDateTime, OffsetDateTime}
 import java.util.UUID
-import javax.inject.{Inject, Singleton}
 
 import com.google.inject.ImplementedBy
-import domain.AuditEvent
+import domain.{AuditEvent, CustomJdbcTypes}
+import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+import play.api.libs.json.JsValue
 import slick.jdbc.JdbcProfile
+import warwick.sso.Usercode
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 @ImplementedBy(classOf[AuditDaoImpl])
 trait AuditDao {
-  def insert(event: AuditEvent): Future[AuditEvent]
+  import slick.dbio._
+  def insert(event: AuditEvent): DBIO[AuditEvent]
 }
 
 @Singleton
 class AuditDaoImpl @Inject()(
-  protected val dbConfigProvider: DatabaseConfigProvider
+  protected val dbConfigProvider: DatabaseConfigProvider,
+  jdbcTypes: CustomJdbcTypes
 )(implicit ec: ExecutionContext) extends AuditDao with HasDatabaseConfigProvider[JdbcProfile] {
-  import dbConfig.profile.api._
-  import AuditEvent._
+  import profile.api._
+  import jdbcTypes._
 
-  override def insert(event: AuditEvent): Future[AuditEvent] = {
-    val eventWithId = event.copy(id = Some(UUID.randomUUID()))
+  class AuditEvents(tag: Tag) extends Table[AuditEvent](tag, "audit_event") {
+    def id = column[UUID]("id", O.PrimaryKey)
+    def date = column[OffsetDateTime]("event_date_utc")
+    def operation = column[String]("operation")
+    def usercode = column[Usercode]("usercode")
+    def data = column[JsValue]("data")
+    def targetId = column[String]("target_id")
+    def targetType = column[String]("target_type")
 
-    dbConfig.db.run((auditEvents += eventWithId).transactionally).map {
-      _ => eventWithId
-    }
+    def * = (id, date, operation, usercode.?, data, targetId, targetType).mapTo[AuditEvent]
+  }
+
+  val auditEvents = TableQuery[AuditEvents]
+
+  override def insert(event: AuditEvent): DBIO[AuditEvent] = {
+    (auditEvents += event).map(_ => event)
   }
 }
