@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.{LocalDateTime, OffsetDateTime}
+import java.time.OffsetDateTime
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
@@ -27,6 +27,10 @@ class AuditDaoImpl @Inject()(
   import profile.api._
   import jdbcTypes._
 
+  /**
+    * Table classes defined inside a DAO (or other instance with access to the Slick profile)
+    * because column definitions depend on profile.api._
+    */
   class AuditEvents(tag: Tag) extends Table[AuditEvent](tag, "audit_event") {
     def id = column[UUID]("id", O.PrimaryKey)
     def date = column[OffsetDateTime]("event_date_utc")
@@ -39,6 +43,7 @@ class AuditDaoImpl @Inject()(
     def * = (id, date, operation, usercode.?, data, targetId, targetType).mapTo[AuditEvent]
   }
 
+  // If you want to share TableQuerys between DAOs, it is fine to expose these from the trait.
   val auditEvents = TableQuery[AuditEvents]
 
   override def insert(event: AuditEvent): DBIO[AuditEvent] = {

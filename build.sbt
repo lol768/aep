@@ -38,6 +38,8 @@ lazy val main = Project("main", file("."))
 
 val enumeratumVersion = "1.5.13"
 val enumeratumSlickVersion = "1.5.15"
+val playUtilsVersion = "1.18-SNAPSHOT"
+val ssoClientVersion = "2.54"
 
 val appDeps = Seq(
   guice,
@@ -59,8 +61,9 @@ val appDeps = Seq(
 
   "com.google.inject.extensions" % "guice-multibindings" % "4.1.0",
   "com.adrianhurt" %% "play-bootstrap" % "1.2-P26-B3",
-  "uk.ac.warwick.sso" %% "sso-client-play" % "2.47",
-  "uk.ac.warwick.play-utils" %% "accesslog" % "1.8",
+  "uk.ac.warwick.sso" %% "sso-client-play" % ssoClientVersion,
+  "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
+  "uk.ac.warwick.play-utils" %% "slick" % playUtilsVersion,
 
   "com.beachape" %% "enumeratum" % enumeratumVersion,
   "com.beachape" %% "enumeratum-play" % enumeratumVersion,
@@ -74,7 +77,7 @@ val testDeps = Seq(
   "org.scalatest" %% "scalatest" % "3.0.3",
   "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.0",
   "com.typesafe.akka" %% "akka-testkit" % "2.4.19",
-  "uk.ac.warwick.sso" %% "sso-client-play-testing" % "2.47",
+  "uk.ac.warwick.sso" %% "sso-client-play-testing" % ssoClientVersion,
   "com.h2database" % "h2" % "1.4.196"
 ).map(_ % Test)
 
