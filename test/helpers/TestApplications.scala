@@ -7,10 +7,13 @@ import org.scalatest.mockito.MockitoSugar
 import play.api.db.evolutions.{ClassLoaderEvolutionsReader, EvolutionsReader}
 import play.api.inject._
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.{Configuration, Environment}
+import play.api.routing.Router
+import play.api.{Application, Configuration, Environment}
+import routes.EmptyRouter
 import warwick.accesslog.LogbackAccessModule
 import warwick.sso._
 
+import scala.reflect.{ClassTag, classTag}
 import scala.util.Success
 
 object TestApplications extends MockitoSugar {
@@ -21,17 +24,30 @@ object TestApplications extends MockitoSugar {
   def config(file: String, environment: Environment) =
     Configuration.load(environment, Map("config.file" -> file))
 
-  /**
-    * As minimal an Application as can be created. Use for any tests
-    * where you just can't do without an Application, like something that
-    * requires WSAPI which is a pain to build by hand.
-    */
-  def minimal() =
+  def minimalBuilder: GuiceApplicationBuilder =
     GuiceApplicationBuilder(loadConfiguration = e => config("minimal.conf", e))
       .in(Environment.simple())
       .disable[PlayLogbackAccessModule]
       .disable[LogbackAccessModule]
+
+  def minimalWithRouter[R <: Router : ClassTag](config: (String, Any)*): Application =
+    minimalBuilder
+      .configure("play.http.router" -> classTag[R].runtimeClass.getName)
+      .configure(config : _*)
       .build()
+
+  /**
+    * As minimal an Application as can be created. Use for any tests
+    * where you just can't do without an Application, like something that
+    * requires WSAPI which is a pain to build by hand.
+    *
+    * It's important to specify an empty Router because otherwise it uses the
+    * routes compiles from the routes file, which in turn causes a load of other
+    * stuff to get injected and suddenly it's not so minimal.
+    */
+  def minimal(): Application =
+    minimalWithRouter[EmptyRouter]()
+
 
   /**
     * As full an Application as can be created while still talking to

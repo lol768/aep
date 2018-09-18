@@ -1,11 +1,11 @@
 package services
 
 import java.math.MathContext
-import javax.inject.{Inject, Singleton}
 
+import javax.inject.{Inject, Singleton}
 import com.google.inject.ImplementedBy
 import domain.AuditEvent
-import domain.dao.AuditDao
+import domain.dao.{AuditDao, DaoRunner}
 import helpers.ConditionalChain._
 import helpers.ServiceResults.ServiceResult
 import play.api.libs.json._
@@ -29,6 +29,7 @@ trait AuditService {
 
 @Singleton
 class AuditServiceImpl @Inject()(
+  runner: DaoRunner,
   dao: AuditDao
 )(implicit ec: ExecutionContext) extends AuditService {
 
@@ -36,13 +37,13 @@ class AuditServiceImpl @Inject()(
 
   override def audit[A](operation: String, targetId: String, targetType: String, data: JsValue)(f: => Future[ServiceResult[A]])(implicit context: AuditLogContext): Future[ServiceResult[A]] =
     f.flatMap { result =>
-      dao.insert(AuditEvent(
+      runner.run(dao.insert(AuditEvent(
         operation = operation,
         usercode = context.usercode,
         data = data,
         targetId = targetId,
         targetType = targetType
-      )).map { _ =>
+      ))).map { _ =>
         def handle(value: JsValue): AnyRef = value match {
           case JsBoolean(b) => Option(b).map(Boolean.box).getOrElse("-")
           case JsNumber(n) => Option(n).map(bd => new java.math.BigDecimal(bd.toDouble, MathContext.DECIMAL128)).getOrElse("-")

@@ -1,23 +1,43 @@
 package domain
 
-import java.sql.Timestamp
-import java.time.{LocalDateTime, ZoneId}
-
+import enumeratum.SlickEnumSupport
+import javax.inject.{Inject, Singleton}
+import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json.{JsValue, Json}
-import slick.jdbc.JdbcType
-import slick.jdbc.OracleProfile.api._
-import warwick.sso.Usercode
+import slick.jdbc.{JdbcProfile, JdbcType}
+import warwick.slick.jdbctypes.JdbcDateTypesUtc
+import warwick.sso.{UniversityID, Usercode}
 
-object CustomJdbcTypes {
-  implicit val usercodeTypeMapper: JdbcType[Usercode] = MappedColumnType.base[Usercode, String](
-    u => u.string,
-    s => Usercode(s)
+/**
+  * Defines custom types that Slick can use to bind things directly to a database column.
+  * This is a class rather than an object because the types need access to the current database
+  * profile, which can vary. Inject this into your DAO and import from there.
+  */
+@Singleton
+class CustomJdbcTypes @Inject() (
+  protected val dbConfigProvider: DatabaseConfigProvider
+) extends SlickEnumSupport
+  with JdbcDateTypesUtc {
+
+  protected lazy val dbConfig = dbConfigProvider.get[JdbcProfile]
+  override lazy val profile = dbConfig.profile
+
+  import profile.api._
+
+  implicit val usercodeTypeMapper: JdbcType[Usercode] = MappedColumnType.base(
+    _.string,
+    Usercode.apply
   )
 
-  implicit val localDateTimeTypeMapper: JdbcType[LocalDateTime] = MappedColumnType.base[LocalDateTime, Timestamp](
-    dt => Timestamp.from(dt.atZone(ZoneId.systemDefault).toInstant),
-    ts => LocalDateTime.ofInstant(ts.toInstant, ZoneId.systemDefault)
+  implicit val uniIdTypeMapper: JdbcType[UniversityID] = MappedColumnType.base(
+    _.string,
+    UniversityID.apply
   )
 
   implicit val jsonTypeMapper: JdbcType[JsValue] = MappedColumnType.base[JsValue, String](Json.stringify, Json.parse)
+
+  implicit val symbolTypeMapper: JdbcType[Symbol] = MappedColumnType.base[Symbol, String](_.name, Symbol.apply)
+
+  // Example enum
+  implicit val colour: JdbcType[Colour] = mappedColumnTypeForEnum(Colour)
 }
