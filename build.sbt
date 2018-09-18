@@ -38,7 +38,7 @@ lazy val main = Project("main", file("."))
 
 val enumeratumVersion = "1.5.13"
 val enumeratumSlickVersion = "1.5.15"
-val playUtilsVersion = "1.18-SNAPSHOT"
+val playUtilsVersion = "1.19"
 val ssoClientVersion = "2.54"
 
 val appDeps = Seq(
