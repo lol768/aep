@@ -62,6 +62,7 @@ val appDeps = Seq(
   "com.google.inject.extensions" % "guice-multibindings" % "4.1.0",
   "com.adrianhurt" %% "play-bootstrap" % "1.2-P26-B3",
   "uk.ac.warwick.sso" %% "sso-client-play" % ssoClientVersion,
+  "uk.ac.warwick.play-utils" %% "core" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "slick" % playUtilsVersion,
 
