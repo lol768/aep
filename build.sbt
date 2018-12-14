@@ -38,8 +38,8 @@ lazy val main = Project("main", file("."))
 
 val enumeratumVersion = "1.5.13"
 val enumeratumSlickVersion = "1.5.15"
-val playUtilsVersion = "1.19"
-val ssoClientVersion = "2.54"
+val playUtilsVersion = "1.26"
+val ssoClientVersion = "2.60"
 
 val appDeps = Seq(
   guice,
