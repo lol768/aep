@@ -3,6 +3,7 @@ import EventEmitter from 'events';
 import WebpackNotifierPlugin from 'webpack-notifier';
 import RemovePlugin from 'remove-files-webpack-plugin';
 import { ProvidePlugin } from 'webpack';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
 
 import PlayFingerprintsPlugin from './build-tooling/PlayFingerprintsPlugin';
 import WatchEventsPlugin from './build-tooling/WatchEventsPlugin';
@@ -17,7 +18,7 @@ const paths = {
   NODE_MODULES: path.join(__dirname, 'node_modules/id7'),
   ID7: path.join(__dirname, 'node_modules/id7'),
   ENTRY: './app/assets/js/main.js',
-  PUBLIC_PATH: '/assets',
+  PUBLIC_PATH: '/assets/',
 };
 
 const commonConfig = merge([
@@ -71,6 +72,14 @@ const commonConfig = merge([
     dest: path.join(paths.ASSETS, 'lib'),
     modules: ['id7'],
   }),
+  {
+    plugins: [
+      new CopyWebpackPlugin([{
+        from: 'node_modules/@fortawesome/fontawesome-pro/webfonts',
+        to: path.join(paths.ASSETS, 'lib/fontawesome-pro/webfonts'),
+      }]),
+    ],
+  },
   tooling.copyLocalImages({
     dest: paths.ASSETS,
   }),
@@ -98,7 +107,7 @@ const developmentConfig = merge([
       new WatchEventsPlugin({ emitter: new EventEmitter() }),
     ],
   },
-  tooling.generateSourceMaps('inline-cheap-source-map'),
+  tooling.generateSourceMaps('cheap-module-source-map'),
 ]);
 
 module.exports = ({ production } = {}) => {

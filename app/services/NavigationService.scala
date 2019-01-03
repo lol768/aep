@@ -1,9 +1,9 @@
 package services
 
 import javax.inject.Singleton
-
 import com.google.inject.ImplementedBy
 import play.api.mvc.Call
+import system.Roles.Sysadmin
 import warwick.sso.LoginContext
 
 sealed trait Navigation {
@@ -48,5 +48,20 @@ trait NavigationService {
 
 @Singleton
 class NavigationServiceImpl extends NavigationService {
-  override def getNavigation(loginContext: LoginContext): Seq[Navigation] = Nil
+
+  private lazy val masquerade = NavigationPage("Masquerade", controllers.sysadmin.routes.MasqueradeController.masquerade())
+
+  private lazy val sysadmin =
+    NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), Seq(
+      masquerade,
+    ))
+
+  private def sysadminMenu(loginContext: LoginContext): Seq[Navigation] =
+    if (loginContext.actualUserHasRole(Sysadmin))
+      Seq(sysadmin)
+    else
+      Nil
+
+  override def getNavigation(loginContext: LoginContext): Seq[Navigation] =
+    sysadminMenu(loginContext)
 }

@@ -4,15 +4,15 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import play.api.libs.json.JsValue
+import warwick.core.helpers.JavaTime
 import warwick.sso.Usercode
 
 case class AuditEvent(
   id: UUID = UUID.randomUUID(),
-  date: OffsetDateTime = OffsetDateTime.now(),
-  operation: String,
+  date: OffsetDateTime = JavaTime.offsetDateTime,
+  operation: Symbol,
   usercode: Option[Usercode],
   data: JsValue,
   targetId: String,
-  targetType: String
+  targetType: Symbol
 )
-

@@ -7,7 +7,7 @@ name := """play-app-template"""
 
 version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
 
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 
@@ -30,16 +30,18 @@ autoAPIMappings := true
 // Avoid some of the constant SBT "Updating"
 updateOptions := updateOptions.value.withCachedResolution(true)
 
-lazy val main = Project("main", file("."))
+lazy val main = (project in file("."))
   .enablePlugins(WarwickProject, PlayScala)
   .settings(
-    packageZipTarball in Universal := (packageZipTarball in Universal).dependsOn(webpack).value
+    packageZipTarball in Universal := (packageZipTarball in Universal).dependsOn(webpack).value,
+    javaOptions in Test += "-Dlogger.resource=test-logging.xml"
   )
 
 val enumeratumVersion = "1.5.13"
 val enumeratumSlickVersion = "1.5.15"
 val playUtilsVersion = "1.26"
 val ssoClientVersion = "2.60"
+val warwickUtilsVersion = "20181130"
 
 val appDeps = Seq(
   guice,
@@ -52,38 +54,53 @@ val appDeps = Seq(
   "com.typesafe.play" %% "play-slick-evolutions" % "3.0.3",
 
   "com.typesafe.slick" %% "slick" % "3.2.3",
+  "org.postgresql" % "postgresql" % "42.2.5",
+  "com.github.tminglei" %% "slick-pg" % "0.17.0",
 
-  "com.typesafe.akka" %% "akka-cluster" % "2.5.11",
-  "com.typesafe.akka" %% "akka-cluster-tools" % "2.5.11",
-
-  "org.postgresql" % "postgresql" % "42.2.4",
-  //"com.h2database" % "h2" % "1.4.196", // For testing only
-
-  "com.google.inject.extensions" % "guice-multibindings" % "4.1.0",
+  "net.codingwell" %% "scala-guice" % "4.2.1",
+  "com.google.inject.extensions" % "guice-multibindings" % "4.2.2",
   "com.adrianhurt" %% "play-bootstrap" % "1.2-P26-B3",
+
   "uk.ac.warwick.sso" %% "sso-client-play" % ssoClientVersion,
-  "uk.ac.warwick.play-utils" %% "core" % playUtilsVersion,
+
   "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
+  "uk.ac.warwick.play-utils" %% "healthcheck" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "slick" % playUtilsVersion,
+
+  "uk.ac.warwick.util" % "warwickutils-core" % warwickUtilsVersion,
+  "uk.ac.warwick.util" % "warwickutils-mywarwick" % warwickUtilsVersion exclude("uk.ac.warwick.sso", "sso-client"),
+  "uk.ac.warwick.util" % "warwickutils-service" % warwickUtilsVersion,
+
+  "com.github.mumoshu" %% "play2-memcached-play26" % "0.9.3",
 
   "com.beachape" %% "enumeratum" % enumeratumVersion,
   "com.beachape" %% "enumeratum-play" % enumeratumVersion,
   "com.beachape" %% "enumeratum-play-json" % enumeratumVersion,
   "com.beachape" %% "enumeratum-slick" % enumeratumSlickVersion,
 
+  "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0"
 )
 
 val testDeps = Seq(
   "org.mockito" % "mockito-all" % "1.10.19",
-  "org.scalatest" %% "scalatest" % "3.0.3",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.0",
-  "com.typesafe.akka" %% "akka-testkit" % "2.4.19",
+  "org.scalatest" %% "scalatest" % "3.0.5",
+  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2",
+  "com.typesafe.akka" %% "akka-testkit" % "2.5.18",
   "uk.ac.warwick.sso" %% "sso-client-play-testing" % ssoClientVersion,
-  "com.h2database" % "h2" % "1.4.196"
+  "com.opentable.components" % "otj-pg-embedded" % "0.12.5"
 ).map(_ % Test)
 
 libraryDependencies ++= (appDeps ++ testDeps).map(_.excludeAll(
-  ExclusionRule(organization = "commons-logging")
+  ExclusionRule(organization = "commons-logging"),
+  // No EhCache please we're British
+  ExclusionRule(organization = "net.sf.ehcache"),
+  ExclusionRule(organization = "org.ehcache"),
+  ExclusionRule(organization = "ehcache"),
+  // brought in by warwick utils, pulls in old XML shit
+  ExclusionRule(organization = "rome"),
+  ExclusionRule(organization = "dom4j"),
+  // Tika pulls in slf4j-log4j12
+  ExclusionRule(organization = "org.slf4j", name = "slf4j-log4j12")
 ))
 
 libraryDependencies += specs2 % Test

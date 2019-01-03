@@ -3,12 +3,10 @@ include "local-dev"
 
 domain = "changeme.warwick.ac.uk"
 
-slick.dbs.default {
-  db {
-    url = "jdbc:postgresql://localhost:5432/casemanagement"
-    user = "casemanagement"
-    password = this is where your password goes
-  }
+slick.dbs.default.db {
+  url = "jdbc:postgresql://localhost:5432/app_name"
+  user = "app_name"
+  password = "a really good password, not a horrible weak one"
 }
 
 sso-client {
@@ -17,6 +15,7 @@ sso-client {
     key = "file:/home/me/.ssl/changeme.warwick.ac.uk.key"
     chain = "file:/home/me/.ssl/terena-sha2-ca.crt"
   }
+
   trustedapps {
     publickey = "..."
     privatekey = "..."

@@ -1,7 +1,5 @@
 import warwick.RomanYearGenerator
 
 package object helpers {
-
-  def romanYear() = RomanYearGenerator.now()
-
+  def romanYear(): String = RomanYearGenerator.now
 }
