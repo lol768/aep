@@ -10,8 +10,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object HealthCheckService {
-  val frequency = 20.seconds
-  val timeout = 5.seconds
+  val frequency: FiniteDuration = 20.seconds
+  val timeout: FiniteDuration = 5.seconds
 }
 
 @Singleton
