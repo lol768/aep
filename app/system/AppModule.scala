@@ -1,17 +1,23 @@
 package system
 
-import com.google.inject.multibindings.Multibinder
-import com.google.inject.{AbstractModule, TypeLiteral}
-import play.api.libs.concurrent.AkkaGuiceSupport
+import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
+import play.api.{Configuration, Environment}
 import services.healthcheck._
+import uk.ac.warwick.util.service.ServiceHealthcheckProvider
 
-class AppModule extends AbstractModule with AkkaGuiceSupport {
+class AppModule(environment: Environment, configuration: Configuration) extends ScalaModule {
   override def configure(): Unit = {
+    bind[AppStartup].asEagerSingleton()
     bindHealthChecks()
   }
 
   def bindHealthChecks(): Unit = {
-    val multibinder = Multibinder.newSetBinder(binder(), new TypeLiteral[HealthCheck[_]] {})
-    multibinder.addBinding().to(classOf[UptimeHealthCheck])
+    val healthchecks = ScalaMultibinder.newSetBinder[ServiceHealthcheckProvider](binder)
+    healthchecks.addBinding.to[UptimeHealthCheck]
+
+    healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("default"))
+    configuration.get[Configuration]("threads").subKeys.toSeq.foreach { name =>
+      healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck(name))
+    }
   }
 }

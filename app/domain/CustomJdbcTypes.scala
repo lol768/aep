@@ -16,25 +16,24 @@ import warwick.sso.{UniversityID, Usercode}
 @Singleton
 class CustomJdbcTypes @Inject() (
   protected val dbConfigProvider: DatabaseConfigProvider
-) extends SlickEnumSupport
-  with JdbcDateTypesUtc {
+) extends SlickEnumSupport with JdbcDateTypesUtc {
 
   protected lazy val dbConfig = dbConfigProvider.get[JdbcProfile]
   override lazy val profile = dbConfig.profile
 
   import profile.api._
 
-  implicit val usercodeTypeMapper: JdbcType[Usercode] = MappedColumnType.base(
-    _.string,
-    Usercode.apply
+  implicit val usercodeTypeMapper: JdbcType[Usercode] = MappedColumnType.base[Usercode, String](
+    u => u.string,
+    s => Usercode(s)
   )
 
-  implicit val uniIdTypeMapper: JdbcType[UniversityID] = MappedColumnType.base(
-    _.string,
-    UniversityID.apply
+  implicit val universityIdTypeMapper: JdbcType[UniversityID] = MappedColumnType.base[UniversityID, String](
+    u => u.string,
+    s => UniversityID(s)
   )
 
-  implicit val jsonTypeMapper: JdbcType[JsValue] = MappedColumnType.base[JsValue, String](Json.stringify, Json.parse)
+  implicit val jsonTypeMapper: JdbcType[JsValue] = MappedColumnType.base[JsValue, String](Json.stringify(_).replace("\\u0000", ""), Json.parse)
 
   implicit val symbolTypeMapper: JdbcType[Symbol] = MappedColumnType.base[Symbol, String](_.name, Symbol.apply)
 

@@ -5,13 +5,24 @@
 ->          /sso                                    sso.Routes
 
 # Map static resources from the /public folder to the /assets URL path
++notiming
 GET         /assets/*file                           @controllers.Assets.versioned(path="/public", file: Asset)
 
 # Service health check
 GET         /service/gtg                            @controllers.ServiceCheckController.gtg
-GET         /service/healthcheck                    @controllers.ServiceCheckController.healthcheck
+GET         /service/healthcheck                    @warwick.healthcheck.InjectedHealthcheckController.index
+
+# Other services
+POST        /service/flexipicker                    @controllers.FlexiPickerController.queryJson
 
 GET         /                                       @controllers.IndexController.home
+
+## Sysadmins ##
+
+GET         /sysadmin                               @controllers.IndexController.redirectToPath(path = "/sysadmin/masquerade")
+GET         /sysadmin/masquerade                    @controllers.sysadmin.MasqueradeController.masquerade
+
+## Fallbacks ##
 
 # Handle trailing slashes in URLs
 GET         /*path/                                 @controllers.IndexController.redirectToPath(path: String)

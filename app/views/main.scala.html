@@ -1,32 +1,34 @@
 @(
-  title: String = ""
+  title: String = "",
 )(content: Html)(implicit context: RequestContext)
 
 <!DOCTYPE html>
-<html lang="en-GB" class="no-js"> <!-- class="id7-non-branded" to remove Warwick branding -->
+<html lang="en-GB" class="no-js">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="apple-touch-icon" sizes="180x180" href="@routes.Assets.versioned("images/apple-touch-icon.png")">
-    <link rel="icon" type="image/png" href="@routes.Assets.versioned("mages/favicon-32x32.png")" sizes="32x32">
-    <link rel="icon" type="image/png" href="@routes.Assets.versioned("images/favicon-16x16.png")" sizes="16x16">
-    <link rel="manifest" href="@routes.Assets.versioned("images/manifest.json")">
-    <link rel="shortcut icon" href="@routes.Assets.versioned("images/favicon.ico")">
-    <meta name="msapplication-config" content="@routes.Assets.versioned("images/browserconfig.xml")">
-    <meta name="theme-color" content="#204f79">
+    @context.csrfHelper.metaElementToken
+    @context.csrfHelper.metaElementHeader
 
-    <title>APP NAME @if(!title.isEmpty) { - @title}</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="@routes.Assets.versioned("images/apple-touch-icon.png")">
+    <link rel="icon" type="image/png" sizes="32x32" href="@routes.Assets.versioned("images/favicon-32x32.png")">
+    <link rel="icon" type="image/png" sizes="16x16" href="@routes.Assets.versioned("images/favicon-16x16.png")">
+    <link rel="manifest" href="@routes.Assets.versioned("images/site.webmanifest")">
+    <link rel="mask-icon" href="@routes.Assets.versioned("images/safari-pinned-tab.svg")" color="#a14418">
+    <link rel="shortcut icon" href="@routes.Assets.versioned("images/favicon.ico")">
+    <meta name="msapplication-TileColor" content="#a14418">
+    <meta name="msapplication-config" content="@routes.Assets.versioned("images/browserconfig.xml")">
+    <meta name="theme-color" content="#a14418">
+
+    <title>@if(!title.isEmpty){@title - }APP_NAME</title>
 
     <!-- Lato web font -->
     <link href="//fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
 
     <!-- ID7 -->
     <link rel='stylesheet' href='@routes.Assets.versioned("style.css")'>
-
-    <script type='text/javascript' src='@routes.Assets.versioned("lib/id7/js/id7-bundle.min.js")'></script>
-    <script type='text/javascript' src='@routes.Assets.versioned("js/main.js")'></script>
   </head>
   <body>
     <div class="id7-left-border"></div>
@@ -34,14 +36,19 @@
       <a class="sr-only sr-only-focusable" href="#main">Skip to main content</a>
 
       <header class="id7-page-header">
+        @if(context.isMasquerading) {
+          <div id="masquerade-notice" class="sysadmin-only-content">
+            Masquerading as <strong>@context.user.map(_.name.full)</strong> (@context.user.map(_.usercode.string), @context.user.map(_.universityId.map(_.string))). <a href="@controllers.sysadmin.routes.MasqueradeController.masquerade()">Change</a>
+          </div>
+        }
+
         <div class="id7-utility-masthead">
           <nav class="id7-utility-bar">
             <ul>
               @if(context.user.exists(_.isFound)) {
                 <li>
-                  <a href="http://warwick.ac.uk/myaccount"
+                  <a href="https://warwick.ac.uk/myaccount"
                     data-toggle="id7:account-popover"
-                    data-request.context.usercode="@context.user.map(_.universityId)"
                     data-name="@context.user.map(_.name.full)"
                     data-loginlink="@context.loginUrl"
                     data-logoutlink="@context.logoutUrl"
@@ -64,18 +71,16 @@
                 <div class="id7-logo-column">
                   <div class="id7-logo-row">
                     <div class="id7-logo">
-                      <a href="http://warwick.ac.uk" title="Warwick homepage">
-                        <img src="@routes.Assets.versioned("lib/id7/images/shim.gif")" alt="Warwick">
-                      </a>
+                      <img src="@routes.Assets.versioned("lib/id7/images/shim.gif")" alt="Warwick">
                     </div>
                     <nav class="id7-site-links">
                       <ul>
-                        <li><a href="http://warwick.ac.uk/study">Study</a></li>
-                        <li><a href="http://warwick.ac.uk/research">Research</a></li>
-                        <li><a href="http://warwick.ac.uk/business">Business</a></li>
-                        <li><a href="http://warwick.ac.uk/alumni">Alumni</a></li>
-                        <li><a href="http://warwick.ac.uk/news">News</a></li>
-                        <li><a href="http://warwick.ac.uk/about">About</a></li>
+                        <li><a href="https://warwick.ac.uk/study">Study</a></li>
+                        <li><a href="https://warwick.ac.uk/research">Research</a></li>
+                        <li><a href="https://warwick.ac.uk/business">Business</a></li>
+                        <li><a href="https://warwick.ac.uk/alumni">Alumni</a></li>
+                        <li><a href="https://warwick.ac.uk/news">News</a></li>
+                        <li><a href="https://warwick.ac.uk/about">About</a></li>
                       </ul>
                     </nav>
                   </div>
@@ -98,7 +103,7 @@
 
               <div class="id7-header-text clearfix">
                 <h1>
-                  <span class="id7-current-site-link"><a href="@controllers.routes.IndexController.home()">APP NAME</a></span>
+                  <span class="id7-current-site-link"><a href="@controllers.routes.IndexController.home()">APP_NAME</a></span>
                 </h1>
               </div>
             </div>
@@ -125,6 +130,15 @@
         </header>
 
         <div class="id7-main-content">
+          @context.flash.get("success").map { message =>
+            <div class="alert alert-success">@message</div>
+          }
+          @context.flash.get("warning").map { message =>
+            <div class="alert alert-warning">@message</div>
+          }
+          @context.flash.get("error").map { message =>
+            <div class="alert alert-danger">@message</div>
+          }
           @content
         </div>
       </main>
@@ -140,16 +154,19 @@
           <div class="id7-footer-utility">
             <ul>
               <li>Powered by APP_NAME</li>
-              <li><a href="http://warwick.ac.uk/copyright">© @helpers.romanYear()</a></li>
-              <li><a href="http://warwick.ac.uk/terms">Terms</a></li>
-              <li><a href="http://warwick.ac.uk/privacy">Privacy</a></li>
-              <li><a href="http://warwick.ac.uk/cookies">Cookies</a></li>
-              <li><a href="http://warwick.ac.uk/accessibility">Accessibility</a></li>
+              <li><a href="https://warwick.ac.uk/copyright">© @helpers.romanYear()</a></li>
+              <li><a href="https://warwick.ac.uk/terms">Terms</a></li>
+              <li><a href="https://warwick.ac.uk/privacy">Privacy</a></li>
+              <li><a href="https://warwick.ac.uk/cookies">Cookies</a></li>
+              <li><a href="https://warwick.ac.uk/accessibility">Accessibility</a></li>
             </ul>
           </div>
         </div>
       </footer>
     </div>
     <div class="id7-right-border"></div>
+
+    <script type='text/javascript' src='@routes.Assets.versioned("lib/id7/js/id7-bundle.js")'></script>
+    <script type='text/javascript' src='@routes.Assets.versioned("main.js")'></script>
   </body>
 </html>
