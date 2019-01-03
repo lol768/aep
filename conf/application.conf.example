@@ -4,8 +4,8 @@ include "local-dev"
 domain = "changeme.warwick.ac.uk"
 
 slick.dbs.default.db {
-  url = "jdbc:postgresql://localhost:5432/app_name"
-  user = "app_name"
+  url = "jdbc:postgresql://localhost:5432/changeme"
+  user = "changeme"
   password = "a really good password, not a horrible weak one"
 }
 
