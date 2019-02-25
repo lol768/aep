@@ -86,6 +86,7 @@ val testDeps = Seq(
   "org.mockito" % "mockito-all" % "1.10.19",
   "org.scalatest" %% "scalatest" % "3.0.5",
   "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2",
+  "org.mockito" % "mockito-core" % "2.9.0",
   "com.typesafe.akka" %% "akka-testkit" % "2.5.18",
   "uk.ac.warwick.sso" %% "sso-client-play-testing" % ssoClientVersion,
   "com.opentable.components" % "otj-pg-embedded" % "0.12.5"
@@ -103,15 +104,6 @@ libraryDependencies ++= (appDeps ++ testDeps).map(_.excludeAll(
   // Tika pulls in slf4j-log4j12
   ExclusionRule(organization = "org.slf4j", name = "slf4j-log4j12")
 ))
-
-libraryDependencies += specs2 % Test
-
-// Play provides two styles of routers, one expects its actions to be injected, the
-// other, legacy style, accesses its actions statically.
-routesGenerator := InjectedRoutesGenerator
-
-// https://bugs.elab.warwick.ac.uk/browse/SSO-1653
-dependencyOverrides += "xml-apis" % "xml-apis" % "1.4.01"
 
 // Make built output available as Play assets.
 unmanagedResourceDirectories in Assets += baseDirectory.value / "target/assets"
