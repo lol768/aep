@@ -15,8 +15,8 @@ const paths = {
   ROOT: __dirname,
   RELATIVE_ASSETS: 'target/assets',
   ASSETS: path.join(__dirname, 'target/assets'),
-  NODE_MODULES: path.join(__dirname, 'node_modules/id7'),
-  ID7: path.join(__dirname, 'node_modules/id7'),
+  NODE_MODULES: path.join(__dirname, 'node_modules/@universityofwarwick/id7'),
+  ID7: path.join(__dirname, 'node_modules/@universityofwarwick/id7'),
   ENTRY: './app/assets/js/main.js',
   PUBLIC_PATH: '/assets/',
 };
@@ -59,18 +59,22 @@ const commonConfig = merge([
       },
     },
     externals: {
-      jquery: 'jQuery'
-    }
+      jquery: 'jQuery',
+    },
   },
   tooling.lintJS(),
   tooling.transpileJS({
     entry: {
       main: paths.ENTRY,
     },
+    include: [
+      /node_modules\/@universityofwarwick/,
+      /app\/assets\/js/,
+    ],
   }),
   tooling.copyNpmDistAssets({
     dest: path.join(paths.ASSETS, 'lib'),
-    modules: ['id7'],
+    modules: ['@universityofwarwick/id7'],
   }),
   {
     plugins: [

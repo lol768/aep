@@ -1,12 +1,12 @@
 package helpers
 
 import helpers.ServiceResults.ServiceResult
+import org.scalatest.TestSuite
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatestplus.play.PlaySpec
 
 import scala.concurrent.Future
 
-trait FutureServiceMixins { self : PlaySpec with ScalaFutures =>
+trait FutureServiceMixins { self: TestSuite with ScalaFutures =>
 
   implicit class FutureServiceResultOps[A](f: Future[ServiceResult[A]]) {
 

@@ -4,6 +4,7 @@ import helpers.FakeRequestMethods._
 import helpers.{FutureServiceMixins, OneAppPerSuite}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{MustMatchers, OptionValues, TestSuite}
 import org.scalatestplus.play.PlaySpec
 import play.api.mvc.Result
 import play.api.test.FakeRequest
@@ -14,17 +15,20 @@ import warwick.sso.User
 
 import scala.concurrent.Future
 
+abstract class BaseSpec extends PlaySpec with BaseSpecLike
+
 /**
   * A spec designed for testing most of the app stack, calling
   * controllers as a browser would (though without using HTTP).
   */
-abstract class BaseSpec
-  extends PlaySpec
-    with ScalaFutures
+trait BaseSpecLike
+  extends ScalaFutures
+    with OptionValues
+    with MustMatchers
     with IntegrationPatience
     with MockitoSugar
     with OneAppPerSuite
-    with FutureServiceMixins {
+    with FutureServiceMixins { self: TestSuite =>
 
   implicit def timingContext: TimingContext = TimingContext.none
   implicit def auditLogContext: AuditLogContext = AuditLogContext.empty()

@@ -10,6 +10,8 @@ slick.dbs.default.db {
 }
 
 sso-client {
+  // You may want to override shire.providerid
+
   credentials {
     certificate = "file:/home/me/.ssl/changeme.warwick.ac.uk.crt"
     key = "file:/home/me/.ssl/changeme.warwick.ac.uk.key"
