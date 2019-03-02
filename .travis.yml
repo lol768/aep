@@ -5,6 +5,9 @@ language: scala
 
 jdk: oraclejdk8
 
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION test integration/test
+
 # These directories are cached to S3 at the end of the build
 cache:
   directories:
