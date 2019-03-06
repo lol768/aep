@@ -18,7 +18,7 @@ module.exports = class PlayFingerprintsPlugin {
   }
 
   apply(compiler) {
-    compiler.plugin('emit', (compilation, done) => {
+    compiler.hooks.emit.tapAsync('PlayFingerprintsPlugin', (compilation, done) => {
       const { assets } = compilation;
       const versionedFilenames = {};
 
