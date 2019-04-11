@@ -24,7 +24,7 @@ autoAPIMappings := true
 // Avoid some of the constant SBT "Updating"
 updateOptions := updateOptions.value.withCachedResolution(true)
 
-lazy val main = (project in file("."))
+lazy val root = (project in file("."))
   .enablePlugins(WarwickProject, PlayScala)
   .settings(
     name := """play-app-template""",
@@ -33,10 +33,10 @@ lazy val main = (project in file("."))
     javaOptions in Test += "-Dlogger.resource=test-logging.xml"
   )
 
-// Separate project rather than an extra config on the main
+// Separate project rather than an extra config on the root
 // project - it's simpler overall.
 lazy val integration = (project in file("it"))
-  .dependsOn(main, main % "test->test") // get access to the common test classes
+  .dependsOn(root, root % "test->test") // get access to the common test classes
   .settings(
     libraryDependencies ++= Seq(
       "org.pegdown" % "pegdown" % "1.6.0" % Test, // For Scalatest HTML reports
@@ -52,7 +52,7 @@ lazy val integration = (project in file("it"))
 
 val enumeratumVersion = "1.5.13"
 val enumeratumSlickVersion = "1.5.15"
-val playUtilsVersion = "1.29"
+val playUtilsVersion = "1.32"
 val ssoClientVersion = "2.63"
 val warwickUtilsVersion = "20190221"
 
