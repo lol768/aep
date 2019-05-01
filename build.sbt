@@ -52,9 +52,9 @@ lazy val integration = (project in file("it"))
 
 val enumeratumVersion = "1.5.13"
 val enumeratumSlickVersion = "1.5.15"
-val playUtilsVersion = "1.32"
-val ssoClientVersion = "2.63"
-val warwickUtilsVersion = "20190221"
+val playUtilsVersion = "1.33.1"
+val ssoClientVersion = "2.69.1"
+val warwickUtilsVersion = "20190429"
 
 val appDeps = Seq(
   guice,
