@@ -2,7 +2,7 @@ import controllers.RequestContext
 import helpers.Json._
 import javax.inject.{Inject, Singleton}
 import play.api.Environment
-import play.api.http.{HttpErrorHandler, Status}
+import play.api.http.{DefaultHttpErrorHandler, HttpErrorHandler, Status}
 import play.api.libs.json.Json
 import play.api.mvc._
 import system.ImplicitRequestContext
@@ -16,9 +16,9 @@ import scala.concurrent.Future
 @Singleton
 class ErrorHandler @Inject()(
   environment: Environment,
-) extends HttpErrorHandler with Results with Status with Logging with Rendering with AcceptExtractors with ImplicitRequestContext {
+) extends DefaultHttpErrorHandler with Results with Status with Logging with Rendering with AcceptExtractors with ImplicitRequestContext {
 
-  def onClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] = {
+  override def onClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] = {
     implicit val context: RequestContext = requestContext(request)
 
     // If we don't have a valid user, force login anyway
@@ -40,7 +40,7 @@ class ErrorHandler @Inject()(
       )
   }
 
-  def onServerError(request: RequestHeader, exception: Throwable): Future[Result] = {
+  override def onServerError(request: RequestHeader, exception: Throwable): Future[Result] = {
     implicit val requestHeader: RequestHeader = request
 
     logger.error("Internal Server Error", exception)
