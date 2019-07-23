@@ -11,7 +11,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   *
   */
 case class Ttl(soft: FiniteDuration, medium: FiniteDuration, hard: Duration) {
-  if(hard.isFinite() && hard.toSeconds == 0)
+  if(hard.isFinite && hard.toSeconds == 0)
     throw new IllegalArgumentException("Don't use a zero hard TTL as the memcached library treats it as Infinite")
   if (soft > medium)
     throw new IllegalArgumentException("Soft TTL can't be larger than the medium TTL")

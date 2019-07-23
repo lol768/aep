@@ -2,7 +2,7 @@ import sbt.Path
 
 ThisBuild / organization := "uk.ac.warwick"
 ThisBuild / version := "1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "2.12.8"
+ThisBuild / scalaVersion := "2.13.0"
 
 ThisBuild / javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 ThisBuild / scalacOptions ++= Seq(
@@ -11,13 +11,13 @@ ThisBuild / scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
   "-unchecked",
-  "-Yno-adapted-args",
   "-Ywarn-numeric-widen",
   "-Xfatal-warnings",
   "-Xsource:2.13"
 )
 ThisBuild / scalacOptions in Test ++= Seq("-Yrangepos")
 ThisBuild / scalacOptions in (Compile, doc) ++= Seq("-no-link-warnings")
+ThisBuild / webpackEnabled := true
 
 autoAPIMappings := true
 
@@ -30,7 +30,8 @@ lazy val root = (project in file("."))
     name := """play-app-template""",
     packageZipTarball in Universal := (packageZipTarball in Universal).dependsOn(webpack).value,
     libraryDependencies ++= (appDeps ++ testDeps).map(excludeBadTransitiveDeps),
-    javaOptions in Test += "-Dlogger.resource=test-logging.xml"
+    Test / javaOptions += "-Dlogger.resource=test-logging.xml",
+    PlayKeys.devSettings := Seq("play.server.http.port" -> "8080"),
   )
 
 // Separate project rather than an extra config on the root
@@ -40,21 +41,31 @@ lazy val integration = (project in file("it"))
   .settings(
     libraryDependencies ++= Seq(
       "org.pegdown" % "pegdown" % "1.6.0" % Test, // For Scalatest HTML reports
+      "uk.ac.warwick.play-utils" %% "testing" % playUtilsVersion,
     ),
     sourceDirectory := baseDirectory.value, // no "src" subfolder
-    testOptions in Test ++= Seq(
+    Test / javaOptions += "-Dlogger.resource=test-logging.xml",
+    Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.ScalaTest, "-o"), // console out
       Tests.Argument(TestFrameworks.ScalaTest, "-h", s"${target.value}/test-html")
     ),
+    Test / test := (Test / test).dependsOn(root / webpack).value,
+    // Forking changes the working dir which breaks where we look for things, so don't fork for now.
+    // May be able to fix some other way by updating ForkOptions.
+    Test / fork := false,
+    Test / parallelExecution := false,
+    // Make assets available so they have styles and scripts
+    Test / managedClasspath += (root / Assets / packageBin).value,
   )
 
 // Dependencies
 
 val enumeratumVersion = "1.5.13"
-val enumeratumSlickVersion = "1.5.15"
-val playUtilsVersion = "1.33.1"
-val ssoClientVersion = "2.69.1"
-val warwickUtilsVersion = "20190429"
+val enumeratumPlayVersion = "1.5.16"
+val enumeratumSlickVersion = "1.5.16"
+val playUtilsVersion = "1.39"
+val ssoClientVersion = "2.71"
+val warwickUtilsVersion = "20190503"
 
 val appDeps = Seq(
   guice,
@@ -62,43 +73,45 @@ val appDeps = Seq(
   cacheApi,
   filters,
 
-  // Don't upgrade to 4.x or you'll get Slick 3.3
-  "com.typesafe.play" %% "play-slick" % "3.0.3",
-  "com.typesafe.play" %% "play-slick-evolutions" % "3.0.3",
+  "com.typesafe.play" %% "play-slick" % "4.0.2",
+  "com.typesafe.play" %% "play-slick-evolutions" % "4.0.2",
+  "com.typesafe.play" %% "play-jdbc-evolutions" % "2.7.3",
 
-  // Intentionally Slick 3.2, not 3.3 - 3.3 has weird behaviour with our custom OffsetDateTime
-  "com.typesafe.slick" %% "slick" % "3.2.3",
-  "org.postgresql" % "postgresql" % "42.2.5",
-  "com.github.tminglei" %% "slick-pg" % "0.17.1", // Don't upgrade past 0.17.1 or you'll get Slick 3.3
+  "com.typesafe.slick" %% "slick" % "3.3.2",
+  "org.postgresql" % "postgresql" % "42.2.6",
+  "com.github.tminglei" %% "slick-pg" % "0.18.0",
 
-  "net.codingwell" %% "scala-guice" % "4.2.1",
+  "net.codingwell" %% "scala-guice" % "4.2.6",
   "com.google.inject.extensions" % "guice-multibindings" % "4.2.2",
-  "com.adrianhurt" %% "play-bootstrap" % "1.2-P26-B3",
+  "com.adrianhurt" %% "play-bootstrap" % "1.5-P27-B3",
 
   "uk.ac.warwick.sso" %% "sso-client-play" % ssoClientVersion,
 
   "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
+  "ch.qos.logback" % "logback-access" % "1.2.3",
   "uk.ac.warwick.play-utils" %% "healthcheck" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "slick" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "core" % playUtilsVersion,
 
   "uk.ac.warwick.util" % "warwickutils-core" % warwickUtilsVersion,
+  "net.logstash.logback" % "logstash-logback-encoder" % "5.3",
   "uk.ac.warwick.util" % "warwickutils-service" % warwickUtilsVersion,
 
-  "com.github.mumoshu" %% "play2-memcached-play27" % "0.10.0-RC3",
+  "com.github.mumoshu" %% "play2-memcached-play27" % "0.10.1",
 
   "com.beachape" %% "enumeratum" % enumeratumVersion,
-  "com.beachape" %% "enumeratum-play" % enumeratumVersion,
-  "com.beachape" %% "enumeratum-play-json" % enumeratumVersion,
+  "com.beachape" %% "enumeratum-play" % enumeratumPlayVersion,
+  "com.beachape" %% "enumeratum-play-json" % enumeratumPlayVersion,
   "com.beachape" %% "enumeratum-slick" % enumeratumSlickVersion,
 
   "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0"
 )
 
 val testDeps = Seq(
-  "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.1",
-  "org.mockito" % "mockito-core" % "2.24.5",
+  "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3",
+  "org.mockito" % "mockito-core" % "2.28.2",
   "uk.ac.warwick.sso" %% "sso-client-play-testing" % ssoClientVersion,
+  "uk.ac.warwick.play-utils" %% "testing" % playUtilsVersion,
   "com.opentable.components" % "otj-pg-embedded" % "0.13.1",
 ).map(_ % Test)
 
@@ -114,9 +127,6 @@ def excludeBadTransitiveDeps(mod: ModuleID): ModuleID = mod.excludeAll(
   // Tika pulls in slf4j-log4j12
   ExclusionRule(organization = "org.slf4j", name = "slf4j-log4j12")
 )
-
-// JClouds requires v2.5 https://issues.apache.org/jira/browse/JCLOUDS-1166
-ThisBuild / dependencyOverrides += "com.google.code.gson" % "gson" % "2.5"
 
 // Make built output available as Play assets.
 unmanagedResourceDirectories in Assets += baseDirectory.value / "target/assets"
@@ -144,10 +154,20 @@ import scala.sys.process.Process
 
 lazy val webpack = taskKey[Unit]("Run webpack when packaging the application")
 
+lazy val webpackEnabled = settingKey[Boolean]("Is webpack enabled")
+
 def runWebpack(file: File): Int = Process("npm run build", file).!
 
 webpack := {
-  if (runWebpack(baseDirectory.value) != 0) throw new Exception("Something went wrong when running webpack.")
+  if (webpackEnabled.value) {
+    Changes.ifChanged(
+      target.value / "webpack-tracking",
+      baseDirectory.value / "app" / "assets",
+      target.value / "assets"
+    ) {
+      if (runWebpack(baseDirectory.value) != 0) throw new Exception("Something went wrong when running webpack.")
+    }
+  }
 }
 
 runner := runner.dependsOn(webpack).value

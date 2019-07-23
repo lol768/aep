@@ -41,7 +41,7 @@ object API {
   object Error {
     implicit val format: OFormat[Error] = Json.format[Error]
 
-    def fromJsError(jsError: JsError): Seq[Error] = JsError.toFlatForm(jsError).map {
+    def fromJsError(jsError: JsError): Seq[Error] = JsError.toFlatForm(jsError).toSeq.map {
       case (field, errors) =>
         val propertyName = field.substring(4) // Remove 'obj.' from start of field name
         Error(

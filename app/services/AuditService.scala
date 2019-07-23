@@ -15,7 +15,7 @@ import uk.ac.warwick.util.logging.AuditLogger.RequestInformation
 import warwick.core.timing.TimingContext
 import warwick.sso.Usercode
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 case class AuditLogContext(

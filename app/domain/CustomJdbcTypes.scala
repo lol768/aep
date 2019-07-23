@@ -5,7 +5,6 @@ import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json.{JsValue, Json}
 import slick.jdbc.{JdbcProfile, JdbcType}
-import warwick.slick.jdbctypes.JdbcDateTypesUtc
 import warwick.sso.{UniversityID, Usercode}
 
 /**
@@ -16,7 +15,7 @@ import warwick.sso.{UniversityID, Usercode}
 @Singleton
 class CustomJdbcTypes @Inject() (
   protected val dbConfigProvider: DatabaseConfigProvider
-) extends SlickEnumSupport with JdbcDateTypesUtc {
+) extends SlickEnumSupport {
 
   protected lazy val dbConfig = dbConfigProvider.get[JdbcProfile]
   override lazy val profile = dbConfig.profile

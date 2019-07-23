@@ -140,7 +140,7 @@ class FlexiPickerController @Inject()(
             else Future.successful(Right(Nil)),
 
             if (!flexiPickerQuery.exact && flexiPickerQuery.includeUsers)
-              queryUsers(flexiPickerQuery).map(_.right.map(_.flatMap(FlexiPickerResult.apply(_, flexiPickerQuery.universityId))))
+              queryUsers(flexiPickerQuery).map(_.map(_.flatMap(FlexiPickerResult.apply(_, flexiPickerQuery.universityId))))
             else Future.successful(Right(Nil))
           )
 

@@ -7,7 +7,7 @@ import uk.ac.warwick.util.service.ServiceHealthcheck.Status._
 import uk.ac.warwick.util.service.{ServiceHealthcheck, ServiceHealthcheckProvider}
 import warwick.core.helpers.JavaTime.{localDateTime => now}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 abstract class NumericHealthCheck[T](val name: String)(implicit num: Numeric[T])

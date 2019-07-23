@@ -14,7 +14,7 @@ class ServiceCheckController @Inject()(
   var stopping = false
   life.addStopHook(() => {
     stopping = true
-    Future.successful(Unit)
+    Future.unit
   })
 
   def gtg: Action[AnyContent] = Action {

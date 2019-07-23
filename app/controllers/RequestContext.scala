@@ -37,7 +37,7 @@ object RequestContext {
 
     val eventualRequestContext = sso.withUser(request) { loginContext =>
       Future.successful(Right(RequestContext(sso, request, loginContext.user, loginContext.actualUser, navigation(loginContext), csrfHelperFactory, configuration)))
-    }.map(_.right.get)
+    }.map(_.getOrElse(throw new IllegalStateException))
 
     Await.result(eventualRequestContext, Duration.Inf)
   }
