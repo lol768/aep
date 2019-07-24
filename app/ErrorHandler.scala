@@ -1,8 +1,8 @@
 import controllers.RequestContext
 import helpers.Json._
 import javax.inject.{Inject, Singleton}
-import play.api.Environment
-import play.api.http.{DefaultHttpErrorHandler, HttpErrorHandler, Status}
+import play.api.{Environment, Mode}
+import play.api.http.{DefaultHttpErrorHandler, Status}
 import play.api.libs.json.Json
 import play.api.mvc._
 import system.ImplicitRequestContext
@@ -46,7 +46,16 @@ class ErrorHandler @Inject()(
     logger.error("Internal Server Error", exception)
     Future.successful(
       render {
-        case Accepts.Json() => InternalServerError(Json.toJson(JsonClientError(status = "internal_server_error", errors = Seq(exception.getMessage))))
+        case Accepts.Json() =>
+          InternalServerError(Json.toJson(JsonClientError(
+            status = "internal_server_error",
+            errors = {
+              if (environment.mode == Mode.Dev || environment.mode == Mode.Test)
+                Seq(exception.getMessage)
+              else
+                Seq("Sorry, there's been a problem and we weren't able to complete your request")
+            }
+          )))
         case _ => InternalServerError(views.html.errors.serverError(exception, environment.mode))
       }(request)
     )
