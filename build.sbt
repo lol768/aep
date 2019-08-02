@@ -1,4 +1,5 @@
 import sbt.Path
+import warwick.Changes
 
 ThisBuild / organization := "uk.ac.warwick"
 ThisBuild / version := "1.0-SNAPSHOT"
@@ -73,6 +74,14 @@ val appDeps = Seq(
   cacheApi,
   filters,
 
+  // Upgrade transitive dependency on jackson-databind to remediate deserialization of untrusted data
+  // https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-455617
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.9.2",
+  "com.fasterxml.jackson.core" % "jackson-core" % "2.9.9",
+  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.9",
+  "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.9.9",
+  "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.9",
+
   "com.typesafe.play" %% "play-slick" % "4.0.2",
   "com.typesafe.play" %% "play-slick-evolutions" % "4.0.2",
   "com.typesafe.play" %% "play-jdbc-evolutions" % "2.7.3",
@@ -86,6 +95,10 @@ val appDeps = Seq(
   "com.adrianhurt" %% "play-bootstrap" % "1.5-P27-B3",
 
   "uk.ac.warwick.sso" %% "sso-client-play" % ssoClientVersion,
+
+  // Upgrade transitive dependency on Apache httpclient to remediate directory traversal
+  // https://snyk.io/vuln/SNYK-JAVA-ORGAPACHEHTTPCOMPONENTS-31517
+  "org.apache.httpcomponents" % "httpclient" % "4.5.9",
 
   "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
   "ch.qos.logback" % "logback-access" % "1.2.3",
@@ -153,7 +166,6 @@ bambooTest := {
 import scala.sys.process.Process
 
 lazy val webpack = taskKey[Unit]("Run webpack when packaging the application")
-
 lazy val webpackEnabled = settingKey[Boolean]("Is webpack enabled")
 
 def runWebpack(file: File): Int = Process("npm run build", file).!

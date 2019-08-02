@@ -64,7 +64,7 @@ public class YourAppPlanSpec extends AbstractWarwickBuildSpec {
                     .interpreter(ScriptTaskProperties.Interpreter.BINSH_OR_CMDEXE)
                     .location(ScriptTaskProperties.Location.FILE)
                     .fileFromPath("sbt")
-                    .argument("clean test:compile test integration/clean integration/test universal:packageZipTarball")
+                    .argument("clean test:compile test integration/clean integration/test snykAuditBackend snykAuditFrontend universal:packageZipTarball")
                     .environmentVariables("PATH=/usr/nodejs/8/bin"),
                   new NpmTask()
                     .description("JS Tests")

@@ -1,6 +1,6 @@
 // Warwick parent plugin
 resolvers += "nexus" at "https://mvn.elab.warwick.ac.uk/nexus/repository/public-anonymous/"
-addSbtPlugin("uk.ac.warwick" % "play-warwick" % "0.10")
+addSbtPlugin("uk.ac.warwick" % "play-warwick" % "0.11")
 
 // The Play plugin
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.7.3")
