@@ -106,13 +106,7 @@ public class YourAppPlanSpec extends AbstractWarwickBuildSpec {
       deployment(PROJECT, "APP", "YOUR_APP")
         .autoPlayEnvironment("Development", "changeme-dev.warwick.ac.uk", "changeme", "dev", SLACK_CHANNEL)
         .autoPlayEnvironment("Test", "changeme-test.warwick.ac.uk", "changeme", "test", SLACK_CHANNEL)
-        .playEnvironment("Production", "changeme.warwick.ac.uk", "changeme", "prod",
-          env -> env.notifications(
-            new Notification()
-              .type(new DeploymentStartedAndFinishedNotification())
-              .recipients(slackRecipient(SLACK_CHANNEL))
-          )
-        )
+        .productionPlayEnvironment("Production", "changeme.warwick.ac.uk", "changeme", SLACK_CHANNEL)
         .build()
     );
   }
