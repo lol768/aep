@@ -125,7 +125,7 @@ val testDeps = Seq(
   "org.mockito" % "mockito-core" % "2.28.2",
   "uk.ac.warwick.sso" %% "sso-client-play-testing" % ssoClientVersion,
   "uk.ac.warwick.play-utils" %% "testing" % playUtilsVersion,
-  "com.opentable.components" % "otj-pg-embedded" % "0.13.1",
+  "com.opentable.components" % "otj-pg-embedded" % "0.13.3",
 ).map(_ % Test)
 
 def excludeBadTransitiveDeps(mod: ModuleID): ModuleID = mod.excludeAll(
