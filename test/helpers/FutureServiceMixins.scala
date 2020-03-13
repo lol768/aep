@@ -1,12 +1,12 @@
 package helpers
 
-import helpers.ServiceResults.ServiceResult
+import warwick.core.helpers.ServiceResults.{ServiceResult, ServiceResultException}
 import org.scalatest.TestSuite
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Future
 
-trait FutureServiceMixins { self: TestSuite with ScalaFutures =>
+trait FutureServiceMixins { this: ScalaFutures =>
 
   implicit class FutureServiceResultOps[A](f: Future[ServiceResult[A]]) {
 
@@ -14,9 +14,7 @@ trait FutureServiceMixins { self: TestSuite with ScalaFutures =>
     // to be successful.
     def serviceValue: A =
       f.futureValue.fold(
-        e => e.flatMap(_.cause).headOption
-          .map(throw _)
-          .getOrElse(fail(e.map(_.message).mkString("; "))),
+        e => throw new ServiceResultException(e),
         identity // return success as-is
       )
   }

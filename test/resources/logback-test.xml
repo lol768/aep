@@ -12,7 +12,15 @@
         </encoder>
     </appender>
 
+    <logger name="h2database" level="DEBUG" />
+
     <root level="off">
         <appender-ref ref="STDOUT" />
     </root>
+
+    <!-- Set SQL_LEVEL=DEBUG in an env var or sys prop to enable -->
+    <!-- Set SQL_PARAM_LEVEL=OFF if you don't want the bind parameters -->
+    <logger name="slick.jdbc.JdbcBackend.statement"  level="${SQL_LEVEL:-OFF}" />
+    <logger name="slick.jdbc.JdbcBackend.parameter" level="${SQL_PARAM_LEVEL:-${SQL_LEVEL:-OFF}}" />
+
 </configuration>

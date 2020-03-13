@@ -1,6 +1,7 @@
 package system
 
 import javax.inject.{Inject, Singleton}
+
 import play.api.Configuration
 import play.api.mvc.{EssentialAction, EssentialFilter}
 

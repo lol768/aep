@@ -1,7 +1,8 @@
 package system
 
 import akka.Done
-import com.google.inject.{AbstractModule, Singleton}
+import javax.inject.Singleton
+import com.google.inject.AbstractModule
 import play.api.cache.{AsyncCacheApi, SyncCacheApi}
 
 import scala.concurrent.Future

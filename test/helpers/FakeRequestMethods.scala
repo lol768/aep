@@ -5,7 +5,7 @@ import play.api.test.FakeRequest
 import warwick.sso.{AuthenticatedRequest, LoginContextData, User}
 
 object FakeRequestMethods {
-  implicit class RichFakeRequest[A](val req: FakeRequest[A]) extends AnyVal {
+  implicit class RequestOps[A](val req: Request[A]) extends AnyVal {
     // Sets a request attr that MockSSOClient understands
     def withUser(u: User): Request[A] =
       req.addAttr(AuthenticatedRequest.LoginContextDataAttr, new LoginContextData {

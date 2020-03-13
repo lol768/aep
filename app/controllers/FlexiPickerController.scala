@@ -1,8 +1,6 @@
 package controllers
 
 import controllers.FlexiPickerController._
-import helpers.ServiceResults
-import helpers.ServiceResults.ServiceResult
 import javax.inject.{Inject, Named, Singleton}
 import play.api.Configuration
 import play.api.data.Form
@@ -10,6 +8,8 @@ import play.api.data.Forms._
 import play.api.libs.json.{Json, Writes}
 import play.api.mvc.{Action, AnyContent}
 import services.SecurityService
+import warwick.core.helpers.ServiceResults
+import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.sso._
 
 import scala.concurrent.{ExecutionContext, Future}

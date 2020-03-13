@@ -24,8 +24,14 @@
 
     <title>@if(!title.isEmpty){@title - }APP_NAME</title>
 
+    @* Preload the most popular font type. Agents should be able to decide whether they can use these assets based on the type attribute. *@
+    <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-light-300.woff2")" as="font">
+    <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-regular-400.woff2")" as="font">
+    <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-solid-900.woff2")" as="font">
+    <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-duotone-900.woff2")" as="font">
+
     <!-- Lato web font -->
-    <link href="//fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <link href="//fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic&amp;subset=latin,latin-ext&amp;display=swap" rel="stylesheet" type="text/css" crossorigin="anonymous">
 
     <!-- ID7 -->
     <link rel='stylesheet' href='@routes.Assets.versioned("style.css")'>
@@ -83,20 +89,6 @@
                         <li><a href="https://warwick.ac.uk/about">About</a></li>
                       </ul>
                     </nav>
-                  </div>
-                </div>
-                <div class="id7-search-column">
-                  <div class="id7-search">
-                    <form action="//search.warwick.ac.uk/website" role="search">
-                      <input type="hidden" name="source" value="https://warwick.ac.uk/"> <!-- Replace with the current page URL -->
-                      <div class="form-group">
-                        <label class="sr-only" for="id7-search-box">Search</label>
-                        <div class="id7-search-box-container">
-                          <input type="search" class="form-control input-lg" id="id7-search-box" name="q" placeholder="Search Warwick" data-suggest="go">
-                          <i class="fa fa-search fa-2x"></i>
-                        </div>
-                      </div>
-                    </form>
                   </div>
                 </div>
               </div>
@@ -165,6 +157,10 @@
       </footer>
     </div>
     <div class="id7-right-border"></div>
+    <div class="statuspage-embed-container"
+      data-api-base="https://status.warwick.ac.uk/api"
+      data-components='["APP_ID"]'
+    ></div>
 
     <script type='text/javascript' src='@routes.Assets.versioned("lib/id7/js/id7-bundle.js")'></script>
     <script type='text/javascript' src='@routes.Assets.versioned("main.js")'></script>
