@@ -13,6 +13,8 @@ create table OUTGOING_EMAIL (
   constraint PK_OUTGOING_EMAIL primary key (ID)
 );
 
+create index IDX_OUTGOING_EMAIL_SENT_AT_RECIPIENT on OUTGOING_EMAIL (SENT_AT_UTC DESC, RECIPIENT_EMAIL);
+
 create table OUTGOING_EMAIL_VERSION (
   ID uuid not null,
   CREATED_UTC timestamp(3) not null,
