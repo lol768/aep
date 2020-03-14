@@ -19,8 +19,14 @@ GET         /                                       @controllers.IndexController
 
 ## Sysadmins ##
 
-GET         /sysadmin                               @controllers.IndexController.redirectToPath(path = "/sysadmin/masquerade")
+GET         /sysadmin                               @controllers.sysadmin.SysadminTestController.home()
 GET         /sysadmin/masquerade                    @controllers.sysadmin.MasqueradeController.masquerade
+GET         /sysadmin/sent-emails                   @controllers.sysadmin.ViewEmailsController.listAll(page: Int ?= 0)
+GET         /sysadmin/sent-emails/:id               @controllers.sysadmin.ViewEmailsController.viewEmail(id: UUID)
+GET         /sysadmin/emails                        @controllers.sysadmin.EmailQueueController.queued()
+POST        /sysadmin/emails/:id                    @controllers.sysadmin.EmailQueueController.enqueue(id: UUID)
+
+POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 
 ## Fallbacks ##
 

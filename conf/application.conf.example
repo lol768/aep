@@ -23,3 +23,9 @@ sso-client {
     privatekey = "..."
   }
 }
+
+// Get these from mailtrap.io
+play.mailer {
+  user = "..."
+  password = "..."
+}

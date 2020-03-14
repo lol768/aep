@@ -1,11 +1,16 @@
 package controllers
 
-import javax.inject.Singleton
+import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
+import services.SecurityService
 
 @Singleton
-class IndexController extends BaseController {
-  def home: Action[AnyContent] = Action { implicit request =>
+class IndexController @Inject()(
+  security: SecurityService,
+) extends BaseController {
+  import security._
+
+  def home: Action[AnyContent] = SigninAwareAction { implicit request =>
     Ok(views.html.home())
   }
 

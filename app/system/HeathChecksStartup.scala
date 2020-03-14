@@ -1,6 +1,6 @@
 package system
 
-import com.google.inject.{Inject, Provider}
+import javax.inject.{Inject, Provider}
 import services.healthcheck.ThreadPoolHealthCheck
 import uk.ac.warwick.util.service.ServiceHealthcheckProvider
 
@@ -8,7 +8,7 @@ import uk.ac.warwick.util.service.ServiceHealthcheckProvider
   * Does some startup tasks where they can't be done in other
   * constructors for whatever reason.
   */
-class AppStartup @Inject()(
+class HeathChecksStartup @Inject()(
   healthchecks: Provider[Set[ServiceHealthcheckProvider]]
 ) {
   /**

@@ -79,6 +79,13 @@ val appDeps = Seq(
   "org.postgresql" % "postgresql" % "42.2.10",
   "com.github.tminglei" %% "slick-pg" % "0.18.1",
 
+  "com.typesafe.play" %% "play-mailer" % "8.0.0",
+  "com.typesafe.play" %% "play-mailer-guice" % "8.0.0",
+
+  // in-memory JNDI context used by Play to pass DataSource to Quartz
+  "tyrex" % "tyrex" % "1.0.1",
+  "org.quartz-scheduler" % "quartz" % "2.3.2" exclude("com.zaxxer", "HikariCP-java6"),
+
   "net.codingwell" %% "scala-guice" % "4.2.6",
   "com.google.inject.extensions" % "guice-multibindings" % "4.2.2",
   "com.adrianhurt" %% "play-bootstrap" % "1.5.1-P27-B3",
@@ -127,6 +134,11 @@ def excludeBadTransitiveDeps(mod: ModuleID): ModuleID = mod.excludeAll(
 
 // Make built output available as Play assets.
 Assets / unmanagedResourceDirectories  += baseDirectory.value / "target/assets"
+
+// Imported by the routes compiler
+routesImport += "system.routes.PathBindables._" // to use our types as path variables
+routesImport += "system.routes.QueryStringBindables._" // to use our types as query string variables
+routesImport += "system.routes.Types._" // type aliases so they don't need to be fully qualified
 
 resolvers += ("Local Maven Repository" at "file:///" + Path.userHome.absolutePath + "/.m2/repository")
 resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"

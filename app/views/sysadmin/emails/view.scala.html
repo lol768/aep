@@ -1,0 +1,54 @@
+@import domain.OutgoingEmail
+@import views.tags.formatDate
+@(
+  emailOpt: Option[OutgoingEmail],
+  referer: String
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@main("View email") {
+
+  @if(emailOpt.isEmpty) {
+    <p>Sorry, unable to find the email</p>
+  } else {
+    @emailOpt.map{ outgoing =>
+      <table class="table table-condensed datalist">
+        <tbody>
+          <tr>
+            <td class="text-right"><span class="text-muted">To</span></td>
+            <td>@outgoing.emailAddress</td>
+          </tr>
+          @outgoing.email.cc.map{ cc =>
+            <tr>
+              <td class="text-right"><span class="text-muted">Cc</span></td>
+              <td>@cc</td>
+            </tr>
+          }
+          @outgoing.email.bcc.map{ bcc =>
+            <tr>
+              <td class="text-right"><span class="text-muted">Bcc</span></td>
+              <td>@bcc</td>
+            </tr>
+          }
+          <tr>
+            <td class="text-right"><span class="text-muted">From</span></td>
+            <td>@outgoing.email.from</td>
+          </tr>
+          <tr>
+            <td class="text-right"><span class="text-muted">Sent</span></td>
+            <td>@outgoing.sent.map(sent => formatDate.dateTime(sent)).getOrElse("Unknown")</td>
+          </tr>
+          <tr>
+            <td class="text-right"><span class="text-muted">Subject</span></td>
+            <td>@outgoing.email.subject</td>
+          </tr>
+          <tr>
+            <td class="text-right"><span class="text-muted">Content</span></td>
+            <td>@Html(outgoing.email.bodyHtml)</td>
+          </tr>
+        </tbody>
+      </table>
+      <hr/>
+      <a href="@referer" class="btn btn-sm btn-default">back</a>
+    }
+  }
+}

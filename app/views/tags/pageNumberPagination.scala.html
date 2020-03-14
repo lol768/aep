@@ -1,0 +1,61 @@
+@import domain.Pagination
+@import helpers.URLBuilderHelper
+
+@(pagination: Pagination, filters: Seq[Form[_]] = Nil)
+@if((pagination.total / pagination.itemsPerPage) > 0) {
+    <nav>
+        <ul class="pagination">
+            @if(pagination.currentPage == 0) {
+                <li class="disabled">
+                    <span aria-label="First" title="First">
+                       <i class="fal fa-step-backward"></i>
+                    </span>
+                </li>
+                <li class="disabled">
+                    <span aria-label="Previous" title="Previous">
+                        <i class="fal fa-backward"></i>
+                    </span>
+                </li>
+            } else {
+                <li>
+                    <a aria-label="First" title="First" href="@{URLBuilderHelper.replaceExistingParams(pagination.route.toString, filters.map(_.data), Map(pagination.paginationParam -> 0.toString))}" data-page="0">
+                        <i class="fal fa-step-backward"></i>
+                    </a>
+                </li>
+                <li>
+                    <a aria-label="Previous" title="Previous" href="@{URLBuilderHelper.replaceExistingParams(pagination.route.toString, filters.map(_.data), Map(pagination.paginationParam -> (pagination.currentPage - 1).toString))}" >
+                        <i class="fal fa-backward"></i>
+                    </a>
+                </li>
+            }
+            <li>
+                <span>
+                    <span aria-hidden="true">Page @{pagination.currentPage + 1} of @{(pagination.total / pagination.itemsPerPage) +1}</span>
+                </span>
+            </li>
+            @if(pagination.currentPage == pagination.total / pagination.itemsPerPage) {
+                <li class="disabled">
+                    <span aria-label="Next" title="Next">
+                        <i class="fal fa-forward"></i>
+                    </span>
+                </li>
+                <li class="disabled">
+                    <span aria-label="Last" title="Last">
+                        <i class="fal fa-step-forward"></i>
+                    </span>
+                </li>
+            } else {
+                <li>
+                    <a aria-label="Next" title="Next" href="@{URLBuilderHelper.replaceExistingParams(pagination.route.toString, filters.map(_.data), Map(pagination.paginationParam -> (pagination.currentPage + 1).toString))}"  class="pagination-link">
+                        <i class="fal fa-forward"></i>
+                    </a>
+                </li>
+                <li>
+                    <a aria-label="Last" title="Last" href="@{URLBuilderHelper.replaceExistingParams(pagination.route.toString, filters.map(_.data), Map(pagination.paginationParam -> (pagination.total / pagination.itemsPerPage).toString))}" class="pagination-link">
+                        <i class="fal fa-step-forward"></i>
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
