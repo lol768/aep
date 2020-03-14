@@ -4,6 +4,8 @@ import './polyfills';
 import $ from 'jquery';
 import * as flexiPicker from './flexi-picker';
 
+require('@universityofwarwick/statuspage-widget/dist/main');
+
 /**
  * Attach handlers to all elements inside $scope. All jQuery selects
  * must be scoped to $scope, and you should only call bindTo on content

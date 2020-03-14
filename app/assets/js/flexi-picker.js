@@ -55,9 +55,9 @@ export default class FlexiPicker {
       delay: 200,
       matcher: () => true, // All data received from the server matches the query
       displayText: (item) => {
-        let icon = '';
-        if (item.type === 'user') icon = 'fa-user';
-        else if (item.type === 'group') icon = 'fa-globe';
+        let icon = 'fad fa-question';
+        if (item.type === 'user') icon = 'fad fa-user';
+        else if (item.type === 'group') icon = 'fad fa-globe';
 
         if (item.photo) {
           return `
@@ -76,7 +76,7 @@ export default class FlexiPicker {
 
         return `
           <div class="flexi-picker-result">
-            <i class="fa ${icon}"></i>
+            <i class="${icon}"></i>
             <span class="title">${_.escape(item.title)}</span>
             <span class="type">${_.escape(item.type)}</span>
             <div class="description">
@@ -84,7 +84,7 @@ export default class FlexiPicker {
             </div>
           </div>`;
       },
-      highlighter: html => html,
+      highlighter: (html) => html,
       changeInputOnMove: false,
       selectOnBlur,
       afterSelect: (item) => {
@@ -140,7 +140,7 @@ export default class FlexiPicker {
       query,
       exact: options.exact, // if true, only returns 100% matches.
     })
-      .then(response => response.json())
+      .then((response) => response.json())
       .catch((e) => {
         log.error(e);
         return [];

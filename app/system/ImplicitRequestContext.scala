@@ -4,7 +4,8 @@ import controllers.RequestContext
 import javax.inject.Inject
 import play.api.Configuration
 import play.api.mvc.RequestHeader
-import services.{AuditLogContext, NavigationService}
+import services.NavigationService
+import warwick.core.system.AuditLogContext
 import warwick.sso.{AuthenticatedRequest, SSOClient}
 
 trait ImplicitRequestContext extends LowPriorityRequestContextImplicits {

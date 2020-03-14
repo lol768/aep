@@ -1,38 +1,32 @@
 package services
 
 import java.math.MathContext
+import java.time.OffsetDateTime
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
 import domain.AuditEvent
+import domain.ExtendedPostgresProfile.api._
 import domain.dao.{AuditDao, DaoRunner}
 import helpers.ConditionalChain._
-import helpers.ServiceResults.ServiceResult
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
 import uk.ac.warwick.util.logging.AuditLogger
 import uk.ac.warwick.util.logging.AuditLogger.RequestInformation
+import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 import warwick.sso.Usercode
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
-
-case class AuditLogContext(
-  usercode: Option[Usercode] = None,
-  ipAddress: Option[String] = None,
-  userAgent: Option[String] = None,
-  timingData: TimingContext.Data
-) extends TimingContext
-
-object AuditLogContext {
-  def empty(t: TimingContext.Data = TimingContext.none.timingData): AuditLogContext = AuditLogContext(timingData = t)
-}
+import scala.jdk.CollectionConverters._
 
 @ImplementedBy(classOf[AuditServiceImpl])
-trait AuditService {
+trait AuditService extends warwick.core.system.AuditService {
   def audit[A](operation: Symbol, targetId: String, targetType: Symbol, data: JsValue)(f: => Future[ServiceResult[A]])(implicit context: AuditLogContext): Future[ServiceResult[A]]
   def audit[A](operation: Symbol, targetIdTransform: A => String, targetType: Symbol, data: JsValue)(f: => Future[ServiceResult[A]])(implicit context: AuditLogContext): Future[ServiceResult[A]]
+  def findRecentTargetIDsByOperation(operation: Symbol, usercode: Usercode, limit: Int)(implicit t: TimingContext): Future[ServiceResult[Seq[String]]]
+  def findLastEventDateForTargetID(targetId: String, usercode: Usercode, operation: Symbol)(implicit t: TimingContext): Future[ServiceResult[Option[OffsetDateTime]]]
 }
 
 @Singleton
@@ -94,7 +88,7 @@ class AuditServiceImpl @Inject()(
           }
     }
 
-  private def insertAuditEventDBIO(operation: Symbol, targetId: String, targetType: Symbol, data: JsValue)(implicit context: AuditLogContext) =
+  private def insertAuditEventDBIO(operation: Symbol, targetId: String, targetType: Symbol, data: JsValue)(implicit context: AuditLogContext): DBIO[AuditEvent] =
     dao.insert(AuditEvent(
       id = UUID.randomUUID(),
       operation = operation,
@@ -103,5 +97,30 @@ class AuditServiceImpl @Inject()(
       targetId = targetId,
       targetType = targetType
     ))
+
+  private val asUUID = SimpleExpression.unary[String, UUID] { (id, qb) =>
+    qb.expr(id)
+    qb.sqlBuilder += "::uuid"
+  }
+
+  override def findRecentTargetIDsByOperation(operation: Symbol, usercode: Usercode, limit: Int)(implicit t: TimingContext): Future[ServiceResult[Seq[String]]] =
+    daoRunner.run(
+      dao.findByOperationAndUsercodeQuery(operation, usercode)
+        .groupBy(_.targetId)
+        .map { case (targetId, q) => (targetId, q.map(_.date).max) }
+        .sortBy { case (_, maxDate) => maxDate.desc }
+        .take(limit)
+        .map { case (targetId, _) => targetId }
+        .result
+    ).map(Right.apply)
+
+  override def findLastEventDateForTargetID(targetId: String, usercode: Usercode, operation: Symbol)(implicit t: TimingContext): Future[ServiceResult[Option[OffsetDateTime]]] =
+    daoRunner.run(
+      dao.findByOperationAndUsercodeQuery(operation, usercode)
+        .filter(_.targetId === targetId)
+        .map(_.date)
+        .max
+        .result
+    ).map(Right.apply)
 
 }

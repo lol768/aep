@@ -20,13 +20,12 @@ class UptimeHealthCheck @Inject()(
   override def message = s"System has been up for $value seconds"
   override def testedAt: OffsetDateTime = JavaTime.offsetDateTime
 
-  import system.dispatcher
-  system.scheduler.schedule(0.seconds, interval = 5.seconds) {
+  system.scheduler.scheduleAtFixedRate(0.seconds, interval = 5.seconds)(() => {
     try run()
     catch {
       case e: Throwable =>
         logger.error("Error in health check", e)
     }
-  }
+  })(system.dispatcher)
 
 }

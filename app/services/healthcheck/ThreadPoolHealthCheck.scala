@@ -4,15 +4,15 @@ import java.util.concurrent.{ExecutorService, ThreadPoolExecutor}
 
 import akka.actor.ActorSystem
 import akka.dispatch.{Dispatcher, ExecutorServiceDelegate, ForkJoinExecutorConfigurator}
-import javax.inject.{Inject}
+import javax.inject.Inject
 import org.slf4j.{Logger, LoggerFactory}
+import services.healthcheck.ThreadPoolHealthCheck._
 import uk.ac.warwick.util.service.ServiceHealthcheck.Status
 import uk.ac.warwick.util.service.{ServiceHealthcheck, ServiceHealthcheckProvider}
 import warwick.core.helpers.JavaTime.{localDateTime => now}
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
-import ThreadPoolHealthCheck._
+import scala.jdk.CollectionConverters._
 
 object ThreadPoolHealthCheck {
   def name(id:String) = s"thread-pool-${id.toLowerCase}"
@@ -83,12 +83,12 @@ class ThreadPoolHealthCheck(id: String)
 
   // Called by AppStartup (Guice has no PostConstruct support)
   def init(): Unit = {
-    actorSystem.scheduler.schedule(0.seconds, 5.seconds) {
+    actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 5.seconds)(() => {
       try run()
       catch {
         case e: Throwable =>
           logger.error("Error in health check", e)
       }
-    }(actorSystem.dispatcher)
+    })(actorSystem.dispatcher)
   }
 }
