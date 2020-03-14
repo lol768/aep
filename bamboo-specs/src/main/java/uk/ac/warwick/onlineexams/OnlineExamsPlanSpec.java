@@ -1,22 +1,17 @@
-package uk.ac.warwick.yourapp;
+package uk.ac.warwick.onlineexams;
 
 import com.atlassian.bamboo.specs.api.BambooSpec;
 import com.atlassian.bamboo.specs.api.builders.deployment.Deployment;
-import com.atlassian.bamboo.specs.api.builders.notification.Notification;
 import com.atlassian.bamboo.specs.api.builders.plan.Job;
 import com.atlassian.bamboo.specs.api.builders.plan.Plan;
 import com.atlassian.bamboo.specs.api.builders.plan.Stage;
 import com.atlassian.bamboo.specs.api.builders.plan.artifact.Artifact;
 import com.atlassian.bamboo.specs.api.builders.project.Project;
 import com.atlassian.bamboo.specs.api.builders.requirement.Requirement;
-import com.atlassian.bamboo.specs.builders.notification.DeploymentStartedAndFinishedNotification;
 import com.atlassian.bamboo.specs.builders.task.*;
-import com.atlassian.bamboo.specs.builders.trigger.ScheduledTrigger;
 import com.atlassian.bamboo.specs.model.task.ScriptTaskProperties;
 import uk.ac.warwick.bamboo.specs.AbstractWarwickBuildSpec;
 
-import java.time.LocalTime;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -25,26 +20,25 @@ import java.util.Collections;
  * Learn more on: <a href="https://confluence.atlassian.com/display/BAMBOO/Bamboo+Specs">https://confluence.atlassian.com/display/BAMBOO/Bamboo+Specs</a>
  */
 @BambooSpec
-public class YourAppPlanSpec extends AbstractWarwickBuildSpec {
+public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
 
   private static final Project PROJECT =
     new Project()
-      .key("YOURAPP")
-      .name("APP NAME")
-      .description("...");
+      .key("EXAMS")
+      .name("Exam Management");
 
-  private static final String LINKED_REPOSITORY = "YOUR_APP";
+  private static final String LINKED_REPOSITORY = "Online Exams";
 
-  private static final String SLACK_CHANNEL = "#something";
+  private static final String SLACK_CHANNEL = "#project-paperwait";
 
-  public static void main(String[] args) throws Exception {
-    new YourAppPlanSpec().publish();
+  public static void main(String[] args) {
+    new OnlineExamsPlanSpec().publish();
   }
 
   @Override
   protected Collection<Plan> builds() {
     return Collections.singleton(
-      build(PROJECT, "APP", "YOUR_APP")
+      build(PROJECT, "ONLINE", "Online Exams")
         .linkedRepository(LINKED_REPOSITORY)
         .description("Build application")
         .stage(
@@ -57,18 +51,18 @@ public class YourAppPlanSpec extends AbstractWarwickBuildSpec {
                     .checkoutItems(new CheckoutItem().defaultRepository()),
                   new NpmTask()
                     .description("dependencies")
-                    .nodeExecutable("Node 8")
+                    .nodeExecutable("Node 10")
                     .command("ci"),
                   new ScriptTask()
                     .description("Run tests and package")
                     .interpreter(ScriptTaskProperties.Interpreter.BINSH_OR_CMDEXE)
                     .location(ScriptTaskProperties.Location.FILE)
                     .fileFromPath("sbt")
-                    .argument("clean test:compile test integration/clean integration/test snykAuditBackend snykAuditFrontend universal:packageZipTarball")
-                    .environmentVariables("PATH=/usr/nodejs/8/bin"),
+                    .argument("clean integration/clean test:compile test integration/test universal:packageZipTarball")
+                    .environmentVariables("PATH=/usr/nodejs/10/bin"),
                   new NpmTask()
                     .description("JS Tests")
-                    .nodeExecutable("Node 8")
+                    .nodeExecutable("Node 10")
                     .command("run bamboo")
                 )
                 .finalTasks(
@@ -88,6 +82,11 @@ public class YourAppPlanSpec extends AbstractWarwickBuildSpec {
                     .name("Integration")
                     .copyPattern("**")
                     .location("it/target/test-html")
+                    .shared(true),
+                  new Artifact()
+                    .name("Integration screenshots")
+                    .copyPattern("**")
+                    .location("it/target/screenshots")
                     .shared(true)
                 )
                 .requirements(
@@ -102,13 +101,22 @@ public class YourAppPlanSpec extends AbstractWarwickBuildSpec {
 
   @Override
   protected Collection<Deployment> deployments() {
-    return Collections.singleton(
-      deployment(PROJECT, "APP", "YOUR_APP")
-        .autoPlayEnvironment("Development", "changeme-dev.warwick.ac.uk", "changeme", "dev", SLACK_CHANNEL)
-        .autoPlayEnvironment("Test", "changeme-test.warwick.ac.uk", "changeme", "test", SLACK_CHANNEL)
-        .productionPlayEnvironment("Production", "changeme.warwick.ac.uk", "changeme", SLACK_CHANNEL)
-        .build()
-    );
+    return Collections.emptyList();
+    // TODO OE-3 Requires setup of infra
+//    return Collections.singleton(
+//      deployment(PROJECT, "ONLINE", "Online Exams")
+//        .autoPlayEnvironment("Development", "onlineexams-dev.warwick.ac.uk", "onlineexams", "dev", SLACK_CHANNEL)
+//        .autoPlayEnvironment("Test", "onlineexams-test.warwick.ac.uk", "onlineexams", "test", SLACK_CHANNEL)
+//        .autoPlayEnvironment("Sandbox", "onlineexams-sandbox.warwick.ac.uk", "onlineexams", "sandbox", SLACK_CHANNEL, "master")
+//        .playEnvironment("Production", "onlineexams.warwick.ac.uk", "onlineexams", "prod",
+//          env -> env.notifications(
+//            new Notification()
+//              .type(new DeploymentStartedAndFinishedNotification())
+//              .recipients(slackRecipient(SLACK_CHANNEL))
+//          )
+//        )
+//        .build()
+//    );
   }
 
 }
