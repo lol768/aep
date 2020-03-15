@@ -2,6 +2,10 @@
 import './polyfills';
 
 import $ from 'jquery';
+import 'bootstrap/js/tooltip';
+import 'bootstrap/js/popover';
+import '@universityofwarwick/id7/js/account-popover.jquery';
+
 import * as flexiPicker from './flexi-picker';
 
 require('@universityofwarwick/statuspage-widget/dist/main');

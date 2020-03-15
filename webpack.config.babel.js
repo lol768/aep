@@ -35,6 +35,8 @@ const commonConfig = merge([
       // Fix Webpack global CSP violation https://github.com/webpack/webpack/issues/6461
       new ProvidePlugin({
         global: require.resolve('./build-tooling/global.js'),
+        jQuery: 'jquery',
+        $: 'jquery',
       }),
       new PlayFingerprintsPlugin(),
       new RemovePlugin({
@@ -53,14 +55,6 @@ const commonConfig = merge([
         },
       }),
     ],
-    resolve: {
-      alias: {
-        id7: paths.ID7,
-      },
-    },
-    externals: {
-      jquery: 'jQuery',
-    },
   },
   tooling.lintJS(),
   tooling.transpileJS({
