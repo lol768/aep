@@ -100,6 +100,7 @@ val appDeps = Seq(
 
   "uk.ac.warwick.util" % "warwickutils-core" % warwickUtilsVersion,
   "net.logstash.logback" % "logstash-logback-encoder" % "5.3",
+  "uk.ac.warwick.util" % "warwickutils-mywarwick" % warwickUtilsVersion,
   "uk.ac.warwick.util" % "warwickutils-service" % warwickUtilsVersion,
 
   "com.github.mumoshu" %% "play2-memcached-play28" % "0.11.0",

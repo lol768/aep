@@ -52,11 +52,13 @@ class NavigationServiceImpl extends NavigationService {
   private lazy val masquerade = NavigationPage("Masquerade", controllers.sysadmin.routes.MasqueradeController.masquerade())
   private lazy val emailQueue = NavigationPage("Email queue", controllers.sysadmin.routes.EmailQueueController.queued())
   private lazy val sentEmails = NavigationPage("View sent emails", controllers.sysadmin.routes.ViewEmailsController.listAll())
+  private lazy val myWarwickQueue = NavigationPage("My Warwick queue", controllers.sysadmin.routes.MyWarwickQueueController.queued())
 
   private lazy val sysadmin =
     NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), Seq(
       emailQueue,
       sentEmails,
+      myWarwickQueue,
       masquerade,
     ))
 

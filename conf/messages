@@ -1,0 +1,12 @@
+# Validation messages
+
+
+
+# Flash messages
+
+flash.emails.queued=Queued {0} emails.
+flash.mywarwick.queued=Queued My Warwick alert.
+
+# Overrides of keys in messages.default
+
+error.required=This field is required.
