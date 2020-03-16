@@ -17,10 +17,13 @@ class HealthChecksModule(environment: Environment, configuration: Configuration)
     val healthchecks = ScalaMultibinder.newSetBinder[ServiceHealthcheckProvider](binder)
 
     healthchecks.addBinding.to[UptimeHealthCheck]
+    healthchecks.addBinding.to[EncryptedObjectStorageHealthCheck]
     healthchecks.addBinding.to[OutgoingEmailQueueHealthCheck]
     healthchecks.addBinding.to[OutgoingEmailDelayHealthCheck]
+    healthchecks.addBinding.to[VirusScanServiceHealthCheck]
 
     healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("default"))
+    healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("fileUploadsExecutionContext", "uploads.threads.fileUploadsExecutionContext"))
     configuration.get[Configuration]("threads").subKeys.toSeq.foreach { name =>
       healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck(name))
     }

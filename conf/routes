@@ -30,6 +30,8 @@ POST        /sysadmin/mywarwick/reschedule          @controllers.sysadmin.MyWarw
 
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()
+POST        /sysadmin/test/upload                   @controllers.sysadmin.SysadminTestController.uploadFile()
+GET         /sysadmin/test/:id/download             @controllers.sysadmin.SysadminTestController.downloadFile(id: UUID)
 
 ## Fallbacks ##
 

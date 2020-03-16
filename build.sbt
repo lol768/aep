@@ -95,6 +95,7 @@ val appDeps = Seq(
   "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
   "ch.qos.logback" % "logback-access" % "1.2.3",
   "uk.ac.warwick.play-utils" %% "core" % playUtilsVersion,
+  "uk.ac.warwick.play-utils" %% "fileuploads" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "healthcheck" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "slick" % playUtilsVersion,
 
@@ -183,3 +184,8 @@ webpack := {
 runner := runner.dependsOn(webpack).value
 dist := dist.dependsOn(webpack).value
 stage := stage.dependsOn(webpack).value
+
+// Generate a new AES key for object store encryption
+lazy val newEncryptionKey = taskKey[Unit]("Generate and print a new encryption key")
+newEncryptionKey := println(EncryptionKey.generate())
+

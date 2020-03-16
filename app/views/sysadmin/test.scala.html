@@ -1,8 +1,13 @@
 @import controllers.sysadmin.SysadminTestController.{EmailFormData, MyWarwickFormData}
+@import org.apache.tika.mime.MediaType
+@import warwick.core.helpers.JavaTime
+@import warwick.fileuploads.UploadedFile
 
 @(
   emailForm: Form[EmailFormData],
   myWarwickForm: Form[MyWarwickFormData],
+  files: Seq[UploadedFile],
+  supportedMimeTypes: Seq[MediaType],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @admin("Sysadmin tests") {
@@ -59,4 +64,40 @@
       <button type="submit" class="btn btn-primary">Send email</button>
     }
   }
+
+  <h2>Uploaded files</h2>
+
+  @b3.vertical.formCSRF(action = controllers.sysadmin.routes.SysadminTestController.uploadFile(), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
+    @b3.free(Symbol("_label") -> "Attach a file") {
+      <input type="file" class="form-control" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
+    }
+
+    @b3.free(Symbol("_class") -> "spaced-buttons") {
+      <button type="submit" class="btn btn-primary">Upload</button>
+    }
+  }
+
+  <table class="table table-default">
+    <caption>Uploaded files</caption>
+    <thead>
+      <tr>
+        <th>Filename</th>
+        <th>Size</th>
+        <th>Content type</th>
+        <th>Uploaded by</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+    @files.map { file =>
+      <tr>
+        <td><a href="@controllers.sysadmin.routes.SysadminTestController.downloadFile(file.id)">@file.fileName</a></td>
+        <td>@helpers.humanReadableSize(file.contentLength)</td>
+        <td>@file.contentType</td>
+        <td>@file.uploadedBy.string</td>
+        <td>@JavaTime.Relative(file.created)</td>
+      </tr>
+    }
+    </tbody>
+  </table>
 }

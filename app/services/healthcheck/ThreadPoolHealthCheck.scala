@@ -18,15 +18,19 @@ object ThreadPoolHealthCheck {
   def name(id:String) = s"thread-pool-${id.toLowerCase}"
 }
 
-class ThreadPoolHealthCheck(id: String)
+class ThreadPoolHealthCheck(id: String, configLocation: String)
   extends ServiceHealthcheckProvider(new ServiceHealthcheck(name(id), Status.Unknown, now)) {
+
+  def this(id: String) {
+    this(id, s"threads.$id")
+  }
 
   @Inject private var actorSystem: ActorSystem = _
 
   // The thread pool we're inspecting
   private lazy val dispatcher = id match {
     case "default" => actorSystem.dispatcher
-    case _ => actorSystem.dispatchers.lookup(s"threads.$id")
+    case _ => actorSystem.dispatchers.lookup(configLocation)
   }
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
