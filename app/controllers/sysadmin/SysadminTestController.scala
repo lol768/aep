@@ -1,17 +1,22 @@
 package controllers.sysadmin
 
+import java.util.UUID
+
 import controllers.BaseController
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.libs.mailer.{Attachment, Email}
-import play.api.mvc.{Action, AnyContent}
+import play.api.mvc.{Action, AnyContent, MultipartFormData}
 import services._
 import helpers.StringUtils._
 import org.quartz.Scheduler
 import uk.ac.warwick.util.mywarwick.MyWarwickService
 import uk.ac.warwick.util.mywarwick.model.request.Activity
+import warwick.core.helpers.ServiceResults
+import warwick.fileuploads.UploadedFileControllerHelper
+import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.sso.{GroupName, UserLookupService, Usercode}
 
 import scala.jdk.CollectionConverters._
@@ -75,13 +80,17 @@ class SysadminTestController @Inject()(
   userLookupService: UserLookupService,
   myWarwickService: MyWarwickService,
   scheduler: Scheduler,
+  uploadedFileService: UploadedFileService,
+  uploadedFileControllerHelper: UploadedFileControllerHelper,
 )(implicit executionContext: ExecutionContext) extends BaseController {
 
   import SysadminTestController._
   import securityService._
 
-  def home: Action[AnyContent] = RequireSysadmin { implicit request =>
-    Ok(views.html.sysadmin.test(emailForm, myWarwickForm))
+  def home: Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    uploadedFileService.list().successMap { files =>
+      Ok(views.html.sysadmin.test(emailForm, myWarwickForm, files, uploadedFileControllerHelper.supportedMimeTypes))
+    }
   }
 
   def sendEmail: Action[AnyContent] = RequireSysadmin.async { implicit request =>
@@ -103,6 +112,17 @@ class SysadminTestController @Inject()(
         redirectHome.flashing("success" -> Messages("flash.mywarwick.queued"))
       }
     )
+  }
+
+  def uploadFile: Action[MultipartFormData[TemporaryUploadedFile]] = RequireSysadmin(uploadedFileControllerHelper.bodyParser).async { implicit request =>
+    val files = request.body.files.map(_.ref)
+    ServiceResults.futureSequence(files.map { ref => uploadedFileService.store(ref.in, ref.metadata) }).successMap { files =>
+      redirectHome.flashing("success" -> Messages("flash.files.uploaded", files.size))
+    }
+  }
+
+  def downloadFile(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile)
   }
 
   private val redirectHome = Redirect(controllers.sysadmin.routes.SysadminTestController.home())

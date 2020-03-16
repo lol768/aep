@@ -4,6 +4,8 @@ import com.typesafe.config.Config
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.basic.{BasicProfile, DatabaseConfig}
+import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
+import warwick.fileuploads.UploadedFileSave
 import warwick.sso.{Department => _, _}
 
 object Fixtures {
@@ -42,6 +44,22 @@ object Fixtures {
       universityId = Some(UniversityID("1700003")),
       name = Name(Some("Staff"), Some("User1"))
     )
+  }
+
+  object uploadedFiles {
+    import helpers.FileResourceUtils._
+
+    object specialJPG {
+      val path = "/night-heron-500-beautiful.jpg"
+      val uploadedFileSave = UploadedFileSave(path, 8832L, "image/jpeg")
+      def temporaryUploadedFile = TemporaryUploadedFile("file", byteSourceResource(path), uploadedFileSave)
+    }
+
+    object homeOfficeStatementPDF {
+      val path = "/home-office-statement.pdf"
+      val uploadedFileSave = UploadedFileSave(path, 8153L, "application/pdf")
+      def temporaryUploadedFile = TemporaryUploadedFile("file", byteSourceResource(path), uploadedFileSave)
+    }
   }
 
 

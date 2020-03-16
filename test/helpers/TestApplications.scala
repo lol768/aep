@@ -9,6 +9,7 @@ import play.api.routing.Router
 import play.api.{Application, Configuration, Environment}
 import routes.EmptyRouter
 import uk.ac.warwick.sso.client.SSOClientHandler
+import uk.ac.warwick.util.virusscan.VirusScanService
 import warwick.accesslog.LogbackAccessModule
 import warwick.sso._
 
@@ -64,6 +65,9 @@ object TestApplications extends MockitoSugar {
 
         // Allows putting test versions of migrations under test/resources/evolutions/default
         bind[EvolutionsReader].toInstance(new ClassLoaderEvolutionsReader),
+
+        // Because we don't need to check our lovely files for viruses
+        bind[VirusScanService].to[ThisIsFineVirusScanService],
       )
 
   def full(defaultUser: Option[User] = None, additionalConfiguration: Map[String, Any] = Map.empty): Application =
