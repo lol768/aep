@@ -7,7 +7,7 @@
   activities: Seq[QueuedMyWarwickActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@main("My Warwick activity queue") {
+@admin("My Warwick activity queue") {
   <table class="table table-default">
     <thead>
       <tr>

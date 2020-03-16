@@ -1,0 +1,152 @@
+@(
+  title: String = "",
+)(content: Html)(implicit context: RequestContext)
+
+<!DOCTYPE html>
+<html lang="en-GB" class="no-js">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    @context.csrfHelper.metaElementToken
+    @context.csrfHelper.metaElementHeader
+
+    <link rel="apple-touch-icon" sizes="180x180" href="@routes.Assets.versioned("images/apple-touch-icon.png")">
+    <link rel="icon" type="image/png" sizes="32x32" href="@routes.Assets.versioned("images/favicon-32x32.png")">
+    <link rel="icon" type="image/png" sizes="16x16" href="@routes.Assets.versioned("images/favicon-16x16.png")">
+    <link rel="manifest" href="@routes.Assets.versioned("images/site.webmanifest")">
+    <link rel="mask-icon" href="@routes.Assets.versioned("images/safari-pinned-tab.svg")" color="#a14418">
+    <link rel="shortcut icon" href="@routes.Assets.versioned("images/favicon.ico")">
+    <meta name="msapplication-TileColor" content="#a14418">
+    <meta name="msapplication-config" content="@routes.Assets.versioned("images/browserconfig.xml")">
+    <meta name="theme-color" content="#a14418">
+
+    <title>@if(!title.isEmpty){@title - }Online Exams</title>
+
+    @* Preload the most popular font type. Agents should be able to decide whether they can use these assets based on the type attribute. *@
+    <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-light-300.woff2")" as="font">
+    <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-regular-400.woff2")" as="font">
+    <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-solid-900.woff2")" as="font">
+    <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-duotone-900.woff2")" as="font">
+
+    <!-- Lato web font -->
+    <link href="//fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic&amp;subset=latin,latin-ext&amp;display=swap" rel="stylesheet" type="text/css" crossorigin="anonymous">
+
+    <!-- ID7 -->
+    <link rel='stylesheet' href='@routes.Assets.versioned("style.css")'>
+  </head>
+  <body>
+    <div class="id7-left-border"></div>
+    <div class="id7-fixed-width-container">
+      <a class="sr-only sr-only-focusable" href="#main">Skip to main content</a>
+
+      <header class="id7-page-header">
+        @if(context.isMasquerading) {
+          <div id="masquerade-notice" class="sysadmin-only-content">
+            Masquerading as <strong>@context.user.map(_.name.full)</strong> (@context.user.map(_.usercode.string), @context.user.map(_.universityId.map(_.string))). <a href="@controllers.sysadmin.routes.MasqueradeController.masquerade()">Change</a>
+          </div>
+        }
+
+        <div class="id7-utility-masthead">
+          <nav class="id7-utility-bar">
+            <ul>
+              @if(context.user.exists(_.isFound)) {
+                <li>
+                  Signed in as @context.user.map(_.name.full).
+                  <a href="@context.logoutUrl">
+                    Sign out
+                  </a>
+                </li>
+              } else {
+                <li>
+                  <a href="@context.loginUrl">Sign in</a>
+                </li>
+              }
+            </ul>
+          </nav>
+
+          <div class="id7-masthead">
+            <div class="id7-masthead-contents">
+              <div class="clearfix">
+                <div class="id7-logo-column">
+                  <div class="id7-logo-row">
+                    <div class="id7-logo">
+                      <img src="@routes.Assets.versioned("lib/id7/images/shim.gif")" alt="Warwick">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="id7-header-text clearfix">
+                <h1>
+                  <span class="id7-current-site-link"><a href="@controllers.routes.IndexController.home()">Online Exams</a></span>
+                </h1>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="id7-navigation">
+          @tags.navigation(context)
+        </div>
+      </header>
+
+      <main class="id7-main-content-area" id="main">
+        <header class="id7-main-content-header">
+          <div class="id7-horizontal-divider">
+            <svg xmlns="http://www.w3.org/2000/svg" x="0" y="0" version="1.1" width="1130" height="40" viewBox="0, 0, 1130, 41">
+              <path d="m 0,0.5 1030.48, 0 22.8,40 16.96,-31.4 16.96,31.4 22.8,-40 20,0" class="divider" stroke="#383838" fill="none" />
+            </svg>
+          </div>
+          @if(!title.isEmpty) {
+            <div class="id7-page-title">
+              <h1>@title</h1>
+            </div>
+          }
+        </header>
+
+        <div class="id7-main-content">
+          @context.flash.get("success").map { message =>
+            <div class="alert alert-success">@message</div>
+          }
+          @context.flash.get("warning").map { message =>
+            <div class="alert alert-warning">@message</div>
+          }
+          @context.flash.get("error").map { message =>
+            <div class="alert alert-danger">@message</div>
+          }
+          @content
+        </div>
+      </main>
+
+      <footer class="id7-page-footer id7-footer-divider">
+        <div class="id7-app-footer">
+          <div class="id7-horizontal-divider">
+            <svg xmlns="http://www.w3.org/2000/svg" x="0" y="0" version="1.1" width="1130" height="40" viewBox="0, 0, 1130, 40">
+              <path d="m 0,0 1030.48, 0 22.8,40 16.96,-31.4 16.96,31.4 22.8,-40 20,0" class="divider" stroke="#383838" fill="none" />
+            </svg>
+          </div>
+
+          <div class="id7-footer-utility">
+            <ul>
+              <li>Powered by <a href="https://warwick.ac.uk/onlineexams">Online Exams</a></li>
+              <li><a href="https://warwick.ac.uk/copyright">© @helpers.romanYear()</a></li>
+              <li><a href="https://warwick.ac.uk/terms">Terms</a></li>
+              <li><a href="https://warwick.ac.uk/privacy">Privacy</a></li>
+              <li><a href="https://warwick.ac.uk/cookies">Cookies</a></li>
+              <li><a href="https://warwick.ac.uk/accessibility">Accessibility</a></li>
+            </ul>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <div class="id7-right-border"></div>
+    <div class="statuspage-embed-container"
+    data-api-base="https://status.warwick.ac.uk/api"
+    data-components='["v7j0wp833rz4"]'
+    ></div>
+
+    <script async type='text/javascript' src='@routes.Assets.versioned("render.js")'></script>
+  </body>
+</html>

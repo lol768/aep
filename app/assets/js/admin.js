@@ -1,10 +1,13 @@
 /* eslint-env browser */
+/**
+ * Entrypoint for the admin section of the app.
+ */
+
 import './polyfills';
 
 import $ from 'jquery';
 import * as flexiPicker from './flexi-picker';
-
-require('@universityofwarwick/statuspage-widget/dist/main');
+import '@universityofwarwick/statuspage-widget/dist/main';
 
 /**
  * Attach handlers to all elements inside $scope. All jQuery selects
