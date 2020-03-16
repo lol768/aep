@@ -73,6 +73,9 @@
               <option name="routesImports">
                 <list>
                   <option value="controllers.Assets.Asset" />
+                  <option value="system.routes.PathBindables._" />
+                  <option value="system.routes.QueryStringBindables._" />
+                  <option value="system.routes.Types._" />
                 </list>
               </option>
               <option name="uri" value="$PROJECT_DIR$" />

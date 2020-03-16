@@ -5,7 +5,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json.{JsValue, Json}
 import slick.jdbc.{JdbcProfile, JdbcType}
-import warwick.sso.{UniversityID, Usercode}
+import warwick.sso.{GroupName, UniversityID, Usercode}
 
 /**
   * Defines custom types that Slick can use to bind things directly to a database column.
@@ -32,10 +32,15 @@ class CustomJdbcTypes @Inject() (
     s => UniversityID(s)
   )
 
+  implicit val groupNameTypeMapper: JdbcType[GroupName] = MappedColumnType.base[GroupName, String](
+    g => g.string,
+    s => GroupName(s)
+  )
+
   implicit val jsonTypeMapper: JdbcType[JsValue] = MappedColumnType.base[JsValue, String](Json.stringify(_).replace("\\u0000", ""), Json.parse)
 
   implicit val symbolTypeMapper: JdbcType[Symbol] = MappedColumnType.base[Symbol, String](_.name, Symbol.apply)
 
   // Example enum
-  implicit val colour: JdbcType[Colour] = mappedColumnTypeForEnum(Colour)
+  implicit lazy val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)
 }

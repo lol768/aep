@@ -1,0 +1,28 @@
+@import controllers.sysadmin.SysadminTestController.EmailFormData
+
+@(
+  emailForm: Form[EmailFormData],
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@main("Sysadmin tests") {
+  <h2>Send test email</h2>
+
+  @b3.vertical.formCSRF(action = controllers.sysadmin.routes.SysadminTestController.sendEmail()) { implicit vfc =>
+    @b3.text(emailForm("to"),
+      Symbol("_label") -> "Receipient user",
+      Symbol("class") -> "flexi-picker",
+      Symbol("data-include-groups") -> "false",
+      Symbol("placeholder") -> "Name or usercode",
+      Symbol("autofocus") -> true,
+      Symbol("autocomplete") -> "off"
+    )
+
+    @b3.email(emailForm("email.from"), Symbol("_label") -> "From", Symbol("autocomplete") -> "off")
+    @b3.text(emailForm("email.subject"), Symbol("_label") -> "Subject", Symbol("autocomplete") -> "off")
+    @b3.textarea(emailForm("email.bodyText"), Symbol("_label") -> "Message", Symbol("rows") -> 6)
+
+    @b3.free(Symbol("_class") -> "spaced-buttons") {
+      <button type="submit" class="btn btn-primary">Send email</button>
+    }
+  }
+}
