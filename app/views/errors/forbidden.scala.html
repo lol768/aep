@@ -1,6 +1,6 @@
 @(identity: Option[String])(implicit context: RequestContext)
 
-@main("Permission Denied") {
+@frontend("Permission Denied") {
 
   <p>
     @identity.map { name =>

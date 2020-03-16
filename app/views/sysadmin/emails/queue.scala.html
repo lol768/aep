@@ -6,7 +6,7 @@
   emails: Seq[(OutgoingEmail, Option[Trigger.TriggerState])]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@main("Outgoing email queue") {
+@admin("Outgoing email queue") {
   <table class="table table-default">
     <thead>
       <tr>

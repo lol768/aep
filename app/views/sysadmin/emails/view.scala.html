@@ -5,7 +5,7 @@
   referer: String
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@main("View email") {
+@admin("View email") {
 
   @if(emailOpt.isEmpty) {
     <p>Sorry, unable to find the email</p>

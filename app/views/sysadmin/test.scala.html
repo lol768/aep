@@ -5,7 +5,7 @@
   myWarwickForm: Form[MyWarwickFormData],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@main("Sysadmin tests") {
+@admin("Sysadmin tests") {
   <h2>Send test email</h2>
 
   @b3.vertical.formCSRF(action = controllers.sysadmin.routes.SysadminTestController.sendEmail()) { implicit vfc =>
