@@ -1,7 +1,8 @@
-@import controllers.sysadmin.SysadminTestController.EmailFormData
+@import controllers.sysadmin.SysadminTestController.{EmailFormData, MyWarwickFormData}
 
 @(
   emailForm: Form[EmailFormData],
+  myWarwickForm: Form[MyWarwickFormData],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @main("Sysadmin tests") {
@@ -20,6 +21,39 @@
     @b3.email(emailForm("email.from"), Symbol("_label") -> "From", Symbol("autocomplete") -> "off")
     @b3.text(emailForm("email.subject"), Symbol("_label") -> "Subject", Symbol("autocomplete") -> "off")
     @b3.textarea(emailForm("email.bodyText"), Symbol("_label") -> "Message", Symbol("rows") -> 6)
+
+    @b3.free(Symbol("_class") -> "spaced-buttons") {
+      <button type="submit" class="btn btn-primary">Send email</button>
+    }
+  }
+
+  <h2>Send test My Warwick activity</h2>
+
+  @b3.vertical.formCSRF(action = controllers.sysadmin.routes.SysadminTestController.sendMyWarwick()) { implicit vfc =>
+    @b3.text(myWarwickForm("user"),
+      Symbol("_label") -> "Receipient user",
+      Symbol("class") -> "flexi-picker",
+      Symbol("data-include-groups") -> "false",
+      Symbol("placeholder") -> "Name or usercode",
+      Symbol("autofocus") -> true,
+      Symbol("autocomplete") -> "off"
+    )
+
+    @b3.text(myWarwickForm("group"),
+      Symbol("_label") -> "Receipient group",
+      Symbol("class") -> "flexi-picker",
+      Symbol("data-include-groups") -> "true",
+      Symbol("data-include-users") -> "false",
+      Symbol("placeholder") -> "Group name",
+      Symbol("autofocus") -> true,
+      Symbol("autocomplete") -> "off"
+    )
+
+    @b3.text(myWarwickForm("title"), Symbol("_label") -> "Title", Symbol("autocomplete") -> "off")
+    @b3.text(myWarwickForm("url"), Symbol("_label") -> "URL", Symbol("autocomplete") -> "off")
+    @b3.text(myWarwickForm("text"), Symbol("_label") -> "Text", Symbol("autocomplete") -> "off")
+    @b3.text(myWarwickForm("activityType"), Symbol("_label") -> "Activity type", Symbol("autocomplete") -> "off")
+    @b3.checkbox(myWarwickForm("alert"), Symbol("_text") -> "Send as an alert instead of an activity")
 
     @b3.free(Symbol("_class") -> "spaced-buttons") {
       <button type="submit" class="btn btn-primary">Send email</button>

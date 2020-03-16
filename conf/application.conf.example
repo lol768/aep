@@ -24,6 +24,11 @@ sso-client {
   }
 }
 
+mywarwick.instances.0.baseUrl = "https://my-dev.warwick.ac.uk"
+mywarwick.instances.0.providerId = "..."
+mywarwick.instances.0.userName = "..."
+mywarwick.instances.0.password = "..."
+
 // Get these from mailtrap.io
 play.mailer {
   user = "..."

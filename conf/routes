@@ -25,8 +25,11 @@ GET         /sysadmin/sent-emails                   @controllers.sysadmin.ViewEm
 GET         /sysadmin/sent-emails/:id               @controllers.sysadmin.ViewEmailsController.viewEmail(id: UUID)
 GET         /sysadmin/emails                        @controllers.sysadmin.EmailQueueController.queued()
 POST        /sysadmin/emails/:id                    @controllers.sysadmin.EmailQueueController.enqueue(id: UUID)
+GET         /sysadmin/mywarwick                     @controllers.sysadmin.MyWarwickQueueController.queued()
+POST        /sysadmin/mywarwick/reschedule          @controllers.sysadmin.MyWarwickQueueController.reschedule(triggerName: String, triggerGroup: String)
 
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
+POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()
 
 ## Fallbacks ##
 
