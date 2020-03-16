@@ -26,7 +26,7 @@ updateOptions := updateOptions.value.withCachedResolution(true)
 lazy val root = (project in file("."))
   .enablePlugins(WarwickProject, PlayScala)
   .settings(
-    name := """play-app-template""",
+    name := """onlineexams""",
     packageZipTarball in Universal := (packageZipTarball in Universal).dependsOn(webpack).value,
     libraryDependencies ++= (appDeps ++ testDeps).map(excludeBadTransitiveDeps),
     PlayKeys.devSettings := Seq("play.server.http.port" -> "8080"),
