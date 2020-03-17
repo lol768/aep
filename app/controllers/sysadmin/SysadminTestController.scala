@@ -93,6 +93,14 @@ class SysadminTestController @Inject()(
     }
   }
 
+  def uploadTest: Action[AnyContent] = RequireSysadmin { implicit request =>
+    Ok(views.html.sysadmin.uploadExample())
+  }
+
+  def receiveUpload: Action[AnyContent] = RequireSysadmin { implicit request =>
+    Ok
+  }
+
   def sendEmail: Action[AnyContent] = RequireSysadmin.async { implicit request =>
     emailForm.bindFromRequest().fold(
       _ => Future.successful(BadRequest),
