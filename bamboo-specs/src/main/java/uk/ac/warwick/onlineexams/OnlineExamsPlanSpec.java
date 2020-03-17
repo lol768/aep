@@ -101,12 +101,10 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
 
   @Override
   protected Collection<Deployment> deployments() {
-    return Collections.emptyList();
-    // TODO OE-3 Requires setup of infra
-//    return Collections.singleton(
-//      deployment(PROJECT, "ONLINE", "Online Exams")
-//        .autoPlayEnvironment("Development", "onlineexams-dev.warwick.ac.uk", "onlineexams", "dev", SLACK_CHANNEL)
-//        .autoPlayEnvironment("Test", "onlineexams-test.warwick.ac.uk", "onlineexams", "test", SLACK_CHANNEL)
+    return Collections.singleton(
+      deployment(PROJECT, "ONLINE", "Online Exams")
+        .autoPlayEnvironment("Development", "onlineexams-dev.warwick.ac.uk", "onlineexams", "dev", SLACK_CHANNEL)
+        .autoPlayEnvironment("Test", "onlineexams-test.warwick.ac.uk", "onlineexams", "test", SLACK_CHANNEL)
 //        .autoPlayEnvironment("Sandbox", "onlineexams-sandbox.warwick.ac.uk", "onlineexams", "sandbox", SLACK_CHANNEL, "master")
 //        .playEnvironment("Production", "onlineexams.warwick.ac.uk", "onlineexams", "prod",
 //          env -> env.notifications(
@@ -115,8 +113,8 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
 //              .recipients(slackRecipient(SLACK_CHANNEL))
 //          )
 //        )
-//        .build()
-//    );
+        .build()
+    );
   }
 
 }
