@@ -11,6 +11,7 @@
 
 import log from './log';
 import UploadWithProgress from './upload-with-progress';
+import './polyfills';
 
 // dynamic import, fire and forget.
 /* eslint-ignore no-unused-expressions */
