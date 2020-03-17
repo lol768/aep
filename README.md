@@ -20,6 +20,11 @@ Getting started
   * Set `virusscan.api.key`
 * Run the application with `./sbt run`
 
+ESLint
+------
+
+Fix with ` node_modules/eslint/bin/eslint.js -c .eslintrc.json --fix app/assets/js/`
+
 Integration tests
 -----------------
 
