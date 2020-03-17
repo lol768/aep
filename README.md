@@ -23,7 +23,7 @@ Getting started
 ESLint
 ------
 
-Fix with `node_modules/.bin/eslint -c .eslintrc.json --fix app/assets/js/`
+Test with `npm run lint`, fix with `npm run lint-fix`.
 
 Integration tests
 -----------------
