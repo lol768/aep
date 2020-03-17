@@ -121,10 +121,11 @@ export default class UploadWithProgress {
         childList: true,
         subtree: true,
       });
+    } else {
+      // IE9 +
+      document.addEventListener('DOMContentLoaded', () => {
+        this.registerEventListeners(this.container);
+      });
     }
-    // We have to do this even on page load, because our code executes too late
-    // IE9 +
-    log('DOMContentLoaded');
-    this.registerEventListeners(this.container);
   }
 }
