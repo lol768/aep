@@ -64,7 +64,7 @@ val enumeratumPlayVersion = "1.5.17"
 val enumeratumSlickVersion = "1.5.16"
 val playUtilsVersion = "1.46"
 val ssoClientVersion = "2.81"
-val warwickUtilsVersion = "20200221"
+val warwickUtilsVersion = "20200310"
 
 val appDeps = Seq(
   guice,

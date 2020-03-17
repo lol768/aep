@@ -9,6 +9,7 @@
  *  - if it isn't essential for page, load dynamically (import() call returning Promise)
  */
 
+import './polyfills';
 import log from './log';
 
 // dynamic import, fire and forget.

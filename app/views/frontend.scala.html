@@ -147,6 +147,12 @@
     data-components='["v7j0wp833rz4"]'
     ></div>
 
-    <script async type='text/javascript' src='@routes.Assets.versioned("render.js")'></script>
+    @defining(helpers.AssetSwitching.bundleType(context)) { bundleType =>
+      @if(bundleType == "modern") {
+        <script type='text/javascript' src='@routes.Assets.versioned("render-modern.js")'></script>
+      } else {
+        <script type='text/javascript' src='@routes.Assets.versioned("render.js")'></script>
+      }
+    }
   </body>
 </html>
