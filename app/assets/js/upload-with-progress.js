@@ -39,7 +39,6 @@ export default class UploadWithProgress {
    * @private
    */
   attachFormListeners(element) {
-    log('Attaching form listeners to element', element);
     element.setAttribute('data-attached', true);
     element.addEventListener('submit', (formSubmitEvent) => {
       const formElement = formSubmitEvent.target;
@@ -90,7 +89,6 @@ export default class UploadWithProgress {
   registerEventListeners(targetElement) {
     // polyfill - NodeList#forEach
     targetElement.querySelectorAll('form.upload-progress:not([data-attached])').forEach((el) => {
-      log('Found form candidate');
       this.attachFormListeners(el);
     });
   }
@@ -102,16 +100,13 @@ export default class UploadWithProgress {
    * dynamically.
    */
   initialise() {
-    log('initialise() in UploadWithProgress');
     if (typeof MutationObserver !== 'undefined') {
       // Should exist in IE11
       const observer = new MutationObserver((objects) => {
         // expect Babel for this
         objects.forEach((mutationRecord) => {
           if (mutationRecord.type === 'childList') {
-            log('Found MutationRecord');
             for (let i = 0; i < mutationRecord.target.children.length; i += 1) {
-              log('Found child', mutationRecord.target.children[i]);
               this.registerEventListeners(mutationRecord.target.children[i]);
             }
           }
