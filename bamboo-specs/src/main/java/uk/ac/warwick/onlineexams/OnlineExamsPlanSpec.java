@@ -29,7 +29,7 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
 
   private static final String LINKED_REPOSITORY = "Online Exams";
 
-  private static final String SLACK_CHANNEL = "#project-paperwait";
+  private static final String SLACK_CHANNEL = "#onlineexams";
 
   public static void main(String[] args) {
     new OnlineExamsPlanSpec().publish();

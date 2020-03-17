@@ -10,10 +10,20 @@
  */
 
 import './polyfills';
-import log from './log';
+import * as log from './log';
+import UploadWithProgress from './upload-with-progress';
 
 // dynamic import, fire and forget.
 /* eslint-ignore no-unused-expressions */
 import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspage-widget/dist/main').then(() => {
-  log('statuspage-widget script loaded');
+  log.info('statuspage-widget script loaded');
 });
+
+// not doing a dynamic import at the moment, since this seems reasonably critical
+// (if relevant to the page)
+
+(new UploadWithProgress(document, () => {
+  log.info('Upload success callback');
+}, () => {
+  log.warn('Upload failure callback');
+})).initialise();
