@@ -13,6 +13,7 @@ import './polyfills';
 import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
+import WebSocketConnection from './web-sockets';
 
 // dynamic import, fire and forget.
 /* eslint-ignore no-unused-expressions */
@@ -28,3 +29,12 @@ import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspa
 }, () => {
   log.warn('Upload failure callback');
 })).initialise();
+
+import('./web-sockets').then(() => {
+  const websocket = new WebSocketConnection(`wss://${window.location.host}/Websocket`, () => {
+  }, () => {
+  }, () => {
+  }, () => {
+  });
+  websocket.connect();
+});
