@@ -1,23 +1,23 @@
 package domain.dao
 
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
-import domain.{Assessment, CustomJdbcTypes, ExtendedPostgresProfile}
+import domain.Assessment.{AssessmentType, Brief}
+import domain._
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import play.api.libs.json.JsValue
-import warwick.sso.Usercode
-import java.time.Duration
+
 import scala.concurrent.ExecutionContext
 
-trait AssessmentTable {
+trait AssessmentsTable {
   self: HasDatabaseConfigProvider[ExtendedPostgresProfile] =>
 
   import profile.api._
 
   val jdbcTypes: CustomJdbcTypes
+
   import jdbcTypes._
 
   /**
@@ -29,14 +29,15 @@ trait AssessmentTable {
     def code = column[String]("code")
     def startTime = column[OffsetDateTime]("start_time")
     def duration = column[Duration]("duration")
-    def assesmentType = column[AssessmentType]("assessment_type")
+    def assessmentType = column[AssessmentType]("assessment_type")
     def brief = column[Brief]("brief")
 
-    def * = (id, code, startTime, duration, assesmentType, brief).mapTo[Assesment]
+    def * = (id, code, startTime, duration, assessmentType, brief).mapTo[Assessment]
   }
 
-  val assessments = TableQuery[Assessment]
+  val assessments = TableQuery[Assessments]
 }
+
 
 @ImplementedBy(classOf[AssessmentDaoImpl])
 trait AssessmentDao {
@@ -54,7 +55,6 @@ class AssessmentDaoImpl @Inject()(
   val jdbcTypes: CustomJdbcTypes
 )(implicit ec: ExecutionContext) extends AssessmentDao with AssessmentsTable with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
-  import jdbcTypes._
 
   override def insert(assessment: Assessment): DBIO[Assessment] =
     (assessments += assessment).map(_ => assessment)

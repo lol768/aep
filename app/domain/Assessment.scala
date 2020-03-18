@@ -1,13 +1,12 @@
 package domain
 
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
-import Assessment.AssessmentType
-import Assessment.Brief
-import enumeratum.{EnumEntry, PlayEnum}
-import warwick.fileuploads.UploadedFile
 
-import java.time.Duration
+import domain.Assessment.{AssessmentType, Brief}
+import enumeratum.{EnumEntry, PlayEnum}
+import play.api.libs.json.{Json, OFormat}
+
 import scala.collection.immutable
 
 case class Assessment(
@@ -20,9 +19,14 @@ case class Assessment(
 )
 
 object Assessment {
+  def tupled = (apply _).tupled
+
   sealed trait AssessmentType extends EnumEntry
+
   object AssessmentType extends PlayEnum[AssessmentType] {
+
     case object Moodle extends AssessmentType
+
     case object OnlineExams extends AssessmentType
 
     val values: immutable.IndexedSeq[AssessmentType] = findValues
@@ -33,5 +37,10 @@ object Assessment {
     fileIds: Seq[UUID],
     url: Option[String],
   )
+
+  object Brief {
+    implicit val format: OFormat[Brief] = Json.format[Brief]
+  }
+
 }
 

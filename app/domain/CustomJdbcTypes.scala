@@ -1,12 +1,14 @@
 package domain
 
-import Assessment.AssessmentType
+import domain.Assessment.{AssessmentType, Brief}
 import enumeratum.SlickEnumSupport
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{Format, JsValue, Json, OFormat}
 import slick.jdbc.{JdbcProfile, JdbcType}
 import warwick.sso.{GroupName, UniversityID, Usercode}
+
+import scala.reflect.ClassTag
 
 /**
   * Defines custom types that Slick can use to bind things directly to a database column.
@@ -14,7 +16,7 @@ import warwick.sso.{GroupName, UniversityID, Usercode}
   * profile, which can vary. Inject this into your DAO and import from there.
   */
 @Singleton
-class CustomJdbcTypes @Inject() (
+class CustomJdbcTypes @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider
 ) extends SlickEnumSupport {
 
@@ -46,4 +48,16 @@ class CustomJdbcTypes @Inject() (
   implicit lazy val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)
   implicit lazy val uploadedFileOwnerMapper: JdbcType[UploadedFileOwner] = mappedColumnTypeForEnum(UploadedFileOwner)
   implicit val assessmentTypeTypeMapper: JdbcType[AssessmentType] = mappedColumnTypeForEnum(AssessmentType)
+
+  /** Maps a column to a specific class via its implicit JSON conversions */
+  private def jsonTypeMapper[T: ClassTag](implicit ev: Format[T]): JdbcType[T] = MappedColumnType.base[T, JsValue](
+    Json.toJson(_),
+    _.as[T]
+  )
+
+  // For explicitly passing an OFormat
+  private def jsonTypeMapper[T: ClassTag](format: OFormat[T]): JdbcType[T] = jsonTypeMapper[T](implicitly[ClassTag[T]], format)
+
+  // JSON types
+  implicit val briefMapper: JdbcType[Brief] = jsonTypeMapper[Brief]
 }

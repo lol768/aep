@@ -9,6 +9,7 @@ import warwick.slick.jdbctypes.{CustomJdbcDateTypesSupport, CustomStringJdbcType
 trait ExtendedPostgresProfile
   extends ExPostgresProfile
     with PgArraySupport
+    with PgDate2Support
     with CustomStringJdbcTypeSupport
     with CustomJdbcDateTypesSupport
     with FixedPgLocalDateTypeSupport {
@@ -29,6 +30,8 @@ trait ExtendedPostgresProfile
   trait API
     extends super.API
       with ArrayImplicits
+      with DateTimeImplicits
+
 }
 
 object ExtendedPostgresProfile extends ExtendedPostgresProfile
