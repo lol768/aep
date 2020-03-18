@@ -1,8 +1,10 @@
 package domain
 
+import java.time.Duration
+
 import com.github.tminglei.slickpg._
 import slick.basic.Capability
-import slick.jdbc.JdbcCapabilities
+import slick.jdbc.{JdbcCapabilities, JdbcType}
 import warwick.slick.jdbctypes.pg.FixedPgLocalDateTypeSupport
 import warwick.slick.jdbctypes.{CustomJdbcDateTypesSupport, CustomStringJdbcTypeSupport}
 
@@ -29,8 +31,9 @@ trait ExtendedPostgresProfile
 
   trait API
     extends super.API
-      with ArrayImplicits
-      with DateTimeImplicits
+      with ArrayImplicits {
+    implicit val durationTypeMapper: JdbcType[Duration] = new GenericDateJdbcType[Duration]("interval", java.sql.Types.OTHER)
+  }
 
 }
 
