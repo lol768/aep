@@ -26,6 +26,7 @@ browserify-cache*.json
 *.swp
 *ensime*
 *.log
+/.babel-loader-caches
 
 npm-debug.log
 node_modules
