@@ -8,7 +8,9 @@ export default class WebSocketConnection {
    * @param {function} onClose Callback for if connection is closed.
    * @param {function} onData Callback for when JSON data is received.
    */
-  constructor(endpoint, onConnect, onError, onClose, onData) {
+  constructor(endpoint, {
+    onConnect, onError, onClose, onData,
+  } = {}) {
     // polyfill
     if (!endpoint.includes('wss://')) {
       throw new Error(`${endpoint} doesn't look like a valid WebSocket URL`);
@@ -24,13 +26,21 @@ export default class WebSocketConnection {
     const ws = new WebSocket(this.endpoint);
     ws.onmessage = (d) => {
       if ('data' in d) {
-        this.onData(JSON.parse(d.data));
+        if (this.onData) {
+          this.onData(JSON.parse(d.data));
+        }
       }
     };
-    ws.addEventListener('open', this.onConnect);
-    ws.addEventListener('close', this.onClose);
+    if (this.onConnect) {
+      ws.addEventListener('open', this.onConnect);
+    }
+    if (this.onClose) {
+      ws.addEventListener('close', this.onClose);
+    }
     const errorHandler = (e) => {
-      this.onError(e);
+      if (this.onError) {
+        this.onError(e);
+      }
       this.connect();
       log('Disconnected from websocket, trying to reconnect');
     };

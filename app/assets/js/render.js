@@ -30,11 +30,18 @@ import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspa
   log.warn('Upload failure callback');
 })).initialise();
 
-import('./web-sockets').then(() => {
-  const websocket = new WebSocketConnection(`wss://${window.location.host}/Websocket`, () => {
-  }, () => {
-  }, () => {
-  }, () => {
+document.addEventListener('DOMContentLoaded', () => {
+  if (!document.body.classList.contains('connect-ws')) {
+    return;
+  }
+  import('./web-sockets').then(() => {
+    const doNothing = () => {};
+    const websocket = new WebSocketConnection(`wss://${window.location.host}/Websocket`, {
+      onConnect: doNothing,
+      onError: doNothing,
+      onData: doNothing,
+      onClose: doNothing,
+    });
+    websocket.connect();
   });
-  websocket.connect();
 });
