@@ -45,5 +45,6 @@ export default class WebSocketConnection {
       log('Disconnected from websocket, trying to reconnect');
     };
     ws.addEventListener('error', errorHandler);
+    this.ws = ws;
   }
 }

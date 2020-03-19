@@ -18,10 +18,15 @@ POST        /service/flexipicker                    @controllers.FlexiPickerCont
 GET         /                                       @controllers.IndexController.home
 GET         /exams                                  @controllers.ExamsController.index
 
+# Websocket
+GET         /Websocket                              @controllers.WebSocketController.socket
+
+
 ## Sysadmins ##
 
 GET         /sysadmin                               @controllers.sysadmin.SysadminTestController.home()
 GET         /sysadmin/uploadTest                    @controllers.sysadmin.SysadminTestController.uploadTest()
+GET         /sysadmin/websocketTest                 @controllers.WebSocketController.websocketTest()
 POST        /sysadmin/uploadTest/save               @controllers.sysadmin.SysadminTestController.receiveUpload()
 GET         /sysadmin/masquerade                    @controllers.sysadmin.MasqueradeController.masquerade
 GET         /sysadmin/sent-emails                   @controllers.sysadmin.ViewEmailsController.listAll(page: Int ?= 0)

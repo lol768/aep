@@ -22,6 +22,15 @@ trait SecurityService {
 
   def RequireSysadmin: AuthActionBuilder
   def RequireMasquerader: AuthActionBuilder
+
+  /**
+    * An async result that will either do what you ask (A) or fall back to an error Result.
+    * Used as a handler type for websockets.
+    */
+  type TryAccept[A] = Future[Either[Result, A]]
+
+
+  def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A]
 }
 
 @Singleton
@@ -83,4 +92,8 @@ class SecurityServiceImpl @Inject()(
 
   private val unauthorizedResponse =
     Unauthorized(Json.toJson(JsonClientError(status = "unauthorized", errors = Seq("You are not signed in.  You may authenticate through Web Sign-On."))))
+
+  override def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A] =
+    sso.withUser(request)(block)
+
 }

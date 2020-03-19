@@ -1,6 +1,6 @@
 @(
   title: String = "",
-  bodyClass: String = ""
+  extraClasses: Seq[String] = Seq()
 )(content: Html)(implicit context: RequestContext)
 
 <!DOCTYPE html>
@@ -37,7 +37,7 @@
     <!-- ID7 -->
     <link rel='stylesheet' href='@routes.Assets.versioned("style.css")'>
   </head>
-  <body class="@bodyClass">
+  <body class="@(extraClasses.mkString(" "))">
     <div class="id7-left-border"></div>
     <div class="id7-fixed-width-container">
       <a class="sr-only sr-only-focusable" href="#main">Skip to main content</a>
