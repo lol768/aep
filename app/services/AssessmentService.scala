@@ -14,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[AssessmentServiceImpl])
 trait AssessmentService {
-  def list(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+  def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
 }
 
@@ -26,7 +26,7 @@ class AssessmentServiceImpl @Inject()(
   uploadedFileService: UploadedFileService
 )(implicit ec: ExecutionContext) extends AssessmentService {
 
-  override def list(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
+  override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
     daoRunner.run(dao.all).flatMap { storedAssessments =>
       uploadedFileService.get(storedAssessments.flatMap(_.storedBrief.fileIds)).map { uploadedFiles =>
         ServiceResults.success(storedAssessments.map(_.asAssessment(uploadedFiles.map(f => f.id -> f).toMap)))
