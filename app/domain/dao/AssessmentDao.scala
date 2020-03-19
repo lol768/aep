@@ -27,7 +27,7 @@ trait AssessmentsTables extends VersionedTables {
 
   trait CommonProperties { self: Table[_] =>
     def code = column[String]("code")
-    def startTime = column[Option[OffsetDateTime]]("start_time")
+    def startTime = column[Option[OffsetDateTime]]("start_time_utc")
     def duration = column[Duration]("duration")
     def assessmentType = column[AssessmentType]("assessment_type")
     def storedBrief = column[StoredBrief]("brief")
