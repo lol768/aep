@@ -1,6 +1,7 @@
 package domain
 
-import domain.Assessment.{AssessmentType, Brief}
+import domain.Assessment.AssessmentType
+import domain.dao.AssessmentsTables.StoredBrief
 import enumeratum.SlickEnumSupport
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
@@ -59,5 +60,5 @@ class CustomJdbcTypes @Inject()(
   private def jsonTypeMapper[T: ClassTag](format: OFormat[T]): JdbcType[T] = jsonTypeMapper[T](implicitly[ClassTag[T]], format)
 
   // JSON types
-  implicit val briefMapper: JdbcType[Brief] = jsonTypeMapper[Brief]
+  implicit val storedBriefMapper: JdbcType[StoredBrief] = jsonTypeMapper[StoredBrief]
 }

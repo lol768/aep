@@ -1,7 +1,8 @@
 # --- !Ups
 create type ASSESSMENT_TYPE as enum (
     'Moodle',
-    'OnlineExams'
+    'OnlineExams',
+    'QuestionmarkPerception'
 );
 
 CREATE TABLE ASSESSMENT (
