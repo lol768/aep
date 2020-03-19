@@ -20,8 +20,6 @@ case class Assessment(
 )
 
 object Assessment {
-  def tupled = (apply _).tupled
-
   sealed trait AssessmentType extends EnumEntry
 
   object AssessmentType extends PlayEnum[AssessmentType] {
@@ -34,6 +32,7 @@ object Assessment {
 
   case class Brief(
     text: Option[String],
+
     files: Seq[UploadedFile],
     url: Option[String],
   )
