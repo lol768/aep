@@ -19,6 +19,13 @@ object Fixtures {
       email = Some("no-reply@warwick.ac.uk")
     )
 
+    private val baseStudent: User = Users.create(
+      usercode = null,
+      universityId = None,
+      student = true,
+      email = Some("no-reply@warwick.ac.uk")
+    )
+
     val admin1: User = baseStaff.copy(
       usercode = Usercode("admin1"),
       universityId = Some(UniversityID("1200001")),
@@ -43,6 +50,12 @@ object Fixtures {
       usercode = Usercode("staff3"),
       universityId = Some(UniversityID("1700003")),
       name = Name(Some("Staff"), Some("User1"))
+    )
+
+    val student1: User = baseStudent.copy(
+      usercode = Usercode("student1"),
+      universityId = Some(UniversityID("1900001")),
+      name = Name(Some("Student"), Some("User1"))
     )
   }
 
