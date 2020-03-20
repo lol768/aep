@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
       onConnect: () => {
         setVisibilityByClassName('ws-connected', true);
         setVisibilityByClassName('ws-disconnected', false);
+        setVisibilityByClassName('ws-error', false);
       },
       onError: () => {
         setVisibilityByClassName('ws-connected', false);

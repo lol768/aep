@@ -31,7 +31,7 @@ class WebSocketController @Inject()(implicit
     if (request.headers("Origin") == "https://frankenstein.warwick.ac.uk") {
       SecureWebsocket(request) { loginContext: LoginContext =>
         val who = loginContext.user.map(_.usercode).getOrElse("nobody")
-        logger.debug(s"WebSocket opening for $who")
+        logger.info(s"WebSocket opening for $who")
         val flow = ActorFlow.actorRef(out => WebSocketActor.props(loginContext, pubSubActor, out))
         Future.successful(Right(flow))
       }
