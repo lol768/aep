@@ -23,7 +23,7 @@
     <meta name="msapplication-config" content="@routes.Assets.versioned("images/browserconfig.xml")">
     <meta name="theme-color" content="#a14418">
 
-    <title>@if(!title.isEmpty){@title - }Tabula Online Exams</title>
+    <title>@if(!title.isEmpty){@title - }@context.appFullName</title>
 
     @* Preload the most popular font type. Agents should be able to decide whether they can use these assets based on the type attribute. *@
     <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-light-300.woff2")" as="font">
@@ -81,7 +81,7 @@
 
               <div class="id7-header-text clearfix">
                 <h1>
-                  <span class="id7-current-site-link"><a href="@controllers.routes.IndexController.home()">Tabula Online Exams</a></span>
+                  <span class="id7-current-site-link"><a href="@controllers.routes.IndexController.home()">@context.appFullName</a></span>
                 </h1>
               </div>
             </div>

@@ -6,8 +6,8 @@
 @()(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @frontend("Websocket test", Seq("connect-ws")) {
-    <div class="ws-connected hide"><i class="fad fa-signal"></i> You're currently <strong>connected</strong> to the @context.appFullName.</div>
-    <div class="ws-disconnected hide text-danger"><i class="fad fa-signal-slash"></i> You're <strong>disconnected</strong> from the @context.appFullName. We're trying to automatically re-connect..</div>
+    <div class="ws-connected hide"><i class="fad fa-signal"></i> You're currently <strong>connected</strong> to @context.appFullName.</div>
+    <div class="ws-disconnected hide text-danger"><i class="fad fa-signal-slash"></i> You're <strong>disconnected</strong> from @context.appFullName. We're trying to automatically re-connect..</div>
     <div class="ws-error hide text-danger"><i class="fad fa-exclamation-triangle"></i> Something has gone wrong with the @context.appFullName connection.</div>
 
 }
