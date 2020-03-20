@@ -16,6 +16,7 @@ GET         /service/healthcheck                    @warwick.healthcheck.Injecte
 POST        /service/flexipicker                    @controllers.FlexiPickerController.queryJson
 
 GET         /                                       @controllers.IndexController.home
+GET         /exams                                       @controllers.ExamsController.index
 
 ## Sysadmins ##
 
