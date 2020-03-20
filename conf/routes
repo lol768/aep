@@ -19,15 +19,15 @@ GET         /                                       @controllers.IndexController
 GET         /exams                                  @controllers.ExamsController.index
 
 # Websocket
-GET         /Websocket                              @controllers.WebSocketController.socket
+GET         /websocket                              @controllers.WebSocketController.socket
 
 
 ## Sysadmins ##
 
 GET         /sysadmin                               @controllers.sysadmin.SysadminTestController.home()
-GET         /sysadmin/uploadTest                    @controllers.sysadmin.SysadminTestController.uploadTest()
-GET         /sysadmin/websocketTest                 @controllers.WebSocketController.websocketTest()
-POST        /sysadmin/uploadTest/save               @controllers.sysadmin.SysadminTestController.receiveUpload()
+GET         /sysadmin/upload-test                   @controllers.sysadmin.SysadminTestController.uploadTest()
+GET         /sysadmin/websocket-test                @controllers.WebSocketController.websocketTest()
+POST        /sysadmin/upload-test/save              @controllers.sysadmin.SysadminTestController.receiveUpload()
 GET         /sysadmin/masquerade                    @controllers.sysadmin.MasqueradeController.masquerade
 GET         /sysadmin/sent-emails                   @controllers.sysadmin.ViewEmailsController.listAll(page: Int ?= 0)
 GET         /sysadmin/sent-emails/:id               @controllers.sysadmin.ViewEmailsController.viewEmail(id: UUID)

@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   import('./web-sockets').then(() => {
     const doNothing = () => {};
-    const websocket = new WebSocketConnection(`wss://${window.location.host}/Websocket`, {
+    const websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`, {
       onConnect: () => {
         setVisibilityByClassName('ws-connected', true);
         setVisibilityByClassName('ws-disconnected', false);
