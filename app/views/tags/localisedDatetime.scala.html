@@ -6,8 +6,8 @@
 
 <i class="fad fa-clock fa-fw"></i> @JavaTime.Relative(datetime) <span class="text-muted">Europe/London</span><br />
   <span class="jddt"
-  format="shortLocal"
-  millis="@datetime.toInstant.toEpochMilli"
-  servertimezoneoffset="@{TimeZone.getDefault.getOffset(datetime.toInstant.toEpochMilli)}"
-  servertimezonename="@{TimeZone.getDefault.getDisplayName()}"
+  data-format="shortLocal"
+  data-millis="@datetime.toInstant.toEpochMilli"
+  data-server-timezone-offset="@{TimeZone.getDefault.getOffset(datetime.toInstant.toEpochMilli)}"
+  data-server-timezone-name="@{TimeZone.getDefault.getDisplayName()}"
   ></span>

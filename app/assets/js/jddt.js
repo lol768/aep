@@ -233,16 +233,16 @@ export default class JDDT {
    * format="[validFormat]"></span> and populates its innerHTML with the JDDT
    * @private
    * @static
-   * @param {Element} el
+   * @param {HTMLElement} el
    */
   static applyToElement(el) {
-    if (!el.hasAttribute('servertimezoneoffset') || !el.hasAttribute('servertimezonename')) {
-      throw new Error('Element with .jddt class did not have servertimezoneoffset and servertimezonename attributes')
+    if (!el.hasAttribute('data-server-timezone-offset') || !el.hasAttribute('data-server-timezone-name')) {
+      throw new Error('Element with .jddt class did not have data-server-timezone-offset and data-server-timezone-name attributes')
     }
-    this.setServerTimezone(parseInt(el.getAttribute('servertimezoneoffset')), el.getAttribute('servertimezonename'))
-    const millis = parseInt(el.getAttribute('millis'), 10);
-    const format = el.hasAttribute('format')
-      ? el.getAttribute('format')
+    this.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset), el.dataset.serverTimezoneName);
+    const millis = parseInt(el.dataset.millis, 10);
+    const format = el.hasAttribute('data-format')
+      ? el.dataset.format
       : 'longLocal';
 
     if (typeof JDDT.prototype[format] !== 'function') {
@@ -255,8 +255,10 @@ export default class JDDT {
   }
 
   /**
-   * Looks for anything of the format <span class='jddt' millis='[epochmillis]'
-   * format='[validformat]'> and populates its innertext with the formatted date
+   * Looks for anything of the format <span class='jddt' data-millis='[epochmillis]'
+   * data-format='[validformat]' data-server-timezone-offset='[milliseconds]
+   * data-server-timezone-name='[zone name e.g. Europe/London]'> and populates
+   * its innerHTML with the formatted date
    * @param {Node} container
    */
   static initialise(container) {
@@ -267,7 +269,7 @@ export default class JDDT {
         objects.forEach((mutationRecord) => {
           if (mutationRecord.type === 'childList') {
             for (let i = 0; i < mutationRecord.target.children.length; i += 1) {
-              mutationRecord.target.children[i].querySelectorAll('span.jddt[millis]')
+              mutationRecord.target.children[i].querySelectorAll('.jddt[data-millis]')
                 .forEach((jddtElement) => {
                   this.applyToElement(jddtElement);
                 });
@@ -282,7 +284,7 @@ export default class JDDT {
     } else {
       // IE9 +
       document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('span.jddt[millis]').forEach((jddtElement) => {
+        document.querySelectorAll('.jddt[data-millis]').forEach((jddtElement) => {
           this.applyToElement(jddtElement);
         });
       });
