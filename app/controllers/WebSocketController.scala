@@ -30,10 +30,14 @@ class WebSocketController @Inject()(implicit
   def socket: WebSocket = WebSocket.acceptOrResult[JsValue, JsValue] { request =>
     if (securityService.isOriginSafe(request.headers("Origin"))) {
       SecureWebsocket(request) { loginContext: LoginContext =>
-        val who = loginContext.user.map(_.usercode).getOrElse("nobody")
-        logger.info(s"WebSocket opening for $who")
-        val flow = ActorFlow.actorRef(out => WebSocketActor.props(loginContext, pubSubActor, out))
-        Future.successful(Right(flow))
+        loginContext.user.map(_.usercode) match {
+          case Some(usercode) =>
+            logger.info(s"WebSocket opening for ${usercode.string}")
+            val flow = ActorFlow.actorRef(out => WebSocketActor.props(loginContext, pubSubActor, out))
+            Future.successful(Right(flow))
+          case None =>
+            Future.successful(Left(Forbidden("Only logged-in users can connect for live data using a WebSocket")))
+        }
       }
     } else {
       Future.successful(Left(Results.BadRequest("Bad Origin")))

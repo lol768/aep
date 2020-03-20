@@ -101,6 +101,7 @@ class SecurityServiceImpl @Inject()(
     sso.withUser(request)(block)
 
   override def isOriginSafe(origin: String): Boolean = {
-    new java.net.URI(origin).getHost == configuration.getString("shire.sscookie.domain")
+    val uri = new java.net.URI(origin)
+    uri.getHost == configuration.getString("shire.sscookie.domain") && uri.getScheme == "https"
   }
 }

@@ -32,6 +32,7 @@ export default class WebSocketConnection {
       }
       this.ws.close();
     }
+    log(`Connecting to ${this.endpoint}`);
     const ws = new WebSocket(this.endpoint);
     ws.onmessage = (d) => {
       if ('data' in d) {
