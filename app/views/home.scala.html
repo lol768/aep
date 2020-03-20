@@ -1,8 +1,23 @@
+@import views.html.tags.localisedDatetime
+@import warwick.core.helpers.JavaTime
+@import java.time.OffsetDateTime
+@import java.time.LocalDateTime
+@import java.time.ZoneOffset
+@import java.util.TimeZone
 @()(implicit context: RequestContext)
 
 @frontend("Home") {
   <p>Lorem ipsum dolor sit amet</p>
 
+  @localisedDatetime(JavaTime.offsetDateTime)
+  <hr />
+  @localisedDatetime(JavaTime.offsetDateTime.plusDays(1))
+  <hr />
+  @localisedDatetime(JavaTime.offsetDateTime.minusDays(1))
+  <hr />
+  @localisedDatetime(OffsetDateTime.parse("2020-07-01T09:30:00+01:00"))
+
+  @*
   <div class="row">
     <div class="col-lg-6">
       <h2>Random future date</h2>
@@ -66,4 +81,6 @@
       <p><strong>Short:</strong> <span class="jddt" millis="1584796500000" format="shortServerTime"></span></p>
     </div>
   </div>
+
+  *@
 }

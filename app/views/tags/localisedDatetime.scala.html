@@ -1,0 +1,13 @@
+@import java.time.OffsetDateTime
+@import warwick.core.helpers.JavaTime
+@import java.util.TimeZone
+@import java.util.Calendar
+@(datetime: OffsetDateTime)
+
+<i class="fad fa-clock fa-fw"></i> @JavaTime.Relative(datetime) <span class="text-muted">Europe/London</span><br />
+  <span class="jddt"
+  format="shortLocal"
+  millis="@datetime.toInstant.toEpochMilli"
+  servertimezoneoffset="@{TimeZone.getDefault.getOffset(datetime.toInstant.toEpochMilli)}"
+  servertimezonename="@{TimeZone.getDefault.getDisplayName()}"
+  ></span>

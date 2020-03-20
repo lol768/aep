@@ -3,8 +3,8 @@
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TODAY = 'Today';
-const YESTERDAY = 'Yesterday';
-const TOMORROW = 'Tomorrow';
+// const YESTERDAY = 'Yesterday';
+// const TOMORROW = 'Tomorrow';
 const SOME_SUNNY_DAY = '';
 let serverTimezoneOffset = 0; // Offset in minutes, can by updated by server
 let serverTimezoneName = 'GMT'; // Also to be supplied by server
@@ -87,15 +87,15 @@ function relativeDateName(date) {
     return TODAY;
   }
 
-  d.setHours(d.getHours() + 24);
-  if (datesMatch(now, d)) {
-    return YESTERDAY;
-  }
-
-  d.setHours(d.getHours() - 48);
-  if (datesMatch(now, d)) {
-    return TOMORROW;
-  }
+  // d.setHours(d.getHours() + 24);
+  // if (datesMatch(now, d)) {
+  //   return YESTERDAY;
+  // }
+  //
+  // d.setHours(d.getHours() - 48);
+  // if (datesMatch(now, d)) {
+  //   return TOMORROW;
+  // }
 
   return SOME_SUNNY_DAY;
 }
@@ -120,12 +120,16 @@ if (Intl !== undefined && Intl.DateTimeFormat !== undefined) {
  * @returns {string}
  */
 function stringify(date, timezoneName, short) {
+  const currentYear = new Date(Date.now()).getFullYear();
   let dateName = relativeDateName(date);
   if (dateName === '') {
+    let yearString = "";
+    if (date.getFullYear() !== currentYear) {
+      yearString = ` ${short ? `'${date.getFullYear().toString().substring(2, 4)}` : date.getFullYear().toString()}`;
+    }
     dateName = `${short ? days[date.getDay()].substring(0, 3) : days[date.getDay()]} \
     ${th(date.getDate())} \
-    ${short ? months[date.getMonth()].substring(0, 3) : months[date.getMonth()]} \
-    ${short ? `'${date.getFullYear().toString().substring(2, 4)}` : date.getFullYear().toString()},`;
+    ${short ? months[date.getMonth()].substring(0, 3) : months[date.getMonth()]}${yearString}, `;
   }
   return `<i class="fad fa-clock fa-fw" aria-hidden="true"></i> \
     ${dateName} ${pad0(date.getHours())}:${pad0(date.getMinutes())} \
@@ -232,6 +236,10 @@ export default class JDDT {
    * @param {Element} el
    */
   static applyToElement(el) {
+    if (!el.hasAttribute('servertimezoneoffset') || !el.hasAttribute('servertimezonename')) {
+      throw new Error('Element with .jddt class did not have servertimezoneoffset and servertimezonename attributes')
+    }
+    this.setServerTimezone(parseInt(el.getAttribute('servertimezoneoffset')), el.getAttribute('servertimezonename'))
     const millis = parseInt(el.getAttribute('millis'), 10);
     const format = el.hasAttribute('format')
       ? el.getAttribute('format')
