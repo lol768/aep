@@ -22,7 +22,7 @@
     <meta name="msapplication-config" content="@routes.Assets.versioned("images/browserconfig.xml")">
     <meta name="theme-color" content="#a14418">
 
-    <title>@if(!title.isEmpty){@title - }Online Exams</title>
+    <title>@if(!title.isEmpty){@title - }Tabula Online Exams</title>
 
     @* Preload the most popular font type. Agents should be able to decide whether they can use these assets based on the type attribute. *@
     <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-light-300.woff2")" as="font">
@@ -97,7 +97,7 @@
 
               <div class="id7-header-text clearfix">
                 <h1>
-                  <span class="id7-current-site-link"><a href="@controllers.routes.IndexController.home()">Online Exams</a></span>
+                  <span class="id7-current-site-link"><a href="@controllers.routes.IndexController.home()">Tabula Online Exams</a></span>
                 </h1>
               </div>
             </div>
@@ -147,7 +147,7 @@
 
           <div class="id7-footer-utility">
             <ul>
-              <li>Powered by <a href="https://warwick.ac.uk/onlineexams">Online Exams</a></li>
+              <li>Powered by <a href="https://warwick.ac.uk/onlineexams">Tabula Online Exams</a></li>
               <li><a href="https://warwick.ac.uk/copyright">© @helpers.romanYear()</a></li>
               <li><a href="https://warwick.ac.uk/terms">Terms</a></li>
               <li><a href="https://warwick.ac.uk/privacy">Privacy</a></li>
@@ -165,6 +165,12 @@
     ></div>
 
     <script type='text/javascript' src='@routes.Assets.versioned("lib/id7/js/id7-bundle.js")'></script>
-    <script type='text/javascript' src='@routes.Assets.versioned("admin.js")'></script>
+    @defining(helpers.AssetSwitching.bundleType(context)) { bundleType =>
+      @if(bundleType == "modern") {
+        <script type='text/javascript' src='@routes.Assets.versioned("admin-modern.js")'></script>
+      } else {
+        <script type='text/javascript' src='@routes.Assets.versioned("admin.js")'></script>
+      }
+    }
   </body>
 </html>

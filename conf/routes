@@ -20,6 +20,8 @@ GET         /                                       @controllers.IndexController
 ## Sysadmins ##
 
 GET         /sysadmin                               @controllers.sysadmin.SysadminTestController.home()
+GET         /sysadmin/uploadTest                    @controllers.sysadmin.SysadminTestController.uploadTest()
+POST        /sysadmin/uploadTest/save               @controllers.sysadmin.SysadminTestController.receiveUpload()
 GET         /sysadmin/masquerade                    @controllers.sysadmin.MasqueradeController.masquerade
 GET         /sysadmin/sent-emails                   @controllers.sysadmin.ViewEmailsController.listAll(page: Int ?= 0)
 GET         /sysadmin/sent-emails/:id               @controllers.sysadmin.ViewEmailsController.viewEmail(id: UUID)

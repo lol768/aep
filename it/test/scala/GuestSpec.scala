@@ -1,20 +1,18 @@
 
 import controllers.sysadmin
-import org.scalatest._
-import org.scalatestplus.play._
-import play.api.test._
-import play.api.test.Helpers._
+import support.BrowserFeatureSpec
 
-class GuestSpec extends AppFeatureSpec {
+class GuestSpec extends BrowserFeatureSpec {
 
   "A guest user" should {
 
     "be able to view the home page" in {
-
       Given("I am signed out")
 
       When("I visit the home page")
       visit(homePage)
+
+      screenshot("Homepage")
 
       Then("I should see some welcome text")
       pageMustContain("Lorem ipsum")

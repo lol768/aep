@@ -29,7 +29,19 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
 
   private static final String LINKED_REPOSITORY = "Online Exams";
 
-  private static final String SLACK_CHANNEL = "#project-paperwait";
+  private static final String SLACK_CHANNEL = "#onlineexams";
+
+  private VcsCheckoutTask checkoutTask = new VcsCheckoutTask()
+    .description("Checkout source from default repository")
+    .checkoutItems(new CheckoutItem().defaultRepository());
+
+  private NpmTask npmCiTask = new NpmTask()
+    .description("dependencies")
+    .nodeExecutable("Node 10")
+    .command("ci");
+
+  private Requirement linuxRequirement =
+    new Requirement("Linux").matchValue("true").matchType(Requirement.MatchType.EQUALS);
 
   public static void main(String[] args) {
     new OnlineExamsPlanSpec().publish();
@@ -44,54 +56,10 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
         .stage(
           new Stage("Build stage")
             .jobs(
-              new Job("Build and check", "BUILD")
-                .tasks(
-                  new VcsCheckoutTask()
-                    .description("Checkout source from default repository")
-                    .checkoutItems(new CheckoutItem().defaultRepository()),
-                  new NpmTask()
-                    .description("dependencies")
-                    .nodeExecutable("Node 10")
-                    .command("ci"),
-                  new ScriptTask()
-                    .description("Run tests and package")
-                    .interpreter(ScriptTaskProperties.Interpreter.BINSH_OR_CMDEXE)
-                    .location(ScriptTaskProperties.Location.FILE)
-                    .fileFromPath("sbt")
-                    .argument("clean integration/clean test:compile test integration/test universal:packageZipTarball")
-                    .environmentVariables("PATH=/usr/nodejs/10/bin"),
-                  new NpmTask()
-                    .description("JS Tests")
-                    .nodeExecutable("Node 10")
-                    .command("run bamboo")
-                )
-                .finalTasks(
-                  TestParserTask.createJUnitParserTask()
-                    .description("Parse test results")
-                    .resultDirectories("**/test-reports/*.xml"),
-                  TestParserTask.createMochaParserTask()
-                    .defaultResultDirectory()
-                )
-                .artifacts(
-                  new Artifact()
-                    .name("tar.gz")
-                    .copyPattern("app.tar.gz")
-                    .location("target/universal")
-                    .shared(true),
-                  new Artifact()
-                    .name("Integration")
-                    .copyPattern("**")
-                    .location("it/target/test-html")
-                    .shared(true),
-                  new Artifact()
-                    .name("Integration screenshots")
-                    .copyPattern("**")
-                    .location("it/target/screenshots")
-                    .shared(true)
-                )
-                .requirements(
-                  new Requirement("Linux").matchValue("true").matchType(Requirement.MatchType.EQUALS)
-                )
+              // do all the test types in parallel
+              testAndPackageJob(),
+              mochaJob(),
+              integrationTestJob()
             )
         )
         .slackNotifications(SLACK_CHANNEL, false)
@@ -99,14 +67,90 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
     );
   }
 
+  private Job testAndPackageJob() {
+    return new Job("Build and check", "BUILD")
+      .tasks(
+        checkoutTask,
+        npmCiTask,
+        new ScriptTask()
+          .description("Run tests and package")
+          .interpreter(ScriptTaskProperties.Interpreter.BINSH_OR_CMDEXE)
+          .location(ScriptTaskProperties.Location.FILE)
+          .fileFromPath("sbt")
+          .argument("clean test universal:packageZipTarball")
+          .environmentVariables("PATH=/usr/nodejs/10/bin")
+      )
+      .finalTasks(
+        TestParserTask.createJUnitParserTask()
+          .description("Parse test results")
+          .resultDirectories("**/test-reports/*.xml")
+      )
+      .artifacts(
+        new Artifact()
+          .name("tar.gz")
+          .copyPattern("app.tar.gz")
+          .location("target/universal")
+          .shared(true)
+      )
+      .requirements(linuxRequirement);
+  }
+
+  private Job mochaJob() {
+    return new Job("Mocha", "JS")
+      .tasks(
+        checkoutTask,
+        npmCiTask,
+        new NpmTask()
+          .description("JS Tests")
+          .nodeExecutable("Node 10")
+          .command("run bamboo")
+      )
+      .finalTasks(
+        TestParserTask.createMochaParserTask()
+          .defaultResultDirectory()
+      )
+      .requirements(linuxRequirement);
+  }
+
+  private Job integrationTestJob() {
+    return new Job("Integration tests", "INT")
+      .tasks(
+        checkoutTask,
+        npmCiTask,
+        new ScriptTask()
+          .description("Run tests and package")
+          .interpreter(ScriptTaskProperties.Interpreter.BINSH_OR_CMDEXE)
+          .location(ScriptTaskProperties.Location.FILE)
+          .fileFromPath("sbt")
+          .argument("clean integration/clean integration/test")
+          .environmentVariables("PATH=/usr/nodejs/10/bin")
+      )
+      .finalTasks(
+        TestParserTask.createJUnitParserTask()
+          .description("Parse test results")
+          .resultDirectories("**/test-reports/*.xml")
+      )
+      .artifacts(
+        new Artifact()
+          .name("Integration")
+          .copyPattern("**")
+          .location("it/target/test-html")
+          .shared(true),
+        new Artifact()
+          .name("Integration screenshots")
+          .copyPattern("**")
+          .location("it/target/screenshots")
+          .shared(true)
+      )
+      .requirements(linuxRequirement);
+  }
+
   @Override
   protected Collection<Deployment> deployments() {
-    return Collections.emptyList();
-    // TODO OE-3 Requires setup of infra
-//    return Collections.singleton(
-//      deployment(PROJECT, "ONLINE", "Online Exams")
-//        .autoPlayEnvironment("Development", "onlineexams-dev.warwick.ac.uk", "onlineexams", "dev", SLACK_CHANNEL)
-//        .autoPlayEnvironment("Test", "onlineexams-test.warwick.ac.uk", "onlineexams", "test", SLACK_CHANNEL)
+    return Collections.singleton(
+      deployment(PROJECT, "ONLINE", "Online Exams")
+        .autoPlayEnvironment("Development", "onlineexams-dev.warwick.ac.uk", "onlineexams", "dev", SLACK_CHANNEL)
+        .autoPlayEnvironment("Test", "onlineexams-test.warwick.ac.uk", "onlineexams", "test", SLACK_CHANNEL)
 //        .autoPlayEnvironment("Sandbox", "onlineexams-sandbox.warwick.ac.uk", "onlineexams", "sandbox", SLACK_CHANNEL, "master")
 //        .playEnvironment("Production", "onlineexams.warwick.ac.uk", "onlineexams", "prod",
 //          env -> env.notifications(
@@ -115,8 +159,8 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
 //              .recipients(slackRecipient(SLACK_CHANNEL))
 //          )
 //        )
-//        .build()
-//    );
+        .build()
+    );
   }
 
 }

@@ -9,20 +9,26 @@
  *  - if it isn't essential for page, load dynamically (import() call returning Promise)
  */
 
-import log from './log';
-import jddt from './jddt';
+import './polyfills';
+import * as log from './log';
+import UploadWithProgress from './upload-with-progress';
+import '@universityofwarwick/id7/js/id7-default-feature-detect';
+import JDDT from './jddt';
 
 // dynamic import, fire and forget.
 /* eslint-ignore no-unused-expressions */
 import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspage-widget/dist/main').then(() => {
-  log('statuspage-widget script loaded');
-
-  // Find any <time> elements with a class of 'jddt' and fill them with a local date based on
-  // a 'millis' attribute if present.
-  document.querySelectorAll('time.jddt').forEach((timeElement) => {
-    if (timeElement.hasAttribute('millis')) {
-      // eslint-disable-next-line no-param-reassign
-      timeElement.innerText = jddt(parseInt(timeElement.getAttribute('millis'), 10)).longLocal();
-    }
-  });
+  log.info('statuspage-widget script loaded');
 });
+
+// not doing a dynamic import at the moment, since this seems reasonably critical
+// (if relevant to the page)
+
+(new UploadWithProgress(document, () => {
+  log.info('Upload success callback');
+}, () => {
+  log.warn('Upload failure callback');
+})).initialise();
+
+JDDT.setServerTimezone(180, 'Europe/Moscow');
+JDDT.initialise(document);

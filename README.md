@@ -20,6 +20,11 @@ Getting started
   * Set `virusscan.api.key`
 * Run the application with `./sbt run`
 
+ESLint
+------
+
+Test with `npm run lint`, fix with `npm run lint-fix`.
+
 Integration tests
 -----------------
 
