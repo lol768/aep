@@ -37,7 +37,7 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
 
   private NpmTask npmCiTask = new NpmTask()
     .description("dependencies")
-    .nodeExecutable("Node 10")
+    .nodeExecutable("Node 13")
     .command("ci");
 
   private Requirement linuxRequirement =
@@ -78,7 +78,7 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
           .location(ScriptTaskProperties.Location.FILE)
           .fileFromPath("sbt")
           .argument("clean test universal:packageZipTarball")
-          .environmentVariables("PATH=/usr/nodejs/10/bin")
+          .environmentVariables("PATH=/usr/nodejs/13/bin")
       )
       .finalTasks(
         TestParserTask.createJUnitParserTask()
@@ -102,7 +102,7 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
         npmCiTask,
         new NpmTask()
           .description("JS Tests")
-          .nodeExecutable("Node 10")
+          .nodeExecutable("Node 13")
           .command("run bamboo")
       )
       .finalTasks(
@@ -123,7 +123,7 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
           .location(ScriptTaskProperties.Location.FILE)
           .fileFromPath("sbt")
           .argument("clean integration/clean integration/test")
-          .environmentVariables("PATH=/usr/nodejs/10/bin")
+          .environmentVariables("PATH=/usr/nodejs/13/bin")
       )
       .finalTasks(
         TestParserTask.createJUnitParserTask()
