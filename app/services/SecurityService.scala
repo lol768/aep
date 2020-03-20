@@ -3,6 +3,7 @@ package services
 import com.google.inject.ImplementedBy
 import helpers.Json.JsonClientError
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc._
 import system.{ImplicitRequestContext, Roles}
@@ -39,7 +40,7 @@ trait SecurityService {
 @Singleton
 class SecurityServiceImpl @Inject()(
   sso: SSOClient,
-  configuration: SSOConfiguration,
+  configuration: Configuration,
   parse: PlayBodyParsers
 )(implicit executionContext: ExecutionContext) extends SecurityService with Results with Rendering with AcceptExtractors with ImplicitRequestContext {
 
@@ -102,6 +103,6 @@ class SecurityServiceImpl @Inject()(
 
   override def isOriginSafe(origin: String): Boolean = {
     val uri = new java.net.URI(origin)
-    uri.getHost == configuration.getString("shire.sscookie.domain") && uri.getScheme == "https"
+    uri.getHost == configuration.get[String]("domain") && uri.getScheme == "https"
   }
 }
