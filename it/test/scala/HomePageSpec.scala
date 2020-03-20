@@ -18,6 +18,8 @@ class HomePageSpec extends BrowserFeatureSpec {
       Then("I should see the welcome text")
       pageContentMustContain("Lorem ipsum")
 
+      screenshot("Home page for student")
+
       And(s"I should see my name: ${student.name.full.value}")
       pageMustContain(student.name.full.value)
     }
