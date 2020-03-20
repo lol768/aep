@@ -28,7 +28,7 @@ class WebSocketController @Inject()(implicit
   private val pubSubActor = system.actorOf(PubSubActor.props())
 
   def socket: WebSocket = WebSocket.acceptOrResult[JsValue, JsValue] { request =>
-    if (request.headers("Origin") == "https://frankenstein.warwick.ac.uk") {
+    if (securityService.isOriginSafe(request.headers("Origin"))) {
       SecureWebsocket(request) { loginContext: LoginContext =>
         val who = loginContext.user.map(_.usercode).getOrElse("nobody")
         logger.info(s"WebSocket opening for $who")
