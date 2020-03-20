@@ -10,7 +10,7 @@ class IndexController @Inject()(
 ) extends BaseController {
   import security._
 
-  def home: Action[AnyContent] = SigninAwareAction { implicit request =>
+  def home: Action[AnyContent] = SigninRequiredAction { implicit request =>
     Ok(views.html.home())
   }
 
