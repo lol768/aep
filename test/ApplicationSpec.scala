@@ -23,12 +23,11 @@ class ApplicationSpec extends BaseSpec {
       contentAsString(res) mustBe """"OK""""
     }
 
-    "render the index page" in {
+    "redirect away from the index page" in {
       val home = route(app, FakeRequest(GET, "/").withHeaders(HeaderNames.ACCEPT -> "text/html")).get
 
-      status(home) mustEqual OK
-      contentType(home).get mustEqual "text/html"
-      contentAsString(home) must include("Lorem ipsum")
+      status(home) mustEqual SEE_OTHER
+      header("location", home).value must startWith ("https://sso.example.com")
     }
   }
 }
