@@ -14,6 +14,7 @@ import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
 import JDDT from './jddt';
+import WebSocketConnection from './web-sockets';
 
 // dynamic import, fire and forget.
 /* eslint-ignore no-unused-expressions */
@@ -32,3 +33,19 @@ import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspa
 
 JDDT.setServerTimezone(180, 'Europe/Moscow');
 JDDT.initialise(document);
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!document.body.classList.contains('connect-ws')) {
+    return;
+  }
+  import('./web-sockets').then(() => {
+    const doNothing = () => {};
+    const websocket = new WebSocketConnection(`wss://${window.location.host}/Websocket`, {
+      onConnect: doNothing,
+      onError: doNothing,
+      onData: doNothing,
+      onClose: doNothing,
+    });
+    websocket.connect();
+  });
+});
