@@ -31,6 +31,6 @@ import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspa
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.body.classList.contains('connect-ws')) {
-    import('./exam-announcements');
+    import('./assessment-announcements');
   }
 });

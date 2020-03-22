@@ -1,6 +1,6 @@
 package controllers
 
-import actors.WebSocketActor.ExamAnnouncement
+import actors.WebSocketActor.AssessmentAnnouncement
 import actors.{PubSubActor, WebSocketActor}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -22,8 +22,8 @@ object WebSocketController {
     user: Usercode,
     message: String
   ) {
-    def toAnnouncement: ExamAnnouncement = {
-      ExamAnnouncement(message)
+    def toAnnouncement: AssessmentAnnouncement = {
+      AssessmentAnnouncement(message)
     }
   }
 
