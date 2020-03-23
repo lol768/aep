@@ -1,16 +1,15 @@
 package controllers.api
 
+import controllers.BaseController
 import javax.inject.Singleton
-import controllers.MyController
 import net.logstash.logback.argument.StructuredArguments
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json.JsValue
-import play.api.mvc.{Action, AnyContent}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 @Singleton
-class ErrorsController extends MyController {
+class ErrorsController extends BaseController {
 
   lazy val slf4jLogger: Logger = LoggerFactory.getLogger("JAVASCRIPT_ERROR")
 
@@ -24,10 +23,6 @@ class ErrorsController extends MyController {
       slf4jLogger.info(message, entries)
     }
     Ok("")
-  }
-
-  def tls: Action[AnyContent] = Action { implicit request =>
-    NoContent // look at the access log.
   }
 }
 
