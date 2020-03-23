@@ -38,7 +38,7 @@ class WebSocketController @Inject()(implicit
   securityService: SecurityService,
   system: ActorSystem,
   mat: Materializer,
-  pubSub: PubSub
+  pubSub: PubSubService
 ) extends BaseController {
 
   import securityService._
