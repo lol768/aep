@@ -10,6 +10,8 @@ create table announcement (
    CONSTRAINT pk_announcement PRIMARY KEY (ID)
 );
 
+create index idx_announcement_assessment on announcement (assessment_id);
+
 create table announcement_version (
     id uuid not null,
     assessment_id uuid not null references assessment (id),
