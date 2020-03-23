@@ -16,7 +16,9 @@ GET         /service/healthcheck                    @warwick.healthcheck.Injecte
 POST        /service/flexipicker                    @controllers.FlexiPickerController.queryJson
 
 GET         /                                       @controllers.IndexController.home
-GET         /exams                                  @controllers.AssessmentsController.index
+GET         /assessments                            @controllers.AssessmentsController.index
+GET         /assessment/:id                         @controllers.AssessmentController.view(id: UUID)
+POST        /assessment/:id                        @controllers.AssessmentController.start(id: UUID)
 
 # Websocket
 GET         /websocket                              @controllers.WebSocketController.socket
