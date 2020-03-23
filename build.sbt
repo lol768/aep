@@ -102,6 +102,7 @@ val appDeps = Seq(
   "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
   "ch.qos.logback" % "logback-access" % "1.2.3",
   "uk.ac.warwick.play-utils" %% "core" % playUtilsVersion,
+  "uk.ac.warwick.play-utils" %% "caching" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "fileuploads" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "healthcheck" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "slick" % playUtilsVersion,

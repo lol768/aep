@@ -3,6 +3,7 @@ package controllers.sysadmin
 import java.util.UUID
 
 import controllers.BaseController
+import domain.tabula.{AssessmentComponent, ExamPaper}
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -12,6 +13,9 @@ import play.api.mvc.{Action, AnyContent, MultipartFormData}
 import services._
 import helpers.StringUtils._
 import org.quartz.Scheduler
+import play.api.libs.json.{Json, Reads, Writes}
+import services.tabula.TabulaAssessmentService
+import services.tabula.TabulaAssessmentService.GetAssessmentsOptions
 import uk.ac.warwick.util.mywarwick.MyWarwickService
 import uk.ac.warwick.util.mywarwick.model.request.Activity
 import warwick.core.helpers.ServiceResults
@@ -82,6 +86,7 @@ class SysadminTestController @Inject()(
   scheduler: Scheduler,
   uploadedFileService: UploadedFileService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
+  tabulaAssessments: TabulaAssessmentService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
 
   import SysadminTestController._
@@ -131,6 +136,14 @@ class SysadminTestController @Inject()(
 
   def downloadFile(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
     uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile)
+  }
+
+  def assessmentComponents(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    implicit val writeExam = Json.writes[ExamPaper]
+    implicit val writes = Json.writes[AssessmentComponent]
+    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = "CH", withExamPapersOnly = true)).successMap { r =>
+      Ok(Json.toJson(r)(Writes.seq(writes)))
+    }
   }
 
   private val redirectHome = Redirect(controllers.sysadmin.routes.SysadminTestController.home())
