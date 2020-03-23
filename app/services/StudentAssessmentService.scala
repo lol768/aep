@@ -86,7 +86,6 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
-    require(storedStudentAssessment.startTime.isEmpty, "Cannot start exam, already started")
     require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot start assessment, too early")
     require(storedAssessment.startTime.exists(_.plus(Assessment.window).isAfter(JavaTime.offsetDateTime)), "Cannot start assessment, too late")
   }
@@ -98,7 +97,13 @@ class StudentAssessmentServiceImpl @Inject()(
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
           _ <- DBIO.from(canStart(storedAssessment, storedStudentAssessment))
-          updatedStudentAssessment <- dao.update(storedStudentAssessment.copy(startTime = Some(JavaTime.offsetDateTime)))
+          updatedStudentAssessment <- {
+            if(storedStudentAssessment.startTime.isEmpty) {
+              dao.update(storedStudentAssessment.copy(startTime = Some(JavaTime.offsetDateTime)))
+            } else {
+              DBIO.successful(storedStudentAssessment)
+            }
+          }
         } yield updatedStudentAssessment
       ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
     }
