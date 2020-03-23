@@ -24,7 +24,7 @@ class AssessmentController @Inject()(
 
   def start(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     studentAssessmentService.startAssessment(request.studentAssessmentWithAssessment.studentAssessment).successMap { studentAssessment =>
-      Ok(views.html.exam.index(StudentAssessmentWithAssessment(studentAssessment, request.studentAssessmentWithAssessment.assessment)))
+      Redirect(controllers.routes.AssessmentController.view(assessmentId))
     }
   }
 }

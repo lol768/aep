@@ -8,6 +8,7 @@ import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao.{AssessmentDao, DaoRunner, StudentAssessmentDao}
 import domain.{Assessment, StudentAssessment, StudentAssessmentWithAssessment}
+import domain.AuditEvent._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import system.routes.Types.UniversityID
@@ -91,7 +92,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Symbol("StartAssessment"), studentAssessment.assessmentId.toString, Symbol("StudentAssessment"), Json.obj(("universityId", studentAssessment.studentId.string))){
+    audit.audit(Operation.Assessment.StartAssessment, studentAssessment.assessmentId.toString, Target.studentAssessment, Json.obj(("universityId", studentAssessment.studentId.string))){
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
