@@ -10,6 +10,7 @@
  */
 
 import './polyfills';
+import './error-reporter'
 import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
