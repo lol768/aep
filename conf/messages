@@ -6,6 +6,7 @@
 
 flash.emails.queued=Queued {0} emails.
 flash.mywarwick.queued=Queued My Warwick alert.
+flash.websocket.published=Published WebSocket message.
 flash.files.uploaded=Uploaded {0} files.
 
 # Overrides of keys in messages.default

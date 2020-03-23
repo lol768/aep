@@ -14,7 +14,6 @@ import './error-reporter'
 import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
-import WebSocketConnection from './web-sockets';
 
 // dynamic import, fire and forget.
 /* eslint-ignore no-unused-expressions */
@@ -32,39 +31,7 @@ import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspa
 })).initialise();
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (!document.body.classList.contains('connect-ws')) {
-    return;
+  if (document.body.classList.contains('connect-ws')) {
+    import('./assessment-announcements');
   }
-
-  function setVisibilityByClassName(className, visible) {
-    document.querySelectorAll(`.${className}`).forEach((node) => {
-      if (visible) {
-        node.classList.remove('hide');
-      } else {
-        node.classList.add('hide');
-      }
-    });
-  }
-
-  import('./web-sockets').then(() => {
-    const doNothing = () => {};
-    const websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`, {
-      onConnect: () => {
-        setVisibilityByClassName('ws-connected', true);
-        setVisibilityByClassName('ws-disconnected', false);
-        setVisibilityByClassName('ws-error', false);
-      },
-      onError: () => {
-        setVisibilityByClassName('ws-connected', false);
-        setVisibilityByClassName('ws-error', true);
-      },
-      onData: doNothing,
-      onClose: () => {
-        setVisibilityByClassName('ws-connected', false);
-        setVisibilityByClassName('ws-disconnected', true);
-      },
-    });
-    websocket.connect();
-    window.ws = websocket.ws;
-  });
 });
