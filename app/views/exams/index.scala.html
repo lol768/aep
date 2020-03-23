@@ -84,7 +84,12 @@
                     Start
                   </a>
                   <span class="text-danger">
-                    <i class="fad fa-fw fa-hourglass"></i>30 minutes left to start
+                    <i class="fad fa-fw fa-hourglass"></i>
+                    <span
+                      class="time-left-to-start"
+                      data-start=@a.assessment.startTime.map(_.toInstant.toEpochMilli())
+                      data-end=@a.assessment.startTime.map(_.toInstant.toEpochMilli + a.assessment.duration.toMillis)
+                    ></span>
                   </span>
                 }
                 case Platform.Moodle => {
