@@ -1,0 +1,78 @@
+@import warwick.core.helpers.JavaTime
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@import domain.Assessment.Platform
+@import domain.Assessment.AssessmentType
+@import domain.Assessment
+@import domain.StudentAssessmentWithAssessment
+@import tags._
+
+@(assessment: StudentAssessmentWithAssessment, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
+<div class="panel panel-default">
+    <div class="panel-body">
+        @if(!isAssessmentPage) {
+            <h4>@assessment.assessment.title</h4>
+        }
+
+        <dl>
+            <dt>Module</dt>
+            <dd>
+            @assessment.assessment.code
+            </dd>
+            <dt>Type</dt>
+            <dd>
+            @assessment.assessment.assessmentType match {
+                case AssessmentType.OpenBook => { Open book }
+                case AssessmentType.Spoken => { Spoken }
+                case AssessmentType.MultipleChoice => { Multiple choice }
+            }
+            </dd>
+            <dt>Duration</dt>
+            <dd>
+                <i class="fad fa-stopwatch fa-fw"></i>@DurationFormatUtils.formatDurationWords(assessment.assessment.duration.toMillis, true, true)
+            </dd>
+            @assessment.assessment.startTime.map { startTime =>
+                <dt>Can start</dt>
+                <dd>
+                    <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(startTime.plusHours(8))
+                    until
+                @JavaTime.Relative(startTime.plus(Assessment.window).plusHours(8))
+                <span class="text-muted">Asia/Shanghai</span>
+                <br>
+                <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(startTime)
+                    until
+                @JavaTime.Relative(startTime.plus(Assessment.window))
+                    <span class="text-muted">Europe/London</span>
+                </dd>
+            }
+        </dl>
+        @assessment.assessment.platform match {
+            case Platform.OnlineExams => {
+                @if(isAssessmentPage) {
+                    @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessment.assessment.id)) { implicit fc =>
+                        @if(assessment.studentAssessment.startTime.isEmpty) {
+                            <button type="submit" class="btn btn-primary">
+                                Start
+                            </button>
+                        }
+                        @assessmentTiming(assessment)
+                    }
+                } else {
+                    <a href="@routes.AssessmentController.view(assessment.assessment.id)" class="btn btn-primary">
+                        View
+                    </a>
+                    @assessmentTiming(assessment)
+                }
+            }
+            case Platform.Moodle => {
+                <a href="/service/stub" target="_blank">
+                    Exam on Moodle<i class="fa fa-fw fa-external-link"></i>
+                  </a>
+            }
+            case Platform.QuestionmarkPerception => {
+                <a href="/service/stub" target="_blank">
+                    Exam on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
+                  </a>
+            }
+        }
+    </div>
+</div>
