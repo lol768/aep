@@ -18,7 +18,7 @@ POST        /service/flexipicker                    @controllers.FlexiPickerCont
 GET         /                                       @controllers.IndexController.home
 GET         /assessments                            @controllers.AssessmentsController.index
 GET         /assessment/:id                         @controllers.AssessmentController.view(id: UUID)
-POST        /assessment/:id                        @controllers.AssessmentController.start(id: UUID)
+POST        /assessment/:id                         @controllers.AssessmentController.start(id: UUID)
 
 # Websocket
 GET         /websocket                              @controllers.WebSocketController.socket
