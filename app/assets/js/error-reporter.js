@@ -7,7 +7,7 @@
 
 import log from 'loglevel';
 import _ from 'lodash-es';
-import {postJsonWithCredentials} from 'serverpipe';
+import {postJsonWithCredentials} from '@universityofwarwick/serverpipe';
 
 let errors = [];
 let postErrorsThrottled;
