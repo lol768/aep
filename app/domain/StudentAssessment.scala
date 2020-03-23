@@ -7,7 +7,7 @@ import warwick.fileuploads.UploadedFile
 import warwick.sso.UniversityID
 
 case class StudentAssessment(
-  assessment: UUID,
+  assessmentId: UUID,
   studentId: UniversityID,
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],

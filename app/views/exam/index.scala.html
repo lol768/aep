@@ -1,0 +1,20 @@
+@import domain.Assessment.{AssessmentType, Platform}
+@import domain.{Assessment, StudentAssessmentWithAssessment}
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@import warwick.core.helpers.JavaTime
+@import tags._
+
+@(assessment: StudentAssessmentWithAssessment)(implicit request: RequestHeader, context: RequestContext)
+
+@frontend(assessment.assessment.title, extraClasses = Seq("grey-nopad")) {
+  @assessmentPanel(assessment, isAssessmentPage = true)
+  @if(assessment.studentAssessment.startTime.nonEmpty) {
+    <h2>Exam files</h2>
+    @assessment.assessment.brief.files.map { file =>
+      @* TODO create controller that restricts view of this files   *@
+      <a href="@controllers.sysadmin.routes.SysadminTestController.downloadFile(file.id)">@file.fileName</a>
+    }
+    <h2>Submit your answers</h2>
+    <button class="btn btn-info">Upload files</button>
+  }
+}
