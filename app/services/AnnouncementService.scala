@@ -18,10 +18,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[AnnouncementServiceImpl])
 trait AnnouncementService {
-  def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Announcement]]
   def getByAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
+  def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
+  def delete(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Done]]
 }
 
 @Singleton
@@ -42,6 +43,9 @@ class AnnouncementServiceImpl @Inject()(
 
     daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
   }
+
+  override def delete(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Done]] =
+    daoRunner.run(dao.delete(id)).map(_ => ServiceResults.success(Done))
 
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]] =
     daoRunner.run(dao.all).map(_.map(_.asAnnouncement)).map(ServiceResults.success)

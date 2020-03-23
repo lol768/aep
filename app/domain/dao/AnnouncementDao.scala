@@ -106,6 +106,7 @@ trait AnnouncementDao {
 
   def all: DBIO[Seq[StoredAnnouncement]]
   def insert(announcement: StoredAnnouncement)(implicit ac: AuditLogContext): DBIO[StoredAnnouncement]
+  def delete(id: UUID): DBIO[Int]
   def getById(id: UUID): DBIO[StoredAnnouncement]
   def getByAssessmentId(id: UUID): DBIO[Seq[StoredAnnouncement]]
 }
@@ -121,6 +122,9 @@ class AnnouncementDaoImpl @Inject()(
 
   override def insert(announcement: StoredAnnouncement)(implicit ac: AuditLogContext): DBIO[StoredAnnouncement] =
     announcements.insert(announcement)
+
+  override def delete(id: UUID): DBIO[Int] =
+    announcements.table.filter(_.id === id).delete
 
   override def getById(id: UUID): DBIO[StoredAnnouncement] =
     announcements.table.filter(_.id === id).result.head
