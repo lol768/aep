@@ -1,15 +1,22 @@
 @import domain.StudentAssessmentWithAssessment
+@import play.api.libs.json.Json
 
-@(assessment: StudentAssessmentWithAssessment, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
+@import play.api.libs.json.JsNumber
+@import play.api.libs.json.JsBoolean
+@(studentAssessmentWithAssessment: StudentAssessmentWithAssessment, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
 
-@if(assessment.studentAssessment.startTime.isEmpty) {
-    @*    TODO*@
-    <span class="text-danger">
-        <i class="fad fa-fw fa-hourglass"></i>30 minutes left to start
-    </span>
-} else {
-    @*    TODO*@
-    <span class="text-info">
-        <i class="fad fa-fw fa-hourglass"></i>Exam already started. X minutes remaining
+@studentAssessmentWithAssessment.assessment.startTime.map { startTime =>
+    <span>
+        <i class="fad fa-fw fa-hourglass"></i>
+        <span
+        class="time-left-to-start"
+        data-rendering=@{
+            Json.stringify(Json.toJson(Map(
+                "start" -> JsNumber(startTime.toInstant.toEpochMilli),
+                "end" -> JsNumber(startTime.toInstant.toEpochMilli + studentAssessmentWithAssessment.assessment.duration.toMillis),
+                "studentStarted" -> JsBoolean(studentAssessmentWithAssessment.studentAssessment.startTime.nonEmpty),
+            )))
+        }
+        ></span>
     </span>
 }

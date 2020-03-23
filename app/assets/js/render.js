@@ -10,7 +10,6 @@
  */
 
 import './polyfills';
-import * as countdown from 'countdown';
 import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
@@ -34,34 +33,5 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.body.classList.contains('connect-ws')) {
     import('./assessment-announcements');
   }
-});
-
-[...document.getElementsByClassName('time-left-to-start')].forEach((node) => {
-  const refresh = () => {
-    const { dataset } = node;
-    const start = Number(dataset.start);
-    const end = Number(dataset.end);
-    const now = Number(new Date());
-
-    if (Number.isNaN(end) || Number.isNaN(end)) return;
-
-    let text;
-    if (now < start) {
-      text = `Start in ${countdown(null, new Date(start), 220).toString()}`;
-    } else if (now > start && now < end) {
-      text = `${countdown(null, new Date(end), 220).toString()} left to start`;
-    } else {
-      text = 'You missed the exam';
-    }
-
-    const textNode = document.createTextNode(text);
-    const existingTextNode = node.lastChild;
-    if (existingTextNode) {
-      node.replaceChild(textNode, existingTextNode);
-    } else {
-      node.appendChild(textNode);
-    }
-  };
-  refresh();
-  setInterval(refresh, 30000);
+  import('./assessment-timing');
 });
