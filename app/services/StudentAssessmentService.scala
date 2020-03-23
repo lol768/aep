@@ -92,7 +92,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.StartAssessment, studentAssessment.assessmentId.toString, Target.studentAssessment, Json.obj(("universityId", studentAssessment.studentId.string))){
+    audit.audit(Operation.Assessment.StartAssessment, studentAssessment.assessmentId.toString, Target.StudentAssessment, Json.obj(("universityId", studentAssessment.studentId.string))){
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
