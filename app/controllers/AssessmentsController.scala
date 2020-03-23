@@ -7,7 +7,7 @@ import services.{SecurityService, StudentAssessmentService}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ExamsController @Inject()(
+class AssessmentsController @Inject()(
   security: SecurityService,
   studentAssessmentService: StudentAssessmentService,
 )(implicit ec: ExecutionContext) extends BaseController {

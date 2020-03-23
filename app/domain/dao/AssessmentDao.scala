@@ -174,7 +174,7 @@ class AssessmentDaoImpl @Inject()(
     assessments.table.filter(_.id === id).result.head
 
   override def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]] =
-    assessments.table.filter(_.id inSet ids).result
+    assessments.table.filter(_.id inSetBind ids).result
 
   override def getByCode(code: String): DBIO[StoredAssessment] =
     assessments.table.filter(_.code === code).result.head
