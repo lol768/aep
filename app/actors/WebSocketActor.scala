@@ -5,12 +5,29 @@ import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, U
 import play.api.libs.json._
 import warwick.sso.LoginContext
 
+import scala.util.Try
+
 object WebSocketActor {
 
-  def props(loginContext: LoginContext, pubsub: ActorRef, out: ActorRef) =
+  def props(loginContext: LoginContext, pubsub: ActorRef, out: ActorRef): Props =
     Props(new WebSocketActor(out, pubsub, loginContext))
 
-  case class ExamAnnouncement(message: String)
+  case class AssessmentAnnouncement(message: String)
+
+  case class ClientMessage(
+    `type`: String,
+    data: Option[JsValue],
+  )
+  val readsClientMessage: Reads[ClientMessage] = Json.reads[ClientMessage]
+
+  case class ClientNetworkInformation(
+    downlink: Option[Double], // mbps
+    downlinkMax: Option[Double], // mbps
+    effectiveType: Option[String], // 'slow-2g', '2g', '3g', or '4g',
+    rtt: Option[Int], // rounded to nearest 25ms
+    `type`: Option[String], // bluetooth, cellular, ethernet, none, wifi, wimax, other, unknown
+  )
+  val readsClientNetworkInformation: Reads[ClientNetworkInformation] = Json.reads[ClientNetworkInformation]
 
 }
 
@@ -32,22 +49,36 @@ class WebSocketActor(out: ActorRef, pubsub: ActorRef, loginContext: LoginContext
     pubsubUnsubscribe()
   }
 
-  override def receive = {
-    case ExamAnnouncement(announcement) => out ! Json.obj(
+  override def receive: Receive = {
+    case AssessmentAnnouncement(announcement) => out ! Json.obj(
       "type" -> "announcement",
       "message" -> announcement,
       "user" -> JsString(loginContext.user.map(u => u.usercode.string).getOrElse("Anonymous"))
     )
-    case SubscribeAck(Subscribe(topic, group, ref)) =>
+
+    case SubscribeAck(Subscribe(topic, _, _)) =>
       log.debug(s"WebSocket subscribed to PubSub messages on the topic of '$topic'")
+
+    case clientMessage: JsObject if clientMessage.validate[ClientMessage](readsClientMessage).isSuccess =>
+      val message = clientMessage.as[ClientMessage](readsClientMessage)
+
+      message match {
+        case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
+          val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
+
+          // TODO handle client network information
+
+        case m => log.error(s"Ignoring unrecognised client message: $m")
+      }
+
     case nonsense => log.error(s"Ignoring unrecognised message: $nonsense")
   }
 
-  private def pubsubSubscribe() = loginContext.user.foreach { user =>
+  private def pubsubSubscribe(): Unit = loginContext.user.foreach { user =>
     pubsub ! Subscribe(user.usercode.string, self)
   }
 
-  private def pubsubUnsubscribe() = loginContext.user.foreach { user =>
+  private def pubsubUnsubscribe(): Unit = loginContext.user.foreach { user =>
     // UnsubscribeAck is swallowed by pubsub, so don't expect a reply to this.
     pubsub ! Unsubscribe(user.usercode.string, self)
   }

@@ -1,23 +1,44 @@
 package controllers
 
+import actors.WebSocketActor.AssessmentAnnouncement
 import actors.{PubSubActor, WebSocketActor}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
+import controllers.WebSocketController.broadcastForm
+import play.api.data.Forms._
 import javax.inject.{Inject, Singleton}
+import play.api.data.Form
+import play.api.i18n.Messages
 import play.api.libs.json.JsValue
 import play.api.libs.streams.ActorFlow
 import play.api.mvc.{Action, AnyContent, Results, WebSocket}
 import services._
-import warwick.sso.LoginContext
+import warwick.sso.{LoginContext, Usercode}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
+object WebSocketController {
+  case class SendBroadcastForm(
+    user: Usercode,
+    message: String
+  ) {
+    def toAnnouncement: AssessmentAnnouncement = {
+      AssessmentAnnouncement(message)
+    }
+  }
+
+  val broadcastForm: Form[SendBroadcastForm] = Form(mapping(
+    "user" -> nonEmptyText.transform[Usercode](s => Usercode(s), u => u.string),
+    "message" -> nonEmptyText,
+  )(SendBroadcastForm.apply)(SendBroadcastForm.unapply))
+}
 
 @Singleton
 class WebSocketController @Inject()(implicit
   securityService: SecurityService,
   system: ActorSystem,
   mat: Materializer,
+  pubSub: PubSubService
 ) extends BaseController {
 
   import securityService._
@@ -48,4 +69,18 @@ class WebSocketController @Inject()(implicit
     Ok(views.html.sysadmin.websocketTest())
   }
 
+  def broadcastTest: Action[AnyContent] = RequireSysadmin { implicit request =>
+    Ok(views.html.sysadmin.broadcastTest(broadcastForm))
+  }
+
+  def sendBroadcast: Action[AnyContent] = RequireSysadmin { implicit request =>
+    broadcastForm.bindFromRequest().fold(
+      _ => BadRequest,
+      data => {
+        pubSub.publish(data.user.string, data.toAnnouncement)
+        Redirect(controllers.routes.WebSocketController.sendBroadcast())
+          .flashing("success" -> Messages("flash.websocket.published"))
+      }
+    )
+  }
 }

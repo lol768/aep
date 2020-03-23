@@ -1,0 +1,26 @@
+@import controllers.sysadmin.SysadminTestController.{EmailFormData, MyWarwickFormData}
+@import org.apache.tika.mime.MediaType
+@import warwick.core.helpers.JavaTime
+@import warwick.fileuploads.UploadedFile
+
+@import controllers.WebSocketController.SendBroadcastForm
+@(sendBroadcastForm: Form[SendBroadcastForm])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@admin("Broadcast test") {
+    @b3.vertical.formCSRF(action = controllers.routes.WebSocketController.sendBroadcast()) { implicit vfc =>
+        @b3.text(sendBroadcastForm("user"),
+            Symbol("_label") -> "Receipient user",
+            Symbol("class") -> "flexi-picker",
+            Symbol("data-include-groups") -> "false",
+            Symbol("placeholder") -> "Name or usercode",
+            Symbol("autofocus") -> true,
+            Symbol("autocomplete") -> "off"
+        )
+
+        @b3.text(sendBroadcastForm("message"), Symbol("_label") -> "Message", Symbol("autocomplete") -> "off")
+
+        @b3.free(Symbol("_class") -> "spaced-buttons") {
+            <button type="submit" class="btn btn-primary">Send WebSocket Broadcast Message</button>
+        }
+    }
+}
