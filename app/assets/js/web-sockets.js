@@ -99,7 +99,7 @@ export default class WebSocketConnection {
   }
 
   sendHeartbeat() {
-    setTimeout(() => {
+    this.heartbeatTimeout = setTimeout(() => {
       const networkInformation = (window.navigator.connection || {});
       const {
         downlink, downlinkMax, effectiveType, rtt, type,
