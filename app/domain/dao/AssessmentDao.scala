@@ -4,7 +4,7 @@ import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
-import domain.Assessment.{AssessmentType, Brief}
+import domain.Assessment._
 import domain._
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
 import javax.inject.{Inject, Singleton}
@@ -27,9 +27,11 @@ trait AssessmentsTables extends VersionedTables {
 
   trait CommonProperties { self: Table[_] =>
     def code = column[String]("code")
+    def title = column[String]("title")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
     def duration = column[Duration]("duration")
-    def assessmentType = column[AssessmentType]("assessment_type")
+    def platform = column[Platform]("platform")
+    def assessmentType = column[AssessmentType]("type")
     def storedBrief = column[StoredBrief]("brief")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
@@ -41,7 +43,7 @@ trait AssessmentsTables extends VersionedTables {
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, code, startTime, duration, assessmentType, storedBrief, created, version).mapTo[StoredAssessment]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, created, version).mapTo[StoredAssessment]
 
     def idx = index("id_assessment_code", (code))
   }
@@ -55,7 +57,7 @@ trait AssessmentsTables extends VersionedTables {
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, code, startTime, duration, assessmentType, storedBrief, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }
 
@@ -67,8 +69,10 @@ object AssessmentsTables {
   case class StoredAssessment(
     id: UUID = UUID.randomUUID(),
     code: String,
+    title: String,
     startTime: Option[OffsetDateTime],
     duration: Duration,
+    platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
     created: OffsetDateTime,
@@ -78,8 +82,10 @@ object AssessmentsTables {
       Assessment(
         id,
         code,
+        title,
         startTime,
         duration,
+        platform,
         assessmentType,
         storedBrief.asBrief(fileMap)
       )
@@ -89,8 +95,10 @@ object AssessmentsTables {
       StoredAssessmentVersion(
         id,
         code,
+        title,
         startTime,
         duration,
+        platform,
         assessmentType,
         storedBrief,
         created,
@@ -104,8 +112,10 @@ object AssessmentsTables {
   case class StoredAssessmentVersion(
     id: UUID = UUID.randomUUID(),
     code: String,
+    title: String,
     startTime: Option[OffsetDateTime],
     duration: Duration,
+    platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
     created: OffsetDateTime,
@@ -144,6 +154,7 @@ trait AssessmentDao {
   def all: DBIO[Seq[StoredAssessment]]
   def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
   def getById(id: UUID): DBIO[StoredAssessment]
+  def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]]
   def getByCode(code: String): DBIO[StoredAssessment]
 }
 
@@ -161,6 +172,9 @@ class AssessmentDaoImpl @Inject()(
 
   override def getById(id: UUID): DBIO[StoredAssessment] =
     assessments.table.filter(_.id === id).result.head
+
+  override def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]] =
+    assessments.table.filter(_.id inSet ids).result
 
   override def getByCode(code: String): DBIO[StoredAssessment] =
     assessments.table.filter(_.code === code).result.head

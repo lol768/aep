@@ -28,7 +28,7 @@ trait StudentAssessmentsTables extends VersionedTables {
     def studentId = column[UniversityID]("student_id")
     def inSeat = column[Boolean]("in_seat")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
-    def uploadedFiles = column[List[UUID]]("uploadesd_files")
+    def uploadedFiles = column[List[UUID]]("uploaded_file_ids")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
   }

@@ -1,6 +1,6 @@
 package domain
 
-import domain.Assessment.AssessmentType
+import domain.Assessment.{Platform, AssessmentType}
 import domain.dao.AssessmentsTables.StoredBrief
 import enumeratum.SlickEnumSupport
 import javax.inject.{Inject, Singleton}
@@ -48,6 +48,7 @@ class CustomJdbcTypes @Inject()(
   // Enum mappings
   implicit lazy val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)
   implicit lazy val uploadedFileOwnerMapper: JdbcType[UploadedFileOwner] = mappedColumnTypeForEnum(UploadedFileOwner)
+  implicit val platformTypeMapper: JdbcType[Platform] = mappedColumnTypeForEnum(Platform)
   implicit val assessmentTypeTypeMapper: JdbcType[AssessmentType] = mappedColumnTypeForEnum(AssessmentType)
 
   /** Maps a column to a specific class via its implicit JSON conversions */
