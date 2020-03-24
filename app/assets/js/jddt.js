@@ -3,8 +3,6 @@
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TODAY = 'Today';
-// const YESTERDAY = 'Yesterday';
-// const TOMORROW = 'Tomorrow';
 const SOME_SUNNY_DAY = '';
 let serverTimezoneOffset = 0; // Offset in minutes, can by updated by server
 let serverTimezoneName = 'GMT'; // Also to be supplied by server
@@ -86,16 +84,6 @@ function relativeDateName(date) {
   if (datesMatch(now, d)) {
     return TODAY;
   }
-
-  // d.setHours(d.getHours() + 24);
-  // if (datesMatch(now, d)) {
-  //   return YESTERDAY;
-  // }
-  //
-  // d.setHours(d.getHours() - 48);
-  // if (datesMatch(now, d)) {
-  //   return TOMORROW;
-  // }
 
   return SOME_SUNNY_DAY;
 }
