@@ -1,6 +1,6 @@
 package domain
 
-import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, ZoneId}
+import java.time._
 import java.util.UUID
 
 import com.typesafe.config.Config

@@ -6,10 +6,10 @@ import java.util.UUID
 import com.google.inject.ImplementedBy
 import domain.Assessment._
 import domain._
-import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
+import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{Format, JsValue, Json}
 import slick.lifted.ProvenShape
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
@@ -32,7 +32,7 @@ trait AssessmentsTables extends VersionedTables {
     def duration = column[Duration]("duration")
     def platform = column[Platform]("platform")
     def assessmentType = column[AssessmentType]("type")
-    def storedBrief = column[StoredBrief]("brief")
+    def jsonBrief = column[JsValue]("brief")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
   }
@@ -43,7 +43,7 @@ trait AssessmentsTables extends VersionedTables {
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, created, version).mapTo[StoredAssessment]
+      (id, code, title, startTime, duration, platform, assessmentType, jsonBrief, created, version) <> ((StoredAssessment.mapper _).tupled, StoredAssessment.unapply)
 
     def idx = index("id_assessment_code", (code))
   }
@@ -57,7 +57,7 @@ trait AssessmentsTables extends VersionedTables {
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, code, title, startTime, duration, platform, assessmentType, jsonBrief, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }
 
@@ -74,10 +74,14 @@ object AssessmentsTables {
     duration: Duration,
     platform: Platform,
     assessmentType: AssessmentType,
-    storedBrief: StoredBrief,
+    jsonBrief: JsValue,
     created: OffsetDateTime,
     version: OffsetDateTime
   ) extends Versioned[StoredAssessment] {
+
+    def storedBrief: StoredBrief =
+      jsonBrief.validate[StoredBrief](StoredBrief.format).getOrElse(StoredBrief.empty)
+
     def asAssessment(fileMap: Map[UUID, UploadedFile]) =
       Assessment(
         id,
@@ -89,6 +93,7 @@ object AssessmentsTables {
         assessmentType,
         storedBrief.asBrief(fileMap)
       )
+
     def asAssessmentMetadata =
       AssessmentMetadata(
         id,
@@ -99,6 +104,7 @@ object AssessmentsTables {
         platform,
         assessmentType
       )
+
     override def atVersion(at: OffsetDateTime): StoredAssessment = copy(version = at)
 
     override def storedVersion[B <: StoredVersion[StoredAssessment]](operation: DatabaseOperation, timestamp: OffsetDateTime)(implicit ac: AuditLogContext): B =
@@ -110,13 +116,67 @@ object AssessmentsTables {
         duration,
         platform,
         assessmentType,
-        storedBrief,
+        jsonBrief,
         created,
         version,
         operation,
         timestamp,
         ac.usercode
       ).asInstanceOf[B]
+  }
+
+  object StoredAssessment {
+    // for testing
+    def apply(
+      id: UUID,
+      code: String,
+      title: String,
+      startTime: Option[OffsetDateTime],
+      duration: Duration,
+      platform: Platform,
+      assessmentType: AssessmentType,
+      storedBrief: StoredBrief,
+      created: OffsetDateTime,
+      version: OffsetDateTime
+    ): StoredAssessment =
+      StoredAssessment(
+        id,
+        code,
+        title,
+        startTime,
+        duration,
+        platform,
+        assessmentType,
+        Json.toJson(storedBrief)(StoredBrief.format),
+        created,
+        version
+      )
+
+    // ugh, such boilerplate
+    // it's needed because this companion object would shadow the case class when tupled is called by slick's .mapTo[]
+    def mapper(
+      id: UUID,
+      code: String,
+      title: String,
+      startTime: Option[OffsetDateTime],
+      duration: Duration,
+      platform: Platform,
+      assessmentType: AssessmentType,
+      jsonBrief: JsValue,
+      created: OffsetDateTime,
+      version: OffsetDateTime
+    ): StoredAssessment = apply(
+      id,
+      code,
+      title,
+      startTime,
+      duration,
+      platform,
+      assessmentType,
+      jsonBrief,
+      created,
+      version
+    )
   }
 
   case class StoredAssessmentVersion(
@@ -127,7 +187,7 @@ object AssessmentsTables {
     duration: Duration,
     platform: Platform,
     assessmentType: AssessmentType,
-    storedBrief: StoredBrief,
+    jsonBrief: JsValue,
     created: OffsetDateTime,
     version: OffsetDateTime,
     operation: DatabaseOperation,
@@ -149,10 +209,9 @@ object AssessmentsTables {
   }
 
   object StoredBrief {
-    implicit val format: OFormat[StoredBrief] = Json.format[StoredBrief]
+    implicit val format: Format[StoredBrief] = Json.format[StoredBrief]
     def empty: StoredBrief = StoredBrief(None, Seq.empty, None)
   }
-
 }
 
 
