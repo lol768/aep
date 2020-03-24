@@ -1,4 +1,4 @@
-import {msToHumanReadable} from './time-helper'
+import msToHumanReadable from './time-helper';
 
 const setGreen = (el) => {
   el.classList.remove('text-danger');

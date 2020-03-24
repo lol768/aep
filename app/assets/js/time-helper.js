@@ -1,4 +1,4 @@
-export const msToHumanReadable = (duration) => {
+export default function msToHumanReadable(duration) {
   return Object.entries({
     day: Math.floor((duration / (1000 * 60 * 60 * 24)) % 24),
     hour: Math.floor((duration / (1000 * 60 * 60)) % 24),
@@ -7,4 +7,4 @@ export const msToHumanReadable = (duration) => {
     if (quantity === 0) return null;
     return (quantity % 2 === 0) ? `${quantity} ${unit}s` : `${quantity} ${unit}`;
   }).filter(Boolean).join(' ');
-};
+}
