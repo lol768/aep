@@ -1,35 +1,6 @@
-@import views.html.tags.localisedDatetime
-@import warwick.core.helpers.JavaTime
-@import java.time.OffsetDateTime
-@import java.time.LocalDateTime
-@import java.time.ZoneOffset
-@import java.util.TimeZone
-@import views.html.tags.localisedDatetimeRange
 @()(implicit context: RequestContext)
 
 @frontend("Home") {
   <p>Lorem ipsum dolor sit amet</p>
 
-  <div class="row">
-    <div class="col-sm-6">
-      <h2>Dates</h2>
-      @localisedDatetime(JavaTime.offsetDateTime)
-      <hr />
-      @localisedDatetime(JavaTime.offsetDateTime.plusDays(1))
-      <hr />
-      @localisedDatetime(JavaTime.offsetDateTime.minusDays(1))
-      <hr />
-      @localisedDatetime(OffsetDateTime.parse("2020-07-01T09:30:00+01:00"))
-    </div>
-    <div class="col-sm-6">
-      <h2>Dates ranges</h2>
-      @localisedDatetimeRange(JavaTime.offsetDateTime, JavaTime.offsetDateTime.plusHours(2))
-      <hr />
-      @localisedDatetimeRange(JavaTime.offsetDateTime.plusDays(1), JavaTime.offsetDateTime.plusDays(1).plusHours(29))
-      <hr />
-      @localisedDatetimeRange(OffsetDateTime.parse("2020-07-01T09:30:00+01:00"), OffsetDateTime.parse("2020-08-01T11:15:00+01:00"))
-      <hr />
-      @localisedDatetimeRange(OffsetDateTime.parse("2022-07-01T09:30:00+01:00"), OffsetDateTime.parse("2023-08-01T11:15:00+01:00"))
-    </div>
-  </div>
 }
