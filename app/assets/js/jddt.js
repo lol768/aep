@@ -5,7 +5,7 @@ const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 const TODAY = 'Today';
 const SOME_SUNNY_DAY = '';
 let serverTimezoneOffset = 0; // Offset in minutes, can by updated by server
-let serverTimezoneName = 'GMT'; // Also to be supplied by server
+let serverTimezoneName = 'Europe/London'; // Also to be supplied by server
 
 /**
  * Returns number n as string with extra 0 prepended if it's only 1 digit
@@ -338,18 +338,20 @@ export default class JDDT {
     }
     this.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
       el.dataset.serverTimezoneName);
-    const millis = parseInt(el.dataset.millis, 10);
-    const format = el.hasAttribute('data-format')
-      ? el.dataset.format
-      : 'longLocal';
+    if (localTimezoneName !== 'Europe/London') {
+      const millis = parseInt(el.dataset.millis, 10);
+      const format = el.hasAttribute('data-format')
+        ? el.dataset.format
+        : 'longLocal';
 
-    if (typeof JDDT.prototype[format] !== 'function') {
-      throw new Error(`Invalid JDDT format specified on element: ${format}`);
+      if (typeof JDDT.prototype[format] !== 'function') {
+        throw new Error(`Invalid JDDT format specified on element: ${format}`);
+      }
+
+      const jddt = new JDDT(millis);
+      // eslint-disable-next-line no-param-reassign
+      el.innerHTML = jddt[format]();
     }
-
-    const jddt = new JDDT(millis);
-    // eslint-disable-next-line no-param-reassign
-    el.innerHTML = jddt[format]();
   }
 
   /**
@@ -367,29 +369,32 @@ export default class JDDT {
     }
     this.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
       el.dataset.serverTimezoneName);
-    const fromMillis = parseInt(el.dataset.fromMillis, 10);
-    const toMillis = parseInt(el.dataset.toMillis, 10);
-    const short = el.hasAttribute('data-short') && el.dataset.short !== 'false';
-    const server = el.hasAttribute('data-show-server-time') && el.dataset.showServerTime !== 'false';
 
-    const fromJDDT = new JDDT(fromMillis);
-    const toJDDT = new JDDT(toMillis);
-    if (server) {
-      // eslint-disable-next-line no-param-reassign
-      el.innerHTML = stringifyDateRange(
-        fromJDDT.jsDateServer,
-        toJDDT.jsDateServer,
-        serverTimezoneName,
-        short,
-      );
-    } else {
-      // eslint-disable-next-line no-param-reassign
-      el.innerHTML = stringifyDateRange(
-        fromJDDT.jsDateLocal,
-        toJDDT.jsDateLocal,
-        localTimezoneName,
-        short,
-      );
+    if (localTimezoneName !== 'Europe/London') {
+      const fromMillis = parseInt(el.dataset.fromMillis, 10);
+      const toMillis = parseInt(el.dataset.toMillis, 10);
+      const short = el.hasAttribute('data-short') && el.dataset.short !== 'false';
+      const server = el.hasAttribute('data-show-server-time') && el.dataset.showServerTime !== 'false';
+
+      const fromJDDT = new JDDT(fromMillis);
+      const toJDDT = new JDDT(toMillis);
+      if (server) {
+        // eslint-disable-next-line no-param-reassign
+        el.innerHTML = stringifyDateRange(
+          fromJDDT.jsDateServer,
+          toJDDT.jsDateServer,
+          serverTimezoneName,
+          short,
+        );
+      } else {
+        // eslint-disable-next-line no-param-reassign
+        el.innerHTML = stringifyDateRange(
+          fromJDDT.jsDateLocal,
+          toJDDT.jsDateLocal,
+          localTimezoneName,
+          short,
+        );
+      }
     }
   }
 
