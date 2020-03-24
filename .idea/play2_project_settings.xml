@@ -41,6 +41,13 @@
             </ProjectSettingsEntry>
           </value>
         </entry>
+        <entry key="onlineexams">
+          <value>
+            <ProjectSettingsEntry>
+              <option name="playDistrPath" value="$USER_HOME$/.coursier/cache/v1/https/repo1.maven.org/maven2/com/typesafe/play/play_2.13/2.8.1/play_2.13-2.8.1.jar" />
+            </ProjectSettingsEntry>
+          </value>
+        </entry>
         <entry key="play-app-template">
           <value>
             <ProjectSettingsEntry>
