@@ -10,13 +10,13 @@
         <i class="fad fa-fw fa-hourglass"></i>
         <span
         class="time-left-to-start"
-        data-rendering=@{
+        data-rendering="@{
             Json.stringify(Json.toJson(Map(
                 "start" -> JsNumber(startTime.toInstant.toEpochMilli),
                 "end" -> JsNumber(startTime.toInstant.toEpochMilli + studentAssessmentWithAssessment.assessment.duration.toMillis),
                 "studentStarted" -> JsBoolean(studentAssessmentWithAssessment.studentAssessment.startTime.nonEmpty),
             )))
-        }
+        }"
         ></span>
     </span>
 }
