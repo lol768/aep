@@ -28,6 +28,7 @@ trait StudentAssessmentsTables extends VersionedTables {
     def studentId = column[UniversityID]("student_id")
     def inSeat = column[Boolean]("in_seat")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
+    def finaliseTime = column[Option[OffsetDateTime]]("finalise_time_utc")
     def uploadedFiles = column[List[UUID]]("uploaded_file_ids")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
@@ -39,7 +40,7 @@ trait StudentAssessmentsTables extends VersionedTables {
     def pk = primaryKey("pk_student_assessment", (assessmentId, studentId))
 
     override def * : ProvenShape[StoredStudentAssessment] =
-      (assessmentId, studentId, inSeat, startTime, uploadedFiles, created, version).mapTo[StoredStudentAssessment]
+      (assessmentId, studentId, inSeat, startTime, finaliseTime, uploadedFiles, created, version).mapTo[StoredStudentAssessment]
 
     def asMetadata = (assessmentId, studentId, inSeat, startTime, uploadedFiles.length()).mapTo[StudentAssessmentMetadata]
   }
@@ -52,7 +53,7 @@ trait StudentAssessmentsTables extends VersionedTables {
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredStudentAssessmentVersion] =
-      (assessmentId, studentId, inSeat, startTime, uploadedFiles, created, version, operation, timestamp, auditUser).mapTo[StoredStudentAssessmentVersion]
+      (assessmentId, studentId, inSeat, startTime, finaliseTime, uploadedFiles, created, version, operation, timestamp, auditUser).mapTo[StoredStudentAssessmentVersion]
     def pk = primaryKey("pk_student_assessment_version", (assessmentId, studentId, timestamp))
   }
 
@@ -66,6 +67,7 @@ object StudentAssessmentsTables {
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
+    finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
     created: OffsetDateTime,
     version: OffsetDateTime
@@ -76,6 +78,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
+        finaliseTime,
         uploadedFiles.map(fileMap)
       )
     override def atVersion(at: OffsetDateTime): StoredStudentAssessment = copy(version = at)
@@ -86,6 +89,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
+        finaliseTime,
         uploadedFiles,
         created,
         version,
@@ -100,6 +104,7 @@ object StudentAssessmentsTables {
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
+    finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
     created: OffsetDateTime,
     version: OffsetDateTime,
