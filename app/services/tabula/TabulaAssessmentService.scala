@@ -22,14 +22,16 @@ import ServiceResults.Implicits._
 import com.google.inject.name.Named
 import TabulaAssessmentService._
 import play.api.Logger
+import uk.ac.warwick.util.termdates.AcademicYear
 
 @ImplementedBy(classOf[CachingTabulaAssessmentService])
 trait TabulaAssessmentService {
-  def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[Return]
+  def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn]
+  def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]]
 }
 
 object TabulaAssessmentService {
-  type Return = ServiceResult[Seq[tabula.AssessmentComponent]]
+  type AssessmentComponentsReturn = ServiceResult[Seq[tabula.AssessmentComponent]]
 
   case class GetAssessmentsOptions(
     deptCode: String,
@@ -38,6 +40,11 @@ object TabulaAssessmentService {
     def cacheKey = s"d:$deptCode;e:$withExamPapersOnly"
   }
 
+  case class GetAssessmentGroupMembersOptions(
+    deptCode: String,
+    academicYear: AcademicYear,
+    paperCodes: Seq[String]
+  )
 }
 
 class CachingTabulaAssessmentService @Inject() (
@@ -46,18 +53,20 @@ class CachingTabulaAssessmentService @Inject() (
   timing: TimingService,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentService with Logging {
 
-  private lazy val ttlStrategy: Return => Ttl = a => a.fold(
+  private lazy val ttlStrategy: AssessmentComponentsReturn => Ttl = a => a.fold(
     _ => Ttl(soft = 10.seconds, medium = 1.minute, hard = 1.hour),
     _ => Ttl(soft = 1.hour, medium = 1.day, hard = 7.days)
   )
 
-  private lazy val wrappedCache = VariableTtlCacheHelper.async[Return](cache, logger, ttlStrategy, timing)
+  private lazy val wrappedCache = VariableTtlCacheHelper.async[AssessmentComponentsReturn](cache, logger, ttlStrategy, timing)
 
-  override def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[Return] = timing.time(TimingCategories.TabulaRead) {
+  override def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn] = timing.time(TimingCategories.TabulaRead) {
     wrappedCache.getOrElseUpdate(options.cacheKey) {
       impl.getAssessments(options)
     }
   }
+
+  override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] = impl.getAssessmentGroupMembers(options)
 
 }
 
@@ -71,7 +80,7 @@ class TabulaAssessmentServiceImpl @Inject() (
 
   import tabulaHttp._
 
-  override def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[Return] = {
+  override def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn] = {
     val url = config.getAssessmentsUrl(options.deptCode)
     val req = ws.url(url)
       .withQueryStringParameters(
@@ -81,6 +90,19 @@ class TabulaAssessmentServiceImpl @Inject() (
 
     doGet(url, req, description = "getAssessments").successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.responseAssessmentComponentsReads)
+    }
+  }
+
+  override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] = {
+    val url = config.getAssessmentComponentMembersUrl(options.deptCode, options.academicYear)
+    val req = ws.url(url)
+      .withQueryStringParameters(
+        options.paperCodes.map("paperCode" -> _): _*
+      )
+    implicit def l: Logger = logger
+
+    doGet(url, req, description = "getAssessmentGroupMembers").successFlatMapTo { jsValue =>
+      parseAndValidate(jsValue, TabulaResponseParsers.responsePaperCodesReads)
     }
   }
 
@@ -94,7 +116,7 @@ class TabulaHttp @Inject() (
   config: TabulaConfiguration,
   trustedApplicationsManager: TrustedApplicationsManager,
 )(implicit ec: ExecutionContext) extends Logging {
-  
+
   /**
     * Make a trusted GET request to an URL.
     *

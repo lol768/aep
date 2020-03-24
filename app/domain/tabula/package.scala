@@ -25,6 +25,15 @@ package object tabula {
     examPaper: Option[ExamPaper],
   )
 
+  case class ExamMembership(
+    moduleCode: String,
+    occurrence: String,
+    academicYear: String,
+    assessmentGroup: String,
+    sequence: String,
+    currentMembers: Seq[UniversityID],
+  )
+
   case class SitsProfile(
     universityID: UniversityID,
     usercode: Usercode,
