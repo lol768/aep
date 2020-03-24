@@ -26,7 +26,7 @@ const refresh = (node) => {
 
   const now = Number(new Date());
 
-  if (Number.isNaN(end) || Number.isNaN(end)) return;
+  if (Number.isNaN(start) || Number.isNaN(end)) return;
 
   let text;
 
