@@ -6,9 +6,9 @@
 
 @(assessment: StudentAssessmentWithAssessment)(implicit request: RequestHeader, context: RequestContext)
 
-@frontend(assessment.assessment.title, extraClasses = if(assessment.isCurrentlyDoingExam) Seq("grey-nopad", "connect-ws") else  Seq("grey-nopad")) {
+@frontend(assessment.assessment.title, extraClasses = if(assessment.inProgress) Seq("grey-nopad", "connect-ws") else  Seq("grey-nopad")) {
   @assessmentPanel(assessment, isAssessmentPage = true)
-  @if(assessment.isCurrentlyDoingExam) {
+  @if(assessment.inProgress) {
     <h2>Exam files</h2>
     @assessment.assessment.brief.files.map { file =>
       @* TODO create controller that restricts view of this files   *@
