@@ -13,6 +13,7 @@ trait ExtendedPostgresProfile
     with PgArraySupport
     with PgDate2Support
     with PgJsonSupport
+    with PgPlayJsonSupport
     with CustomStringJdbcTypeSupport
     with CustomJdbcDateTypesSupport
     with FixedPgLocalDateTypeSupport {

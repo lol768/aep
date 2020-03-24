@@ -9,7 +9,7 @@ import domain.dao.AbstractDaoTest
 
 class CustomJdbcTypesTest extends AbstractDaoTest {
 
-  val customJdbcTypes = get[CustomJdbcTypes]
+  val customJdbcTypes = get[PostgresCustomJdbcTypes]
 
   trait DatabaseFixture {
     def db: Database = dbConfig.db

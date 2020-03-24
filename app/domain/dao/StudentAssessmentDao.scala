@@ -20,7 +20,7 @@ trait StudentAssessmentsTables extends VersionedTables {
 
   import profile.api._
 
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
   import jdbcTypes._
 
   trait CommonProperties { self: Table[_] =>
@@ -133,7 +133,7 @@ trait StudentAssessmentDao {
 @Singleton
 class StudentAssessmentDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
 )(implicit ec: ExecutionContext) extends StudentAssessmentDao with StudentAssessmentsTables with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
   import jdbcTypes._

@@ -22,7 +22,7 @@ trait AssessmentsTables extends VersionedTables {
 
   import profile.api._
 
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
   import jdbcTypes._
 
   trait CommonProperties { self: Table[_] =>
@@ -233,9 +233,10 @@ trait AssessmentDao {
 @Singleton
 class AssessmentDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
 )(implicit ec: ExecutionContext) extends AssessmentDao with AssessmentsTables with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
+  import jdbcTypes._
 
   lazy val warwickTz = ZoneId.of("Europe/London")
 

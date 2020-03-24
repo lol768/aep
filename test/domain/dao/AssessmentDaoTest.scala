@@ -25,9 +25,8 @@ class AssessmentDaoTest extends AbstractDaoTest {
           result <- dao.insert(ass)
           existsAfter <- dao.getById(id)
           _ <- DBIO.from(Future {
-            result.version.toInstant.equals(now) mustBe true
+            result.version.toInstant mustBe now
 
-            result.code mustBe "true"
             result.code mustBe ass.code
             result.title mustBe ass.title
             result.assessmentType mustBe ass.assessmentType

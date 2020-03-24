@@ -6,6 +6,7 @@ import enumeratum.SlickEnumSupport
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json.{Format, JsValue, Json, OFormat}
+import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 import warwick.sso.{GroupName, UniversityID, Usercode}
 
@@ -17,49 +18,61 @@ import scala.reflect.ClassTag
   * profile, which can vary. Inject this into your DAO and import from there.
   */
 @Singleton
-class CustomJdbcTypes @Inject()(
+abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject() (
   protected val dbConfigProvider: DatabaseConfigProvider
 ) extends SlickEnumSupport {
 
-  protected lazy val dbConfig = dbConfigProvider.get[JdbcProfile]
-  override lazy val profile = dbConfig.profile
+  protected lazy val dbConfig: DatabaseConfig[Profile] = dbConfigProvider.get[Profile]
+  override lazy val profile: Profile = dbConfig.profile
 
   import profile.api._
 
   implicit val usercodeTypeMapper: JdbcType[Usercode] = MappedColumnType.base[Usercode, String](
-    u => u.string,
-    s => Usercode(s)
+    _.string,
+    Usercode
   )
 
   implicit val universityIdTypeMapper: JdbcType[UniversityID] = MappedColumnType.base[UniversityID, String](
-    u => u.string,
-    s => UniversityID(s)
+    _.string,
+    UniversityID
   )
 
   implicit val groupNameTypeMapper: JdbcType[GroupName] = MappedColumnType.base[GroupName, String](
-    g => g.string,
-    s => GroupName(s)
+    _.string,
+    GroupName
   )
-
-  implicit val jsonTypeMapper: JdbcType[JsValue] = MappedColumnType.base[JsValue, String](Json.stringify(_).replace("\\u0000", ""), Json.parse)
 
   implicit val symbolTypeMapper: JdbcType[Symbol] = MappedColumnType.base[Symbol, String](_.name, Symbol.apply)
 
-  // Enum mappings
-  implicit lazy val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)
-  implicit lazy val uploadedFileOwnerMapper: JdbcType[UploadedFileOwner] = mappedColumnTypeForEnum(UploadedFileOwner)
+  // Enum[] mappings
+  implicit val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)
+  implicit val uploadedFileOwnerMapper: JdbcType[UploadedFileOwner] = mappedColumnTypeForEnum(UploadedFileOwner)
   implicit val platformTypeMapper: JdbcType[Platform] = mappedColumnTypeForEnum(Platform)
   implicit val assessmentTypeTypeMapper: JdbcType[AssessmentType] = mappedColumnTypeForEnum(AssessmentType)
+  
+}
+
+class OracleCustomJdbcTypes @Inject() (
+  dbConfigProvider: DatabaseConfigProvider
+) extends CustomJdbcTypes[JdbcProfile](dbConfigProvider)
+
+class PostgresCustomJdbcTypes @Inject() (
+  dbConfigProvider: DatabaseConfigProvider
+) extends CustomJdbcTypes[ExtendedPostgresProfile](dbConfigProvider) {
+
+  import profile.api._
 
   /** Maps a column to a specific class via its implicit JSON conversions */
-  private def jsonTypeMapper[T: ClassTag](implicit ev: Format[T]): JdbcType[T] = MappedColumnType.base[T, JsValue](
+  private def jsonTypeMapper[T : ClassTag](implicit ev: Format[T]): JdbcType[T] = MappedColumnType.base[T, JsValue](
     Json.toJson(_),
     _.as[T]
   )
 
   // For explicitly passing an OFormat
-  private def jsonTypeMapper[T: ClassTag](format: OFormat[T]): JdbcType[T] = jsonTypeMapper[T](implicitly[ClassTag[T]], format)
+  private def jsonTypeMapper[T : ClassTag](format: OFormat[T]): JdbcType[T] = jsonTypeMapper[T](implicitly[ClassTag[T]], format)
 
   // JSON types
-  implicit val storedBriefMapper: JdbcType[StoredBrief] = jsonTypeMapper[StoredBrief]
+
+  implicit val listOfStringTuplesMapper: JdbcType[Seq[(String, String)]] = jsonTypeMapper[Seq[(String, String)]]
+  implicit val listOfStringsMapper: JdbcType[Seq[String]] = jsonTypeMapper[Seq[String]]
 }

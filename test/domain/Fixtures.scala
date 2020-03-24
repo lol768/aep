@@ -124,7 +124,7 @@ object Fixtures {
         override def profileIsObject: Boolean = ???
       }
     }
-    override val jdbcTypes: CustomJdbcTypes = new CustomJdbcTypes(dbConfigProvider)
+    override val jdbcTypes: PostgresCustomJdbcTypes = new PostgresCustomJdbcTypes(dbConfigProvider)
     import dbConfig.profile.api._
 
     def truncateAndReset =
