@@ -10,6 +10,12 @@ const setRed = (el) => {
   el.classList.remove('text-info');
 };
 
+const format = countdown.YEARS
+  + countdown.MONTHS
+  + countdown.DAYS
+  + countdown.HOURS
+  + countdown.MINUTES;
+
 const refresh = (node) => {
   const {
     parentElement,
@@ -32,14 +38,14 @@ const refresh = (node) => {
 
   if (now < end && now > start) {
     if (studentStarted) {
-      text = `Started ${countdown(null, new Date(start), 220).toString()} ago, ${countdown(null, new Date(end), 220).toString()} remaining.`;
+      text = `Started ${countdown(null, new Date(start), format).toString()} ago, ${countdown(null, new Date(end), 220).toString()} remaining.`;
       setGreen(parentElement);
     } else {
-      text = `${countdown(null, new Date(end), 220).toString()} left to start`;
+      text = `${countdown(null, new Date(end), format).toString()} left to start`;
       setRed(parentElement);
     }
   } else if (now < start) {
-    text = `You can start in ${countdown(null, new Date(start), 220).toString()}`;
+    text = `You can start in ${countdown(null, new Date(start), format).toString()}`;
     setRed(parentElement);
   } else if (now > end) {
     text = 'The exam window has now passed';
