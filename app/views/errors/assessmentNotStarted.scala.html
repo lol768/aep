@@ -1,0 +1,10 @@
+@import domain.StudentAssessmentWithAssessment
+
+@(assessment: StudentAssessmentWithAssessment)(implicit context: RequestContext)
+
+@frontend(s"${assessment.assessment.title} - Assessment not started") {
+  <p>
+    This assessment has not been started.
+  </p>
+}
+
