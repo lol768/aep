@@ -33,4 +33,5 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.body.classList.contains('connect-ws')) {
     import('./assessment-announcements');
   }
+  if (document.querySelector('.time-left-to-start')) import('./assessment-timing');
 });
