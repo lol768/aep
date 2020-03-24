@@ -8,6 +8,7 @@ flash.emails.queued=Queued {0} emails.
 flash.mywarwick.queued=Queued My Warwick alert.
 flash.websocket.published=Published WebSocket message.
 flash.files.uploaded=Uploaded {0} files.
+flash.assessment.finish.must-check-box=You must check the check box to finish the assessment.
 
 # Overrides of keys in messages.default
 

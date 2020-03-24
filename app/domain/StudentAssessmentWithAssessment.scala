@@ -5,5 +5,5 @@ case class StudentAssessmentWithAssessment(
   assessment: Assessment
 ) {
   // TODO Add logic for when exam is finalised
-  def inProgress = studentAssessment.startTime.nonEmpty
+  def inProgress = studentAssessment.startTime.nonEmpty && studentAssessment.finaliseTime.isEmpty
 }

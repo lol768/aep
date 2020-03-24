@@ -60,7 +60,7 @@ class ActionRefiners @Inject() (
     new Filter[AssessmentSpecificRequest] {
       override protected def apply[A](implicit request: AssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
-          if (request.studentAssessmentWithAssessment.studentAssessment.finaliseTime.isEmpty)
+          if (request.studentAssessmentWithAssessment.studentAssessment.finaliseTime.isDefined)
             Some(Forbidden(views.html.errors.assessmentFinished(request.studentAssessmentWithAssessment)))
           else
             None

@@ -29,8 +29,8 @@
           <li>Checked through your answers to the assessment questions</li>
         </ul>
         @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id)) { implicit fc =>
-          @b3.checkbox(finishExamForm("agreeDisclaimer"), Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.")
-          @b3.submit(Symbol("class") -> "btn btn-default", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish exam }
+          @b3.checkbox(finishExamForm("agreeDisclaimer"), Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.", Symbol("data-undisable-selector") -> ".finish-exam-btn")
+          @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish exam }
         }
       </div>
     </div>

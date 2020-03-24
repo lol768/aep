@@ -2,13 +2,14 @@ package controllers
 
 import java.util.UUID
 
+import controllers.sysadmin.SysadminTestController.myWarwickForm
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, Result}
 import services.{SecurityService, StudentAssessmentService}
 import warwick.fileuploads.UploadedFileControllerHelper
 import play.api.data.Form
 import play.api.data.Forms._
-
+import play.api.i18n.Messages
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -18,7 +19,7 @@ object AssessmentController {
   )
 
   val finishExamForm: Form[FinishExamFormData] = Form(mapping(
-    "agreeDisclaimer" -> boolean
+    "agreeDisclaimer" -> boolean.verifying(constraint=Predef.identity[Boolean])
   )(FinishExamFormData.apply)(FinishExamFormData.unapply))
 }
 
@@ -43,9 +44,14 @@ class AssessmentController @Inject()(
   }
 
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
-    studentAssessmentService.finishAssessment(request.studentAssessmentWithAssessment.studentAssessment).successMap { _ =>
-      Redirect(controllers.routes.AssessmentController.view(assessmentId))
-    }
+    AssessmentController.finishExamForm.bindFromRequest().fold(
+      _ => Future.successful(Redirect(controllers.routes.AssessmentController.view(assessmentId))
+        .flashing("error" -> Messages("flash.assessment.finish.must-check-box"))),
+      _ => {
+        studentAssessmentService.finishAssessment(request.studentAssessmentWithAssessment.studentAssessment).successMap { _ =>
+          Redirect(controllers.routes.AssessmentController.view(assessmentId))
+        }
+      })
   }
 
   def downloadFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
