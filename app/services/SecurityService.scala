@@ -3,7 +3,6 @@ package services
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
-import domain.StudentAssessmentWithAssessment
 import helpers.Json.JsonClientError
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
@@ -11,7 +10,6 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import services.refiners.{ActionRefiners, AssessmentSpecificRequest}
 import system.{ImplicitRequestContext, Roles}
-import uk.ac.warwick.sso.client.SSOConfiguration
 import warwick.sso._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,6 +34,7 @@ trait SecurityService {
   type TryAccept[A] = Future[Either[Result, A]]
 
   def StudentAssessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
+  def StudentAssessmentIsStartedAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
 
   def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A]
 
@@ -108,6 +107,9 @@ class SecurityServiceImpl @Inject()(
 
   override def StudentAssessmentAction(assessmentId: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
     SigninRequiredAction andThen WithStudentAssessmentWithAssessment(assessmentId)
+
+  override def StudentAssessmentIsStartedAction(assessmentId: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
+    StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted
 
   override def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A] =
     sso.withUser(request)(block)
