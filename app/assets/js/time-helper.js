@@ -4,7 +4,6 @@ export default function msToHumanReadable(duration) {
     const {length} = arr;
     if (length === 0) return;
     if (length === 1) return arr.pop();
-    if (length === 2) return arr.join(' and ');
     const last = arr.pop();
     return `${arr.join(', ')} and ${last}`;
   };
