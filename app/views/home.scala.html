@@ -4,83 +4,32 @@
 @import java.time.LocalDateTime
 @import java.time.ZoneOffset
 @import java.util.TimeZone
+@import views.html.tags.localisedDatetimeRange
 @()(implicit context: RequestContext)
 
 @frontend("Home") {
   <p>Lorem ipsum dolor sit amet</p>
 
-  @localisedDatetime(JavaTime.offsetDateTime)
-  <hr />
-  @localisedDatetime(JavaTime.offsetDateTime.plusDays(1))
-  <hr />
-  @localisedDatetime(JavaTime.offsetDateTime.minusDays(1))
-  <hr />
-  @localisedDatetime(OffsetDateTime.parse("2020-07-01T09:30:00+01:00"))
-
-  @*
   <div class="row">
-    <div class="col-lg-6">
-      <h2>Random future date</h2>
-      <h5>GMT</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1592843400000" format="longGMT"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1592843400000" format="shortGMT"></span></p>
-
-      <h5>Local</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1592843400000" format="longLocal"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1592843400000" format="shortLocal"></span></p>
-
-      <h5>Server time</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1592843400000" format="longServerTime"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1592843400000" format="shortServerTime"></span></p>
+    <div class="col-sm-6">
+      <h2>Dates</h2>
+      @localisedDatetime(JavaTime.offsetDateTime)
+      <hr />
+      @localisedDatetime(JavaTime.offsetDateTime.plusDays(1))
+      <hr />
+      @localisedDatetime(JavaTime.offsetDateTime.minusDays(1))
+      <hr />
+      @localisedDatetime(OffsetDateTime.parse("2020-07-01T09:30:00+01:00"))
     </div>
-
-    <div class="col-lg-6">
-      <h2>Yesterday</h2>
-      <h5>GMT</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1584639000000" format="longGMT"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1584639000000" format="shortGMT"></span></p>
-
-      <h5>Local</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1584639000000" format="longLocal"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1584639000000" format="shortLocal"></span></p>
-
-      <h5>Server time</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1584639000000" format="longServerTime"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1584639000000" format="shortServerTime"></span></p>
+    <div class="col-sm-6">
+      <h2>Dates ranges</h2>
+      @localisedDatetimeRange(JavaTime.offsetDateTime, JavaTime.offsetDateTime.plusHours(2))
+      <hr />
+      @localisedDatetimeRange(JavaTime.offsetDateTime.plusDays(1), JavaTime.offsetDateTime.plusDays(1).plusHours(29))
+      <hr />
+      @localisedDatetimeRange(OffsetDateTime.parse("2020-07-01T09:30:00+01:00"), OffsetDateTime.parse("2020-08-01T11:15:00+01:00"))
+      <hr />
+      @localisedDatetimeRange(OffsetDateTime.parse("2022-07-01T09:30:00+01:00"), OffsetDateTime.parse("2023-08-01T11:15:00+01:00"))
     </div>
   </div>
-
-  <div class="row">
-    <div class="col-lg-6">
-      <h2>Today</h2>
-      <h5>GMT</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1584696600000" format="longGMT"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1584696600000" format="shortGMT"></span></p>
-
-      <h5>Local</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1584696600000" format="longLocal"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1584696600000" format="shortLocal"></span></p>
-
-      <h5>Server time</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1584696600000" format="longServerTime"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1584696600000" format="shortServerTime"></span></p>
-    </div>
-
-    <div class="col-lg-6">
-      <h2>Tomorrow</h2>
-      <h5>GMT</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1584796500000" format="longGMT"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1584796500000" format="shortGMT"></span></p>
-
-      <h5>Local</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1584796500000" format="longLocal"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1584796500000" format="shortLocal"></span></p>
-
-      <h5>Server time</h5>
-      <p><strong>Long:</strong> <span class="jddt" millis="1584796500000" format="longServerTime"></span></p>
-      <p><strong>Short:</strong> <span class="jddt" millis="1584796500000" format="shortServerTime"></span></p>
-    </div>
-  </div>
-
-  *@
 }
