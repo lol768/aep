@@ -1,7 +1,6 @@
 @import java.time.OffsetDateTime
 @import warwick.core.helpers.JavaTime
 @import java.util.TimeZone
-@import java.util.Calendar
 @import java.time.format.DateTimeFormatter
 @(fromDatetime: OffsetDateTime, toDatetime: OffsetDateTime)
 
@@ -59,6 +58,6 @@
   data-short="true"
   data-from-millis="@fromDatetime.toInstant.toEpochMilli"
   data-to-millis="@toDatetime.toInstant.toEpochMilli"
-  data-server-timezone-offset="@{TimeZone.getDefault.getOffset(fromDatetime.toInstant.toEpochMilli)}"
-  data-server-timezone-name="@{TimeZone.getDefault.getDisplayName()}"
+  data-server-timezone-offset="@{TimeZone.getTimeZone(JavaTime.timeZone).getOffset(fromDatetime.toInstant.toEpochMilli)}"
+  data-server-timezone-name="@{TimeZone.getTimeZone(JavaTime.timeZone).getDisplayName()}"
   ></span>
