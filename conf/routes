@@ -41,7 +41,7 @@ POST        /sysadmin/emails/:id                    @controllers.sysadmin.EmailQ
 GET         /sysadmin/mywarwick                     @controllers.sysadmin.MyWarwickQueueController.queued()
 POST        /sysadmin/mywarwick/reschedule          @controllers.sysadmin.MyWarwickQueueController.reschedule(triggerName: String, triggerGroup: String)
 GET         /sysadmin/assessments-test              @controllers.sysadmin.SysadminTestController.assessmentComponents()
-GET         /sysadmin/assessment-members-test              @controllers.sysadmin.SysadminTestController.assessmentComponentMembers()
+GET         /sysadmin/assessment-members-test       @controllers.sysadmin.SysadminTestController.assessmentComponentMembers()
 
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()
