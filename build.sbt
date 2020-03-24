@@ -62,10 +62,10 @@ lazy val integration = (project in file("it"))
 val enumeratumVersion = "1.5.15"
 val enumeratumPlayVersion = "1.5.17"
 val enumeratumSlickVersion = "1.5.16"
-val playUtilsVersion = "1.46"
+val playUtilsVersion = "1.47"
 val akkaVersion = "2.6.3"
 val ssoClientVersion = "2.81"
-val warwickUtilsVersion = "20200310"
+val warwickUtilsVersion = "20200323"
 
 val appDeps = Seq(
   guice,
@@ -102,6 +102,7 @@ val appDeps = Seq(
   "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
   "ch.qos.logback" % "logback-access" % "1.2.3",
   "uk.ac.warwick.play-utils" %% "core" % playUtilsVersion,
+  "uk.ac.warwick.play-utils" %% "caching" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "fileuploads" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "healthcheck" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "slick" % playUtilsVersion,
