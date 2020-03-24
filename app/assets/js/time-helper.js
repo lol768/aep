@@ -1,13 +1,15 @@
-export default function msToHumanReadable(duration) {
-  const arrayToSentence = arr => {
-    if (!arr) return;
-    const {length} = arr;
-    if (length === 0) return;
-    if (length === 1) return arr.pop();
-    const last = arr.pop();
-    return `${arr.join(', ')} and ${last}`;
-  };
+const arrayToSentence = (arr) => {
+  if (!arr) return null;
+  const {
+    length,
+  } = arr;
+  if (length === 0) return null;
+  if (length === 1) return arr.pop();
+  const last = arr.pop();
+  return `${arr.join(', ')} and ${last}`;
+};
 
+export default function msToHumanReadable(duration) {
   return arrayToSentence(Object.entries({
     day: Math.floor((duration / (1000 * 60 * 60 * 24)) % 24),
     hour: Math.floor((duration / (1000 * 60 * 60)) % 24),
