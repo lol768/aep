@@ -3,39 +3,48 @@ package domain
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
-import domain.Assessment.{AssessmentType, Brief}
+import domain.Assessment._
 import enumeratum.{EnumEntry, PlayEnum}
-import play.api.libs.json.{Json, OFormat}
 import warwick.fileuploads.UploadedFile
-
-import scala.collection.immutable
 
 case class Assessment(
   id: UUID = UUID.randomUUID(),
   code: String,
+  title: String,
   startTime: Option[OffsetDateTime],
   duration: Duration,
+  platform: Platform,
   assessmentType: AssessmentType,
   brief: Brief,
 )
 
 object Assessment {
+  sealed trait Platform extends EnumEntry
+
+  object Platform extends PlayEnum[Platform] {
+    case object Moodle extends Platform
+    case object OnlineExams extends Platform
+    case object QuestionmarkPerception extends Platform
+
+    val values: IndexedSeq[Platform] = findValues
+  }
+
   sealed trait AssessmentType extends EnumEntry
 
   object AssessmentType extends PlayEnum[AssessmentType] {
-    case object Moodle extends AssessmentType
-    case object OnlineExams extends AssessmentType
-    case object QuestionmarkPerception extends AssessmentType
+    case object OpenBook extends AssessmentType
+    case object Spoken extends AssessmentType
+    case object MultipleChoice extends AssessmentType
 
-    val values: immutable.IndexedSeq[AssessmentType] = findValues
+    val values: IndexedSeq[AssessmentType] = findValues
   }
 
   case class Brief(
     text: Option[String],
-
     files: Seq[UploadedFile],
     url: Option[String],
   )
 
+  val window: Duration = Duration.ofHours(8)
 }
 

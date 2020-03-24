@@ -1,11 +1,17 @@
 package services
 
+import java.util.UUID
+
 import com.google.inject.ImplementedBy
+import domain.StudentAssessmentWithAssessment
 import helpers.Json.JsonClientError
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc._
+import services.refiners.{ActionRefiners, AssessmentSpecificRequest}
 import system.{ImplicitRequestContext, Roles}
+import uk.ac.warwick.sso.client.SSOConfiguration
 import warwick.sso._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,13 +28,29 @@ trait SecurityService {
 
   def RequireSysadmin: AuthActionBuilder
   def RequireMasquerader: AuthActionBuilder
+
+  /**
+    * An async result that will either do what you ask (A) or fall back to an error Result.
+    * Used as a handler type for websockets.
+    */
+  type TryAccept[A] = Future[Either[Result, A]]
+
+  def StudentAssessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
+
+  def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A]
+
+  def isOriginSafe(origin: String): Boolean
 }
 
 @Singleton
 class SecurityServiceImpl @Inject()(
   sso: SSOClient,
-  parse: PlayBodyParsers
+  configuration: Configuration,
+  parse: PlayBodyParsers,
+  actionRefiners: ActionRefiners,
 )(implicit executionContext: ExecutionContext) extends SecurityService with Results with Rendering with AcceptExtractors with ImplicitRequestContext {
+
+  import actionRefiners._
 
   private def defaultParser: BodyParser[AnyContent] = parse.default
 
@@ -83,4 +105,15 @@ class SecurityServiceImpl @Inject()(
 
   private val unauthorizedResponse =
     Unauthorized(Json.toJson(JsonClientError(status = "unauthorized", errors = Seq("You are not signed in.  You may authenticate through Web Sign-On."))))
+
+  override def StudentAssessmentAction(assessmentId: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
+    SigninRequiredAction andThen WithStudentAssessmentWithAssessment(assessmentId)
+
+  override def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A] =
+    sso.withUser(request)(block)
+
+  override def isOriginSafe(origin: String): Boolean = {
+    val uri = new java.net.URI(origin)
+    uri.getHost == configuration.get[String]("domain") && uri.getScheme == "https"
+  }
 }

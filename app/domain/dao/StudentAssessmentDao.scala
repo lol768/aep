@@ -28,7 +28,7 @@ trait StudentAssessmentsTables extends VersionedTables {
     def studentId = column[UniversityID]("student_id")
     def inSeat = column[Boolean]("in_seat")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
-    def uploadedFiles = column[List[UUID]]("uploadesd_files")
+    def uploadedFiles = column[List[UUID]]("uploaded_file_ids")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
   }
@@ -116,8 +116,10 @@ trait StudentAssessmentDao {
 
   def all: DBIO[Seq[StoredStudentAssessment]]
   def insert(assessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
+  def update(studentAssessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]]
   def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]]
+  def get(studentId: UniversityID, assessmentId: UUID): DBIO[StoredStudentAssessment]
 }
 
 @Singleton
@@ -133,9 +135,16 @@ class StudentAssessmentDaoImpl @Inject()(
   override def insert(assessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment] =
     studentAssessments.insert(assessment)
 
+  override def update(studentAssessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment] =
+    studentAssessments.update(studentAssessment)
+
   override def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]] =
     studentAssessments.table.filter(_.studentId === studentId).result
 
   override def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]] =
     studentAssessments.table.filter(_.assessmentId === assessmentId).result
+
+  override def get(studentId: UniversityID, assessmentId: UUID): DBIO[StoredStudentAssessment] =
+    studentAssessments.table.filter(_.studentId === studentId).filter(_.assessmentId === assessmentId).result.head
+
 }

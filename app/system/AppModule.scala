@@ -11,5 +11,6 @@ class AppModule(environment: Environment, configuration: Configuration) extends 
     // Enables Scheduler for injection. Scheduler.start() happens separately, in SchedulerConfigModule
     bind[Scheduler].toProvider[SchedulerProvider]
     bind[UploadedFileErrorProvider].to[UploadedFileErrorProviderImpl]
+        bind(classOf[ClusterLifecycle]).asEagerSingleton()
   }
 }

@@ -1,9 +1,9 @@
-@import warwick.core.helpers.JavaTime
-@import java.time.OffsetDateTime
+@import domain.StudentAssessmentWithAssessment
+@import tags._
 
-@()(implicit context: RequestContext)
+@(assessments: Seq[StudentAssessmentWithAssessment])(implicit requestHeader: RequestHeader, context: RequestContext)
 
-@frontend("My exams", bodyClass = "grey-nopad") {
+@frontend("My exams", extraClasses = Seq("grey-nopad")) {
 
   <div class="media">
     <div class="media-left">
@@ -16,220 +16,31 @@
 
   <hr>
 
-  <div class="panel panel-default panel-lg">
-    <div class="panel-body">
-      <h2>Your in-progress exam</h2>
+@*  <div class="panel panel-default panel-lg">*@
+@*    <div class="panel-body">*@
+@*      <h2>Your in-progress exam</h2>*@
 
-      <p>CS118-15 Open book Java programming</p>
+@*      <p>CS118-15 Open book Java programming</p>*@
 
-      <p>
-        <span class="text-muted">
-          <i class="fad fa-fw fa-hourglass-half"></i>Started 1 hour 2 minutes ago. 1 hour 57 minutes remaining
-        </span>
-      </p>
+@*      <p>*@
+@*        <span class="text-muted">*@
+@*          <i class="fad fa-fw fa-hourglass-half"></i>Started 1 hour 2 minutes ago. 1 hour 57 minutes remaining*@
+@*        </span>*@
+@*      </p>*@
 
-      <a href="#" class="btn btn-primary btn-lg">
-        Continue
-      </a>
-    </div>
-  </div>
+@*      <a href="/service/stub" class="btn btn-primary btn-lg">*@
+@*        Continue*@
+@*      </a>*@
+@*    </div>*@
+@*  </div>*@
 
-  <div class="row">
-    <div class="col-md-6">
-      <div class="panel panel-default">
-        <div class="panel-body">
-          <h4>User-defined fields 101</h4>
-          <p>
-            <span class="text-muted">Module</span><br>
-            CS124-15 Introduction to model-driven development
-          </p>
-          <p>
-            <span class="text-muted">Type</span><br>
-            Open book
-          </p>
-          <p>
-            <span class="text-muted">Duration</span>
-            <br>
-            <i class="fad fa-stopwatch fa-fw"></i>3 hours
-          </p>
-          <p class="panel-content">
-            <span class="text-muted">Can start</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.minusHours(7).minusMinutes(30).plusHours(8))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusMinutes(30).plusHours(8))
-            <span class="text-muted">Asia/Shanghai</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.minusHours(7).minusMinutes(30))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusMinutes(30))
-            <span class="text-muted">Europe/London</span>
-          </p>
-          <a href="#" class="btn btn-primary">
-            Start
-          </a>
-          <span class="text-danger">
-            <i class="fad fa-fw fa-hourglass"></i>30 minutes left to start
-          </span>
+  @assessments.grouped(2).map { row =>
+    <div class="row">
+      @row.map { a =>
+        <div class="col-md-6">
+          @assessmentPanel(a)
         </div>
-      </div>
+      }
     </div>
-
-    <div class="col-md-6">
-      <div class="panel panel-default">
-        <div class="panel-body">
-          <h4>Computer Science maths</h4>
-          <p>
-            <span class="text-muted">Module</span><br>
-            CS130-15 Mathematics for Computer Scientists
-          </p>
-          <p>
-            <span class="text-muted">Type</span><br>
-            Files-based open book
-          </p>
-          <p>
-            <span class="text-muted">Duration</span>
-            <br>
-            <i class="fad fa-stopwatch fa-fw"></i>2 hours
-          </p>
-          <p class="panel-content">
-            <span class="text-muted">Can start</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.minusHours(1).plusHours(8))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusHours(7).plusHours(8))
-            <span class="text-muted">Asia/Shanghai</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.minusHours(1))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusHours(7))
-            <span class="text-muted">Europe/London</span>
-          </p>
-          <a href="#" class="btn btn-primary">
-            Start
-          </a>
-          <span class="text-muted">
-            <i class="fad fa-fw fa-hourglass"></i>7 hours left to start
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-md-6">
-      <div class="panel panel-default">
-        <div class="panel-body">
-          <h4>Example open book</h4>
-          <p>
-            <span class="text-muted">Module</span><br>
-            CS125-15 Example module
-          </p>
-          <p>
-            <span class="text-muted">Type</span><br>
-            Controlled open book
-          </p>
-          <p>
-            <span class="text-muted">Duration</span>
-            <br>
-            <i class="fad fa-stopwatch fa-fw"></i>1 hour 30 minutes
-          </p>
-          <p class="panel-content">
-            <span class="text-muted">Can start</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.plusMinutes(45).plusHours(8))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusMinutes(45).plusHours(8).plusHours(8))
-            <span class="text-muted">Asia/Shanghai</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.plusMinutes(45))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusMinutes(45).plusHours(8))
-            <span class="text-muted">Europe/London</span>
-          </p>
-          <a href="#" class="btn btn-primary disabled">
-            Start
-          </a>
-          <span class="text-muted">
-            <i class="fad fa-fw fa-hourglass"></i>Can start in 45 minutes
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-6">
-      <div class="panel panel-default">
-        <div class="panel-body">
-          <h4>Talking for computer scientists</h4>
-          <p>
-            <span class="text-muted">Module</span><br>
-            CS124-15 Introduction to model-driven development
-          </p>
-          <p>
-            <span class="text-muted">Type</span><br>
-            Spoken
-          </p>
-          <p>
-            <span class="text-muted">Duration</span>
-            <br>
-            <i class="fad fa-stopwatch fa-fw"></i>1 hour
-          </p>
-          <p class="panel-content">
-            <span class="text-muted">Can start</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.minusHours(7).minusMinutes(30).plusHours(8))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusMinutes(30).plusHours(8))
-            <span class="text-muted">Asia/Shanghai</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.minusHours(7).minusMinutes(30))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusMinutes(30))
-            <span class="text-muted">Europe/London</span>
-          </p>
-          <a href="#" target="_blank">
-            Exam on Moodle<i class="fa fa-fw fa-external-link"></i>
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-md-6">
-      <div class="panel panel-default">
-        <div class="panel-body">
-          <h4>SITS entity quiz</h4>
-          <p>
-            <span class="text-muted">Module</span><br>
-            CS124-15 Introduction to model-driven development
-          </p>
-          <p>
-            <span class="text-muted">Type</span><br>
-            Multiple choice
-          </p>
-          <p>
-            <span class="text-muted">Duration</span>
-            <br>
-            <i class="fad fa-stopwatch fa-fw"></i>1 hour
-          </p>
-          <p class="panel-content">
-            <span class="text-muted">Can start</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.minusHours(7).minusMinutes(30).plusHours(8))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusMinutes(30).plusHours(8))
-            <span class="text-muted">Asia/Shanghai</span>
-            <br>
-            <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(OffsetDateTime.now.minusHours(7).minusMinutes(30))
-            until
-            @JavaTime.Relative(OffsetDateTime.now.plusMinutes(30))
-            <span class="text-muted">Europe/London</span>
-          </p>
-          <a href="#" target="_blank">
-            Exam on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
+  }
 }

@@ -1,5 +1,9 @@
 import log from './log';
 
+const RECONNECT_THRESHOLD = 500;
+
+// How often should the websocket send a heartbeat to the server?
+const HEARTBEAT_INTERVAL_MS = 30 * 1000; // 30s
 export default class WebSocketConnection {
   /**
    * @param {string} endpoint Endpoint URI: e.g. wss//:warwick.ac.uk/path
@@ -23,7 +27,19 @@ export default class WebSocketConnection {
   }
 
   connect() {
+    this.timeout = undefined;
+    this.heartbeatTimeout = undefined;
+    if (this.ws !== undefined) {
+      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        // we don't need to reconnect
+        return;
+      }
+      this.ws.close();
+    }
+    log(`Connecting to ${this.endpoint}`);
     const ws = new WebSocket(this.endpoint);
+    this.ws = ws;
+
     ws.onmessage = (d) => {
       if ('data' in d) {
         if (this.onData) {
@@ -31,19 +47,77 @@ export default class WebSocketConnection {
         }
       }
     };
+
     if (this.onConnect) {
       ws.addEventListener('open', this.onConnect);
     }
-    if (this.onClose) {
-      ws.addEventListener('close', this.onClose);
-    }
+
+    // Heartbeat
+    ws.addEventListener('open', this.sendHeartbeat.bind(this));
+
+    ws.addEventListener('close', (e) => {
+      if (this.onClose) {
+        this.onClose(e);
+      }
+
+      if (this.heartbeatTimeout !== undefined) {
+        clearTimeout(this.heartbeatTimeout);
+      }
+
+      this.reconnectIfRightTime();
+      log('Disconnected from websocket, trying to reconnect');
+    });
+
     const errorHandler = (e) => {
       if (this.onError) {
         this.onError(e);
       }
-      this.connect();
+      ws.close();
+      this.reconnectIfRightTime();
       log('Disconnected from websocket, trying to reconnect');
     };
     ws.addEventListener('error', errorHandler);
+    this.lastConnectAttempt = (new Date()).getTime();
+  }
+
+  reconnectIfRightTime() {
+    const now = (new Date()).getTime();
+    if (this.timeout !== undefined) {
+      return;
+    }
+
+    const hasNotConnectedBefore = this.lastConnectAttempt === undefined;
+    if (hasNotConnectedBefore || (now - this.lastConnectAttempt) > RECONNECT_THRESHOLD) {
+      log('Enough time has passed for a reconnect event');
+      this.connect();
+    } else {
+      log(`Scheduling reconnect for ${RECONNECT_THRESHOLD}ms from now`);
+      this.timeout = setTimeout(() => {
+        this.connect();
+      }, RECONNECT_THRESHOLD);
+    }
+  }
+
+  sendHeartbeat() {
+    this.heartbeatTimeout = setTimeout(() => {
+      const networkInformation = (window.navigator.connection || {});
+      const {
+        downlink, downlinkMax, effectiveType, rtt, type,
+      } = networkInformation;
+
+      const message = {
+        type: 'NetworkInformation',
+        data: {
+          downlink,
+          downlinkMax,
+          effectiveType,
+          rtt,
+          type,
+        },
+      };
+
+      this.ws.send(JSON.stringify(message));
+      this.sendHeartbeat();
+    }, HEARTBEAT_INTERVAL_MS);
   }
 }

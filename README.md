@@ -6,9 +6,12 @@ Getting started
 ---------------
 
 * Check out the latest source
+* Ensure you're using node.js v13 (e.g. using `n` or `nvm`)
+* Ensure you have memcached running locally (or accessible elsewhere, with appropriate modification to local-dev.conf)
+* Ensure you have configured Font Awesome credentials: `npm config set "@fortawesome:registry" https://npm.fontawesome.com/ && npm config set "//npm.fontawesome.com/:_authToken" REDACTED`
 * Install latest asset dependencies: `npm ci`
 * Build assets: `npm run dev` (you can use `npm run watch` after this to watch for asset changes and rebuild on the fly)
-* Create a PostgreSQL database and user
+* Create a PostgreSQL database and user (reminder: https://www.getoutline.com/doc/postgresql-wmqpaqqzkF)
 * Copy `application-example.conf` to `application.conf`:
   * Set `domain`
   * Add your database details to `slick.dbs.default.db`

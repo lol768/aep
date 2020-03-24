@@ -35,17 +35,7 @@ JDDT.setServerTimezone(180, 'Europe/Moscow');
 JDDT.initialise(document);
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (!document.body.classList.contains('connect-ws')) {
-    return;
+  if (document.body.classList.contains('connect-ws')) {
+    import('./assessment-announcements');
   }
-  import('./web-sockets').then(() => {
-    const doNothing = () => {};
-    const websocket = new WebSocketConnection(`wss://${window.location.host}/Websocket`, {
-      onConnect: doNothing,
-      onError: doNothing,
-      onData: doNothing,
-      onClose: doNothing,
-    });
-    websocket.connect();
-  });
 });

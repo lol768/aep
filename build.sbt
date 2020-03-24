@@ -63,6 +63,7 @@ val enumeratumVersion = "1.5.15"
 val enumeratumPlayVersion = "1.5.17"
 val enumeratumSlickVersion = "1.5.16"
 val playUtilsVersion = "1.46"
+val akkaVersion = "2.6.3"
 val ssoClientVersion = "2.81"
 val warwickUtilsVersion = "20200310"
 
@@ -89,6 +90,12 @@ val appDeps = Seq(
   "net.codingwell" %% "scala-guice" % "4.2.6",
   "com.google.inject.extensions" % "guice-multibindings" % "4.2.2",
   "com.adrianhurt" %% "play-bootstrap" % "1.5.1-P27-B3",
+
+  "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
+  "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
+  "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
+  "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+  "com.typesafe.akka" %% "akka-http" % "10.1.11",
 
   "uk.ac.warwick.sso" %% "sso-client-play" % ssoClientVersion,
 

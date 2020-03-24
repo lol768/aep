@@ -31,13 +31,13 @@ trait CleanUpDatabaseAfterEachTest extends BeforeAndAfterEach {
     | $$ LANGUAGE plpgsql;
   """.stripMargin
 
-  private val dropTypeSql = "drop type assessment_type;"
+  private val dropTypeSql = Seq("drop type assessment_type;", "drop type assessment_platform;")
 
   private def removeAllTables(username: String): Unit = {
     val conn = dbConfig.db.source.createConnection()
     try {
       val executeDeleteTablesFunctionSql = s"select drop_all_tables('$username');"
-      val sqlToRun = Seq(deleteTablesFunctionSql, executeDeleteTablesFunctionSql, dropTypeSql)
+      val sqlToRun = Seq(deleteTablesFunctionSql, executeDeleteTablesFunctionSql) ++ dropTypeSql
 
       for (eachSql <- sqlToRun) {
         val s = conn.createStatement()
