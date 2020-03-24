@@ -4,12 +4,14 @@ import java.time.OffsetDateTime
 
 import akka.actor.ActorSystem
 import com.google.inject.Inject
+import javax.inject.Singleton
 import services.AkkaClusterStateService
 import warwick.core.Logging
 import warwick.core.helpers.JavaTime
 
 import scala.concurrent.duration._
 
+@Singleton
 class AkkaClusterUnreachableHealthCheck @Inject()(
   cluster: AkkaClusterStateService,
   system: ActorSystem,
