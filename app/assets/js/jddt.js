@@ -90,7 +90,7 @@ function relativeDateName(date) {
 
 // Get nice local timezone name if it exists
 let localTimezoneName;
-if (Intl !== undefined && Intl.DateTimeFormat !== undefined) {
+if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
   const dtf = Intl.DateTimeFormat();
   if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {
     localTimezoneName = dtf.resolvedOptions().timeZone;
