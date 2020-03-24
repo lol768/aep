@@ -22,10 +22,12 @@ import ServiceResults.Implicits._
 import com.google.inject.name.Named
 import TabulaAssessmentService._
 import play.api.Logger
+import uk.ac.warwick.util.termdates.AcademicYear
 
 @ImplementedBy(classOf[CachingTabulaAssessmentService])
 trait TabulaAssessmentService {
   def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[Return]
+  def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]]
 }
 
 object TabulaAssessmentService {
@@ -38,6 +40,11 @@ object TabulaAssessmentService {
     def cacheKey = s"d:$deptCode;e:$withExamPapersOnly"
   }
 
+  case class GetAssessmentGroupMembersOptions(
+    deptCode: String,
+    academicYear: AcademicYear,
+    paperCodes: Seq[String]
+  )
 }
 
 class CachingTabulaAssessmentService @Inject() (
@@ -58,6 +65,8 @@ class CachingTabulaAssessmentService @Inject() (
       impl.getAssessments(options)
     }
   }
+
+  override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] = impl.getAssessmentGroupMembers(options)
 
 }
 
@@ -84,6 +93,19 @@ class TabulaAssessmentServiceImpl @Inject() (
     }
   }
 
+  override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] = {
+    val url = config.getAssessmentComponentMembersUrl(options.deptCode, options.academicYear)
+    val req = ws.url(url)
+      .withQueryStringParameters(
+        options.paperCodes.map("paperCode" -> _): _*
+      )
+    implicit def l: Logger = logger
+
+    doGet(url, req, description = "getAssessmentGroupMembers").successFlatMapTo { jsValue =>
+      parseAndValidate(jsValue, TabulaResponseParsers.responsePaperCodesReads)
+    }
+  }
+
 }
 
 /**
@@ -94,7 +116,7 @@ class TabulaHttp @Inject() (
   config: TabulaConfiguration,
   trustedApplicationsManager: TrustedApplicationsManager,
 )(implicit ec: ExecutionContext) extends Logging {
-  
+
   /**
     * Make a trusted GET request to an URL.
     *
