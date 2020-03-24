@@ -1,4 +1,4 @@
-import * as countdown from 'countdown';
+import {msToHumanReadable} from './time-helper'
 
 const setGreen = (el) => {
   el.classList.remove('text-danger');
@@ -9,12 +9,6 @@ const setRed = (el) => {
   el.classList.add('text-danger');
   el.classList.remove('text-info');
 };
-
-const format = countdown.YEARS
-  + countdown.MONTHS
-  + countdown.DAYS
-  + countdown.HOURS
-  + countdown.MINUTES;
 
 const refresh = (node) => {
   const {
@@ -36,16 +30,16 @@ const refresh = (node) => {
 
   let text;
 
-  if (now < end && now > start) {
+  if (now > start && now < end) {
     if (studentStarted) {
-      text = `Started ${countdown(null, new Date(start), format).toString()} ago, ${countdown(null, new Date(end), 220).toString()} remaining.`;
+      text = `Started ${msToHumanReadable(now - new Date(start)).toString()} ago, ${msToHumanReadable(new Date(end) - now)} remaining.`;
       setGreen(parentElement);
     } else {
-      text = `${countdown(null, new Date(end), format).toString()} left to start`;
+      text = `${msToHumanReadable(new Date(end) - now)} left to start`;
       setRed(parentElement);
     }
   } else if (now < start) {
-    text = `You can start in ${countdown(null, new Date(start), format).toString()}`;
+    text = `You can start in ${msToHumanReadable(new Date(start) - now)}`;
     setRed(parentElement);
   } else if (now > end) {
     text = 'The exam window has now passed';
