@@ -19,6 +19,7 @@ GET         /                                       @controllers.IndexController
 GET         /assessments                            @controllers.AssessmentsController.index
 GET         /assessment/:id                         @controllers.AssessmentController.view(id: UUID)
 POST        /assessment/:id                         @controllers.AssessmentController.start(id: UUID)
+GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
 
 # Websocket
 GET         /websocket                              @controllers.WebSocketController.socket
@@ -39,6 +40,7 @@ GET         /sysadmin/emails                        @controllers.sysadmin.EmailQ
 POST        /sysadmin/emails/:id                    @controllers.sysadmin.EmailQueueController.enqueue(id: UUID)
 GET         /sysadmin/mywarwick                     @controllers.sysadmin.MyWarwickQueueController.queued()
 POST        /sysadmin/mywarwick/reschedule          @controllers.sysadmin.MyWarwickQueueController.reschedule(triggerName: String, triggerGroup: String)
+GET         /sysadmin/assessments-test              @controllers.sysadmin.SysadminTestController.assessmentComponents()
 
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()

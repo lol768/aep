@@ -4,6 +4,7 @@ import controllers.UploadedFileErrorProviderImpl
 import net.codingwell.scalaguice.ScalaModule
 import org.quartz.Scheduler
 import play.api.{Configuration, Environment}
+import services.tabula.{TabulaAssessmentService, TabulaAssessmentServiceImpl}
 import warwick.fileuploads.UploadedFileErrorProvider
 
 class AppModule(environment: Environment, configuration: Configuration) extends ScalaModule {
@@ -12,5 +13,9 @@ class AppModule(environment: Environment, configuration: Configuration) extends 
     bind[Scheduler].toProvider[SchedulerProvider]
     bind[UploadedFileErrorProvider].to[UploadedFileErrorProviderImpl]
         bind(classOf[ClusterLifecycle]).asEagerSingleton()
+
+    bind[TabulaAssessmentService]
+      .annotatedWithName("TabulaAssessmentService-NoCache")
+      .to[TabulaAssessmentServiceImpl]
   }
 }
