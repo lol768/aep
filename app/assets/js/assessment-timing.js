@@ -1,18 +1,17 @@
 import msToHumanReadable from './time-helper';
 
-const setGreen = (el) => {
-  el.classList.remove('text-danger');
-  el.classList.add('text-info');
+const clearWarning = ({ parentElement }) => {
+  parentElement.classList.remove('text-danger');
+  parentElement.classList.add('text-info');
 };
 
-const setRed = (el) => {
-  el.classList.add('text-danger');
-  el.classList.remove('text-info');
+const setWarning = ({ parentElement }) => {
+  parentElement.classList.add('text-danger');
+  parentElement.classList.remove('text-info');
 };
 
 const refresh = (node) => {
   const {
-    parentElement,
     dataset: {
       rendering,
     },
@@ -33,17 +32,17 @@ const refresh = (node) => {
   if (now > start && now < end) {
     if (studentStarted) {
       text = `Started ${msToHumanReadable(now - new Date(start))} ago. ${msToHumanReadable(new Date(end) - now)} remaining.`;
-      setGreen(parentElement);
+      clearWarning(node);
     } else {
       text = `${msToHumanReadable(new Date(end) - now)} left to start`;
-      setRed(parentElement);
+      setWarning(node);
     }
   } else if (now < start) {
     text = `You can start in ${msToHumanReadable(new Date(start) - now)}`;
-    setRed(parentElement);
+    setWarning(node);
   } else if (now > end) {
     text = 'The exam window has now passed';
-    setRed(parentElement);
+    setWarning(node);
   }
 
   const textNode = document.createTextNode(text);

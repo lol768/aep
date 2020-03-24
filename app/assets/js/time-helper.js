@@ -1,12 +1,9 @@
 const arrayToSentence = (arr) => {
   if (!arr) return null;
-  const {
-    length,
-  } = arr;
-  if (length === 0) return null;
-  if (length === 1) return arr.pop();
-  const last = arr.pop();
-  return `${arr.join(', ')} and ${last}`;
+  if (arr.length === 0) return null;
+  const [last, ...rest] = arr.reverse();
+  if (arr.length === 1) return last;
+  return `${rest.reverse().join(', ')} and ${last}`;
 };
 
 export default function msToHumanReadable(duration) {
@@ -16,6 +13,6 @@ export default function msToHumanReadable(duration) {
     minute: Math.floor((duration / (1000 * 60)) % 60),
   }).map(([unit, quantity]) => {
     if (quantity === 0) return null;
-    return (quantity % 2 === 0) ? `${quantity} ${unit}s` : `${quantity} ${unit}`;
+    return (quantity > 1) ? `${quantity} ${unit}s` : `${quantity} ${unit}`;
   }).filter(Boolean));
 }
