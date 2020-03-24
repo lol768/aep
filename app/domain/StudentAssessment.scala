@@ -7,7 +7,7 @@ import warwick.fileuploads.UploadedFile
 import warwick.sso.UniversityID
 
 sealed trait BaseStudentAssessment {
-  def assessment: UUID
+  def assessmentId: UUID
   def studentId: UniversityID
   def inSeat: Boolean
   def startTime: Option[OffsetDateTime]
@@ -22,7 +22,7 @@ case class StudentAssessment(
 ) extends BaseStudentAssessment
 
 case class StudentAssessmentMetadata(
-  assessment: UUID,
+  assessmentId: UUID,
   studentId: UniversityID,
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],
