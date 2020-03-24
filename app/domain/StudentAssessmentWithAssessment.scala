@@ -6,5 +6,6 @@ case class StudentAssessmentWithAssessment(
   studentAssessment: StudentAssessment,
   assessment: Assessment
 ) {
-  def isCurrentlyDoingExam = studentAssessment.startTime.exists(_.plus(assessment.duration).isBefore(JavaTime.offsetDateTime))
+  // TODO Add logic for when exam is finalised
+  def isCurrentlyDoingExam = studentAssessment.startTime.nonEmpty
 }
