@@ -32,7 +32,7 @@ const refresh = (node) => {
 
   if (now > start && now < end) {
     if (studentStarted) {
-      text = `Started ${msToHumanReadable(now - new Date(start))} ago, ${msToHumanReadable(new Date(end) - now)} remaining.`;
+      text = `Started ${msToHumanReadable(now - new Date(start))} ago. ${msToHumanReadable(new Date(end) - now)} remaining.`;
       setGreen(parentElement);
     } else {
       text = `${msToHumanReadable(new Date(end) - now)} left to start`;
