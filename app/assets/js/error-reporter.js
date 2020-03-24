@@ -7,7 +7,7 @@
 
 import log from 'loglevel';
 import _ from 'lodash-es';
-import {postJsonWithCredentials} from '@universityofwarwick/serverpipe';
+import { postJsonWithCredentials } from '@universityofwarwick/serverpipe';
 
 let errors = [];
 let postErrorsThrottled;
@@ -19,10 +19,11 @@ function postErrors() {
     .then(() => {
       log.info('Errors posted to server');
       errors = errors.slice(errorsToPost.length);
-    }).catch((e) => {
-    log.warn('Failed to post errors to server', e);
-    postErrorsThrottled();
-  });
+    })
+    .catch((e) => {
+      log.warn('Failed to post errors to server', e);
+      postErrorsThrottled();
+    });
 }
 
 postErrorsThrottled = _.throttle(postErrors, 5000); // eslint-disable-line prefer-const

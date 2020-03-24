@@ -10,10 +10,12 @@
  */
 
 import './polyfills';
-import './error-reporter'
+import initErrorReporter from './error-reporter';
 import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
+
+initErrorReporter();
 
 // dynamic import, fire and forget.
 /* eslint-ignore no-unused-expressions */
