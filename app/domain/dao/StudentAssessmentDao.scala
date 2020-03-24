@@ -76,6 +76,14 @@ object StudentAssessmentsTables {
         startTime,
         uploadedFiles.map(fileMap)
       )
+    def asStudentAssessmentMetadata =
+      StudentAssessmentMetadata(
+        assessmentId,
+        studentId,
+        inSeat,
+        startTime,
+        uploadedFiles.length
+      )
     override def atVersion(at: OffsetDateTime): StoredStudentAssessment = copy(version = at)
 
     override def storedVersion[B <: StoredVersion[StoredStudentAssessment]](operation: DatabaseOperation, timestamp: OffsetDateTime)(implicit ac: AuditLogContext): B =
