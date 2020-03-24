@@ -42,7 +42,7 @@ const refresh = (node) => {
     text = `You can start in ${countdown(null, new Date(start), 220).toString()}`;
     setRed(parentElement);
   } else if (now > end) {
-    text = 'You missed the exam, please contact your department';
+    text = 'The exam window has now passed';
     setRed(parentElement);
   }
 
