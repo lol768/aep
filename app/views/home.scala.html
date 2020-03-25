@@ -3,6 +3,7 @@
 
 @frontend("Home") {
   <p>Lorem ipsum dolor sit amet</p>
-<p>@tags.localisedDatetime(JavaTime.offsetDateTime)</p>
+<p>@tags.localisedDatetime(JavaTime.offsetDateTime.minusDays(1L))</p>
+  <p>@tags.localisedDatetime(JavaTime.offsetDateTime.plusYears(1L))</p>
   <p>@tags.localisedDatetimeRange(JavaTime.offsetDateTime, JavaTime.offsetDateTime.plusHours(2))</p>
 }

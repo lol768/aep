@@ -4,8 +4,7 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TODAY = 'Today';
 const SOME_SUNNY_DAY = '';
-let serverTimezoneOffset = 0; // Offset in minutes, can by updated by server
-let serverTimezoneName = 'Europe/London'; // Also to be supplied by server
+const iconString = '<i class="fad fa-clock fa-fw" aria-hidden="true"></i>';
 
 /**
  * Returns number n as string with extra 0 prepended if it's only 1 digit
@@ -88,12 +87,11 @@ function relativeDateName(date) {
   return SOME_SUNNY_DAY;
 }
 
-// Get nice local timezone name if it exists
-let localTimezoneName;
+let browserLocalTimezoneName;
 if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
   const dtf = Intl.DateTimeFormat();
   if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {
-    localTimezoneName = dtf.resolvedOptions().timeZone;
+    browserLocalTimezoneName = dtf.resolvedOptions().timeZone;
   }
 }
 
@@ -156,13 +154,10 @@ function stringify(date, timezoneName, short) {
     if (date.getFullYear() !== currentYear) {
       yearString = stringifyYear(date.getFullYear());
     }
-    dateName = `${stringifyDay(date.getDay(), short)} \
-    ${th(date.getDate())} \
-    ${stringifyMonth(date.getMonth(), short)} ${yearString}, `;
+    dateName = `${stringifyDay(date.getDay(), short)} ${th(date.getDate())} ${stringifyMonth(date.getMonth(), short)} ${yearString}`;
   }
-  return `<i class="fad fa-clock fa-fw" aria-hidden="true"></i> \
-    ${dateName} ${stringifyTime(date)} \
-    <span class="text-muted">${timezoneName}</span>`;
+  const dateTimeString = `${dateName.trim()}, ${stringifyTime(date).trim()}`;
+  return `${iconString} ${dateTimeString.trim()} <span class="text-muted">${timezoneName}</span>`;
 }
 
 /**
@@ -249,24 +244,59 @@ export default class JDDT {
       this.jsDateLocal = new Date(input);
     }
 
-    this.localTimezoneOffset = this.jsDateLocal.getTimezoneOffset();
+    // By default we get the local timezone details from the browser,
+    // but these can be overridden for testing using setLocalTimezone
 
-    // For users on old rubbish browsers fall back to +/- mm:hh for timezone name
-    if (localTimezoneName === undefined) {
-      localTimezoneName = `${this.localTimezoneOffset < 0 ? '-' : '+'}\
+    this.localTimezoneOffset = this.jsDateLocal.getTimezoneOffset();
+    if (browserLocalTimezoneName === undefined) {
+      this.localTimezoneName = `${this.localTimezoneOffset < 0 ? '-' : '+'}\
         ${pad0(Math.floor(Math.abs(this.localTimezoneOffset / 60)))}:\
         ${pad0(Math.abs(this.localTimezoneOffset) % 60)}`;
+    } else {
+      this.localTimezoneName = browserLocalTimezoneName;
     }
+
+    // These are the defaults, but should be overwritten using setServerTimezone
+    this.serverTimezoneOffset = 0;
+    this.serverTimezoneName = 'GMT';
 
     if (typeof this.jsDateLocal.getMonth !== 'function') {
       throw new Error(`Invalid date input: ${input.toString()}`);
     }
 
     this.jsDateGMT = new Date(this.jsDateLocal.valueOf());
-    this.jsDateGMT.setMinutes(this.jsDateLocal.getMinutes() + this.localTimezoneOffset);
+    this.jsDateGMT.setMinutes(this.jsDateLocal.getMinutes() - this.localTimezoneOffset);
+  }
 
-    this.jsDateServer = new Date(this.jsDateGMT.valueOf());
-    this.jsDateServer.setMinutes(this.jsDateGMT.getMinutes() + serverTimezoneOffset);
+  /**
+   * Intended for testing purposes so we can easilly pretend to be elsewhere
+   * @param {number} offset - offset from GMT in minutes
+   * @param {string} name - e.g. "Europe/Moscow"
+   */
+  setLocalTimezone(offset, name) {
+    if (typeof offset === 'number' && typeof name === 'string') {
+      this.localTimezoneOffset = offset;
+      this.localTimezoneName = name;
+
+      this.jsDateLocal = new Date(this.jsDateGMT.valueOf());
+      this.jsDateLocal.setMinutes(this.jsDateGMT.getMinutes() + this.localTimezoneOffset);
+    } else {
+      throw new Error('Provide an offset in number of minutes, and a string of the timezone name');
+    }
+  }
+
+  /**
+   * Updates the server timezone, used in calculating formatted server time
+   * @param {number} offset - the offset in minutes, in the style of js Date object timezoneOffset
+   * @param {string} name - the name of the server timezone (e.g. Europe/London)
+   */
+  setServerTimezone(offset, name) {
+    if (typeof offset === 'number' && typeof name === 'string') {
+      this.serverTimezoneOffset = offset;
+      this.serverTimezoneName = name;
+    } else {
+      throw new Error('Provide an offset in number of minutes, and a string of the timezone name');
+    }
   }
 
   /**
@@ -275,7 +305,7 @@ export default class JDDT {
    * @returns {string}
    */
   longLocal() {
-    return stringify(this.jsDateLocal, localTimezoneName);
+    return stringify(this.jsDateLocal, this.localTimezoneName);
   }
 
   /**
@@ -288,22 +318,12 @@ export default class JDDT {
   }
 
   /**
-   * Generates long-format string of the server timezone datetime, which can be set using
-   * JDDT.setServerTimezone
-   * - e.g. 12:00 London/Europe, Thursday 19th March 2020
-   * @returns {string}
-   */
-  longServerTime() {
-    return stringify(this.jsDateServer, serverTimezoneName);
-  }
-
-  /**
    * Generates short-format string of local datetime
    * - e.g. 17:00 Shanghai / Pacific time, Thu 19th Mar '20
    * @returns {string}
    */
   shortLocal() {
-    return stringify(this.jsDateLocal, localTimezoneName, true);
+    return stringify(this.jsDateLocal, this.localTimezoneName, true);
   }
 
   /**
@@ -313,15 +333,6 @@ export default class JDDT {
    */
   shortGMT() {
     return stringify(this.jsDateGMT, 'GMT', true);
-  }
-
-  /**
-   * Generates a short-format string of server timezone datetime, which can be set using
-   * JDDT.setServerTimezone
-   * @returns {string}
-   */
-  shortServerTime() {
-    return stringify(this.jsDateServer, serverTimezoneName, true);
   }
 
   /**
@@ -336,10 +347,11 @@ export default class JDDT {
       throw new Error('Element with .jddt class did not have data-server-timezone-offset '
           + 'and data-server-timezone-name attributes');
     }
-    JDDT.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
+    const millis = parseInt(el.dataset.millis, 10);
+    const jddt = new JDDT(millis);
+    jddt.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
       el.dataset.serverTimezoneName);
-    if (localTimezoneName !== serverTimezoneName) {
-      const millis = parseInt(el.dataset.millis, 10);
+    if (jddt.localTimezoneName !== jddt.serverTimezoneName) {
       const format = el.hasAttribute('data-format')
         ? el.dataset.format
         : 'longLocal';
@@ -348,7 +360,6 @@ export default class JDDT {
         throw new Error(`Invalid JDDT format specified on element: ${format}`);
       }
 
-      const jddt = new JDDT(millis);
       // eslint-disable-next-line no-param-reassign
       el.innerHTML = jddt[format]();
     }
@@ -367,34 +378,27 @@ export default class JDDT {
       throw new Error('Element with .jddt-range class did not have data-server-timezone-offset '
         + 'and data-server-timezone-name attributes');
     }
-    JDDT.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
+
+    const fromMillis = parseInt(el.dataset.fromMillis, 10);
+    const toMillis = parseInt(el.dataset.toMillis, 10);
+    const short = el.hasAttribute('data-short') && el.dataset.short !== 'false';
+
+    const fromJDDT = new JDDT(fromMillis);
+    const toJDDT = new JDDT(toMillis);
+
+    fromJDDT.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
       el.dataset.serverTimezoneName);
 
-    if (localTimezoneName !== serverTimezoneName) {
-      const fromMillis = parseInt(el.dataset.fromMillis, 10);
-      const toMillis = parseInt(el.dataset.toMillis, 10);
-      const short = el.hasAttribute('data-short') && el.dataset.short !== 'false';
-      const server = el.hasAttribute('data-show-server-time') && el.dataset.showServerTime !== 'false';
+    toJDDT.setServerTimezone(fromJDDT.serverTimezoneOffset, fromJDDT.serverTimezoneName);
 
-      const fromJDDT = new JDDT(fromMillis);
-      const toJDDT = new JDDT(toMillis);
-      if (server) {
-        // eslint-disable-next-line no-param-reassign
-        el.innerHTML = stringifyDateRange(
-          fromJDDT.jsDateServer,
-          toJDDT.jsDateServer,
-          serverTimezoneName,
-          short,
-        );
-      } else {
-        // eslint-disable-next-line no-param-reassign
-        el.innerHTML = stringifyDateRange(
-          fromJDDT.jsDateLocal,
-          toJDDT.jsDateLocal,
-          localTimezoneName,
-          short,
-        );
-      }
+    if (fromJDDT.localTimezoneName !== fromJDDT.serverTimezoneName) {
+      // eslint-disable-next-line no-param-reassign
+      el.innerHTML = stringifyDateRange(
+        fromJDDT.jsDateLocal,
+        toJDDT.jsDateLocal,
+        fromJDDT.localTimezoneName,
+        short,
+      );
     }
   }
 
@@ -439,21 +443,6 @@ export default class JDDT {
           this.applyToRangeElement(jddtRangeElement);
         });
       });
-    }
-  }
-
-  /**
-   * Updates the server timezone, used in calculating formatted server time
-   * @static
-   * @param {number} offset - the offset in minutes, in the style of js Date object timezoneOffset
-   * @param {string} name - the name of the server timezone (e.g. Europe/London)
-   */
-  static setServerTimezone(offset, name) {
-    if (typeof offset === 'number' && typeof name === 'string') {
-      serverTimezoneOffset = offset;
-      serverTimezoneName = name;
-    } else {
-      throw new Error('Provide an offset in number of minutes, and a string of the timezone name');
     }
   }
 }

@@ -30,7 +30,6 @@ import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspa
   log.warn('Upload failure callback');
 })).initialise();
 
-JDDT.setServerTimezone(180, 'Europe/Moscow');
 JDDT.initialise(document);
 
 document.addEventListener('DOMContentLoaded', () => {
