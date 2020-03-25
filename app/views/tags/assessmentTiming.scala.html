@@ -8,6 +8,7 @@
 @studentAssessmentWithAssessment.assessment.startTime.map { startTime =>
     <span>
         <i class="fad fa-fw fa-hourglass"></i>
+        <span class="time-remaining" data-id="@studentAssessmentWithAssessment.assessment.id"></span>
         <span
         class="time-left-to-start"
         data-rendering="@{

@@ -1,4 +1,5 @@
 import msToHumanReadable from './time-helper';
+import WebSocketConnection from './web-sockets';
 
 const clearWarning = ({ parentElement }) => {
   parentElement.classList.remove('text-danger');
@@ -59,4 +60,29 @@ const refresh = (node) => {
   setInterval(() => {
     refresh(node);
   }, 30000);
+});
+
+import('./web-sockets').then(() => {
+  const websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`, {
+    onConnect: () => {},
+    onError: () => {},
+    onData: (d) => {
+      if (d.type === 'timeRemaining') {
+        document.querySelector('.time-remaining').innerHTML = d.timeRemaining;
+      }
+    },
+    onClose: () => {
+    },
+    onHeartbeat: (ws) => {
+      const message = {
+        type: 'RequestTimeRemaining',
+        data: {
+          assessmentId: '12c550df-bd7c-4f13-911a-d947ff9510c2',
+        },
+      };
+
+      ws.send(JSON.stringify(message));
+    },
+  });
+  websocket.connect();
 });

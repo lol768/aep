@@ -4,6 +4,27 @@ const RECONNECT_THRESHOLD = 500;
 
 // How often should the websocket send a heartbeat to the server?
 const HEARTBEAT_INTERVAL_MS = 30 * 1000; // 30s
+
+const defaultHeartbeat = (ws) => {
+  const networkInformation = (window.navigator.connection || {});
+  const {
+    downlink, downlinkMax, effectiveType, rtt, type,
+  } = networkInformation;
+
+  const message = {
+    type: 'NetworkInformation',
+    data: {
+      downlink,
+      downlinkMax,
+      effectiveType,
+      rtt,
+      type,
+    },
+  };
+
+  ws.send(JSON.stringify(message));
+};
+
 export default class WebSocketConnection {
   /**
    * @param {string} endpoint Endpoint URI: e.g. wss//:warwick.ac.uk/path
@@ -11,9 +32,11 @@ export default class WebSocketConnection {
    * @param {function} onError Callback for if there is an error with the websocket.
    * @param {function} onClose Callback for if connection is closed.
    * @param {function} onData Callback for when JSON data is received.
+   * @param {function} onHeartbeat Function called at regular intervals to send messages to server
+   * @param {number} heartBeatInterval Interval at which the onHeartbeat function is called (in ms)
    */
   constructor(endpoint, {
-    onConnect, onError, onClose, onData,
+    onConnect, onError, onClose, onData, onHeartbeat, heartBeatInterval,
   } = {}) {
     // polyfill
     if (!endpoint.includes('wss://')) {
@@ -24,6 +47,8 @@ export default class WebSocketConnection {
     this.onError = onError;
     this.onClose = onClose;
     this.onData = onData;
+    this.onHeartbeat = onHeartbeat || defaultHeartbeat;
+    this.heartBeatInterval = heartBeatInterval || HEARTBEAT_INTERVAL_MS;
   }
 
   connect() {
@@ -100,24 +125,8 @@ export default class WebSocketConnection {
 
   sendHeartbeat() {
     this.heartbeatTimeout = setTimeout(() => {
-      const networkInformation = (window.navigator.connection || {});
-      const {
-        downlink, downlinkMax, effectiveType, rtt, type,
-      } = networkInformation;
-
-      const message = {
-        type: 'NetworkInformation',
-        data: {
-          downlink,
-          downlinkMax,
-          effectiveType,
-          rtt,
-          type,
-        },
-      };
-
-      this.ws.send(JSON.stringify(message));
+      this.onHeartbeat(this.ws);
       this.sendHeartbeat();
-    }, HEARTBEAT_INTERVAL_MS);
+    }, this.heartBeatInterval);
   }
 }

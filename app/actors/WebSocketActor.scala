@@ -83,9 +83,18 @@ class WebSocketActor(
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
-          val fut = studentAssessmentService.getWithAssessment(loginContext.user.flatMap(u => u.universityId).get, m.data.get.as[RequestTimeRemaining](readsRequestTimeRemaining).assessmentId).map { a =>
-            out ! a.assessment.duration.minus(Duration.between(a.studentAssessment.startTime.get, JavaTime.offsetDateTime)).toString
+          // TODO handle client network information
+
+        case m if m.`type` == "RequestTimeRemaining" && m.data.exists(_.validate[RequestTimeRemaining](readsRequestTimeRemaining).isSuccess) => {
+          val assessmentId = m.data.get.as[RequestTimeRemaining](readsRequestTimeRemaining).assessmentId
+          studentAssessmentService.getWithAssessment(loginContext.user.flatMap(u => u.universityId).get, assessmentId).map { a =>
+            out ! Json.obj(
+              "type" -> "timeRemaining",
+              "assessmentId" -> assessmentId.toString,
+              "timeRemaining" -> a.assessment.duration.minus(Duration.between(a.studentAssessment.startTime.get, JavaTime.offsetDateTime)).toString,
+            )
           }
+        }
 
         case m => log.error(s"Ignoring unrecognised client message: $m")
       }
