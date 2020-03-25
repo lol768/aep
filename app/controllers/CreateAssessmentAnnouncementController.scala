@@ -28,11 +28,11 @@ class CreateAssessmentAnnouncementController  @Inject()(
     "message" -> nonEmptyText
   )(AssessmentAnnouncementData.apply)(AssessmentAnnouncementData.unapply))
 
-  def index: Action[AnyContent] = SigninRequiredAction.async { implicit request =>
+  def index: Action[AnyContent] = RequireSysadmin.async { implicit request =>
     renderForm(form)
   }
 
-  def add: Action[AnyContent] = SigninAwareAction.async { implicit request => {
+  def add: Action[AnyContent] = RequireSysadmin.async { implicit request => {
 
     form.bindFromRequest.fold(
       errors => renderForm(errors),
