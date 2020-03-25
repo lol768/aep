@@ -17,9 +17,7 @@
     case "application/pdf" => {<i class="fad fa-2x themed-duotone fa-file-pdf"></i>}
     case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => {<i class="fad fa-2x themed-duotone fa-file-word"></i>}
     case "application/msword" => {<i class="fad fa-2x  themed-duotone fa-file-word"></i>}
-    case "image/png" => {<i class="fad fa-2x  themed-duotone fa-file-image"></i>}
-    case "image/gif" => {<i class="fad fa-2x  themed-duotone fa-file-image"></i>}
-    case "image/jpeg" => {<i class="fad fa-2x  themed-duotone fa-file-image"></i>}
+    case t if t.startsWith("image/") => {<i class="fad fa-2x  themed-duotone fa-file-image"></i>}
     case _ => {<i class="fad fa-2x themed-duotone fa-file"></i>}
   }
 }
