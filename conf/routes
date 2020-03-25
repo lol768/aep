@@ -22,6 +22,7 @@ POST        /assessment/:id                         @controllers.AssessmentContr
 POST        /assessment/:id/done                    @controllers.AssessmentController.finish(id: UUID)
 POST        /assessment/:id/upload                  @controllers.AssessmentController.uploadFiles(id: UUID)
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
+GET         /assessment/:id/attachment/:fileID      @controllers.AssessmentController.downloadAttachment(id: UUID, fileID: UUID)
 
 # Websocket
 GET         /websocket                              @controllers.WebSocketController.socket
