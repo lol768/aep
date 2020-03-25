@@ -1,7 +1,7 @@
 package controllers
 
 import java.util.UUID
-import akka.Done
+import CreateAssessmentAnnouncementController._
 import domain.Announcement
 import play.api.data.Forms._
 import javax.inject.{Inject, Singleton}
@@ -12,21 +12,28 @@ import play.api.data.Forms.mapping
 import play.api.i18n.Messages
 import warwick.sso.AuthenticatedRequest
 import play.api.mvc.Result
-import warwick.core.helpers.ServiceResults
 import scala.concurrent.{ExecutionContext, Future}
 
-@Singleton
-class CreateAssessmentAnnouncementController  @Inject()(
- security: SecurityService,
- assessmentService: AssessmentService,
- announcementService: AnnouncementService,
-)(implicit ec: ExecutionContext) extends BaseController {
-  import security._
+object CreateAssessmentAnnouncementController {
+
+  case class AssessmentAnnouncementData(
+    assessmentId: UUID,
+    message: String
+  )
 
   val form = Form(mapping(
     "assessmentId" -> uuid,
     "message" -> nonEmptyText
   )(AssessmentAnnouncementData.apply)(AssessmentAnnouncementData.unapply))
+}
+
+@Singleton
+class CreateAssessmentAnnouncementController @Inject()(
+ security: SecurityService,
+ assessmentService: AssessmentService,
+ announcementService: AnnouncementService,
+)(implicit ec: ExecutionContext) extends BaseController {
+  import security._
 
   def index: Action[AnyContent] = RequireSysadmin.async { implicit request =>
     renderForm(form)
@@ -55,8 +62,4 @@ class CreateAssessmentAnnouncementController  @Inject()(
   }
 }
 
-case class AssessmentAnnouncementData(
-  assessmentId: UUID,
-  message: String
-)
 
