@@ -49,6 +49,7 @@ export default class UploadWithProgress {
         xhr.withCredentials = true;
         // IE 10
         const formData = new FormData(formElement);
+        formData.append('xhr', 'true');
 
         // register progress callback, IE10+ (https://caniuse.com/#feat=xhr2)
         xhr.upload.addEventListener('progress', (ev) => {

@@ -66,11 +66,12 @@ class AssessmentController @Inject()(
 
   def uploadFiles(assessmentId: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = StudentAssessmentInProgressAction(assessmentId)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val files = request.body.files.map(_.ref)
+    val data = request.body.dataParts
     ServiceResults.futureSequence(files.map { ref =>
       val studentAssessment = request.studentAssessmentWithAssessment.studentAssessment
       uploadedFileService.store(ref.in, ref.metadata, studentAssessment.id, UploadedFileOwner.StudentAssessment)}).successMap { files =>
       val flashMessage = "success" -> Messages("flash.files.uploaded", files.size)
-      if (request.headers.hasHeader("X-Requested-With")) {
+      if (data.contains("xhr")) {
         Ok.flashing(flashMessage)
       } else {
         redirectToAssessment(assessmentId).flashing(flashMessage)
