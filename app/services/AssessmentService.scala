@@ -2,12 +2,15 @@ package services
 
 import java.util.UUID
 
+import akka.Done
 import com.google.inject.ImplementedBy
 import domain.Assessment
+import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
 import javax.inject.{Inject, Singleton}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,6 +20,7 @@ trait AssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
+  def update(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
 }
 
 @Singleton
@@ -49,5 +53,24 @@ class AssessmentServiceImpl @Inject()(
     }.recover {
       case _: NoSuchElementException => ServiceResults.error(s"Could not find an Assessment with ID $id")
     }
+  }
+
+  override def update(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] = {
+    daoRunner.run(for {
+      stored <- dao.getById(assessment.id)
+      result <- dao.update(stored.copy(
+        code = assessment.code,
+        title = assessment.title,
+        startTime = assessment.startTime,
+        duration = assessment.duration,
+        platform = assessment.platform,
+        assessmentType = assessment.assessmentType,
+        storedBrief = StoredBrief(
+          text = assessment.brief.text,
+          fileIds = assessment.brief.files.map(_.id),
+          url = assessment.brief.url
+        ),
+      ))
+    } yield Done).map(ServiceResults.success)
   }
 }

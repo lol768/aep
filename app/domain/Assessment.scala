@@ -43,22 +43,38 @@ case class AssessmentMetadata(
 ) extends BaseAssessment
 
 object Assessment {
-  sealed trait Platform extends EnumEntry
+  sealed trait Platform extends EnumEntry {
+    val label: String
+  }
 
   object Platform extends PlayEnum[Platform] {
-    case object Moodle extends Platform
-    case object OnlineExams extends Platform
-    case object QuestionmarkPerception extends Platform
+    case object OnlineExams extends Platform {
+      val label = "Online Exams"
+    }
+    case object Moodle extends Platform {
+      val label = "Moodle"
+    }
+    case object QuestionmarkPerception extends Platform {
+      val label = "Questionmark Perception"
+    }
 
     val values: IndexedSeq[Platform] = findValues
   }
 
-  sealed trait AssessmentType extends EnumEntry
+  sealed trait AssessmentType extends EnumEntry {
+    val label: String
+  }
 
   object AssessmentType extends PlayEnum[AssessmentType] {
-    case object OpenBook extends AssessmentType
-    case object Spoken extends AssessmentType
-    case object MultipleChoice extends AssessmentType
+    case object OpenBook extends AssessmentType {
+      val label = "Open book"
+    }
+    case object MultipleChoice extends AssessmentType {
+      val label = "Multiple choice"
+    }
+    case object Spoken extends AssessmentType {
+      val label = "Spoken"
+    }
 
     val values: IndexedSeq[AssessmentType] = findValues
   }

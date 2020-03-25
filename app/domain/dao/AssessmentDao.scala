@@ -167,6 +167,7 @@ trait AssessmentDao {
 
   def all: DBIO[Seq[StoredAssessment]]
   def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
+  def update(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
   def getById(id: UUID): DBIO[StoredAssessment]
   def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]]
   def getByCode(code: String): DBIO[StoredAssessment]
@@ -186,6 +187,9 @@ class AssessmentDaoImpl @Inject()(
 
   override def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment] =
     assessments.insert(assessment)
+
+  override def update(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment] =
+    assessments.update(assessment)
 
   override def getById(id: UUID): DBIO[StoredAssessment] =
     assessments.table.filter(_.id === id).result.head

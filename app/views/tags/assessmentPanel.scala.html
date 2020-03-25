@@ -31,11 +31,7 @@
             </dd>
             <dt>Type</dt>
             <dd>
-            @assessment.assessment.assessmentType match {
-                case AssessmentType.OpenBook => { Open book }
-                case AssessmentType.Spoken => { Spoken }
-                case AssessmentType.MultipleChoice => { Multiple choice }
-            }
+            @assessment.assessment.assessmentType.label
             </dd>
             <dt>Duration</dt>
             <dd>
