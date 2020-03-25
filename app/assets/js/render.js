@@ -25,7 +25,7 @@ import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspa
 // (if relevant to the page)
 
 (new UploadWithProgress(document, () => {
-  log.info('Upload success callback');
+  window.location.reload();
 }, () => {
   log.warn('Upload failure callback');
 })).initialise();

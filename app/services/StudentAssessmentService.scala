@@ -2,12 +2,13 @@ package services
 
 import java.util.UUID
 
+import com.google.common.io.ByteSource
 import slick.dbio.DBIO
 import com.google.inject.ImplementedBy
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao.{AssessmentDao, DaoRunner, StudentAssessmentDao}
-import domain.{Assessment, StudentAssessment, StudentAssessmentWithAssessment}
+import domain.{Assessment, StudentAssessment, StudentAssessmentWithAssessment, UploadedFileOwner}
 import domain.AuditEvent._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
@@ -17,6 +18,7 @@ import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
+import warwick.fileuploads.UploadedFileSave
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -28,6 +30,7 @@ trait StudentAssessmentService {
   def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessment]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
+  def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
 }
 
 @Singleton
@@ -88,11 +91,10 @@ class StudentAssessmentServiceImpl @Inject()(
 
   private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
     require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot start assessment, too early")
-    require(storedAssessment.startTime.exists(_.plus(Assessment.window).isAfter(JavaTime.offsetDateTime)), "Cannot start assessment, too late")
   }
 
   override def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.StartAssessment, studentAssessment.assessmentId.toString, Target.StudentAssessment, Json.obj(("universityId", studentAssessment.studentId.string))){
+    audit.audit(Operation.Assessment.StartAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -111,7 +113,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.FinishAssessment, studentAssessment.assessmentId.toString, Target.StudentAssessment, Json.obj(("universityId", studentAssessment.studentId.string))){
+    audit.audit(Operation.Assessment.FinishAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -128,4 +130,20 @@ class StudentAssessmentServiceImpl @Inject()(
       ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
     }
   }
+
+  override def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] =
+    audit.audit(Operation.Assessment.AttachFilesToAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "files" -> files.map(_._2.fileName))) {
+      daoRunner.run(
+        for {
+          storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
+          storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
+          _ <- DBIO.from(canStart(storedAssessment, storedStudentAssessment))
+          fileIds <- DBIO.sequence(files.toList.map { case (in, metadata) =>
+            uploadedFileService.storeDBIO(in, metadata, ctx.usercode.get, storedStudentAssessment.id, UploadedFileOwner.StudentAssessment).map(_.id)
+          })
+          updatedStudentAssessment <- dao.update(storedStudentAssessment.copy(uploadedFiles = storedStudentAssessment.uploadedFiles ::: fileIds))
+        } yield updatedStudentAssessment
+      ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
+    }
+
 }
