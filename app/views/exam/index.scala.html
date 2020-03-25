@@ -5,7 +5,12 @@
 @import tags._
 
 @import controllers.AssessmentController.FinishExamFormData
-@(assessment: StudentAssessmentWithAssessment, finishExamForm: Form[FinishExamFormData])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+@import org.apache.tika.mime.MediaType
+@(
+    assessment: StudentAssessmentWithAssessment,
+    finishExamForm: Form[FinishExamFormData],
+    supportedMimeTypes: Seq[MediaType]
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @frontend(assessment.assessment.title, extraClasses = if(assessment.inProgress) Seq("grey-nopad", "connect-ws") else  Seq("grey-nopad")) {
   @assessmentPanel(assessment, isAssessmentPage = true)
@@ -15,7 +20,15 @@
       <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
     }
     <h2>Submit your answers</h2>
-    <button class="btn btn-info">Upload files</button>
+    @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
+      @b3.free(Symbol("_label") -> "Attach file") {
+        <input type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
+      }
+
+      @b3.free(Symbol("_class") -> "spaced-buttons") {
+        <button type="submit" class="btn btn-primary">Upload files</button>
+      }
+    }
 
     <div class="panel panel-default finish-exam-panel">
       <div class="brand-stripe"></div>
