@@ -5,8 +5,10 @@ import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
-import services.{SecurityService, StudentAssessmentService}
+import services.{SecurityService, StudentAssessmentService, UploadedFileService}
+import warwick.core.helpers.ServiceResults
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 
@@ -32,10 +34,14 @@ class AssessmentController @Inject()(
   security: SecurityService,
   studentAssessmentService: StudentAssessmentService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
+  uploadedFileService: UploadedFileService
 )(implicit
   ec: ExecutionContext,
 ) extends BaseController {
+
   import security._
+
+  private val redirectToAssessment = (id: UUID) => Redirect(controllers.routes.AssessmentController.view(id))
 
   def view(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId) { implicit request =>
     Ok(views.html.exam.index(request.studentAssessmentWithAssessment, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes))
@@ -43,7 +49,7 @@ class AssessmentController @Inject()(
 
   def start(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     studentAssessmentService.startAssessment(request.studentAssessmentWithAssessment.studentAssessment).successMap { _ =>
-      Redirect(controllers.routes.AssessmentController.view(assessmentId))
+      redirectToAssessment(assessmentId)
     }
   }
 
@@ -52,13 +58,16 @@ class AssessmentController @Inject()(
       form => Future.successful(BadRequest(views.html.exam.index(request.studentAssessmentWithAssessment, form, uploadedFileControllerHelper.supportedMimeTypes))),
       _ => {
         studentAssessmentService.finishAssessment(request.studentAssessmentWithAssessment.studentAssessment).successMap { _ =>
-          Redirect(controllers.routes.AssessmentController.view(assessmentId))
+          redirectToAssessment(assessmentId)
         }
       })
   }
 
   def uploadFiles(assessmentId: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = StudentAssessmentInProgressAction(assessmentId)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
-    Future.successful(Ok)
+    val files = request.body.files.map(_.ref)
+    ServiceResults.futureSequence(files.map { ref => uploadedFileService.store(ref.in, ref.metadata) }).successMap { files =>
+      redirectToAssessment(assessmentId).flashing("success" -> Messages("flash.files.uploaded", files.size))
+    }
   }
 
   def downloadFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
