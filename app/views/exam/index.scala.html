@@ -22,13 +22,13 @@
     <h2>Submit your answers</h2>
     @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
       @b3.free(Symbol("_label") -> "Attach file") {
-        <input type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
+        <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
       }
 
-      <p class="help-block upload-info hide">
-        <span class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</span>
+      <div class="help-block upload-info hide">
+        <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
         <progress value="0" max="100"></progress>
-      </p>
+      </div>
       <p class="help-block upload-error hide">
         <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
       </p>
