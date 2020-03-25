@@ -46,6 +46,7 @@ export default class UploadWithProgress {
 
       try {
         const xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
         // IE 10
         const formData = new FormData(formElement);
 

@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import domain.UploadedFileOwner
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -65,8 +66,15 @@ class AssessmentController @Inject()(
 
   def uploadFiles(assessmentId: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = StudentAssessmentInProgressAction(assessmentId)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val files = request.body.files.map(_.ref)
-    ServiceResults.futureSequence(files.map { ref => uploadedFileService.store(ref.in, ref.metadata) }).successMap { files =>
-      redirectToAssessment(assessmentId).flashing("success" -> Messages("flash.files.uploaded", files.size))
+    ServiceResults.futureSequence(files.map { ref =>
+      val studentAssessment = request.studentAssessmentWithAssessment.studentAssessment
+      uploadedFileService.store(ref.in, ref.metadata, studentAssessment.id, UploadedFileOwner.StudentAssessment)}).successMap { files =>
+      val flashMessage = "success" -> Messages("flash.files.uploaded", files.size)
+      if (request.headers.hasHeader("X-Requested-With")) {
+        Ok.flashing(flashMessage)
+      } else {
+        redirectToAssessment(assessmentId).flashing(flashMessage)
+      }
     }
   }
 
