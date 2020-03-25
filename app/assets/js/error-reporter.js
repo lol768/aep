@@ -41,7 +41,7 @@ function onError(message, source, line, column, error) {
     line,
     column,
     stack: error.stack || error,
-    pageUrl: window.location.href, // page url
+    pageUrl: window.location.href,
   });
   postErrorsThrottled();
 }
