@@ -72,10 +72,10 @@ function datesMatch(date1, date2) {
 }
 
 /**
- * Returns one of the variables named as YESTERDAY, TODAY, TOMORROW or SOME_SUNNY_DAY above
+ * Returns one of the variables named as YESTERDAY or SOME_SUNNY_DAY above
  * @private
  * @param {Date} date
- * @returns {string} - "yesterday", "today", "tomorrow" or "" if it's none of those
+ * @returns {string} - "today" or ""
  */
 function relativeDateName(date) {
   const now = new Date(Date.now());
@@ -336,9 +336,9 @@ export default class JDDT {
       throw new Error('Element with .jddt class did not have data-server-timezone-offset '
           + 'and data-server-timezone-name attributes');
     }
-    this.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
+    JDDT.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
       el.dataset.serverTimezoneName);
-    if (localTimezoneName !== 'Europe/London') {
+    if (localTimezoneName !== serverTimezoneName) {
       const millis = parseInt(el.dataset.millis, 10);
       const format = el.hasAttribute('data-format')
         ? el.dataset.format
@@ -367,10 +367,10 @@ export default class JDDT {
       throw new Error('Element with .jddt-range class did not have data-server-timezone-offset '
         + 'and data-server-timezone-name attributes');
     }
-    this.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
+    JDDT.setServerTimezone(parseInt(el.dataset.serverTimezoneOffset, 10),
       el.dataset.serverTimezoneName);
 
-    if (localTimezoneName !== 'Europe/London') {
+    if (localTimezoneName !== serverTimezoneName) {
       const fromMillis = parseInt(el.dataset.fromMillis, 10);
       const toMillis = parseInt(el.dataset.toMillis, 10);
       const short = el.hasAttribute('data-short') && el.dataset.short !== 'false';
