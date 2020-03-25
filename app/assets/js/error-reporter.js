@@ -12,31 +12,10 @@ import * as log from './log';
 
 let errors = [];
 
-function isIE() {
-  const ua = window.navigator.userAgent;
-  const msie = ua.indexOf('MSIE ');
-  const ie = (msie > 0 || !!navigator.userAgent.match(/Trident.*rv:11\./));
-  if (ie) {
-    log.warn('Running on MS IE');
-  }
-  return ie;
-}
-
-export const addQsToUrl = (url, qs) => {
-  const parsedUrl = new URL(url);
-  Object.entries(qs).forEach(([key, value]) => {
-    parsedUrl.searchParams.set(key, value);
-  });
-  return parsedUrl.href;
-};
-
 const postErrorsThrottled = _throttle(() => {
   const errorsToPost = errors;
-  const url = '/api/errors/js';
   fetch(
-    isIE() ? addQsToUrl(url, {
-      ts: Number(new Date()),
-    }) : url,
+    '/api/errors/js',
     {
       method: 'POST',
       body: JSON.stringify(errorsToPost),
