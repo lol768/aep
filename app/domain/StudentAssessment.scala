@@ -18,6 +18,7 @@ case class StudentAssessment(
   studentId: UniversityID,
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],
+  finaliseTime: Option[OffsetDateTime],
   uploadedFiles: Seq[UploadedFile]
 ) extends BaseStudentAssessment
 

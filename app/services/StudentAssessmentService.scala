@@ -27,6 +27,7 @@ trait StudentAssessmentService {
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]]
   def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessment]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
+  def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
 }
 
 @Singleton
@@ -102,6 +103,25 @@ class StudentAssessmentServiceImpl @Inject()(
               dao.update(storedStudentAssessment.copy(startTime = Some(JavaTime.offsetDateTime)))
             } else {
               DBIO.successful(storedStudentAssessment)
+            }
+          }
+        } yield updatedStudentAssessment
+      ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
+    }
+  }
+
+  override def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
+    audit.audit(Operation.Assessment.FinishAssessment, studentAssessment.assessmentId.toString, Target.StudentAssessment, Json.obj(("universityId", studentAssessment.studentId.string))){
+      daoRunner.run(
+        for {
+          storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
+          storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
+          _ <- DBIO.from(canStart(storedAssessment, storedStudentAssessment))
+          updatedStudentAssessment <- {
+            if(storedStudentAssessment.startTime.isDefined) {
+              dao.update(storedStudentAssessment.copy(finaliseTime = Some(JavaTime.offsetDateTime)))
+            } else {
+              DBIO.failed(new IllegalArgumentException("Cannot finalise an assessment which has not been started"))
             }
           }
         } yield updatedStudentAssessment

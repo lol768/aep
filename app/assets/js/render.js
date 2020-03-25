@@ -33,5 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.body.classList.contains('connect-ws')) {
     import('./assessment-announcements');
   }
+
+  if (document.querySelectorAll('.undisable-with-checkbox[data-undisable-selector]').length > 0) {
+    import('./undisable-with-checkbox');
+  }
+
   if (document.querySelector('.time-left-to-start')) import('./assessment-timing');
 });
