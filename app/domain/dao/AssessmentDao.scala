@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Duration, OffsetDateTime, ZoneId}
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
@@ -9,8 +9,9 @@ import domain._
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{Format, JsValue, Json}
 import slick.lifted.ProvenShape
+import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
@@ -21,7 +22,7 @@ trait AssessmentsTables extends VersionedTables {
 
   import profile.api._
 
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
   import jdbcTypes._
 
   trait CommonProperties { self: Table[_] =>
@@ -79,6 +80,7 @@ object AssessmentsTables {
     created: OffsetDateTime,
     version: OffsetDateTime
   ) extends Versioned[StoredAssessment] {
+
     def asAssessment(fileMap: Map[UUID, UploadedFile]) =
       Assessment(
         id,
@@ -91,6 +93,18 @@ object AssessmentsTables {
         storedBrief.asBrief(fileMap),
         invigilators
       )
+
+    def asAssessmentMetadata =
+      AssessmentMetadata(
+        id,
+        code,
+        title,
+        startTime,
+        duration,
+        platform,
+        assessmentType
+      )
+
     override def atVersion(at: OffsetDateTime): StoredAssessment = copy(version = at)
 
     override def storedVersion[B <: StoredVersion[StoredAssessment]](operation: DatabaseOperation, timestamp: OffsetDateTime)(implicit ac: AuditLogContext): B =
@@ -143,9 +157,9 @@ object AssessmentsTables {
   }
 
   object StoredBrief {
-    implicit val format: OFormat[StoredBrief] = Json.format[StoredBrief]
+    implicit val format: Format[StoredBrief] = Json.format[StoredBrief]
+    def empty: StoredBrief = StoredBrief(None, Seq.empty, None)
   }
-
 }
 
 
@@ -160,6 +174,8 @@ trait AssessmentDao {
   def getById(id: UUID): DBIO[StoredAssessment]
   def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]]
   def getByCode(code: String): DBIO[StoredAssessment]
+  def getToday: DBIO[Seq[StoredAssessment]]
+  def getInWindow: DBIO[Seq[StoredAssessment]]
   def getByInvigilator(usercodes: List[String]): DBIO[Seq[StoredAssessment]]
   def getByIdAndInvigilator(id: UUID, usercodes: List[String]): DBIO[StoredAssessment]
 }
@@ -167,9 +183,10 @@ trait AssessmentDao {
 @Singleton
 class AssessmentDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
 )(implicit ec: ExecutionContext) extends AssessmentDao with AssessmentsTables with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
+  import jdbcTypes._
 
   override def all: DBIO[Seq[StoredAssessment]] = assessments.result
 
@@ -184,6 +201,17 @@ class AssessmentDaoImpl @Inject()(
 
   override def getByCode(code: String): DBIO[StoredAssessment] =
     assessments.table.filter(_.code === code).result.head
+
+  override def getToday: DBIO[Seq[StoredAssessment]] = {
+    val today = JavaTime.localDate.atStartOfDay(JavaTime.timeZone).toOffsetDateTime
+    assessments.table.filter(a => a.startTime >= today && a.startTime < today.plusDays(1)).result
+  }
+
+  override def getInWindow: DBIO[Seq[StoredAssessment]] = {
+    val now = JavaTime.offsetDateTime
+    assessments.table.filter(a => a.startTime < now && a.startTime < now.minus(Assessment.window)).result
+  }
+
 
   override def getByInvigilator(usercodes: List[String]): DBIO[Seq[StoredAssessment]] =
     assessments.table.filter(_.invigilators @> usercodes).result

@@ -1,0 +1,43 @@
+@import domain.Assessment.{AssessmentType, Platform}
+@import domain.{Assessment, StudentAssessmentWithAssessment}
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@import warwick.core.helpers.JavaTime
+@import tags._
+
+@import controllers.AssessmentController.FinishExamFormData
+@(assessment: StudentAssessmentWithAssessment, finishExamForm: Form[FinishExamFormData])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@frontend(assessment.assessment.title, extraClasses = if(assessment.inProgress) Seq("grey-nopad", "connect-ws") else  Seq("grey-nopad")) {
+  @assessmentPanel(assessment, isAssessmentPage = true)
+  @if(assessment.inProgress) {
+    <h2>Exam files</h2>
+    @assessment.assessment.brief.files.map { file =>
+      <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
+    }
+    <h2>Submit your answers</h2>
+    <button class="btn btn-info">Upload files</button>
+
+    <div class="panel panel-default finish-exam-panel">
+      <div class="brand-stripe"></div>
+      <div class="panel-body">
+        <h2>Finish exam</h2>
+        <p class="lead">Once you're ready, you can finish the exam below. We'll record the time at which you do this.</p>
+        <p>Have you completed all of the following tasks?</p>
+        <ul>
+          <li>Uploaded your final submission above</li>
+          <li>Downloaded your final submission and checked to ensure it was uploaded in its entirety</li>
+          <li>Checked through your answers to the assessment questions</li>
+        </ul>
+        @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id)) { implicit fc =>
+          @b3.checkbox(
+            finishExamForm("agreeDisclaimer"),
+            Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.",
+            Symbol("data-undisable-selector") -> ".finish-exam-btn",
+            Symbol("class") -> "undisable-with-checkbox",
+          )
+          @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish exam }
+        }
+      </div>
+    </div>
+  }
+}

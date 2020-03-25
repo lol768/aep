@@ -2,12 +2,16 @@ package uk.ac.warwick.onlineexams;
 
 import com.atlassian.bamboo.specs.api.BambooSpec;
 import com.atlassian.bamboo.specs.api.builders.deployment.Deployment;
+import com.atlassian.bamboo.specs.api.builders.notification.Notification;
 import com.atlassian.bamboo.specs.api.builders.plan.Job;
 import com.atlassian.bamboo.specs.api.builders.plan.Plan;
 import com.atlassian.bamboo.specs.api.builders.plan.Stage;
 import com.atlassian.bamboo.specs.api.builders.plan.artifact.Artifact;
+import com.atlassian.bamboo.specs.api.builders.plan.branches.BranchCleanup;
+import com.atlassian.bamboo.specs.api.builders.plan.branches.PlanBranchManagement;
 import com.atlassian.bamboo.specs.api.builders.project.Project;
 import com.atlassian.bamboo.specs.api.builders.requirement.Requirement;
+import com.atlassian.bamboo.specs.builders.notification.DeploymentStartedAndFinishedNotification;
 import com.atlassian.bamboo.specs.builders.task.*;
 import com.atlassian.bamboo.specs.model.task.ScriptTaskProperties;
 import uk.ac.warwick.bamboo.specs.AbstractWarwickBuildSpec;
@@ -63,6 +67,18 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
             )
         )
         .slackNotifications(SLACK_CHANNEL, false)
+        .customConfig(plan ->
+          plan.planBranchManagement(
+            new PlanBranchManagement()
+              .createForVcsBranch()
+              .delete(
+                new BranchCleanup()
+                  .whenRemovedFromRepositoryAfterDays(30)
+                  .whenInactiveInRepositoryAfterDays(180)
+              )
+              .notificationDisabled()
+          )
+        )
         .build()
     );
   }
@@ -151,14 +167,14 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
       deployment(PROJECT, "ONLINE", "Online Exams")
         .autoPlayEnvironment("Development", "onlineexams-dev.warwick.ac.uk", "onlineexams", "dev", SLACK_CHANNEL)
         .autoPlayEnvironment("Test", "onlineexams-test.warwick.ac.uk", "onlineexams", "test", SLACK_CHANNEL)
-//        .autoPlayEnvironment("Sandbox", "onlineexams-sandbox.warwick.ac.uk", "onlineexams", "sandbox", SLACK_CHANNEL, "master")
-//        .playEnvironment("Production", "onlineexams.warwick.ac.uk", "onlineexams", "prod",
-//          env -> env.notifications(
-//            new Notification()
-//              .type(new DeploymentStartedAndFinishedNotification())
-//              .recipients(slackRecipient(SLACK_CHANNEL))
-//          )
-//        )
+        .autoPlayEnvironment("Sandbox", "onlineexams-sandbox.warwick.ac.uk", "onlineexams", "sandbox", SLACK_CHANNEL, "master")
+        .playEnvironment("Production", "onlineexams.warwick.ac.uk", "onlineexams", "prod",
+          env -> env.notifications(
+            new Notification()
+              .type(new DeploymentStartedAndFinishedNotification())
+              .recipients(slackRecipient(SLACK_CHANNEL))
+          )
+        )
         .build()
     );
   }

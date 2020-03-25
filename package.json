@@ -27,7 +27,8 @@
     "eonasdan-bootstrap-datetimepicker": "4.17.47",
     "jquery": "3.4.1",
     "lodash-es": "4.17.15",
-    "loglevel": "1.6.7"
+    "loglevel": "1.6.7",
+    "mockdate": "2.0.5"
   },
   "scripts": {
     "watch": "NODE_ENV=development webpack --mode development --watch",

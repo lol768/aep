@@ -3,6 +3,7 @@ package controllers.sysadmin
 import java.util.UUID
 
 import controllers.BaseController
+import domain.tabula.{AssessmentComponent, ExamMembership, ExamPaper}
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -12,12 +13,16 @@ import play.api.mvc.{Action, AnyContent, MultipartFormData}
 import services._
 import helpers.StringUtils._
 import org.quartz.Scheduler
+import play.api.libs.json.{JsString, Json, Reads, Writes}
+import services.tabula.TabulaAssessmentService
+import services.tabula.TabulaAssessmentService.{GetAssessmentGroupMembersOptions, GetAssessmentsOptions}
 import uk.ac.warwick.util.mywarwick.MyWarwickService
 import uk.ac.warwick.util.mywarwick.model.request.Activity
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.core.helpers.ServiceResults
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
-import warwick.sso.{GroupName, UserLookupService, Usercode}
+import warwick.sso.{GroupName, UniversityID, UserLookupService, Usercode}
 
 import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -82,6 +87,7 @@ class SysadminTestController @Inject()(
   scheduler: Scheduler,
   uploadedFileService: UploadedFileService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
+  tabulaAssessments: TabulaAssessmentService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
 
   import SysadminTestController._
@@ -131,6 +137,22 @@ class SysadminTestController @Inject()(
 
   def downloadFile(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
     uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile)
+  }
+
+  def assessmentComponents(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    implicit val writeExam = Json.writes[ExamPaper]
+    implicit val writes = Json.writes[AssessmentComponent]
+    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = "CH", withExamPapersOnly = true)).successMap { r =>
+      Ok(Json.toJson(r)(Writes.seq(writes)))
+    }
+  }
+
+  def assessmentComponentMembers(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    implicit val writeUniversityID: Writes[UniversityID] = u => JsString(u.string)
+    implicit val writes = Json.writes[ExamMembership]
+    tabulaAssessments.getAssessmentGroupMembers(GetAssessmentGroupMembersOptions(deptCode = "CH", academicYear = AcademicYear.starting(2019), paperCodes = Seq("EC3120", "EC9011_A"))).successMap { r =>
+      Ok(Json.toJson(r)(Writes.map(writes)))
+    }
   }
 
   private val redirectHome = Redirect(controllers.sysadmin.routes.SysadminTestController.home())

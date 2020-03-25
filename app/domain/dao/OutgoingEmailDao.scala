@@ -22,7 +22,7 @@ trait OutgoingEmailsTables extends VersionedTables {
 
   import profile.api._
 
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
   import jdbcTypes._
 
   trait OutgoingEmailCommonProperties { self: Table[_] =>
@@ -149,7 +149,7 @@ trait OutgoingEmailDao {
 @Singleton
 class OutgoingEmailDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
-  val jdbcTypes: CustomJdbcTypes,
+  val jdbcTypes: PostgresCustomJdbcTypes,
 )(implicit executionContext: ExecutionContext) extends OutgoingEmailDao with OutgoingEmailsTables with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
 
   import dbConfig.profile.api._

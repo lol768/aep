@@ -62,10 +62,10 @@ lazy val integration = (project in file("it"))
 val enumeratumVersion = "1.5.15"
 val enumeratumPlayVersion = "1.5.17"
 val enumeratumSlickVersion = "1.5.16"
-val playUtilsVersion = "1.46"
+val playUtilsVersion = "1.47"
 val akkaVersion = "2.6.3"
 val ssoClientVersion = "2.81"
-val warwickUtilsVersion = "20200310"
+val warwickUtilsVersion = "20200323"
 
 val appDeps = Seq(
   guice,
@@ -79,6 +79,7 @@ val appDeps = Seq(
   "com.typesafe.slick" %% "slick" % "3.3.2",
   "org.postgresql" % "postgresql" % "42.2.10",
   "com.github.tminglei" %% "slick-pg" % "0.18.1",
+  "com.github.tminglei" %% "slick-pg_play-json" % "0.18.1",
 
   "com.typesafe.play" %% "play-mailer" % "8.0.0",
   "com.typesafe.play" %% "play-mailer-guice" % "8.0.0",
@@ -102,6 +103,7 @@ val appDeps = Seq(
   "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
   "ch.qos.logback" % "logback-access" % "1.2.3",
   "uk.ac.warwick.play-utils" %% "core" % playUtilsVersion,
+  "uk.ac.warwick.play-utils" %% "caching" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "fileuploads" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "healthcheck" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "slick" % playUtilsVersion,

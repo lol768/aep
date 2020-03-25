@@ -1,11 +1,7 @@
-@import warwick.core.helpers.JavaTime
-@import org.apache.commons.lang3.time.DurationFormatUtils
-@import domain.Assessment.Platform
-@import domain.Assessment.AssessmentType
-@import domain.Assessment
 @import domain.StudentAssessmentWithAssessment
+@import tags._
 
-@(assessments: Seq[StudentAssessmentWithAssessment])(implicit context: RequestContext)
+@(assessments: Seq[StudentAssessmentWithAssessment])(implicit requestHeader: RequestHeader, context: RequestContext)
 
 @frontend("My exams", extraClasses = Seq("grey-nopad")) {
 
@@ -42,64 +38,7 @@
     <div class="row">
       @row.map { a =>
         <div class="col-md-6">
-          <div class="panel panel-default">
-            <div class="panel-body">
-              <h4>@a.assessment.title</h4>
-
-              <dl>
-                <dt>Module</dt>
-                <dd>
-                @a.assessment.code
-                </dd>
-                <dt>Type</dt>
-                <dd>
-                @a.assessment.assessmentType match {
-                  case AssessmentType.OpenBook => { Open book }
-                  case AssessmentType.Spoken => { Spoken }
-                  case AssessmentType.MultipleChoice => { Multiple choice }
-                }
-                </dd>
-                <dt>Duration</dt>
-                <dd>
-                  <i class="fad fa-stopwatch fa-fw"></i>@DurationFormatUtils.formatDurationWords(a.assessment.duration.toMillis, true, true)
-                </dd>
-                @a.assessment.startTime.map { startTime =>
-                  <dt>Can start</dt>
-                  <dd>
-                    <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(startTime.plusHours(8))
-                    until
-                  @JavaTime.Relative(startTime.plus(Assessment.window).plusHours(8))
-                  <span class="text-muted">Asia/Shanghai</span>
-                  <br>
-                  <i class="fad fa-clock fa-fw"></i>@JavaTime.Relative(startTime)
-                    until
-                  @JavaTime.Relative(startTime.plus(Assessment.window))
-                    <span class="text-muted">Europe/London</span>
-                  </dd>
-                }
-              </dl>
-              @a.assessment.platform match {
-                case Platform.OnlineExams => {
-                  <a href="/service/stub" class="btn btn-primary">
-                    Start
-                  </a>
-                  <span class="text-danger">
-                    <i class="fad fa-fw fa-hourglass"></i>30 minutes left to start
-                  </span>
-                }
-                case Platform.Moodle => {
-                  <a href="/service/stub" target="_blank">
-                    Exam on Moodle<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-                case Platform.QuestionmarkPerception => {
-                  <a href="/service/stub" target="_blank">
-                    Exam on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-              }
-            </div>
-          </div>
+          @assessmentPanel(a)
         </div>
       }
     </div>

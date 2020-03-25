@@ -7,6 +7,16 @@ import domain.Assessment._
 import enumeratum.{EnumEntry, PlayEnum}
 import warwick.fileuploads.UploadedFile
 
+sealed trait BaseAssessment {
+  def id: UUID
+  def code: String
+  def title: String
+  def startTime: Option[OffsetDateTime]
+  def duration: Duration
+  def platform: Platform
+  def assessmentType: AssessmentType
+}
+
 case class Assessment(
   id: UUID = UUID.randomUUID(),
   code: String,
@@ -17,7 +27,17 @@ case class Assessment(
   assessmentType: AssessmentType,
   brief: Brief,
   invigilators: Seq[String],
-)
+) extends BaseAssessment
+
+case class AssessmentMetadata(
+  id: UUID = UUID.randomUUID(),
+  code: String,
+  title: String,
+  startTime: Option[OffsetDateTime],
+  duration: Duration,
+  platform: Platform,
+  assessmentType: AssessmentType,
+) extends BaseAssessment
 
 object Assessment {
   sealed trait Platform extends EnumEntry
@@ -45,6 +65,10 @@ object Assessment {
     files: Seq[UploadedFile],
     url: Option[String],
   )
+
+  object Brief {
+    def empty: Brief = Brief(None, Seq.empty, None)
+  }
 
   val window: Duration = Duration.ofHours(8)
 }

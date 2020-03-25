@@ -1,6 +1,11 @@
 package domain
 
+import java.time._
+import java.util.UUID
+
 import com.typesafe.config.Config
+import domain.Assessment.{AssessmentType, Platform}
+import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.basic.{BasicProfile, DatabaseConfig}
@@ -9,6 +14,8 @@ import warwick.fileuploads.UploadedFileSave
 import warwick.sso.{Department => _, _}
 
 object Fixtures {
+  import warwick.core.helpers.JavaTime.{timeZone => zone}
+
   object users {
     val noUniId: User = Users.create(Usercode("nouniid"))
 
@@ -59,6 +66,36 @@ object Fixtures {
     )
   }
 
+  object assessments {
+    val storedBrief: StoredBrief =
+      StoredBrief(
+        Some("Here is a brief"),
+        Seq(UUID.randomUUID()),
+        Some("https://example.com/a-brief-history-of-briefs")
+      )
+
+    def storedAssessment(uuid: UUID): StoredAssessment = {
+      val date = LocalDate.of(2018, 1, 1)
+      val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
+      val localStartTime = LocalDateTime.of(date, LocalTime.of(11, 0, 0, 0))
+      val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
+      val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
+
+      StoredAssessment(
+        id = uuid,
+        code = "IT101",
+        title = "ITIL Foundation",
+        startTime = Some(startTime),
+        duration = Duration.ofHours(3),
+        platform = Platform.OnlineExams,
+        assessmentType = AssessmentType.OpenBook,
+        storedBrief = storedBrief,
+        created = createTime,
+        version = createTime
+      )
+    }
+  }
+
   object uploadedFiles {
     import helpers.FileResourceUtils._
 
@@ -87,7 +124,7 @@ object Fixtures {
         override def profileIsObject: Boolean = ???
       }
     }
-    override val jdbcTypes: CustomJdbcTypes = new CustomJdbcTypes(dbConfigProvider)
+    override val jdbcTypes: PostgresCustomJdbcTypes = new PostgresCustomJdbcTypes(dbConfigProvider)
     import dbConfig.profile.api._
 
     def truncateAndReset =
