@@ -11,6 +11,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json.{Format, JsValue, Json}
 import slick.lifted.ProvenShape
+import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
@@ -181,8 +182,6 @@ class AssessmentDaoImpl @Inject()(
   import profile.api._
   import jdbcTypes._
 
-  lazy val warwickTz = ZoneId.of("Europe/London")
-
   override def all: DBIO[Seq[StoredAssessment]] = assessments.result
 
   override def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment] =
@@ -198,12 +197,12 @@ class AssessmentDaoImpl @Inject()(
     assessments.table.filter(_.code === code).result.head
 
   override def getToday: DBIO[Seq[StoredAssessment]] = {
-    val today = OffsetDateTime.now.toLocalDate.atStartOfDay(warwickTz).toOffsetDateTime
+    val today = JavaTime.localDate.atStartOfDay(JavaTime.timeZone).toOffsetDateTime
     assessments.table.filter(a => a.startTime >= today && a.startTime < today.plusDays(1)).result
   }
 
   override def getInWindow: DBIO[Seq[StoredAssessment]] = {
-    val now = OffsetDateTime.now
+    val now = JavaTime.offsetDateTime
     assessments.table.filter(a => a.startTime < now && a.startTime < now.minus(Assessment.window)).result
   }
 

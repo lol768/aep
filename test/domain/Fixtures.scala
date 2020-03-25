@@ -14,7 +14,7 @@ import warwick.fileuploads.UploadedFileSave
 import warwick.sso.{Department => _, _}
 
 object Fixtures {
-  private val zone: ZoneId = ZoneId.of("Europe/London")
+  import warwick.core.helpers.JavaTime.{timeZone => zone}
 
   object users {
     val noUniId: User = Users.create(Usercode("nouniid"))

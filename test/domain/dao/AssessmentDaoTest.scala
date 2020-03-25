@@ -24,7 +24,7 @@ class AssessmentDaoTest extends AbstractDaoTest {
         val test = for {
           result <- dao.insert(ass)
           existsAfter <- dao.getById(id)
-          _ <- DBIO.from(Future {
+          _ <- DBIO.from(Future.successful {
             result.version.toInstant mustBe now
 
             result.code mustBe ass.code

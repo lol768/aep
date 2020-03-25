@@ -34,7 +34,7 @@ class OutgoingEmailDaoTest extends AbstractDaoTest {
         val test = for {
           result <- dao.insert(outgoingEmail)
           existsAfter <- dao.get(result.id)
-          _ <- DBIO.from(Future {
+          _ <- DBIO.from(Future.successful {
             result.version.toInstant.equals(now) mustBe true
 
             result.parsed.created.toInstant.equals(now) mustBe true
@@ -70,15 +70,15 @@ class OutgoingEmailDaoTest extends AbstractDaoTest {
       val now = ZonedDateTime.of(2018, 1, 1, 11, 0, 0, 0, JavaTime.timeZone).toInstant
 
       val test = for {
-        _ <- DBIO.from(Future {
+        _ <- DBIO.from(Future.successful {
           DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(earlier, JavaTime.timeZone)
         })
         inserted <- dao.insert(outgoingEmail)
-        _ <- DBIO.from(Future {
+        _ <- DBIO.from(Future.successful {
           DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(now, JavaTime.timeZone)
         })
         updated <- dao.update(updatedOutgoingEmail.copy(id = Some(inserted.id)), inserted.version)
-        _ <- DBIO.from(Future {
+        _ <- DBIO.from(Future.successful {
           updated.id mustBe inserted.id
           updated.version.toInstant.equals(now) mustBe true
           updated.parsed.email mustBe email
