@@ -79,6 +79,7 @@ val appDeps = Seq(
   "com.typesafe.slick" %% "slick" % "3.3.2",
   "org.postgresql" % "postgresql" % "42.2.10",
   "com.github.tminglei" %% "slick-pg" % "0.18.1",
+  "com.github.tminglei" %% "slick-pg_play-json" % "0.18.1",
 
   "com.typesafe.play" %% "play-mailer" % "8.0.0",
   "com.typesafe.play" %% "play-mailer-guice" % "8.0.0",

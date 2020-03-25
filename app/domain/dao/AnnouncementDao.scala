@@ -19,7 +19,7 @@ trait AnnouncementsTables extends VersionedTables {
 
   import profile.api._
 
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
   import jdbcTypes._
 
   trait CommonProperties { self: Table[_] =>
@@ -114,7 +114,7 @@ trait AnnouncementDao {
 @Singleton
 class AnnouncementDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
 )(implicit ec: ExecutionContext) extends AnnouncementDao with AnnouncementsTables with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
 

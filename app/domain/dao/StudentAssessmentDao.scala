@@ -20,7 +20,7 @@ trait StudentAssessmentsTables extends VersionedTables {
 
   import profile.api._
 
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
   import jdbcTypes._
 
   trait CommonProperties { self: Table[_] =>
@@ -40,6 +40,8 @@ trait StudentAssessmentsTables extends VersionedTables {
 
     override def * : ProvenShape[StoredStudentAssessment] =
       (assessmentId, studentId, inSeat, startTime, uploadedFiles, created, version).mapTo[StoredStudentAssessment]
+
+    def asMetadata = (assessmentId, studentId, inSeat, startTime, uploadedFiles.length()).mapTo[StudentAssessmentMetadata]
   }
 
   class StudentAssessmentVersions(tag: Tag) extends Table[StoredStudentAssessmentVersion](tag, "student_assessment_version")
@@ -118,6 +120,7 @@ trait StudentAssessmentDao {
   def insert(assessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def update(studentAssessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]]
+  def getMetadataByAssessmentId(assessmentId: UUID): DBIO[Seq[StudentAssessmentMetadata]]
   def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]]
   def get(studentId: UniversityID, assessmentId: UUID): DBIO[StoredStudentAssessment]
 }
@@ -125,7 +128,7 @@ trait StudentAssessmentDao {
 @Singleton
 class StudentAssessmentDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
 )(implicit ec: ExecutionContext) extends StudentAssessmentDao with StudentAssessmentsTables with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
   import jdbcTypes._
@@ -143,6 +146,9 @@ class StudentAssessmentDaoImpl @Inject()(
 
   override def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]] =
     studentAssessments.table.filter(_.assessmentId === assessmentId).result
+
+  override def getMetadataByAssessmentId(assessmentId: UUID): DBIO[Seq[StudentAssessmentMetadata]] =
+    studentAssessments.table.filter(_.assessmentId === assessmentId).map(_.asMetadata).result
 
   override def get(studentId: UniversityID, assessmentId: UUID): DBIO[StoredStudentAssessment] =
     studentAssessments.table.filter(_.studentId === studentId).filter(_.assessmentId === assessmentId).result.head
