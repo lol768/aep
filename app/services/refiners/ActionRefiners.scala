@@ -55,4 +55,15 @@ class ActionRefiners @Inject() (
             None
         }
     }
+
+  def IsStudentAssessmentNotFinished: Filter[AssessmentSpecificRequest] =
+    new Filter[AssessmentSpecificRequest] {
+      override protected def apply[A](implicit request: AssessmentSpecificRequest[A]): Future[Option[Result]] =
+        Future.successful {
+          if (request.studentAssessmentWithAssessment.studentAssessment.finaliseTime.isDefined)
+            Some(Forbidden(views.html.errors.assessmentFinished(request.studentAssessmentWithAssessment)))
+          else
+            None
+        }
+    }
 }

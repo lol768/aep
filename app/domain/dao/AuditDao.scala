@@ -4,7 +4,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
-import domain.{AuditEvent, CustomJdbcTypes, ExtendedPostgresProfile}
+import domain.{AuditEvent, PostgresCustomJdbcTypes, ExtendedPostgresProfile}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json.JsValue
@@ -17,7 +17,7 @@ trait AuditEventsTable {
 
   import profile.api._
 
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
   import jdbcTypes._
 
   /**
@@ -53,7 +53,7 @@ trait AuditDao {
 @Singleton
 class AuditDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: PostgresCustomJdbcTypes
 )(implicit ec: ExecutionContext) extends AuditDao with AuditEventsTable with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
   import jdbcTypes._

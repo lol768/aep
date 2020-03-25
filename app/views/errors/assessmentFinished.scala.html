@@ -1,0 +1,10 @@
+@import domain.StudentAssessmentWithAssessment
+
+@(assessment: StudentAssessmentWithAssessment)(implicit context: RequestContext)
+
+@frontend(s"${assessment.assessment.title} - Assessment finalised") {
+  <p>
+    You've already finalised your submission to this assessment, you cannot perform further actions.
+  </p>
+}
+

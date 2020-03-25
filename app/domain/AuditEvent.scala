@@ -32,6 +32,7 @@ object AuditEvent {
     }
     object Assessment {
       val StartAssessment = Symbol("StartAssessment")
+      val FinishAssessment = Symbol("FinishAssessment")
     }
   }
 }

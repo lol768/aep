@@ -19,6 +19,7 @@ GET         /                                       @controllers.IndexController
 GET         /assessments                            @controllers.AssessmentsController.index
 GET         /assessment/:id                         @controllers.AssessmentController.view(id: UUID)
 POST        /assessment/:id                         @controllers.AssessmentController.start(id: UUID)
+POST        /assessment/:id/done                    @controllers.AssessmentController.finish(id: UUID)
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
 
 # Websocket

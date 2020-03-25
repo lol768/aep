@@ -44,7 +44,7 @@ trait VersionedTables {
 
   import profile.api._
 
-  val jdbcTypes: CustomJdbcTypes
+  val jdbcTypes: CustomJdbcTypes[_ <: JdbcProfile]
   import jdbcTypes._
 
   object VersionedTableQuery {

@@ -22,7 +22,7 @@ object VersioningSpec {
 
     import profile.api._
 
-    val jdbcTypes: CustomJdbcTypes
+    val jdbcTypes: PostgresCustomJdbcTypes
     import jdbcTypes._
 
     sealed trait AccountProperties {
@@ -94,7 +94,7 @@ object VersioningSpec {
 
   class SlickAccountDao @Inject() (
     protected val dbConfigProvider: DatabaseConfigProvider,
-    val jdbcTypes: CustomJdbcTypes,
+    val jdbcTypes: PostgresCustomJdbcTypes,
   )(implicit ec: ExecutionContext) extends HasDatabaseConfigProvider[ExtendedPostgresProfile] with AccountsTables {
     // TODO refactor as action/query generator
 
