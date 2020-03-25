@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     import('./assessment-announcements');
   }
 
-  if (document.querySelectorAll('[data-undisable-selector]').length > 0) {
+  if (document.querySelectorAll('.undisable-with-checkbox[data-undisable-selector]').length > 0) {
     import('./undisable-with-checkbox');
   }
 

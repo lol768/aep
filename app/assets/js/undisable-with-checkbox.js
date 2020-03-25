@@ -10,7 +10,7 @@ function handleChange(el, target) {
 
 // Never used in anything dynamically added to the DOM
 function registerEventListeners(targetElement) {
-  targetElement.querySelectorAll('[data-undisable-selector]').forEach((el) => {
+  targetElement.querySelectorAll('.undisable-with-checkbox[data-undisable-selector]').forEach((el) => {
     const selector = el.getAttribute('data-undisable-selector');
     let target = document.querySelector(selector);
     if (target) {
