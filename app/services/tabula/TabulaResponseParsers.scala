@@ -6,6 +6,7 @@ import java.time.{LocalDate, LocalDateTime}
 import domain.tabula._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.sso.{UniversityID, Usercode}
 
 object TabulaResponseParsers {
@@ -272,9 +273,21 @@ object TabulaResponseParsers {
     (__ \ "examPaper").readNullable[ExamPaper](examPaperReads)
   )(AssessmentComponent.apply _)
 
+  val examMembershipReads: Reads[ExamMembership] = (
+    (__ \ "moduleCode").read[String] and
+      (__ \ "occurrence").read[String] and
+      (__ \ "academicYear").read[String] and
+      (__ \ "assessmentGroup").read[String] and
+      (__ \ "sequence").read[String] and
+      (__ \ "currentMembers").read[Seq[String]](Reads.seq[String]).map(s => s.map(UniversityID))
+    )(ExamMembership.apply _)
+
   // A response property containing an array of assessment components
   val responseAssessmentComponentsReads: Reads[Seq[AssessmentComponent]] =
     (__ \ "assessmentComponents").read(Reads.seq(assessmentComponentReads))
+
+  val responsePaperCodesReads: Reads[Map[String, ExamMembership]] =
+    (__ \ "paperCodes").read(Reads.map(examMembershipReads))
 
   def validateAPIResponse[A](jsValue: JsValue, parser: Reads[A]): JsResult[A] = {
     (jsValue \ "success").validate[Boolean].flatMap {

@@ -15,8 +15,8 @@ class HomePageSpec extends BrowserFeatureSpec {
       When("I visit the home page")
       visit(homePage)
 
-      Then("I should see the welcome text")
-      pageContentMustContain("Lorem ipsum")
+      Then("I should have been redirected to the assessments page")
+      pageContentMustContain("This page lists all the exams you are scheduled to take during summer 2020.")
 
       screenshot("Home page for student")
 
