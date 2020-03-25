@@ -16,10 +16,18 @@ class ErrorsController extends BaseController {
   def js = Action { implicit request =>
     request.body.asJson.flatMap(_.validate[Seq[Map[String, JsValue]]].asOpt).toSeq.flatten.foreach { error =>
       val message = error.get("message").flatMap(_.asOpt[String]).getOrElse("-")
-      val entries = StructuredArguments.entries(Map(
-        "stack_trace" -> error.get("stack").flatMap(_.asOpt[String]).getOrElse("-"),
-        "source_ip" -> request.remoteAddress
-      ).asJava)
+      val entries = StructuredArguments.entries {
+        Seq(
+          error.get("column").map("column" -> _),
+          error.get("line").map("line" -> _),
+          error.get("source").map("source" -> _),
+          error.get("pageUrl").map("page_url" -> _),
+          error.get("stack").map("stack_trace" -> _),
+          Option(request.remoteAddress).map("source_ip" -> _),
+          request.headers("User-Agent").map(ua => "request_headers" -> Map("user-agent" -> ua)),
+          request.user.map(_.usercode.string).map("username" -> _),
+        ).flatten.toMap.asJava
+      }
       slf4jLogger.info(message, entries)
     }
     Ok("")
