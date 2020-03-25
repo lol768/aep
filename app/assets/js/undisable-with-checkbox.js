@@ -1,3 +1,5 @@
+import { error } from './log';
+
 function handleChange(el, target) {
   if (el.checked) {
     target.removeAttribute('disabled');
@@ -9,9 +11,12 @@ function handleChange(el, target) {
 // Never used in anything dynamically added to the DOM
 function registerEventListeners(targetElement) {
   targetElement.querySelectorAll('[data-undisable-selector]').forEach((el) => {
-    let target = document.querySelector(el.getAttribute('data-undisable-selector'));
+    const selector = el.getAttribute('data-undisable-selector');
+    let target = document.querySelector(selector);
     if (target) {
       handleChange(el, target);
+    } else {
+      error(`undisable-with-checkbox: Target with selector ${selector} was unavailable at start-up`);
     }
     el.addEventListener('change', () => {
       // DOM may have changed
