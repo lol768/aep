@@ -53,7 +53,7 @@ class WebSocketController @Inject()(
   // This actor lives as long as the controller
   private val pubSubActor = system.actorOf(PubSubActor.props())
 
-  def socket: WebSocket = WebSocket.acceptOrResult[JsValue, JsValue] { request =>
+  def socket: WebSocket = WebSocket.acceptOrResult[JsValue, JsValue] { implicit request =>
     if (securityService.isOriginSafe(request.headers("Origin"))) {
       SecureWebsocket(request) { loginContext: LoginContext =>
         loginContext.user.map(_.usercode) match {
