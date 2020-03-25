@@ -28,7 +28,6 @@
     "jquery": "3.4.1",
     "lodash-es": "4.17.15",
     "loglevel": "1.6.7",
-    "url-polyfill": "1.1.8",
     "whatwg-fetch": "3.0.0"
   },
   "scripts": {
