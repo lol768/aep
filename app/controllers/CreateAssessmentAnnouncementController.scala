@@ -50,7 +50,7 @@ class CreateAssessmentAnnouncementController  @Inject()(
 
   private def renderForm(form: Form[AssessmentAnnouncementData])(implicit req: AuthenticatedRequest[_]): Future[Result] = {
     assessmentService.listForInvigilator(List(currentUser().usercode.string)).successMap{ assessments =>
-      Ok(views.html.assessment.accounement(assessments, form))
+      Ok(views.html.assessment.announcement(assessments, form))
     }
   }
 }
