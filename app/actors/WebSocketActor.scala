@@ -1,16 +1,22 @@
 package actors
 
+import java.time.Duration
+import java.util.UUID
+
 import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import play.api.libs.json._
+import services.StudentAssessmentService
+import warwick.core.helpers.JavaTime
+import warwick.core.timing.TimingContext
 import warwick.sso.LoginContext
 
-import scala.util.Try
+import scala.concurrent.{Await, ExecutionContext}
 
 object WebSocketActor {
 
-  def props(loginContext: LoginContext, pubsub: ActorRef, out: ActorRef): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext))
+  def props(loginContext: LoginContext, pubsub: ActorRef, out: ActorRef, studentAssessmentService: StudentAssessmentService)(implicit ec: ExecutionContext, t: TimingContext): Props =
+    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService))
 
   case class AssessmentAnnouncement(message: String)
 
@@ -29,6 +35,10 @@ object WebSocketActor {
   )
   val readsClientNetworkInformation: Reads[ClientNetworkInformation] = Json.reads[ClientNetworkInformation]
 
+  case class RequestTimeRemaining(
+    assessmentId: UUID
+  )
+  val readsRequestTimeRemaining: Reads[RequestTimeRemaining] = Json.reads[RequestTimeRemaining]
 }
 
 /**
@@ -39,7 +49,15 @@ object WebSocketActor {
   * @param out this output will be attached to the websocket and will send
   *            messages back to the client.
   */
-class WebSocketActor(out: ActorRef, pubsub: ActorRef, loginContext: LoginContext) extends Actor with ActorLogging {
+class WebSocketActor(
+  out: ActorRef,
+  pubsub: ActorRef,
+  loginContext: LoginContext,
+  studentAssessmentService: StudentAssessmentService,
+)(implicit
+  ec: ExecutionContext,
+  t: TimingContext
+) extends Actor with ActorLogging {
 
   import WebSocketActor._
 
@@ -65,8 +83,9 @@ class WebSocketActor(out: ActorRef, pubsub: ActorRef, loginContext: LoginContext
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
-
-          // TODO handle client network information
+          val fut = studentAssessmentService.getWithAssessment(loginContext.user.flatMap(u => u.universityId).get, m.data.get.as[RequestTimeRemaining](readsRequestTimeRemaining).assessmentId).map { a =>
+            out ! a.assessment.duration.minus(Duration.between(a.studentAssessment.startTime.get, JavaTime.offsetDateTime)).toString
+          }
 
         case m => log.error(s"Ignoring unrecognised client message: $m")
       }
