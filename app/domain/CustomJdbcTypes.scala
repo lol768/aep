@@ -75,4 +75,5 @@ class PostgresCustomJdbcTypes @Inject() (
 
   implicit val listOfStringTuplesMapper: JdbcType[Seq[(String, String)]] = jsonTypeMapper[Seq[(String, String)]]
   implicit val listOfStringsMapper: JdbcType[Seq[String]] = jsonTypeMapper[Seq[String]]
+  implicit val storedBriefMapper: JdbcType[StoredBrief] = jsonTypeMapper[StoredBrief]
 }
