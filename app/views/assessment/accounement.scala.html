@@ -1,0 +1,26 @@
+@import domain.Assessment
+
+@(
+    assessments: Seq[Assessment],
+    form: Form[AssessmentAnnouncementData]
+)(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
+
+@frontend("Assessment Announcement", extraClasses = Seq("grey-nopad")) {
+
+    @if(assessments.isEmpty) {
+        <p>Sorry there are no assessments available</p>
+    } else {
+        @b3.vertical.formCSRF(controllers.routes.CreateAssessmentAnnouncementController.add) { implicit fc =>
+            @views.html.tags.globalErrors(form)
+
+            @b3.select(form("assessmentId"),
+                options = assessments.map(r => r.id.toString -> r.title),
+                Symbol("_label") -> "Assessment"
+            )
+
+            @b3.textarea(form("message"), Symbol("_label") -> "Message", Symbol("rows") -> 10)
+
+            @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fad fa-plus fa-fw"></i> Add }
+        }
+    }
+}

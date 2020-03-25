@@ -14,7 +14,6 @@ import slick.lifted.ProvenShape
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
-
 import scala.concurrent.ExecutionContext
 
 trait AssessmentsTables extends VersionedTables {
@@ -33,6 +32,7 @@ trait AssessmentsTables extends VersionedTables {
     def platform = column[Platform]("platform")
     def assessmentType = column[AssessmentType]("type")
     def storedBrief = column[StoredBrief]("brief")
+    def invigilators = column[List[String]]("invigilators")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
   }
@@ -43,7 +43,7 @@ trait AssessmentsTables extends VersionedTables {
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, created, version).mapTo[StoredAssessment]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, created, version).mapTo[StoredAssessment]
 
     def idx = index("id_assessment_code", (code))
   }
@@ -57,7 +57,7 @@ trait AssessmentsTables extends VersionedTables {
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }
 
@@ -75,6 +75,7 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
+    invigilators: List[String],
     created: OffsetDateTime,
     version: OffsetDateTime
   ) extends Versioned[StoredAssessment] {
@@ -87,7 +88,8 @@ object AssessmentsTables {
         duration,
         platform,
         assessmentType,
-        storedBrief.asBrief(fileMap)
+        storedBrief.asBrief(fileMap),
+        invigilators
       )
     override def atVersion(at: OffsetDateTime): StoredAssessment = copy(version = at)
 
@@ -101,6 +103,7 @@ object AssessmentsTables {
         platform,
         assessmentType,
         storedBrief,
+        invigilators,
         created,
         version,
         operation,
@@ -118,6 +121,7 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
+    invigilators: List[String],
     created: OffsetDateTime,
     version: OffsetDateTime,
     operation: DatabaseOperation,
@@ -156,6 +160,8 @@ trait AssessmentDao {
   def getById(id: UUID): DBIO[StoredAssessment]
   def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]]
   def getByCode(code: String): DBIO[StoredAssessment]
+  def getByInvigilator(usercodes: List[String]): DBIO[Seq[StoredAssessment]]
+  def getByIdAndInvigilator(id: UUID, usercodes: List[String]): DBIO[StoredAssessment]
 }
 
 @Singleton
@@ -178,4 +184,10 @@ class AssessmentDaoImpl @Inject()(
 
   override def getByCode(code: String): DBIO[StoredAssessment] =
     assessments.table.filter(_.code === code).result.head
+
+  override def getByInvigilator(usercodes: List[String]): DBIO[Seq[StoredAssessment]] =
+    assessments.table.filter(_.invigilators @> usercodes).result
+
+  override def getByIdAndInvigilator(id: UUID, usercodes: List[String]): DBIO[StoredAssessment] =
+    assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes).result.head
 }

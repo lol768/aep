@@ -43,6 +43,9 @@ POST        /sysadmin/test/mywarwick                @controllers.sysadmin.Sysadm
 POST        /sysadmin/test/upload                   @controllers.sysadmin.SysadminTestController.uploadFile()
 GET         /sysadmin/test/:id/download             @controllers.sysadmin.SysadminTestController.downloadFile(id: UUID)
 
+GET         /assessment/announcement                @controllers.CreateAssessmentAnnouncementController.index
+POST        /assessment/announcement                @controllers.CreateAssessmentAnnouncementController.add
+
 ## Fallbacks ##
 
 # Handle trailing slashes in URLs
