@@ -7,6 +7,8 @@ import com.atlassian.bamboo.specs.api.builders.plan.Job;
 import com.atlassian.bamboo.specs.api.builders.plan.Plan;
 import com.atlassian.bamboo.specs.api.builders.plan.Stage;
 import com.atlassian.bamboo.specs.api.builders.plan.artifact.Artifact;
+import com.atlassian.bamboo.specs.api.builders.plan.branches.BranchCleanup;
+import com.atlassian.bamboo.specs.api.builders.plan.branches.PlanBranchManagement;
 import com.atlassian.bamboo.specs.api.builders.project.Project;
 import com.atlassian.bamboo.specs.api.builders.requirement.Requirement;
 import com.atlassian.bamboo.specs.builders.notification.DeploymentStartedAndFinishedNotification;
@@ -65,6 +67,18 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
             )
         )
         .slackNotifications(SLACK_CHANNEL, false)
+        .customConfig(plan ->
+          plan.planBranchManagement(
+            new PlanBranchManagement()
+              .createForVcsBranch()
+              .delete(
+                new BranchCleanup()
+                  .whenRemovedFromRepositoryAfterDays(30)
+                  .whenInactiveInRepositoryAfterDays(180)
+              )
+              .notificationDisabled()
+          )
+        )
         .build()
     );
   }
