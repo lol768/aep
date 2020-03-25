@@ -2,7 +2,7 @@
 
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const TODAY = 'Today';
+const TODAY = 'Today ';
 const SOME_SUNNY_DAY = '';
 const iconString = '<i class="fad fa-clock fa-fw" aria-hidden="true"></i>';
 
@@ -184,6 +184,7 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
   const sameYear = fromYear === toYear;
   const sameMonth = fromMonth === toMonth;
   const sameDateNumber = fromDateNumber === toDateNumber;
+  const sameExactDate = sameYear && sameMonth && sameDateNumber;
 
   let fromDateNumberString = '';
   let toDateNumberString = relativeDateName(toDate);
@@ -192,39 +193,39 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
   let toYearString = '';
 
   if (!sameYear || fromYear !== currentYear || toYear !== currentYear) {
-    fromYearString = stringifyYear(fromYear, short);
-    toYearString = stringifyYear(toYear, short);
+    fromYearString = `${stringifyYear(fromYear, short)} `;
+    toYearString = `${stringifyYear(toYear, short)} `;
   }
 
   let fromMonthString = '';
   const toMonthString = toDateNumberString !== TODAY
-    ? stringifyMonth(toMonth, short)
+    ? `${stringifyMonth(toMonth, short)} `
     : '';
 
-  if (!sameYear || !sameMonth) {
-    fromMonthString = stringifyMonth(fromMonth, short);
+  if (!sameYear || !sameMonth || (toDateNumberString === TODAY && !sameExactDate)) {
+    fromMonthString = `${stringifyMonth(fromMonth, short)} `;
   }
 
   if (toDateNumberString === '') {
-    toDateNumberString = th(toDateNumber);
+    toDateNumberString = `${th(toDateNumber)} `;
   }
   let fromDateDayString = '';
   const toDateDayString = toDateNumberString !== TODAY
-    ? stringifyDay(toDate.getDay(), short)
+    ? `${stringifyDay(toDate.getDay(), short)} `
     : '';
 
   if (!sameYear || !sameMonth || !sameDateNumber) {
-    fromDateNumberString = th(fromDateNumber);
-    fromDateDayString = stringifyDay(fromDate.getDay(), short);
+    fromDateNumberString = `${th(fromDateNumber)} `;
+    fromDateDayString = `${stringifyDay(fromDate.getDay(), short)} `;
   }
 
   return `<i class="fad fa-clock fa-fw" aria-hidden="true"></i> \
-    ${stringifyTime(fromDate)} \
-    ${fromDateDayString} ${fromDateNumberString} ${fromMonthString} ${fromYearString} \
-    to \
-    ${stringifyTime(toDate)}, \
-    ${toDateDayString} ${toDateNumberString} ${toMonthString} ${toYearString} \
-    <span class="text-muted">${timezoneName}</span>`;
+${stringifyTime(fromDate)} \
+${fromDateDayString}${fromDateNumberString}${fromMonthString}${fromYearString}\
+to \
+${stringifyTime(toDate)}, \
+${toDateDayString}${toDateNumberString}${toMonthString}${toYearString}\
+<span class="text-muted">${timezoneName}</span>`;
 }
 
 /**
@@ -309,15 +310,6 @@ export default class JDDT {
   }
 
   /**
-   * Generates long-format string of GMT datetime
-   * - e.g. 12:00 GMT, Thursday 19th March 2020
-   * @returns {string}
-   */
-  longGMT() {
-    return stringify(this.jsDateGMT, 'GMT');
-  }
-
-  /**
    * Generates short-format string of local datetime
    * - e.g. 17:00 Shanghai / Pacific time, Thu 19th Mar '20
    * @returns {string}
@@ -327,18 +319,8 @@ export default class JDDT {
   }
 
   /**
-   * Generates short-format string of GMT datetime
-   * - e.g. 12:00 GMT, Thu 19th Mar '20
-   * @returns {string}
-   */
-  shortGMT() {
-    return stringify(this.jsDateGMT, 'GMT', true);
-  }
-
-  /**
    * Takes an element of the format <span class="jddt" millis="[milliseconds]"
    * format="[validFormat]"></span> and populates its innerHTML with the JDDT
-   * @private
    * @static
    * @param {HTMLElement} el
    */
@@ -369,7 +351,6 @@ export default class JDDT {
    * Takes an element of the format <span class="jddt-range" data-from-millis="[milliseconds]"
    * data-to-millis="[milliseconds]" short="boolean"></span> and populates its innerHTML with
    * the JDDT
-   * @private
    * @static
    * @param {HTMLElement} el
    */
