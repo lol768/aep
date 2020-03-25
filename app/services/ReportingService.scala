@@ -39,7 +39,7 @@ class ReportingServiceImpl @Inject()(
     daoRunner.run(assDao.getInWindow).map(_.map(_.asAssessmentMetadata)).map(ServiceResults.success)
 
   override def expectedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]] =
-    daoRunner.run(sittingDao.getByAssessmentId(assessment)).map(_.map(_.asStudentAssessmentMetadata)).map(ServiceResults.success)
+    daoRunner.run(sittingDao.getMetadataByAssessmentId(assessment)).map(ServiceResults.success)
 
   override def startedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]] =
     expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.inSeat == true))
