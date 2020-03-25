@@ -67,6 +67,10 @@ object Fixtures {
   }
 
   object assessments {
+
+    val invigilator1 = "Mary"
+    val invigilator2 = "Bob"
+
     val storedBrief: StoredBrief =
       StoredBrief(
         Some("Here is a brief"),
@@ -90,6 +94,7 @@ object Fixtures {
         platform = Platform.OnlineExams,
         assessmentType = AssessmentType.OpenBook,
         storedBrief = storedBrief,
+        invigilators = List(invigilator1,invigilator2),
         created = createTime,
         version = createTime
       )

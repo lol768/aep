@@ -21,6 +21,8 @@ GET         /assessment/:id                         @controllers.AssessmentContr
 POST        /assessment/:id                         @controllers.AssessmentController.start(id: UUID)
 POST        /assessment/:id/done                    @controllers.AssessmentController.finish(id: UUID)
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
+GET         /assessment/announcement/add            @controllers.CreateAssessmentAnnouncementController.index
+POST        /assessment/announcement/add            @controllers.CreateAssessmentAnnouncementController.add
 
 # Websocket
 GET         /websocket                              @controllers.WebSocketController.socket
@@ -48,9 +50,6 @@ POST        /sysadmin/test/email                    @controllers.sysadmin.Sysadm
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()
 POST        /sysadmin/test/upload                   @controllers.sysadmin.SysadminTestController.uploadFile()
 GET         /sysadmin/test/:id/download             @controllers.sysadmin.SysadminTestController.downloadFile(id: UUID)
-
-GET         /assessment/announcement                @controllers.CreateAssessmentAnnouncementController.index
-POST        /assessment/announcement                @controllers.CreateAssessmentAnnouncementController.add
 
 ## Fallbacks ##
 
