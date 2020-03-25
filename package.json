@@ -3,7 +3,7 @@
   "version": "1.0.0-SNAPSHOT",
   "private": true,
   "devDependencies": {
-    "@universityofwarwick/webpack-config-builder": "^1.0.2",
+    "@universityofwarwick/webpack-config-builder": "1.0.2",
     "chai": "4.2.0",
     "chromedriver": "80.0.1",
     "eslint": "6.8.0",
@@ -28,7 +28,8 @@
     "jquery": "3.4.1",
     "lodash-es": "4.17.15",
     "loglevel": "1.6.7",
-    "mockdate": "2.0.5"
+    "mockdate": "2.0.5",
+    "whatwg-fetch": "3.0.0"
   },
   "scripts": {
     "watch": "NODE_ENV=development webpack --mode development --watch",
