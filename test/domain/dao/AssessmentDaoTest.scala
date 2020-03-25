@@ -78,7 +78,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       val generatedAssessments = (1 to 5).map(_ => Fixtures.assessments.storedAssessment())
       val first = generatedAssessments(0)
       val second = generatedAssessments(1)
-      val firstStart = first.startTime.map(_.plusDays(3)) // offset the date
+      val firstStart = first.startTime.map(_.plusDays(3).withHour(9)) // offset the date, definitely in the window
       val secondStart = second.startTime.map(_.plusDays(3).withHour(23)) // offset the date, late night special
       val assessments = Seq(first.copy(startTime = firstStart), second.copy(startTime = secondStart)) ++ generatedAssessments.drop(2)
       execWithCommit(DBIO.sequence(assessments.map(dao.insert)))
@@ -95,6 +95,12 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
         val result = execWithCommit(dao.getInWindow)
         result.length mustEqual 1
         result.head.id mustEqual first.id
+      })
+
+      val notInWindow = firstStart.get.withHour(1).toInstant
+      DateTimeUtils.useMockDateTime(notInWindow, () => {
+        val result = execWithCommit(dao.getInWindow)
+        result.length mustEqual 0
       })
     }
   }
