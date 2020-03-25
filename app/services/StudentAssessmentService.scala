@@ -31,6 +31,7 @@ trait StudentAssessmentService {
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
+  def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
 }
 
 @Singleton
@@ -93,6 +94,11 @@ class StudentAssessmentServiceImpl @Inject()(
     require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot start assessment, too early")
   }
 
+  private def startedNotFinalised(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
+    require(storedStudentAssessment.finaliseTime.isEmpty, "Cannot perform action, assessment is finalised")
+    require(storedStudentAssessment.startTime.isDefined, "Cannot perform action, assessment is not yet started")
+  }
+
   override def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
     audit.audit(Operation.Assessment.StartAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
@@ -137,7 +143,7 @@ class StudentAssessmentServiceImpl @Inject()(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(canStart(storedAssessment, storedStudentAssessment))
+          _ <- DBIO.from(startedNotFinalised(storedAssessment, storedStudentAssessment))
           fileIds <- DBIO.sequence(files.toList.map { case (in, metadata) =>
             uploadedFileService.storeDBIO(in, metadata, ctx.usercode.get, storedStudentAssessment.id, UploadedFileOwner.StudentAssessment).map(_.id)
           })
@@ -145,5 +151,19 @@ class StudentAssessmentServiceImpl @Inject()(
         } yield updatedStudentAssessment
       ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
     }
+
+  override def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
+    audit.audit(Operation.Assessment.DeleteAttachedAssessmentFile, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "fileId" -> file.toString)) {
+      daoRunner.run(
+        for {
+          storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
+          storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
+          _ <- DBIO.from(startedNotFinalised(storedAssessment, storedStudentAssessment))
+          // TODO: do we want to delete the object storage file?
+          updatedStudentAssessment <- dao.update(storedStudentAssessment.copy(uploadedFiles = storedStudentAssessment.uploadedFiles.filterNot(_ == file)))
+        } yield updatedStudentAssessment
+      ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
+    }
+  }
 
 }

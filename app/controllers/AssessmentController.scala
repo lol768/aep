@@ -85,6 +85,11 @@ class AssessmentController @Inject()(
     )
   }
 
+  def deleteFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
+    studentAssessmentService.deleteAttachedFile(request.studentAssessmentWithAssessment.studentAssessment, fileId)
+    Future.successful(redirectToAssessment(assessmentId).flashing("success" -> Messages("flash.assessment.fileDeleted")))
+  }
+
   def downloadAttachment(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentIsStartedAction(assessmentId).async { implicit request =>
     def notFound: Future[Result] =
       Future.successful(NotFound(views.html.errors.notFound()))

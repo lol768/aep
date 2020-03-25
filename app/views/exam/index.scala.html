@@ -17,6 +17,9 @@
     case "application/pdf" => {<i class="fad fa-2x themed-duotone fa-file-pdf"></i>}
     case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => {<i class="fad fa-2x themed-duotone fa-file-word"></i>}
     case "application/msword" => {<i class="fad fa-2x  themed-duotone fa-file-word"></i>}
+    case "image/png" => {<i class="fad fa-2x  themed-duotone fa-file-image"></i>}
+    case "image/gif" => {<i class="fad fa-2x  themed-duotone fa-file-image"></i>}
+    case "image/jpeg" => {<i class="fad fa-2x  themed-duotone fa-file-image"></i>}
     case _ => {<i class="fad fa-2x themed-duotone fa-file"></i>}
   }
 }
@@ -24,12 +27,36 @@
 @frontend(assessment.assessment.title, extraClasses = if(assessment.inProgress) Seq("grey-nopad", "connect-ws") else  Seq("grey-nopad")) {
   @assessmentPanel(assessment, isAssessmentPage = true)
   @if(assessment.inProgress) {
-    <h2>Exam files</h2>
+    <h2>Exam brief</h2>
+    <p>Your department has provided the following information:</p>
+    @if(assessment.assessment.brief.text.isDefined) {
+      <blockquote>@assessment.assessment.brief.text</blockquote>
+    }
+    @if(assessment.assessment.brief.url.isDefined) {
+      <a href="@assessment.assessment.brief.url"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
+    }
     @assessment.assessment.brief.files.map { file =>
       <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
     }
-    <h2>Uploaded answers</h2>
+    <h2>Uploaded answer files</h2>
     @if(assessment.studentAssessment.uploadedFiles.nonEmpty) {
+      @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
+        @b3.free(Symbol("_label") -> "Attach file") {
+          <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
+        }
+
+        <div class="help-block upload-info hide">
+          <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
+          <progress value="0" max="100"></progress>
+        </div>
+        <p class="help-block upload-error hide">
+          <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
+        </p>
+
+        @b3.free(Symbol("_class") -> "spaced-buttons") {
+          <button type="submit" class="btn btn-primary">Upload files</button>
+        }
+      }
      <div class="uploaded-files">
         @assessment.studentAssessment.uploadedFiles.map { file =>
           <div class="panel uploaded-file">
@@ -42,10 +69,10 @@
                 </div>
                 <div class="media-body">
                   <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)">@file.fileName</a></h4>
-                  <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@file.created</small></p>
-                  @b3.inline.formCSRF(warwick.sso.routes.MasqueradeController.unmask()) { implicit ifc =>
+                  <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@JavaTime.Relative(file.created)</small></p>
+                  @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(assessment.assessment.id, file.id)) { implicit ifc =>
                     <p>
-                      <button type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i> Delete</button>
+                      <a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i> Download</a> <button type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i> Delete</button>
                     </p>
                   }
 
@@ -55,47 +82,56 @@
           </div>
         }
       </div>
+    } else {
+      <div class="blankslate panel panel-default">
+          <i class="fad fa-folder-open themed-duotone fa-2x"></i> <i
+                  class="fad fa-file themed-duotone fa-2x"></i>
+          <h3>You've not yet uploaded any answer files</h3>
+          <div class="left-align">
+            <p>Once you've answered the assessment questions and you're ready to submit, you can upload your files below.</p>
+            @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
+              @b3.free(Symbol("_label") -> "Attach file") {
+                <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
+              }
 
+              <div class="help-block upload-info hide">
+                <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
+                <progress value="0" max="100"></progress>
+              </div>
+              <p class="help-block upload-error hide">
+                <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
+              </p>
+
+              @b3.free(Symbol("_class") -> "spaced-buttons") {
+                <button type="submit" class="btn btn-primary">Upload files</button>
+              }
+            }
+          </div>
+        </div>
     }
-    @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
-      @b3.free(Symbol("_label") -> "Attach file") {
-        <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
-      }
-
-      <div class="help-block upload-info hide">
-        <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
-        <progress value="0" max="100"></progress>
+    @if(assessment.studentAssessment.uploadedFiles.nonEmpty) {
+      <div class="panel panel-default finish-exam-panel">
+        <div class="brand-stripe"></div>
+        <div class="panel-body">
+          <h2>Finish exam</h2>
+          <p class="lead">Once you're ready, you can finish the exam below. We'll record the time at which you do this.</p>
+          <p>Have you completed all of the following tasks?</p>
+          <ul>
+            <li>Uploaded your final submission above</li>
+            <li>Downloaded your final submission and checked to ensure it was uploaded in its entirety</li>
+            <li>Checked through your answers to the assessment questions</li>
+          </ul>
+          @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id)) { implicit fc =>
+            @b3.checkbox(
+              finishExamForm("agreeDisclaimer"),
+              Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.",
+              Symbol("data-undisable-selector") -> ".finish-exam-btn",
+              Symbol("class") -> "undisable-with-checkbox",
+            )
+            @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish exam }
+          }
+        </div>
       </div>
-      <p class="help-block upload-error hide">
-        <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
-      </p>
-
-      @b3.free(Symbol("_class") -> "spaced-buttons") {
-        <button type="submit" class="btn btn-primary">Upload files</button>
-      }
     }
-
-    <div class="panel panel-default finish-exam-panel">
-      <div class="brand-stripe"></div>
-      <div class="panel-body">
-        <h2>Finish exam</h2>
-        <p class="lead">Once you're ready, you can finish the exam below. We'll record the time at which you do this.</p>
-        <p>Have you completed all of the following tasks?</p>
-        <ul>
-          <li>Uploaded your final submission above</li>
-          <li>Downloaded your final submission and checked to ensure it was uploaded in its entirety</li>
-          <li>Checked through your answers to the assessment questions</li>
-        </ul>
-        @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id)) { implicit fc =>
-          @b3.checkbox(
-            finishExamForm("agreeDisclaimer"),
-            Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.",
-            Symbol("data-undisable-selector") -> ".finish-exam-btn",
-            Symbol("class") -> "undisable-with-checkbox",
-          )
-          @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish exam }
-        }
-      </div>
-    </div>
   }
 }
