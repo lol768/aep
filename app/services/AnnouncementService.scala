@@ -3,6 +3,7 @@ package services
 import java.time.OffsetDateTime
 import java.util.UUID
 
+import actors.WebSocketActor.AssessmentAnnouncementForUniversityIds
 import akka.Done
 import com.google.inject.ImplementedBy
 import domain.Announcement
@@ -13,6 +14,8 @@ import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
+import warwick.core.helpers.ServiceResults.Implicits._
+import warwick.sso.UniversityID
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -30,6 +33,8 @@ class AnnouncementServiceImpl @Inject()(
   auditService: AuditService,
   daoRunner: DaoRunner,
   dao: AnnouncementDao,
+  pubSubService: PubSubService,
+  studentAssessmentService: StudentAssessmentService,
 )(implicit ec: ExecutionContext) extends AnnouncementService {
 
   override def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] = {
@@ -42,6 +47,28 @@ class AnnouncementServiceImpl @Inject()(
     )
 
     daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
+
+    pubSubService.subscribe(
+      topic = announcement.id.toString,
+      group = None,
+    )
+
+    for {
+      affectedStudents <- studentAssessmentService
+        .byAssessmentId(announcement.id)
+        .successMapTo(_.map(_.studentId))
+        .map(_.getOrElse(Nil))
+    } yield {
+
+      pubSubService.publish(
+        topic = announcement.id.toString,
+        AssessmentAnnouncementForUniversityIds(
+          message = announcement.text,
+          universityIds = affectedStudents,
+        )
+      )
+      ServiceResults.success(Done)
+    }
   }
 
   override def delete(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Done]] =
