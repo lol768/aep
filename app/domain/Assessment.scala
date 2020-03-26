@@ -31,7 +31,7 @@ case class Assessment(
   platform: Platform,
   assessmentType: AssessmentType,
   brief: Brief,
-  invigilators: Seq[Usercode],
+  invigilators: Set[Usercode],
 ) extends BaseAssessment
 
 case class AssessmentMetadata(

@@ -91,7 +91,7 @@ object AssessmentsTables {
         platform,
         assessmentType,
         storedBrief.asBrief(fileMap),
-        invigilators.map(Usercode)
+        invigilators.map(Usercode).toSet
       )
 
     def asAssessmentMetadata =
@@ -191,7 +191,7 @@ class AssessmentDaoImpl @Inject()(
   override def all: DBIO[Seq[StoredAssessment]] = assessments.result
 
   override def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment] =
-    assessments.insert(assessment)
+    assessments.insert(assessment.copy(invigilators = assessment.invigilators.sorted))
 
   override def getById(id: UUID): DBIO[Option[StoredAssessment]] =
     assessments.table.filter(_.id === id).result.headOption
