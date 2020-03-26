@@ -1,5 +1,5 @@
 @import domain.Assessment
-@import controllers.CreateAnnouncementController.AnnouncementData
+@import controllers.admin.CreateAnnouncementController.AnnouncementData
 @(
     assessments: Seq[Assessment],
     form: Form[AnnouncementData]
@@ -10,7 +10,7 @@
     @if(assessments.isEmpty) {
         <p>Sorry there are no assessments available</p>
     } else {
-        @b3.vertical.formCSRF(controllers.routes.CreateAnnouncementController.add) { implicit fc =>
+        @b3.vertical.formCSRF(controllers.admin.routes.CreateAnnouncementController.add) { implicit fc =>
             @views.html.tags.globalErrors(form)
 
             @b3.select(form("assessmentId"),

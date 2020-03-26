@@ -1,17 +1,18 @@
-package controllers
+package controllers.admin
 
 import java.util.UUID
-import CreateAnnouncementController._
+
+import controllers.admin.CreateAnnouncementController._
+import controllers.BaseController
 import domain.Announcement
-import play.api.data.Forms._
 import javax.inject.{Inject, Singleton}
+import play.api.data.Form
+import play.api.data.Forms.{mapping, _}
+import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, Result}
 import services.{AnnouncementService, AssessmentService, SecurityService}
-import play.api.data.Form
-import play.api.data.Forms.mapping
-import play.api.i18n.Messages
 import warwick.sso.AuthenticatedRequest
-import play.api.mvc.Result
+
 import scala.concurrent.{ExecutionContext, Future}
 
 object CreateAnnouncementController {
@@ -46,7 +47,7 @@ class CreateAnnouncementController @Inject()(
       data => {
         assessmentService.getByIdForInvigilator(data.assessmentId, List(currentUser().usercode)).successFlatMap { assessment =>
           announcementService.save(Announcement(assessment = assessment.id, text = data.message)).map( _ =>
-            Redirect(controllers.routes.CreateAnnouncementController.index)
+            Redirect(controllers.admin.routes.CreateAnnouncementController.index)
               .flashing("success" -> Messages("flash.assessment.announcement.created"))
           )
         }
