@@ -38,15 +38,15 @@ GET         /websocket                              @controllers.WebSocketContro
 
 ## Admins ##
 
-GET        /admin/assessments                       @controllers.admin.AssessmentsController.index()
-GET /admin/approvals @controllers.admin.ApprovalsController.index()
-GET        /admin/approvals/:id                   @controllers.admin.ApprovalsController.show(id: UUID)
-POST        /admin/approvals/:id                   @controllers.admin.ApprovalsController.update(id: UUID)
-GET /admin/approvals/:assessmentId/files/:fileId @controllers.admin.ApprovalsController.getFile(assessmentId: UUID, fileId: UUID)
+GET         /admin/assessments                                    @controllers.admin.AssessmentsController.index()
+GET         /admin/approvals                                      @controllers.admin.ApprovalsController.index()
+GET         /admin/approvals/:id                                  @controllers.admin.ApprovalsController.show(id: UUID)
+POST        /admin/approvals/:id                                  @controllers.admin.ApprovalsController.update(id: UUID)
+GET         /admin/approvals/:assessmentId/files/:fileId          @controllers.admin.ApprovalsController.getFile(assessmentId: UUID, fileId: UUID)
 
-GET        /admin/assessments/:id                   @controllers.admin.AssessmentsController.show(id: UUID)
-POST       /admin/assessments/:id                   @controllers.admin.AssessmentsController.update(id: UUID)
-GET /admin/assessments/:assessmentId/files/:fileId @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
+GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.show(id: UUID)
+POST        /admin/assessments/:id                                @controllers.admin.AssessmentsController.update(id: UUID)
+GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
 
 ## Sysadmins ##
 
