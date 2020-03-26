@@ -5,6 +5,7 @@ import java.util.UUID
 
 import domain.Assessment._
 import enumeratum.{EnumEntry, PlayEnum}
+import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
 
@@ -16,6 +17,9 @@ sealed trait BaseAssessment {
   def duration: Duration
   def platform: Platform
   def assessmentType: AssessmentType
+
+  def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
+  def hasWindowPassed: Boolean = endTime.exists(_.isAfter(JavaTime.offsetDateTime))
 }
 
 case class Assessment(

@@ -6,7 +6,6 @@ import java.time.{LocalDate, LocalDateTime}
 import domain.tabula._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.sso.{UniversityID, Usercode}
 
 object TabulaResponseParsers {
@@ -18,15 +17,16 @@ object TabulaResponseParsers {
       yearOfStudy: Int,
       studyLevel: Option[String],
       modeOfAttendance: String,
-      enrolmentDepartment: SitsDepartment
+      enrolmentDepartment: DepartmentIdentity
     )
+
     val studentCourseYearDetailsReads: Reads[StudentCourseYearDetails] = (
       (__ \ "academicYear").read[String] and
         (__ \ "yearOfStudy").read[Int] and
         (__ \ "studyLevel").readNullable[String] and
         (__ \ "modeOfAttendance" \ "code").read[String] and
-        (__ \ "enrolmentDepartment").read[SitsDepartment](departmentReads)
-      )(StudentCourseYearDetails.apply _)
+        (__ \ "enrolmentDepartment").read[DepartmentIdentity](departmentIdentity)
+      ) (StudentCourseYearDetails.apply _)
     val studentCourseYearDetailsFields: Seq[String] =
       Seq("academicYear", "yearOfStudy", "studyLevel", "modeOfAttendance.code", "enrolmentDepartment")
 
@@ -40,6 +40,7 @@ object TabulaResponseParsers {
       level: Option[String],
       studentCourseYearDetails: Seq[StudentCourseYearDetails],
     )
+
     val studentCourseDetailsReads: Reads[StudentCourseDetails] = (
       (__ \ "mostSignificant").read[Boolean] and
         (__ \ "beginDate").read[LocalDate] and
@@ -49,7 +50,7 @@ object TabulaResponseParsers {
         (__ \ "course").read[Course](courseReads) and
         (__ \ "levelCode").readNullable[String] and
         (__ \ "studentCourseYearDetails").read[Seq[StudentCourseYearDetails]](Reads.seq(studentCourseYearDetailsReads))
-      )(StudentCourseDetails.apply _)
+      ) (StudentCourseDetails.apply _)
     val studentCourseDetailsFields: Seq[String] =
       Seq("mostSignificant", "beginDate", "endDate", "expectedEndDate", "course", "levelCode") ++
         studentCourseYearDetailsFields.map(f => s"studentCourseYearDetails.$f")
@@ -61,7 +62,7 @@ object TabulaResponseParsers {
       dateOfBirth: LocalDate,
       phoneNumber: Option[String],
       email: Option[String],
-      homeDepartment: SitsDepartment,
+      homeDepartment: DepartmentIdentity,
       tier4VisaRequirement: Option[Boolean],
       nationality: Option[String],
       secondNationality: Option[String],
@@ -85,7 +86,7 @@ object TabulaResponseParsers {
           phoneNumber = phoneNumber,
           warwickEmail = email,
           address = address,
-          department = SitsDepartment(department.code, department.name),
+          department = DepartmentIdentity(department.code, department.name),
           course = latestScd.map(_.course),
           attendance = latestScyd.map(_.modeOfAttendance).flatMap(Attendance.withNameOption),
           group = latestScd.map(_.courseType).flatMap(StudentGroup.withNameOption),
@@ -103,6 +104,7 @@ object TabulaResponseParsers {
         )
       }
     }
+
     val memberReads: Reads[Member] = (
       (__ \ "member" \ "universityId").read[String] and
         (__ \ "member" \ "userId").read[String] and
@@ -110,7 +112,7 @@ object TabulaResponseParsers {
         (__ \ "member" \ "dateOfBirth").read[LocalDate] and
         (__ \ "member" \ "mobileNumber").readNullable[String] and
         (__ \ "member" \ "email").readNullable[String] and
-        (__ \ "member" \ "homeDepartment").read[SitsDepartment](departmentReads) and
+        (__ \ "member" \ "homeDepartment").read[DepartmentIdentity](departmentIdentity) and
         (__ \ "member" \ "tier4VisaRequirement").readNullable[Boolean] and
         (__ \ "member" \ "nationality").readNullable[String] and
         (__ \ "member" \ "secondNationality").readNullable[String] and
@@ -120,7 +122,7 @@ object TabulaResponseParsers {
         (__ \ "member" \ "currentAddress").readNullable[Address](addressReads) and
         (__ \ "member" \ "studentCourseDetails").readNullable[Seq[StudentCourseDetails]](Reads.seq(studentCourseDetailsReads)) and
         (__ \ "member" \ "userType").read[String]
-      )(Member.apply _)
+      ) (Member.apply _)
     val memberFields: Seq[String] =
       Seq(
         "universityId", "userId", "fullName", "dateOfBirth", "mobileNumber", "email", "homeDepartment",
@@ -134,20 +136,20 @@ object TabulaResponseParsers {
 
   private val codeAndNameBuilder = (__ \ "code").read[String] and (__ \ "name").read[String]
 
-  val departmentReads: Reads[SitsDepartment] = codeAndNameBuilder(SitsDepartment.apply _)
+  val departmentIdentity: Reads[DepartmentIdentity] = codeAndNameBuilder(DepartmentIdentity.apply _)
   val courseReads: Reads[Course] = codeAndNameBuilder((code, name) => Course.apply(code, s"${code.toUpperCase} $name"))
 
   val disabilityReads: Reads[SitsDisability] = (
     (__ \ "code").read[String] and
       (__ \ "definition").read[String] and
       (__ \ "sitsDefinition").read[String]
-    )(SitsDisability.apply _)
+    ) (SitsDisability.apply _)
   val disabilityFields: Seq[String] = Seq("code", "definition", "sitsDefinition")
 
   val disabilityFundingStatusReads: Reads[SitsDisabilityFundingStatus] = (
     (__ \ "code").read[String] and
       (__ \ "description").read[String]
-    )(SitsDisabilityFundingStatus.apply _)
+    ) (SitsDisabilityFundingStatus.apply _)
   val disabilityFundingStatusFields: Seq[String] = Seq("code", "description")
 
   val addressReads: Reads[Address] = (
@@ -157,7 +159,7 @@ object TabulaResponseParsers {
       (__ \ "line4").readNullable[String] and
       (__ \ "line5").readNullable[String] and
       (__ \ "postcode").readNullable[String]
-    )(Address.apply _)
+    ) (Address.apply _)
   val addressFields: Seq[String] = Seq("line1", "line2", "line3", "line4", "line5", "postcode")
 
   val universityIdResultReads: Reads[Seq[UniversityID]] = (__ \ "universityIds").read[Seq[String]](Reads.seq[String]).map(s => s.map(UniversityID))
@@ -202,7 +204,7 @@ object TabulaResponseParsers {
     usercode: Usercode,
     firstName: String,
     lastName: String,
-    department: SitsDepartment,
+    department: DepartmentIdentity,
     userType: String,
     photo: Option[String]
   ) extends Ordered[TabulaMemberSearchResult] {
@@ -235,10 +237,10 @@ object TabulaResponseParsers {
       (__ \ "userId").read[String].map[Usercode](Usercode.apply) and
       (__ \ "firstName").read[String] and
       (__ \ "lastName").read[String] and
-      (__ \ "department").read[SitsDepartment](departmentReads) and
+      (__ \ "department").read[DepartmentIdentity](departmentIdentity) and
       (__ \ "userType").read[String] and
       Reads.pure(None)
-    )(TabulaMemberSearchResult.apply _)
+    ) (TabulaMemberSearchResult.apply _)
 
   val memberSearchResultsReads: Reads[Seq[TabulaMemberSearchResult]] = (__ \ "results").read(Reads.seq(memberSearchResultReads))
 
@@ -246,16 +248,18 @@ object TabulaResponseParsers {
     start: LocalDateTime,
     end: LocalDateTime
   )
+
   val timetableEventReads: Reads[TimetableEvent] = Json.reads[TimetableEvent]
   val timetableEventsReads: Reads[Seq[TimetableEvent]] = (__ \ "events").read(Reads.seq(timetableEventReads))
 
   private case class ErrorMessage(message: String)
+
   private val errorMessageReads = Json.reads[ErrorMessage]
 
   val examPaperReads: Reads[ExamPaper] = (
     (__ \ "code").read[String] and
-    (__ \ "title").read[String]
-  )(ExamPaper.apply _)
+      (__ \ "title").read[String]
+    ) (ExamPaper.apply _)
 
   case class SitsAssessmentType(
     astCode: String,
@@ -263,15 +267,16 @@ object TabulaResponseParsers {
     code: String,
     value: String
   )
+
   object SitsAssessmentType {
     implicit val format: OFormat[SitsAssessmentType] = Json.format[SitsAssessmentType]
   }
 
   val assessmentComponentReads: Reads[AssessmentComponent] = (
     (__ \ "id").read[String] and
-    (__ \ "type").read[SitsAssessmentType] and
-    (__ \ "examPaper").readNullable[ExamPaper](examPaperReads)
-  )(AssessmentComponent.apply _)
+      (__ \ "type").read[SitsAssessmentType] and
+      (__ \ "examPaper").readNullable[ExamPaper](examPaperReads)
+    ) (AssessmentComponent.apply _)
 
   val examMembershipReads: Reads[ExamMembership] = (
     (__ \ "moduleCode").read[String] and
@@ -280,7 +285,14 @@ object TabulaResponseParsers {
       (__ \ "assessmentGroup").read[String] and
       (__ \ "sequence").read[String] and
       (__ \ "currentMembers").read[Seq[String]](Reads.seq[String]).map(s => s.map(UniversityID))
-    )(ExamMembership.apply _)
+    ) (ExamMembership.apply _)
+
+  val departmentReads: Reads[Department] = (
+    (__ \ "code").read[String] and
+      (__ \ "name").read[String] and
+      (__ \ "fullName").read[String] and
+      (__ \ "parentDepartment").readNullable[DepartmentIdentity](departmentIdentity)
+    ) (Department.apply _)
 
   // A response property containing an array of assessment components
   val responseAssessmentComponentsReads: Reads[Seq[AssessmentComponent]] =
@@ -288,6 +300,9 @@ object TabulaResponseParsers {
 
   val responsePaperCodesReads: Reads[Map[String, ExamMembership]] =
     (__ \ "paperCodes").read(Reads.map(examMembershipReads))
+
+  val responseDepartmentReads: Reads[Seq[Department]] =
+    (__ \ "departments").read(Reads.seq(departmentReads))
 
   def validateAPIResponse[A](jsValue: JsValue, parser: Reads[A]): JsResult[A] = {
     (jsValue \ "success").validate[Boolean].flatMap {

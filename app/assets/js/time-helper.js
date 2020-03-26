@@ -14,5 +14,5 @@ export default function msToHumanReadable(duration) {
   }).map(([unit, quantity]) => {
     if (quantity === 0) return null;
     return (quantity > 1) ? `${quantity} ${unit}s` : `${quantity} ${unit}`;
-  }).filter(Boolean));
+  }).filter(Boolean)) || 'a moment';
 }

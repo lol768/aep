@@ -51,7 +51,11 @@ class AnnouncementServiceImpl @Inject()(
     daoRunner.run(dao.all).map(_.map(_.asAnnouncement)).map(ServiceResults.success)
 
   override def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Announcement]] =
-    daoRunner.run(dao.getById(id)).map(_.asAnnouncement).map(ServiceResults.success)
+    daoRunner.run(dao.getById(id).map{ _.map { a =>
+      ServiceResults.success(a.asAnnouncement)
+    }.getOrElse {
+      ServiceResults.error(s"Could not find announcement with id ${id.toString}")
+    }})
 
   override def getByAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]] =
   daoRunner.run(dao.getByAssessmentId(id)).map(_.map(_.asAnnouncement)).map(ServiceResults.success)

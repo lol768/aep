@@ -1,16 +1,22 @@
 package actors
 
+import java.util.UUID
+
 import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
+import com.google.inject.assistedinject.Assisted
+import javax.inject.Inject
 import play.api.libs.json._
+import services.StudentAssessmentService
+import warwick.core.timing.TimingContext
 import warwick.sso.LoginContext
 
-import scala.util.Try
+import scala.concurrent.ExecutionContext
 
 object WebSocketActor {
 
-  def props(loginContext: LoginContext, pubsub: ActorRef, out: ActorRef): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext))
+  def props(loginContext: LoginContext, pubsub: ActorRef, out: ActorRef, studentAssessmentService: StudentAssessmentService)(implicit ec: ExecutionContext, t: TimingContext): Props =
+    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService))
 
   case class AssessmentAnnouncement(message: String)
 
@@ -29,6 +35,21 @@ object WebSocketActor {
   )
   val readsClientNetworkInformation: Reads[ClientNetworkInformation] = Json.reads[ClientNetworkInformation]
 
+  case class RequestAssessmentTiming(
+    assessmentId: UUID
+  )
+  val readsRequestAssessmentTiming: Reads[RequestAssessmentTiming] = Json.reads[RequestAssessmentTiming]
+
+  case class AssessmentTimingInformation(
+    id: UUID,
+    timeRemaining: Option[Long],
+    timeUntilStart: Option[Long],
+    timeSinceStart: Option[Long],
+    hasStarted: Boolean,
+    hasFinalised: Boolean,
+    hasWindowPassed: Boolean
+  )
+  implicit val writesAssessmentTimingInformation: Writes[AssessmentTimingInformation] = Json.writes[AssessmentTimingInformation]
 }
 
 /**
@@ -39,7 +60,14 @@ object WebSocketActor {
   * @param out this output will be attached to the websocket and will send
   *            messages back to the client.
   */
-class WebSocketActor(out: ActorRef, pubsub: ActorRef, loginContext: LoginContext) extends Actor with ActorLogging {
+class WebSocketActor @Inject() (
+  out: ActorRef,
+  pubsub: ActorRef,
+  loginContext: LoginContext,
+  @Assisted studentAssessmentService: StudentAssessmentService,
+)(implicit
+  ec: ExecutionContext
+) extends Actor with ActorLogging {
 
   import WebSocketActor._
 
@@ -65,8 +93,24 @@ class WebSocketActor(out: ActorRef, pubsub: ActorRef, loginContext: LoginContext
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
-
           // TODO handle client network information
+
+        case m if m.`type` == "RequestAssessmentTiming" && m.data.exists(_.validate[RequestAssessmentTiming](readsRequestAssessmentTiming).isSuccess) =>
+          val assessmentId = m.data.get.as[RequestAssessmentTiming](readsRequestAssessmentTiming).assessmentId
+          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get, assessmentId)(TimingContext.none).map { assessment =>
+            out ! Json.obj(
+              "type"-> "AssessmentTimingInformation",
+              "assessments"-> Json.arr(Json.toJson(assessment.getTimingInfo))
+            )
+          }
+
+        case m if m.`type` == "RequestAssessmentTiming" =>
+          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get)(TimingContext.none).map { assessments =>
+            out ! Json.obj(
+              "type"-> "AssessmentTimingInformation",
+              "assessments"-> JsArray(assessments.map(a => Json.toJson(a.getTimingInfo)))
+            )
+          }
 
         case m => log.error(s"Ignoring unrecognised client message: $m")
       }
