@@ -64,9 +64,7 @@ class AssessmentServiceImpl @Inject()(
     withFiles(
       dao.getByIdAndInvigilator(id, usercodes),
       s"Could not find Assessment with ID ${id} with invigilators ${usercodes.map(_.string).mkString(",")}"
-    ).recover {
-      case _: NoSuchElementException => ServiceResults.error(s"Could not find an Assessment with ID $id for invigilators: ${usercodes.mkString(",")}")
-    }
+    )
   }
 
   override def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
@@ -77,8 +75,6 @@ class AssessmentServiceImpl @Inject()(
     withFiles(
       dao.getById(id),
       s"Could not find Assessment with ID ${id}"
-    ).recover {
-      case _: NoSuchElementException => ServiceResults.error(s"Could not find an Assessment with ID $id")
-    }
+    )
   }
 }
