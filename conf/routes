@@ -20,9 +20,19 @@ GET         /assessments                            @controllers.AssessmentsCont
 GET         /assessment/:id                         @controllers.AssessmentController.view(id: UUID)
 POST        /assessment/:id                         @controllers.AssessmentController.start(id: UUID)
 POST        /assessment/:id/done                    @controllers.AssessmentController.finish(id: UUID)
+POST        /assessment/:id/upload                  @controllers.AssessmentController.uploadFiles(id: UUID)
+
+# https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
++nocsp
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
 GET         /assessment/announcement/add            @controllers.CreateAnnouncementController.index
 POST        /assessment/announcement/add            @controllers.CreateAnnouncementController.add
+
+POST        /assessment/:id/file/:fileID/delete     @controllers.AssessmentController.deleteFile(id: UUID, fileID: UUID)
+
+# https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
++nocsp
+GET         /assessment/:id/attachment/:fileID      @controllers.AssessmentController.downloadAttachment(id: UUID, fileID: UUID)
 
 # Websocket
 GET         /websocket                              @controllers.WebSocketController.socket
@@ -50,6 +60,9 @@ POST        /sysadmin/test/email                    @controllers.sysadmin.Sysadm
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()
 POST        /sysadmin/test/upload                   @controllers.sysadmin.SysadminTestController.uploadFile()
 GET         /sysadmin/test/:id/download             @controllers.sysadmin.SysadminTestController.downloadFile(id: UUID)
+
++nocsrf
+POST        /api/errors/js                          @controllers.api.ErrorsController.js
 
 ## Fallbacks ##
 
