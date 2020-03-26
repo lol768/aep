@@ -38,10 +38,17 @@ class AssessmentServiceImpl @Inject()(
     }
   }
 
-  private def withFiles(query: DBIO[StoredAssessment])(implicit t: TimingContext) =
-    daoRunner.run(query).flatMap { storedAssessment =>
-      uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
-        ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
+  private def withFiles(
+    query: DBIO[Option[StoredAssessment]],
+    errorMsg: String = "Could not find results for query"
+  )(implicit t: TimingContext) =
+    daoRunner.run(query).flatMap { storedAssessmentOption =>
+      storedAssessmentOption.map { storedAssessment =>
+        uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
+          ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
+        }
+      }.getOrElse {
+        Future.successful(ServiceResults.error(errorMsg))
       }
     }
 
@@ -54,7 +61,10 @@ class AssessmentServiceImpl @Inject()(
   }
 
   def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
-    withFiles(dao.getByIdAndInvigilator(id, usercodes)).recover {
+    withFiles(
+      dao.getByIdAndInvigilator(id, usercodes),
+      s"Could not find Assessment with ID ${id} with invigilators ${usercodes.map(_.string).mkString(",")}"
+    ).recover {
       case _: NoSuchElementException => ServiceResults.error(s"Could not find an Assessment with ID $id for invigilators: ${usercodes.mkString(",")}")
     }
   }
@@ -64,15 +74,10 @@ class AssessmentServiceImpl @Inject()(
   }
 
   override def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
-    daoRunner.run(dao.getById(id)).flatMap { storedAssessmentOption =>
-      storedAssessmentOption.map { storedAssessment =>
-        uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
-          ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
-        }
-      }.getOrElse {
-        Future.successful(ServiceResults.error(s"Could not find an Assessment with ID $id"))
-      }
-    }.recover {
+    withFiles(
+      dao.getById(id),
+      s"Could not find Assessment with ID ${id}"
+    ).recover {
       case _: NoSuchElementException => ServiceResults.error(s"Could not find an Assessment with ID $id")
     }
   }

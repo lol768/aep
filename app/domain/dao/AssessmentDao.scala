@@ -177,7 +177,7 @@ trait AssessmentDao {
   def getToday: DBIO[Seq[StoredAssessment]]
   def getInWindow: DBIO[Seq[StoredAssessment]]
   def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]]
-  def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[StoredAssessment]
+  def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]]
 }
 
 @Singleton
@@ -216,6 +216,6 @@ class AssessmentDaoImpl @Inject()(
   override def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]] =
     assessments.table.filter(_.invigilators @> usercodes.map(_.string)).result
 
-  override def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[StoredAssessment] =
-    assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes.map(_.string)).result.head
+  override def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]] =
+    assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes.map(_.string)).result.headOption
 }
