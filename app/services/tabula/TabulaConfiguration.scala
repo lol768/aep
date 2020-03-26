@@ -14,4 +14,8 @@ class TabulaConfiguration @Inject() (c: Configuration) {
 
   def getAssessmentComponentMembersUrl(deptCode: String, academicYear: AcademicYear): String =
     s"$rootUrl/api/v1/department/$deptCode/${academicYear.getStartYear}/assessmentComponentMembers"
+
+  def getDepartmentUrl(): String =
+    s"$rootUrl/api/v1/department"
+
 }

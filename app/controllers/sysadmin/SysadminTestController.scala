@@ -3,7 +3,7 @@ package controllers.sysadmin
 import java.util.UUID
 
 import controllers.BaseController
-import domain.tabula.{AssessmentComponent, ExamMembership, ExamPaper}
+import domain.tabula.{AssessmentComponent, Department, ExamMembership, ExamPaper, DepartmentIdentity}
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -14,7 +14,7 @@ import services._
 import helpers.StringUtils._
 import org.quartz.Scheduler
 import play.api.libs.json.{JsString, Json, Reads, Writes}
-import services.tabula.TabulaAssessmentService
+import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
 import services.tabula.TabulaAssessmentService.{GetAssessmentGroupMembersOptions, GetAssessmentsOptions}
 import uk.ac.warwick.util.mywarwick.MyWarwickService
 import uk.ac.warwick.util.mywarwick.model.request.Activity
@@ -88,6 +88,7 @@ class SysadminTestController @Inject()(
   uploadedFileService: UploadedFileService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   tabulaAssessments: TabulaAssessmentService,
+  tabulaDepartments: TabulaDepartmentService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
 
   import SysadminTestController._
@@ -152,6 +153,14 @@ class SysadminTestController @Inject()(
     implicit val writes = Json.writes[ExamMembership]
     tabulaAssessments.getAssessmentGroupMembers(GetAssessmentGroupMembersOptions(deptCode = "CH", academicYear = AcademicYear.starting(2019), paperCodes = Seq("EC3120", "EC9011_A"))).successMap { r =>
       Ok(Json.toJson(r)(Writes.map(writes)))
+    }
+  }
+
+  def departments(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    implicit val writeDepartmentidentity = Json.writes[DepartmentIdentity]
+    implicit val writes = Json.writes[Department]
+    tabulaDepartments.getDepartments().successMap { r =>
+      Ok(Json.toJson(r)(Writes.seq(writes)))
     }
   }
 

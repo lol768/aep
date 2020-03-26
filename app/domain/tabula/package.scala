@@ -34,6 +34,13 @@ package object tabula {
     currentMembers: Seq[UniversityID],
   )
 
+  case class Department(
+    code: String,
+    name: String,
+    fullName: String,
+    parentDepartment: Option[DepartmentIdentity]
+  )
+
   case class SitsProfile(
     universityID: UniversityID,
     usercode: Usercode,
@@ -42,7 +49,7 @@ package object tabula {
     phoneNumber: Option[String],
     warwickEmail: Option[String], // Only used for notification sending, not displayed on profile
     address: Option[Address],
-    department: SitsDepartment,
+    department: DepartmentIdentity,
     course: Option[Course],
     attendance: Option[Attendance],
     group: Option[StudentGroup],
@@ -63,7 +70,7 @@ package object tabula {
       universityId = Some(universityID),
       name = Name(fullName.split(' ').headOption, fullName.split(' ').lastOption),
       email = warwickEmail,
-      department = Some(Department(None, Some(department.name), Some(department.code.toUpperCase))),
+      department = Some(warwick.sso.Department(None, Some(department.name), Some(department.code.toUpperCase))),
       userSource = Some("Tabula"),
       isStaffOrPGR = group.isEmpty || group.contains(StudentGroup.PGR),
       isStaffNotPGR = group.isEmpty,
@@ -89,7 +96,7 @@ package object tabula {
     name: String
   )
 
-  case class SitsDepartment(
+  case class DepartmentIdentity(
     code: String,
     name: String
   )

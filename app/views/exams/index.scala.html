@@ -3,7 +3,7 @@
 
 @(assessments: Seq[StudentAssessmentWithAssessment])(implicit requestHeader: RequestHeader, context: RequestContext)
 
-@frontend("My exams", extraClasses = Seq("grey-nopad")) {
+@frontend("My exams", extraClasses = Seq("grey-nopad", "connect-ws")) {
 
   <div class="media">
     <div class="media-left">
