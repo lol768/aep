@@ -10,7 +10,6 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 import warwick.sso.{GroupName, UniversityID, Usercode}
 import scala.reflect.ClassTag
-import com.github.tminglei.slickpg._
 
 /**
   * Defines custom types that Slick can use to bind things directly to a database column.
@@ -27,19 +26,9 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject() (
 
   import profile.api._
 
-  implicit val stringArrayListMapper = MappedColumnType.base[List[String],String](
-    list => s"{${list.mkString(",")}}",
-    string => string.split(',').toList
-  )
-
   implicit val usercodeTypeMapper: JdbcType[Usercode] = MappedColumnType.base[Usercode, String](
     _.string,
     Usercode
-  )
-
-  implicit val listOfUsercodeTypeMapper: JdbcType[List[Usercode]] = MappedColumnType.base[List[Usercode], List[String]](
-    _.map(dt => dt.string),
-    _.map(ts => Usercode(ts))
   )
 
   implicit val universityIdTypeMapper: JdbcType[UniversityID] = MappedColumnType.base[UniversityID, String](

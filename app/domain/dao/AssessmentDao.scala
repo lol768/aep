@@ -33,7 +33,7 @@ trait AssessmentsTables extends VersionedTables {
     def platform = column[Platform]("platform")
     def assessmentType = column[AssessmentType]("type")
     def storedBrief = column[StoredBrief]("brief")
-    def invigilators = column[List[Usercode]]("invigilators")
+    def invigilators = column[List[String]]("invigilators")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
   }
@@ -76,7 +76,7 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
-    invigilators: List[Usercode],
+    invigilators: List[String],
     created: OffsetDateTime,
     version: OffsetDateTime
   ) extends Versioned[StoredAssessment] {
@@ -91,7 +91,7 @@ object AssessmentsTables {
         platform,
         assessmentType,
         storedBrief.asBrief(fileMap),
-        invigilators
+        invigilators.map(Usercode)
       )
 
     def asAssessmentMetadata =
@@ -135,7 +135,7 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
-    invigilators: List[Usercode],
+    invigilators: List[String],
     created: OffsetDateTime,
     version: OffsetDateTime,
     operation: DatabaseOperation,
@@ -214,8 +214,8 @@ class AssessmentDaoImpl @Inject()(
 
 
   override def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]] =
-    assessments.table.filter(_.invigilators @> usercodes).result
+    assessments.table.filter(_.invigilators @> usercodes.map(_.string)).result
 
   override def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[StoredAssessment] =
-    assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes).result.head
+    assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes.map(_.string)).result.head
 }
