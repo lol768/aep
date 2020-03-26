@@ -167,9 +167,9 @@ trait AssessmentDao {
 
   def all: DBIO[Seq[StoredAssessment]]
   def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
-  def getById(id: UUID): DBIO[StoredAssessment]
+  def getById(id: UUID): DBIO[Option[StoredAssessment]]
   def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]]
-  def getByCode(code: String): DBIO[StoredAssessment]
+  def getByCode(code: String): DBIO[Option[StoredAssessment]]
   def getToday: DBIO[Seq[StoredAssessment]]
   def getInWindow: DBIO[Seq[StoredAssessment]]
 }
@@ -187,14 +187,14 @@ class AssessmentDaoImpl @Inject()(
   override def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment] =
     assessments.insert(assessment)
 
-  override def getById(id: UUID): DBIO[StoredAssessment] =
-    assessments.table.filter(_.id === id).result.head
+  override def getById(id: UUID): DBIO[Option[StoredAssessment]] =
+    assessments.table.filter(_.id === id).result.headOption
 
   override def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]] =
     assessments.table.filter(_.id inSetBind ids).result
 
-  override def getByCode(code: String): DBIO[StoredAssessment] =
-    assessments.table.filter(_.code === code).result.head
+  override def getByCode(code: String): DBIO[Option[StoredAssessment]] =
+    assessments.table.filter(_.code === code).result.headOption
 
   override def getToday: DBIO[Seq[StoredAssessment]] = {
     val today = JavaTime.localDate.atStartOfDay(JavaTime.timeZone).toOffsetDateTime

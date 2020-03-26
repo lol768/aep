@@ -42,9 +42,13 @@ class AssessmentServiceImpl @Inject()(
   }
 
   override def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
-    daoRunner.run(dao.getById(id)).flatMap { storedAssessment =>
-      uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
-        ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
+    daoRunner.run(dao.getById(id)).flatMap { storedAssessmentOption =>
+      storedAssessmentOption.map { storedAssessment =>
+        uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
+          ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
+        }
+      }.getOrElse {
+        Future.successful(ServiceResults.error(s"Could not find an Assessment with ID $id"))
       }
     }.recover {
       case _: NoSuchElementException => ServiceResults.error(s"Could not find an Assessment with ID $id")

@@ -136,7 +136,7 @@ trait UploadedFileDao {
   import profile.api._
 
   def all: DBIO[Seq[StoredUploadedFile]]
-  def find(id: UUID): DBIO[StoredUploadedFile]
+  def find(id: UUID): DBIO[Option[StoredUploadedFile]]
   def find(ids: Seq[UUID]): DBIO[Seq[StoredUploadedFile]]
   def insert(file: StoredUploadedFile)(implicit ac: AuditLogContext): DBIO[StoredUploadedFile]
   def delete(file: StoredUploadedFile)(implicit ac: AuditLogContext): DBIO[Done]
@@ -153,8 +153,8 @@ class UploadedFileDaoImpl @Inject()(
   override def all: DBIO[Seq[StoredUploadedFile]] =
     uploadedFiles.result
 
-  override def find(id: UUID): DBIO[StoredUploadedFile] =
-    uploadedFiles.table.filter(_.id === id).result.head
+  override def find(id: UUID): DBIO[Option[StoredUploadedFile]] =
+    uploadedFiles.table.filter(_.id === id).result.headOption
 
   override def find(ids: Seq[UUID]): DBIO[Seq[StoredUploadedFile]] =
     uploadedFiles.table.filter(_.id inSetBind ids).result
