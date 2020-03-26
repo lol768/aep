@@ -209,7 +209,7 @@ class AssessmentDaoImpl @Inject()(
 
   override def getInWindow: DBIO[Seq[StoredAssessment]] = {
     val now = JavaTime.offsetDateTime
-    assessments.table.filter(a => a.startTime < now && a.startTime < now.minus(Assessment.window)).result
+    assessments.table.filter(a => a.startTime < now && a.startTime > now.minus(Assessment.window)).result
   }
 
 
