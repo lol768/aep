@@ -1,7 +1,7 @@
 # --- !Ups
 
-alter table assessment ADD COLUMN invigilators text[];
-alter table assessment_version ADD COLUMN invigilators text[];
+alter table assessment ADD COLUMN invigilators text[] not null default '{}';
+alter table assessment_version ADD COLUMN invigilators text[] not null default '{}';
 
 # --- !Downs
 
