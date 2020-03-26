@@ -23,13 +23,13 @@ const updateTimingInfo = (node, data) => {
       setWarning(node);
     }
   } else if (data.timeUntilStart > 0) {
-    text = `You can start in ${msToHumanReadable(data.timeUntilStart)}`;
+    text = `You can start in ${msToHumanReadable(data.timeUntilStart)}.`;
     setWarning(node);
   } else if (!data.hasWindowPassed) {
-    text = `${msToHumanReadable(-data.timeUntilStart)} left to start`;
+    text = `${msToHumanReadable(-data.timeUntilStart)} left to start.`;
     setWarning(node);
   } else {
-    text = 'The exam window has now passed';
+    text = 'The exam window has now passed.';
     setWarning(node);
   }
   const textNode = document.createTextNode(text);
