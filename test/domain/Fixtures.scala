@@ -4,7 +4,7 @@ import java.time._
 import java.util.UUID
 
 import com.typesafe.config.Config
-import domain.Assessment.{AssessmentType, Platform}
+import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -86,6 +86,7 @@ object Fixtures {
       val code = f"${DataGeneration.fakeDept}${Random.between(101, 999)}%03d-${Random.between(1, 99)}%02d"
       val platform = Platform.values(Random.nextInt(Platform.values.size))
       val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
+      val state = State.values(Random.nextInt(State.values.size))
 
       StoredAssessment(
         id = uuid,
@@ -97,7 +98,8 @@ object Fixtures {
         assessmentType = assType,
         storedBrief = storedBrief,
         created = createTime,
-        version = createTime
+        version = createTime,
+        state = state
       )
     }
   }
