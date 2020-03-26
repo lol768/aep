@@ -31,7 +31,7 @@
       <blockquote>@assessment.assessment.brief.text</blockquote>
     }
     @if(assessment.assessment.brief.url.isDefined) {
-      <a href="@assessment.assessment.brief.url"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
+      <a href="@assessment.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
     }
     @assessment.assessment.brief.files.map { file =>
       <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
