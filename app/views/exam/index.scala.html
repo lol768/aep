@@ -12,7 +12,7 @@
     supportedMimeTypes: Seq[MediaType]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@frontend(assessment.assessment.title, extraClasses = if(assessment.inProgress) Seq("grey-nopad", "connect-ws") else  Seq("grey-nopad")) {
+@frontend(assessment.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws")) {
   @assessmentPanel(assessment, isAssessmentPage = true)
   @if(assessment.inProgress) {
     <h2>Exam brief</h2>

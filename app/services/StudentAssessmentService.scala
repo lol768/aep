@@ -8,7 +8,7 @@ import com.google.inject.ImplementedBy
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao.{AssessmentDao, DaoRunner, StudentAssessmentDao}
-import domain.{Assessment, StudentAssessment, StudentAssessmentWithAssessment, UploadedFileOwner}
+import domain.{Assessment, StudentAssessment, StudentAssessmentWithAssessment, StudentAssessmentWithAssessmentMetadata, UploadedFileOwner}
 import domain.AuditEvent._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
@@ -28,6 +28,8 @@ trait StudentAssessmentService {
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]]
   def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessment]
+  def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessmentMetadata]
+  def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[Seq[StudentAssessmentWithAssessmentMetadata]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
@@ -88,6 +90,26 @@ class StudentAssessmentServiceImpl @Inject()(
         } yield StudentAssessmentWithAssessment(studentAssessment, assessment)
       }
     }
+  }
+
+  override def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessmentMetadata] =
+    daoRunner.run(
+      for {
+        studentAssessment <- dao.get(universityId, assessmentId)
+        assessment <- assessmentDao.getById(assessmentId)
+      } yield StudentAssessmentWithAssessmentMetadata(studentAssessment.asStudentAssessmentMetadata, assessment.asAssessmentMetadata)
+    )
+
+  override def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[Seq[StudentAssessmentWithAssessmentMetadata]] = {
+    daoRunner.run(
+      for {
+        studentAssessments <- dao.getByUniversityId(universityId)
+        assessments <- assessmentDao.getByIds(studentAssessments.map(_.assessmentId))
+      } yield {
+        val assessmentsMap = assessments.map(a => a.id -> a.asAssessmentMetadata).toMap
+        studentAssessments.map(sA => StudentAssessmentWithAssessmentMetadata(sA.asStudentAssessmentMetadata, assessmentsMap(sA.assessmentId)))
+      }
+    )
   }
 
   private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
