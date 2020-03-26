@@ -95,19 +95,13 @@ object Assessment {
   val window: Duration = Duration.ofHours(8)
 
   sealed trait State extends EnumEntry {
-    val label: String
+    val label: String = entryName
   }
 
   object State extends PlayEnum[State] {
-    case object Draft extends State {
-      val label = "Draft"
-    }
-    case object Submitted extends State {
-      val label = "Submitted"
-    }
-    case object Approved extends State {
-      val label = "Approved"
-    }
+    case object Draft extends State
+    case object Submitted extends State
+    case object Approved extends State
 
     val values: IndexedSeq[State] = findValues
   }
