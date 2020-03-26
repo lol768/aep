@@ -38,5 +38,5 @@ document.addEventListener('DOMContentLoaded', () => {
     import('./undisable-with-checkbox');
   }
 
-  if (document.querySelector('.time-left-to-start')) import('./assessment-timing');
+  if (document.querySelector('.timing-information')) import('./assessment-timing');
 });

@@ -1,17 +1,15 @@
 package actors
 
-import java.time.Duration
 import java.util.UUID
 
 import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import play.api.libs.json._
 import services.StudentAssessmentService
-import warwick.core.helpers.JavaTime
 import warwick.core.timing.TimingContext
 import warwick.sso.LoginContext
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.ExecutionContext
 
 object WebSocketActor {
 
@@ -35,10 +33,21 @@ object WebSocketActor {
   )
   val readsClientNetworkInformation: Reads[ClientNetworkInformation] = Json.reads[ClientNetworkInformation]
 
-  case class RequestTimeRemaining(
+  case class RequestAssessmentTiming(
     assessmentId: UUID
   )
-  val readsRequestTimeRemaining: Reads[RequestTimeRemaining] = Json.reads[RequestTimeRemaining]
+  val readsRequestAssessmentTiming: Reads[RequestAssessmentTiming] = Json.reads[RequestAssessmentTiming]
+
+  case class AssessmentTimingInformation(
+    id: UUID,
+    timeRemaining: Option[Long],
+    timeUntilStart: Option[Long],
+    timeSinceStart: Option[Long],
+    hasStarted: Boolean,
+    hasFinalised: Boolean,
+    hasWindowPassed: Boolean
+  )
+  implicit val writesAssessmentTimingInformation: Writes[AssessmentTimingInformation] = Json.writes[AssessmentTimingInformation]
 }
 
 /**
@@ -85,16 +94,22 @@ class WebSocketActor(
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
           // TODO handle client network information
 
-        case m if m.`type` == "RequestTimeRemaining" && m.data.exists(_.validate[RequestTimeRemaining](readsRequestTimeRemaining).isSuccess) => {
-          val assessmentId = m.data.get.as[RequestTimeRemaining](readsRequestTimeRemaining).assessmentId
-          studentAssessmentService.getWithAssessment(loginContext.user.flatMap(u => u.universityId).get, assessmentId).map { a =>
+        case m if m.`type` == "RequestAssessmentTiming" && m.data.exists(_.validate[RequestAssessmentTiming](readsRequestAssessmentTiming).isSuccess) =>
+          val assessmentId = m.data.get.as[RequestAssessmentTiming](readsRequestAssessmentTiming).assessmentId
+          studentAssessmentService.getWithAssessment(loginContext.user.flatMap(u => u.universityId).get, assessmentId).map { assessment =>
             out ! Json.obj(
-              "type" -> "timeRemaining",
-              "assessmentId" -> assessmentId.toString,
-              "timeRemaining" -> a.assessment.duration.minus(Duration.between(a.studentAssessment.startTime.get, JavaTime.offsetDateTime)).toString,
+              "type"-> "AssessmentTimingInformation",
+              "assessments"-> Json.arr(Json.toJson(assessment.getTimingInfo))
             )
           }
-        }
+
+        case m if m.`type` == "RequestAssessmentTiming" =>
+          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get).map { assessments =>
+            out ! Json.obj(
+              "type"-> "AssessmentTimingInformation",
+              "assessments"-> JsArray(assessments.map(a => Json.toJson(a.getTimingInfo)))
+            )
+          }
 
         case m => log.error(s"Ignoring unrecognised client message: $m")
       }

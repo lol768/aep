@@ -7,7 +7,7 @@
 @import controllers.AssessmentController.FinishExamFormData
 @(assessment: StudentAssessmentWithAssessment, finishExamForm: Form[FinishExamFormData])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@frontend(assessment.assessment.title, extraClasses = if(assessment.inProgress) Seq("grey-nopad", "connect-ws") else  Seq("grey-nopad")) {
+@frontend(assessment.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws")) {
   @assessmentPanel(assessment, isAssessmentPage = true)
   @if(assessment.inProgress) {
     <h2>Exam files</h2>

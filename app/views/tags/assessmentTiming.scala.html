@@ -3,19 +3,23 @@
 
 @import play.api.libs.json.JsNumber
 @import play.api.libs.json.JsBoolean
+@import play.api.libs.json.JsNull
 @(studentAssessmentWithAssessment: StudentAssessmentWithAssessment, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
 
 @studentAssessmentWithAssessment.assessment.startTime.map { startTime =>
     <span>
         <i class="fad fa-fw fa-hourglass"></i>
-        <span class="time-remaining" data-id="@studentAssessmentWithAssessment.assessment.id"></span>
         <span
-        class="time-left-to-start"
+        class="timing-information"
+        data-id="@studentAssessmentWithAssessment.assessment.id"
         data-rendering="@{
             Json.stringify(Json.toJson(Map(
-                "start" -> JsNumber(startTime.toInstant.toEpochMilli),
-                "end" -> JsNumber(startTime.toInstant.toEpochMilli + studentAssessmentWithAssessment.assessment.duration.toMillis),
-                "studentStarted" -> JsBoolean(studentAssessmentWithAssessment.studentAssessment.startTime.nonEmpty),
+                "windowStart" -> JsNumber(startTime.toInstant.toEpochMilli),
+                "windowEnd" -> JsNumber(studentAssessmentWithAssessment.assessment.endTime.get.toInstant.toEpochMilli),
+                "start" -> studentAssessmentWithAssessment.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli)).getOrElse(JsNull),
+                "end" -> studentAssessmentWithAssessment.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli + studentAssessmentWithAssessment.assessment.duration.toMillis)).getOrElse(JsNull),
+                "hasStarted" -> JsBoolean(studentAssessmentWithAssessment.studentAssessment.startTime.nonEmpty),
+                "hasFinalised" -> JsBoolean(studentAssessmentWithAssessment.studentAssessment.finaliseTime.nonEmpty),
             )))
         }"
         ></span>

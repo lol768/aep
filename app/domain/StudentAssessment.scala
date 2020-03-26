@@ -11,6 +11,7 @@ sealed trait BaseStudentAssessment {
   def studentId: UniversityID
   def inSeat: Boolean
   def startTime: Option[OffsetDateTime]
+  def finaliseTime: Option[OffsetDateTime]
 }
 
 case class StudentAssessment(
@@ -27,5 +28,6 @@ case class StudentAssessmentMetadata(
   studentId: UniversityID,
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],
+  finaliseTime: Option[OffsetDateTime],
   uploadedFileCount: Int
 ) extends BaseStudentAssessment

@@ -11,41 +11,28 @@ const setWarning = ({ parentElement }) => {
   parentElement.classList.remove('text-info');
 };
 
-const refresh = (node) => {
-  const {
-    dataset: {
-      rendering,
-    },
-  } = node;
-
-  const {
-    end,
-    studentStarted,
-    start,
-  } = JSON.parse(rendering);
-
-  const now = Number(new Date());
-
-  if (Number.isNaN(start) || Number.isNaN(end)) return;
-
+const updateTimingInfo = (node, data) => {
   let text;
 
-  if (now > start && now < end) {
-    if (studentStarted) {
-      text = `Started ${msToHumanReadable(now - new Date(start))} ago. ${msToHumanReadable(new Date(end) - now)} remaining.`;
+  if (data.hasStarted && !data.hasFinalised) {
+    text = `Started ${msToHumanReadable(data.timeSinceStart)} ago.`;
+    if (data.timeRemaining > 0) {
+      text += ` ${msToHumanReadable(data.timeRemaining)} remaining.`;
       clearWarning(node);
     } else {
-      text = `${msToHumanReadable(new Date(end) - now)} left to start`;
+      text += ` Exceeded deadline by ${msToHumanReadable(-data.timeRemaining)}.`;
       setWarning(node);
     }
-  } else if (now < start) {
-    text = `You can start in ${msToHumanReadable(new Date(start) - now)}`;
+  } else if (data.timeUntilStart > 0) {
+    text = `You can start in ${data.timeUntilStart}`;
     setWarning(node);
-  } else if (now > end) {
+  } else if (!data.hasWindowPassed) {
+    text = `${msToHumanReadable(-data.timeUntilStart)} left to start`;
+    setWarning(node);
+  } else {
     text = 'The exam window has now passed';
     setWarning(node);
   }
-
   const textNode = document.createTextNode(text);
   const existingTextNode = node.lastChild;
   if (existingTextNode) {
@@ -55,30 +42,74 @@ const refresh = (node) => {
   }
 };
 
-[...document.getElementsByClassName('time-left-to-start')].forEach((node) => {
-  refresh(node);
-  setInterval(() => {
-    refresh(node);
-  }, 30000);
-});
+const offlineRefresh = (node) => {
+  const {
+    dataset: {
+      rendering,
+    },
+  } = node;
+
+  const {
+    windowStart,
+    windowEnd,
+    start,
+    end,
+    hasStarted,
+    hasFinalised,
+  } = JSON.parse(rendering);
+
+  const now = Number(new Date());
+
+  const hasWindowPassed = now > windowEnd;
+  const inProgress = hasStarted && !hasFinalised;
+  const notYetStarted = !hasStarted && !hasWindowPassed;
+  const timeRemaining = inProgress ? end - now : null;
+  const timeSinceStart = inProgress ? now - new Date(start) : null;
+  const timeUntilStart = notYetStarted ? windowStart - now : null;
+
+  const data = {
+    timeRemaining,
+    timeSinceStart,
+    timeUntilStart,
+    hasStarted,
+    hasFinalised,
+    hasWindowPassed,
+  };
+
+  if (Number.isNaN(windowStart) || Number.isNaN(windowEnd)) return;
+
+  updateTimingInfo(node, data);
+};
+
+const nodes = [...document.getElementsByClassName('timing-information')];
+
+const refreshAll = () => {
+  nodes.forEach((node) => {
+    offlineRefresh(node);
+  });
+};
+
+refreshAll();
 
 import('./web-sockets').then(() => {
   const websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`, {
     onConnect: () => {},
-    onError: () => {},
+    onError: () => refreshAll(),
     onData: (d) => {
-      if (d.type === 'timeRemaining') {
-        document.querySelector('.time-remaining').innerHTML = d.timeRemaining;
+      if (d.type === 'AssessmentTimingInformation') {
+        d.assessments.forEach((assessment) => {
+          const node = document.querySelector(`.timing-information[data-id="${assessment.id}"]`);
+          updateTimingInfo(node, assessment);
+        });
       }
     },
     onClose: () => {
     },
     onHeartbeat: (ws) => {
+      const data = nodes.length() === 1 ? { assessmentId: nodes[0].getAttribute('data-id') } : null;
       const message = {
-        type: 'RequestTimeRemaining',
-        data: {
-          assessmentId: '12c550df-bd7c-4f13-911a-d947ff9510c2',
-        },
+        type: 'RequestAssessmentTiming',
+        data,
       };
 
       ws.send(JSON.stringify(message));
