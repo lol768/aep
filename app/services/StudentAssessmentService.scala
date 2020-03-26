@@ -2,12 +2,13 @@ package services
 
 import java.util.UUID
 
+import com.google.common.io.ByteSource
 import slick.dbio.DBIO
 import com.google.inject.ImplementedBy
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao.{AssessmentDao, DaoRunner, StudentAssessmentDao}
-import domain.{Assessment, StudentAssessment, StudentAssessmentWithAssessment, StudentAssessmentWithAssessmentMetadata}
+import domain.{Assessment, StudentAssessment, StudentAssessmentWithAssessment, StudentAssessmentWithAssessmentMetadata, UploadedFileOwner}
 import domain.AuditEvent._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
@@ -17,6 +18,7 @@ import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
+import warwick.fileuploads.UploadedFileSave
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -30,6 +32,8 @@ trait StudentAssessmentService {
   def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[Seq[StudentAssessmentWithAssessmentMetadata]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
+  def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
+  def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
 }
 
 @Singleton
@@ -110,11 +114,15 @@ class StudentAssessmentServiceImpl @Inject()(
 
   private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
     require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot start assessment, too early")
-    require(storedAssessment.asAssessmentMetadata.hasWindowPassed, "Cannot start assessment, too late")
+  }
+
+  private def startedNotFinalised(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
+    require(storedStudentAssessment.finaliseTime.isEmpty, "Cannot perform action, assessment is finalised")
+    require(storedStudentAssessment.startTime.isDefined, "Cannot perform action, assessment is not yet started")
   }
 
   override def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.StartAssessment, studentAssessment.assessmentId.toString, Target.StudentAssessment, Json.obj(("universityId", studentAssessment.studentId.string))){
+    audit.audit(Operation.Assessment.StartAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -133,7 +141,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.FinishAssessment, studentAssessment.assessmentId.toString, Target.StudentAssessment, Json.obj(("universityId", studentAssessment.studentId.string))){
+    audit.audit(Operation.Assessment.FinishAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -150,4 +158,34 @@ class StudentAssessmentServiceImpl @Inject()(
       ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
     }
   }
+
+  override def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] =
+    audit.audit(Operation.Assessment.AttachFilesToAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "files" -> files.map(_._2.fileName))) {
+      daoRunner.run(
+        for {
+          storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
+          storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
+          _ <- DBIO.from(startedNotFinalised(storedAssessment, storedStudentAssessment))
+          fileIds <- DBIO.sequence(files.toList.map { case (in, metadata) =>
+            uploadedFileService.storeDBIO(in, metadata, ctx.usercode.get, storedStudentAssessment.id, UploadedFileOwner.StudentAssessment).map(_.id)
+          })
+          updatedStudentAssessment <- dao.update(storedStudentAssessment.copy(uploadedFiles = storedStudentAssessment.uploadedFiles ::: fileIds))
+        } yield updatedStudentAssessment
+      ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
+    }
+
+  override def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
+    audit.audit(Operation.Assessment.DeleteAttachedAssessmentFile, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "fileId" -> file.toString)) {
+      daoRunner.run(
+        for {
+          storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
+          storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
+          _ <- DBIO.from(startedNotFinalised(storedAssessment, storedStudentAssessment))
+          // TODO: do we want to delete the object storage file?
+          updatedStudentAssessment <- dao.update(storedStudentAssessment.copy(uploadedFiles = storedStudentAssessment.uploadedFiles.filterNot(_ == file)))
+        } yield updatedStudentAssessment
+      ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
+    }
+  }
+
 }

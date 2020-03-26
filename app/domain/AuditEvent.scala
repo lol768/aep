@@ -33,6 +33,7 @@ object AuditEvent {
     object Assessment {
       val StartAssessment = Symbol("StartAssessment")
       val AttachFilesToAssessment = Symbol("AttachFilesToAssessment")
+      val DeleteAttachedAssessmentFile = Symbol("DeleteAttachedAssessmentFile")
       val FinishAssessment = Symbol("FinishAssessment")
     }
   }
