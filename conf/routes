@@ -27,6 +27,9 @@ POST        /assessment/:id/upload                  @controllers.AssessmentContr
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
 
 POST        /assessment/:id/file/:fileID/delete     @controllers.AssessmentController.deleteFile(id: UUID, fileID: UUID)
+
+# https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
++nocsp
 GET         /assessment/:id/attachment/:fileID      @controllers.AssessmentController.downloadAttachment(id: UUID, fileID: UUID)
 
 # Websocket
