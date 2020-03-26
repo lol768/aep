@@ -8,10 +8,13 @@ import domain.Assessment.{AssessmentType, Platform}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+import services.sandbox.DataGeneration
 import slick.basic.{BasicProfile, DatabaseConfig}
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.fileuploads.UploadedFileSave
 import warwick.sso.{Department => _, _}
+
+import scala.util.Random
 
 object Fixtures {
   import warwick.core.helpers.JavaTime.{timeZone => zone}
@@ -67,28 +70,31 @@ object Fixtures {
   }
 
   object assessments {
-    val storedBrief: StoredBrief =
+    def storedBrief: StoredBrief =
       StoredBrief(
-        Some("Here is a brief"),
+        Some(DataGeneration.dummyWords(Random.between(6,30))),
         Seq(UUID.randomUUID()),
-        Some("https://example.com/a-brief-history-of-briefs")
+        Some(DataGeneration.fakePath)
       )
 
-    def storedAssessment(uuid: UUID): StoredAssessment = {
+    def storedAssessment(uuid: UUID = UUID.randomUUID): StoredAssessment = {
       val date = LocalDate.of(2018, 1, 1)
       val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
-      val localStartTime = LocalDateTime.of(date, LocalTime.of(11, 0, 0, 0))
+      val localStartTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
       val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
       val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
+      val code = f"${DataGeneration.fakeDept}${Random.between(101, 999)}%03d-${Random.between(1, 99)}%02d"
+      val platform = Platform.values(Random.nextInt(Platform.values.size))
+      val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
 
       StoredAssessment(
         id = uuid,
-        code = "IT101",
-        title = "ITIL Foundation",
+        code = code,
+        title = DataGeneration.fakeTitle,
         startTime = Some(startTime),
         duration = Duration.ofHours(3),
-        platform = Platform.OnlineExams,
-        assessmentType = AssessmentType.OpenBook,
+        platform = platform,
+        assessmentType = assType,
         storedBrief = storedBrief,
         created = createTime,
         version = createTime
