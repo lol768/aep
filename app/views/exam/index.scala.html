@@ -12,16 +12,6 @@
     supportedMimeTypes: Seq[MediaType]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@mimeTypeIcon(mimeType: String) = {
-  @mimeType match {
-    case "application/pdf" => {<i class="fad fa-2x themed-duotone fa-file-pdf"></i>}
-    case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => {<i class="fad fa-2x themed-duotone fa-file-word"></i>}
-    case "application/msword" => {<i class="fad fa-2x  themed-duotone fa-file-word"></i>}
-    case t if t.startsWith("image/") => {<i class="fad fa-2x  themed-duotone fa-file-image"></i>}
-    case _ => {<i class="fad fa-2x themed-duotone fa-file"></i>}
-  }
-}
-
 @frontend(assessment.assessment.title, extraClasses = if(assessment.inProgress) Seq("grey-nopad", "connect-ws") else  Seq("grey-nopad")) {
   @assessmentPanel(assessment, isAssessmentPage = true)
   @if(assessment.inProgress) {
