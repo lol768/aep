@@ -92,7 +92,6 @@ refreshAll();
 
 export default function initTiming(websocket) {
   websocket.add({
-    onConnect: () => {},
     onError: () => refreshAll(),
     onData: (d) => {
       if (d.type === 'AssessmentTimingInformation') {
@@ -101,8 +100,6 @@ export default function initTiming(websocket) {
           if (node) updateTimingInfo(node, assessment);
         });
       }
-    },
-    onClose: () => {
     },
     onHeartbeat: (ws) => {
       const data = nodes.length === 1 ? { assessmentId: nodes[0].getAttribute('data-id') } : null;
