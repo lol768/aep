@@ -3,16 +3,19 @@ package services
 import java.util.UUID
 
 import akka.Done
+import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
-import domain.Assessment
 import domain.Assessment.State
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
+import domain.{Assessment, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
+import slick.dbio.DBIO
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
+import warwick.fileuploads.UploadedFileSave
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -22,7 +25,7 @@ trait AssessmentService {
   def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
-  def update(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
+  def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
 }
 
 @Singleton
@@ -65,9 +68,20 @@ class AssessmentServiceImpl @Inject()(
     }
   }
 
-  override def update(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] = {
+  override def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Done]] = {
     daoRunner.run(for {
       stored <- dao.getById(assessment.id).map(_.getOrElse(throw new NoSuchElementException(s"Could not find an Assessment with ID ${assessment.id}")))
+      fileIds <- if (files.nonEmpty) {
+        DBIO.sequence(files.toList.map { case (in, metadata) =>
+          uploadedFileService.storeDBIO(
+            in,
+            metadata,
+            ac.usercode.get,
+            assessment.id,
+            UploadedFileOwner.Assessment
+          ).map(_.id)
+        })
+      } else DBIO.successful(assessment.brief.files.map(_.id))
       _ <- dao.update(StoredAssessment(
         id = assessment.id,
         code = assessment.code,
@@ -78,7 +92,7 @@ class AssessmentServiceImpl @Inject()(
         assessmentType = assessment.assessmentType,
         storedBrief = StoredBrief(
           text = assessment.brief.text,
-          fileIds = assessment.brief.files.map(_.id),
+          fileIds = fileIds,
           url = assessment.brief.url
         ),
         state = assessment.state,

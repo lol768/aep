@@ -53,9 +53,7 @@ class ApprovalsController @Inject()(
       form.bindFromRequest().fold(
         formWithErrors => Future.successful(Ok(views.html.admin.approvals.show(assessment, formWithErrors))),
         data => {
-          assessmentService.update(assessment.copy(
-            state = State.Approved
-          )).successMap { _ =>
+          assessmentService.update(assessment.copy(state = State.Approved), files = Nil).successMap { _ =>
             Redirect(routes.ApprovalsController.index()).flashing("success" -> Messages("flash.assessment.approved"))
           }
         })

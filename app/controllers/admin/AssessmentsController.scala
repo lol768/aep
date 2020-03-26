@@ -5,14 +5,12 @@ import java.util.UUID
 
 import controllers.BaseController
 import domain.Assessment.{AssessmentType, Platform, State}
-import domain.UploadedFileOwner
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData}
 import services.{AssessmentService, SecurityService, UploadedFileService}
-import warwick.core.helpers.ServiceResults
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 
@@ -75,27 +73,24 @@ class AssessmentsController @Inject()(
         formWithErrors => Future.successful(Ok(views.html.admin.assessments.show(assessment, formWithErrors))),
         data => {
           val files = request.body.files.map(_.ref)
-          ServiceResults.futureSequence(files.map(ref => uploadedFileService.store(ref.in, ref.metadata, assessment.id, UploadedFileOwner.Assessment))).successFlatMap { files =>
-            assessmentService.update(assessment.copy(
-              title = data.title,
-              duration = Duration.ofMinutes(data.durationMinutes),
-              platform = data.platform,
-              assessmentType = data.assessmentType,
-              brief = assessment.brief.copy(
-                text = data.description,
-                url = data.url,
-                files = if (files.isEmpty) assessment.brief.files else files
-              ),
-              state = State.Submitted
-            )).successMap { _ =>
-              Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
-            }
+          assessmentService.update(assessment.copy(
+            title = data.title,
+            duration = Duration.ofMinutes(data.durationMinutes),
+            platform = data.platform,
+            assessmentType = data.assessmentType,
+            brief = assessment.brief.copy(
+              text = data.description,
+              url = data.url
+            ),
+            state = State.Submitted
+          ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
+            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
           }
         })
     }
   }
 
-  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] =  RequireSysadmin.async { implicit request =>
+  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
     assessmentService.get(assessmentId).successFlatMap { assessment =>
       assessment.brief.files.find(_.id == fileId)
         .map(uploadedFileControllerHelper.serveFile)
