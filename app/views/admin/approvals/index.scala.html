@@ -1,13 +1,10 @@
 @import domain.Assessment
 @import warwick.core.helpers.JavaTime
 @import org.apache.commons.lang3.time.DurationFormatUtils
-@import domain.Assessment.AssessmentType
 
 @(assessments: Seq[Assessment])(implicit context: RequestContext)
 
-@adminLayout("Assessments") {
-  <h2>Assessments for setup</h2>
-
+@adminLayout("Assessments pending approval") {
   <table class="table table-striped">
     <thead>
       <tr>
@@ -34,7 +31,7 @@
             @assessment.assessmentType.label
           </td>
           <td class="text-right">
-            <a href="@controllers.admin.routes.AssessmentsController.show(assessment.id)" class="btn btn-default btn-sm">View</a>
+            <a href="@controllers.admin.routes.ApprovalsController.show(assessment.id)" class="btn btn-default btn-sm">View</a>
           </td>
         </tr>
       }

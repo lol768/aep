@@ -4,7 +4,7 @@ import java.time.Duration
 import java.util.UUID
 
 import controllers.BaseController
-import domain.Assessment.{AssessmentType, Platform}
+import domain.Assessment.{AssessmentType, Platform, State}
 import domain.UploadedFileOwner
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
@@ -51,7 +51,7 @@ class AssessmentsController @Inject()(
   import security._
 
   def index: Action[AnyContent] = RequireSysadmin.async { implicit request =>
-    assessmentService.list.successMap { assessments =>
+    assessmentService.findByStates(Seq(State.Draft)).successMap { assessments =>
       Ok(views.html.admin.assessments.index(assessments))
     }
   }
@@ -85,7 +85,8 @@ class AssessmentsController @Inject()(
                 text = data.description,
                 url = data.url,
                 files = if (files.isEmpty) assessment.brief.files else files
-              )
+              ),
+              state = State.Submitted
             )).successMap { _ =>
               Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
             }

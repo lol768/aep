@@ -34,6 +34,7 @@ trait AssessmentsTables extends VersionedTables {
     def platform = column[Platform]("platform")
     def assessmentType = column[AssessmentType]("type")
     def storedBrief = column[StoredBrief]("brief")
+    def state = column[State]("state")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
   }
@@ -44,7 +45,7 @@ trait AssessmentsTables extends VersionedTables {
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, created, version).mapTo[StoredAssessment]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, state, created, version).mapTo[StoredAssessment]
 
     def idx = index("id_assessment_code", (code))
   }
@@ -58,7 +59,7 @@ trait AssessmentsTables extends VersionedTables {
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, state, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }
 
@@ -76,8 +77,9 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
+    state: State,
     created: OffsetDateTime,
-    version: OffsetDateTime
+    version: OffsetDateTime,
   ) extends Versioned[StoredAssessment] {
 
     def asAssessment(fileMap: Map[UUID, UploadedFile]) =
@@ -89,7 +91,8 @@ object AssessmentsTables {
         duration,
         platform,
         assessmentType,
-        storedBrief.asBrief(fileMap)
+        storedBrief.asBrief(fileMap),
+        state,
       )
 
     def asAssessmentMetadata =
@@ -100,7 +103,8 @@ object AssessmentsTables {
         startTime,
         duration,
         platform,
-        assessmentType
+        assessmentType,
+        state,
       )
 
     override def atVersion(at: OffsetDateTime): StoredAssessment = copy(version = at)
@@ -115,6 +119,7 @@ object AssessmentsTables {
         platform,
         assessmentType,
         storedBrief,
+        state,
         created,
         version,
         operation,
@@ -132,6 +137,7 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
+    state: State,
     created: OffsetDateTime,
     version: OffsetDateTime,
     operation: DatabaseOperation,
@@ -166,6 +172,7 @@ trait AssessmentDao {
   import profile.api._
 
   def all: DBIO[Seq[StoredAssessment]]
+  def findByStates(states: Seq[State]): DBIO[Seq[StoredAssessment]]
   def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
   def update(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
   def getById(id: UUID): DBIO[StoredAssessment]
@@ -184,6 +191,9 @@ class AssessmentDaoImpl @Inject()(
   import jdbcTypes._
 
   override def all: DBIO[Seq[StoredAssessment]] = assessments.result
+
+  override def findByStates(states: Seq[State]): DBIO[Seq[StoredAssessment]] =
+    assessments.table.filter(_.state inSetBind states).result
 
   override def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment] =
     assessments.insert(assessment)

@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.Done
 import com.google.inject.ImplementedBy
 import domain.Assessment
+import domain.Assessment.State
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
 import javax.inject.{Inject, Singleton}
@@ -18,6 +19,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @ImplementedBy(classOf[AssessmentServiceImpl])
 trait AssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+  def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
   def update(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
@@ -39,6 +41,10 @@ class AssessmentServiceImpl @Inject()(
 
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
     daoRunner.run(dao.all).flatMap(inflate)
+  }
+
+  override def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
+    daoRunner.run(dao.findByStates(state)).flatMap(inflate)
   }
 
   override def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
@@ -70,6 +76,7 @@ class AssessmentServiceImpl @Inject()(
           fileIds = assessment.brief.files.map(_.id),
           url = assessment.brief.url
         ),
+        state = assessment.state
       ))
     } yield Done).map(ServiceResults.success)
   }
