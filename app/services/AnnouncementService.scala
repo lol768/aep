@@ -59,7 +59,6 @@ class AnnouncementServiceImpl @Inject()(
         .successMapTo(_.map(_.studentId))
         .map(_.getOrElse(Nil))
     } yield {
-
       pubSubService.publish(
         topic = announcement.id.toString,
         AssessmentAnnouncementForUniversityIds(

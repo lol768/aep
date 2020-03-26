@@ -18,10 +18,7 @@ object WebSocketActor {
   def props(loginContext: LoginContext, pubsub: ActorRef, out: ActorRef, studentAssessmentService: StudentAssessmentService)(implicit ec: ExecutionContext, t: TimingContext): Props =
     Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService))
 
-  case class AssessmentAnnouncement(
-    message: String,
-    universityId: Option[UniversityID] = None,
-  )
+  case class AssessmentAnnouncement(message: String)
 
   case class AssessmentAnnouncementForUniversityIds(
     message: String,
@@ -86,26 +83,20 @@ class WebSocketActor @Inject() (
   }
 
   override def receive: Receive = {
-    case AssessmentAnnouncement(announcement, universityId) => out ! Json.obj(
+    case AssessmentAnnouncement(announcement) => out ! Json.obj(
       "type" -> "announcement",
       "message" -> announcement,
-      "user" -> JsString(universityId
-        .map(_.string)
-        .orElse(loginContext.user.map(u => u.usercode.string))
-        .getOrElse("Anonymous"))
+      "user" -> JsString(loginContext.user.map(u => u.usercode.string).getOrElse("Anonymous"))
     )
 
-    case AssessmentAnnouncementForUniversityIds(announcement, universityIds) => {
+    case AssessmentAnnouncementForUniversityIds(announcement, universityIds) =>
       universityIds.foreach { universityId =>
-        pubsub ! Publish(
-          topic = universityId.string,
-          msg = AssessmentAnnouncement(
-            announcement,
-            Some(universityId),
-          ),
+        out ! Json.obj(
+          "type" -> "announcement",
+          "message" -> announcement,
+          "user" -> JsString(universityId.string)
         )
       }
-    }
 
     case SubscribeAck(Subscribe(topic, _, _)) =>
       log.debug(s"WebSocket subscribed to PubSub messages on the topic of '$topic'")
