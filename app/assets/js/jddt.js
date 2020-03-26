@@ -4,7 +4,7 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TODAY = 'Today ';
 const SOME_SUNNY_DAY = '';
-const iconString = '<i class="fad fa-clock fa-fw" aria-hidden="true"></i>';
+const iconString = '<i class="fad themed-duotone fa-clock fa-fw" aria-hidden="true"></i>';
 
 /**
  * Returns number n as string with extra 0 prepended if it's only 1 digit
@@ -219,7 +219,7 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
     fromDateDayString = `${stringifyDay(fromDate.getDay(), short)} `;
   }
 
-  return `<i class="fad fa-clock fa-fw" aria-hidden="true"></i> \
+  return `${iconString} \
 ${stringifyTime(fromDate)} \
 ${fromDateDayString}${fromDateNumberString}${fromMonthString}${fromYearString}\
 to \
