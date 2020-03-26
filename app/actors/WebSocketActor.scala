@@ -4,6 +4,8 @@ import java.util.UUID
 
 import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
+import com.google.inject.assistedinject.Assisted
+import javax.inject.Inject
 import play.api.libs.json._
 import services.StudentAssessmentService
 import warwick.core.timing.TimingContext
@@ -58,14 +60,13 @@ object WebSocketActor {
   * @param out this output will be attached to the websocket and will send
   *            messages back to the client.
   */
-class WebSocketActor(
+class WebSocketActor @Inject() (
   out: ActorRef,
   pubsub: ActorRef,
   loginContext: LoginContext,
-  studentAssessmentService: StudentAssessmentService,
+  @Assisted studentAssessmentService: StudentAssessmentService,
 )(implicit
-  ec: ExecutionContext,
-  t: TimingContext
+  ec: ExecutionContext
 ) extends Actor with ActorLogging {
 
   import WebSocketActor._
@@ -96,7 +97,7 @@ class WebSocketActor(
 
         case m if m.`type` == "RequestAssessmentTiming" && m.data.exists(_.validate[RequestAssessmentTiming](readsRequestAssessmentTiming).isSuccess) =>
           val assessmentId = m.data.get.as[RequestAssessmentTiming](readsRequestAssessmentTiming).assessmentId
-          studentAssessmentService.getWithAssessment(loginContext.user.flatMap(u => u.universityId).get, assessmentId).map { assessment =>
+          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get, assessmentId)(TimingContext.none).map { assessment =>
             out ! Json.obj(
               "type"-> "AssessmentTimingInformation",
               "assessments"-> Json.arr(Json.toJson(assessment.getTimingInfo))
@@ -104,7 +105,7 @@ class WebSocketActor(
           }
 
         case m if m.`type` == "RequestAssessmentTiming" =>
-          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get).map { assessments =>
+          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get)(TimingContext.none).map { assessments =>
             out ! Json.obj(
               "type"-> "AssessmentTimingInformation",
               "assessments"-> JsArray(assessments.map(a => Json.toJson(a.getTimingInfo)))
