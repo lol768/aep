@@ -13,6 +13,7 @@ import scala.concurrent.Future
 class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
   private val dao = get[AssessmentDao]
+  private def lookupException = throw new Exception("DAO lookup failed")
 
   "AssessmentDao" should {
     "save and retrieve an assessment" in {
@@ -35,7 +36,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
             result.startTime mustBe ass.startTime
             result.duration mustBe ass.duration
 
-            existsAfter mustBe result
+            existsAfter must contain(result)
           })
         } yield result
 
@@ -57,10 +58,10 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       val first = assessments.head
       execWithCommit(DBIO.sequence(assessments.map(dao.insert)))
 
-      val idResult = execWithCommit(dao.getById(first.id))
+      val idResult = execWithCommit(dao.getById(first.id)).getOrElse(lookupException)
       idResult.code mustEqual first.code
 
-      val codeResult = execWithCommit(dao.getByCode(first.code))
+      val codeResult = execWithCommit(dao.getByCode(first.code)).getOrElse(lookupException)
       codeResult.id mustEqual first.id
     }
 

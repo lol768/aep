@@ -27,7 +27,7 @@ trait StudentAssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]]
-  def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessment]
+  def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[Option[StudentAssessmentWithAssessment]]
   def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessmentMetadata]
   def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[Seq[StudentAssessmentWithAssessmentMetadata]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
@@ -71,24 +71,25 @@ class StudentAssessmentServiceImpl @Inject()(
     }
   }
 
-  override def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessment] = {
+  override def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[Option[StudentAssessmentWithAssessment]] = {
     daoRunner.run(
       for {
         studentAssessment <- dao.get(universityId, assessmentId)
         assessment <- assessmentDao.getById(assessmentId)
       } yield (studentAssessment, assessment)
     ).flatMap {
-      case (storedStudentAssessment: StoredStudentAssessment, storedAssessment: StoredAssessment) => {
-        val studentAssessmentFuture = inflateWithUploadedFiles(storedStudentAssessment)
+      case (storedStudentAssessment: Some[StoredStudentAssessment], storedAssessment: Some[StoredAssessment]) => {
+        val studentAssessmentFuture = inflateWithUploadedFiles(storedStudentAssessment.get)
 
-        val assessmentFuture = uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
-          storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap)
+        val assessmentFuture = uploadedFileService.get(storedAssessment.get.storedBrief.fileIds).map { uploadedFiles =>
+          storedAssessment.get.asAssessment(uploadedFiles.map(f => f.id -> f).toMap)
         }
         for {
           studentAssessment <- studentAssessmentFuture
           assessment <- assessmentFuture
-        } yield StudentAssessmentWithAssessment(studentAssessment, assessment)
+        } yield Some(StudentAssessmentWithAssessment(studentAssessment, assessment))
       }
+      case _ => Future.successful(None)
     }
   }
 
@@ -97,7 +98,11 @@ class StudentAssessmentServiceImpl @Inject()(
       for {
         studentAssessment <- dao.get(universityId, assessmentId)
         assessment <- assessmentDao.getById(assessmentId)
-      } yield StudentAssessmentWithAssessmentMetadata(studentAssessment.asStudentAssessmentMetadata, assessment.asAssessmentMetadata)
+      } yield StudentAssessmentWithAssessmentMetadata(
+        studentAssessment.getOrElse(noStudentAssessmentFound(assessmentId, universityId))
+          .asStudentAssessmentMetadata,
+        assessment.getOrElse(noAssessmentFound(assessmentId))
+          .asAssessmentMetadata)
     )
 
   override def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[Seq[StudentAssessmentWithAssessmentMetadata]] = {
@@ -125,14 +130,21 @@ class StudentAssessmentServiceImpl @Inject()(
     audit.audit(Operation.Assessment.StartAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
-          storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
-          storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(canStart(storedAssessment, storedStudentAssessment))
+          storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
+          storedAssessmentOption <- assessmentDao.getById(studentAssessment.assessmentId)
+          _ <- DBIO.from(canStart(
+            storedAssessmentOption.getOrElse(noAssessmentFound(studentAssessment.assessmentId)),
+            storedStudentAssessmentOption.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId))
+          ))
           updatedStudentAssessment <- {
-            if(storedStudentAssessment.startTime.isEmpty) {
-              dao.update(storedStudentAssessment.copy(startTime = Some(JavaTime.offsetDateTime)))
-            } else {
-              DBIO.successful(storedStudentAssessment)
+            storedStudentAssessmentOption.map { storedStudentAssessment =>
+              if(storedStudentAssessment.startTime.isEmpty) {
+                dao.update(storedStudentAssessment.copy(startTime = Some(JavaTime.offsetDateTime)))
+              } else {
+                DBIO.successful(storedStudentAssessment)
+              }
+            }.getOrElse{
+              noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
             }
           }
         } yield updatedStudentAssessment
@@ -144,14 +156,25 @@ class StudentAssessmentServiceImpl @Inject()(
     audit.audit(Operation.Assessment.FinishAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
-          storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
-          storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(canStart(storedAssessment, storedStudentAssessment))
+          storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
+          storedAssessmentOption <- assessmentDao.getById(studentAssessment.assessmentId)
+          _ <- DBIO.from(canStart(
+            storedAssessmentOption.getOrElse {
+              noAssessmentFound(studentAssessment.assessmentId)
+            },
+            storedStudentAssessmentOption.getOrElse {
+              noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
+            }
+          ))
           updatedStudentAssessment <- {
-            if(storedStudentAssessment.startTime.isDefined) {
-              dao.update(storedStudentAssessment.copy(finaliseTime = Some(JavaTime.offsetDateTime)))
-            } else {
-              DBIO.failed(new IllegalArgumentException("Cannot finalise an assessment which has not been started"))
+            storedStudentAssessmentOption.map { storedStudentAssessment =>
+              if(storedStudentAssessment.startTime.isDefined) {
+                dao.update(storedStudentAssessment.copy(finaliseTime = Some(JavaTime.offsetDateTime)))
+              } else {
+                DBIO.failed(new IllegalArgumentException("Cannot finalise an assessment which has not been started"))
+              }
+            }.getOrElse {
+              noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
             }
           }
         } yield updatedStudentAssessment
@@ -165,11 +188,24 @@ class StudentAssessmentServiceImpl @Inject()(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(startedNotFinalised(storedAssessment, storedStudentAssessment))
+          _ <- DBIO.from(startedNotFinalised(
+            storedAssessment.getOrElse(noAssessmentFound(studentAssessment.assessmentId)),
+            storedStudentAssessment.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId))
+          ))
           fileIds <- DBIO.sequence(files.toList.map { case (in, metadata) =>
-            uploadedFileService.storeDBIO(in, metadata, ctx.usercode.get, storedStudentAssessment.id, UploadedFileOwner.StudentAssessment).map(_.id)
+            uploadedFileService.storeDBIO(
+              in,
+              metadata,
+              ctx.usercode.get,
+              storedStudentAssessment.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)).id,
+              UploadedFileOwner.StudentAssessment
+            ).map(_.id)
           })
-          updatedStudentAssessment <- dao.update(storedStudentAssessment.copy(uploadedFiles = storedStudentAssessment.uploadedFiles ::: fileIds))
+          updatedStudentAssessment <- dao.update( storedStudentAssessment.map { ssa =>
+            ssa.copy(uploadedFiles = ssa.uploadedFiles ::: fileIds)
+          }.getOrElse {
+            noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
+          })
         } yield updatedStudentAssessment
       ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
     }
@@ -180,12 +216,27 @@ class StudentAssessmentServiceImpl @Inject()(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessment <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(startedNotFinalised(storedAssessment, storedStudentAssessment))
+          _ <- DBIO.from(startedNotFinalised(
+            storedAssessment.getOrElse(noAssessmentFound(studentAssessment.assessmentId)),
+            storedStudentAssessment.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId))
+          ))
           // TODO: do we want to delete the object storage file?
-          updatedStudentAssessment <- dao.update(storedStudentAssessment.copy(uploadedFiles = storedStudentAssessment.uploadedFiles.filterNot(_ == file)))
+          updatedStudentAssessment <- dao.update(
+            storedStudentAssessment.map { ssa =>
+              ssa.copy(uploadedFiles = ssa.uploadedFiles.filterNot(_ == file))
+            }.getOrElse{
+              noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
+            }
+          )
         } yield updatedStudentAssessment
       ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
     }
   }
 
+
+  private def noAssessmentFound(id: UUID) =
+    throw new NoSuchElementException(s"Could not find an assessment with id ${id.toString}")
+
+  private def noStudentAssessmentFound(assessmentId: UUID, studentId: UniversityID) =
+    throw new NoSuchElementException(s"Could not find student assessment with id ${assessmentId.toString} and student id ${studentId.string}")
 }

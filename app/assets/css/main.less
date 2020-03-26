@@ -158,3 +158,20 @@ svg.pretty-patterns {
 .ml-half {
   margin-left: 0.5rem;
 }
+
+// Credit: https://github.com/loadingio/loading.css/blob/c2ed18310230611885514f82c4c62c746f7b91a9/dist/entries/spin.css
+@keyframes hourglass-spin {
+  0%,
+  50% {
+    animation-timing-function: cubic-bezier(0.5856, 0.0703, 0.4143, 0.9297);
+    transform: rotate(0deg);
+  }
+  75%,
+  100% {
+    transform: rotate(180deg);
+  }
+}
+
+.fa-hourglass-spin {
+  animation: hourglass-spin 4s infinite linear;
+}

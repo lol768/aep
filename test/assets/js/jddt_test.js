@@ -2,7 +2,7 @@ import JDDT from 'jddt';
 import {JSDOM} from 'jsdom';
 import MockDate from 'mockdate';
 
-const iconString = '<i class="fad fa-clock fa-fw" aria-hidden="true"></i>';
+const iconString = '<i class="fad themed-duotone fa-clock fa-fw" aria-hidden="true"></i>';
 const londonTimeString = '<span class="text-muted">Europe/London</span>';
 const moscowTimeString = '<span class="text-muted">Europe/Moscow</span>';
 const midwayTimeString = '<span class="text-muted">Pacific/Midway</span>';
