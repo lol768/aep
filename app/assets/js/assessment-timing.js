@@ -98,7 +98,7 @@ export default function initTiming(websocket) {
       if (d.type === 'AssessmentTimingInformation') {
         d.assessments.forEach((assessment) => {
           const node = document.querySelector(`.timing-information[data-id="${assessment.id}"]`);
-          updateTimingInfo(node, assessment);
+          if (node) updateTimingInfo(node, assessment);
         });
       }
     },
