@@ -106,7 +106,7 @@ import('./web-sockets').then(() => {
     onClose: () => {
     },
     onHeartbeat: (ws) => {
-      const data = nodes.length() === 1 ? { assessmentId: nodes[0].getAttribute('data-id') } : null;
+      const data = nodes.length === 1 ? { assessmentId: nodes[0].getAttribute('data-id') } : null;
       const message = {
         type: 'RequestAssessmentTiming',
         data,
