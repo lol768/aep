@@ -24,7 +24,7 @@ const updateTimingInfo = (node, data) => {
       setWarning(node);
     }
   } else if (data.timeUntilStart > 0) {
-    text = `You can start in ${data.timeUntilStart}`;
+    text = `You can start in ${msToHumanReadable(data.timeUntilStart)}`;
     setWarning(node);
   } else if (!data.hasWindowPassed) {
     text = `${msToHumanReadable(-data.timeUntilStart)} left to start`;
