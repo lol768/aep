@@ -44,7 +44,7 @@ class CreateAssessmentAnnouncementController @Inject()(
     form.bindFromRequest.fold(
       errors => renderForm(errors),
       data => {
-        assessmentService.getByIdForInvigilator(data.assessmentId, List(currentUser().usercode.string)).successFlatMap { assessment =>
+        assessmentService.getByIdForInvigilator(data.assessmentId, List(currentUser().usercode)).successFlatMap { assessment =>
           announcementService.save(Announcement(assessment = assessment.id, text = data.message)).map( _ =>
             Redirect(controllers.routes.CreateAssessmentAnnouncementController.index)
               .flashing("success" -> Messages("flash.assessment.announcement.created"))
@@ -56,7 +56,7 @@ class CreateAssessmentAnnouncementController @Inject()(
 
 
   private def renderForm(form: Form[AssessmentAnnouncementData])(implicit req: AuthenticatedRequest[_]): Future[Result] = {
-    assessmentService.listForInvigilator(List(currentUser().usercode.string)).successMap{ assessments =>
+    assessmentService.listForInvigilator(List(currentUser().usercode)).successMap{ assessments =>
       Ok(views.html.assessment.announcement(assessments, form))
     }
   }

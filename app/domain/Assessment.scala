@@ -6,6 +6,7 @@ import java.util.UUID
 import domain.Assessment._
 import enumeratum.{EnumEntry, PlayEnum}
 import warwick.fileuploads.UploadedFile
+import warwick.sso.Usercode
 
 sealed trait BaseAssessment {
   def id: UUID
@@ -26,7 +27,7 @@ case class Assessment(
   platform: Platform,
   assessmentType: AssessmentType,
   brief: Brief,
-  invigilators: Seq[String],
+  invigilators: Seq[Usercode],
 ) extends BaseAssessment
 
 case class AssessmentMetadata(

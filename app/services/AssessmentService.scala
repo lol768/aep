@@ -11,14 +11,15 @@ import slick.dbio.DBIO
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
+import warwick.sso.Usercode
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[AssessmentServiceImpl])
 trait AssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
-  def listForInvigilator(usercodes: List[String])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
-  def getByIdForInvigilator(id: UUID, usercodes: List[String])(implicit t: TimingContext): Future[ServiceResult[Assessment]]
+  def listForInvigilator(usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+  def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]]
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
 }
@@ -48,11 +49,11 @@ class AssessmentServiceImpl @Inject()(
     daoRunner.run(dao.all).flatMap(inflate)
   }
 
-  override def listForInvigilator(usercodes: List[String])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
+  override def listForInvigilator(usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
     daoRunner.run(dao.getByInvigilator(usercodes)).flatMap(inflate)
   }
 
-  def getByIdForInvigilator(id: UUID, usercodes: List[String])(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
+  def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
     withFiles(dao.getByIdAndInvigilator(id, usercodes)).recover {
       case _: NoSuchElementException => ServiceResults.error(s"Could not find an Assessment with ID $id for invigilators: ${usercodes.mkString(",")}")
     }

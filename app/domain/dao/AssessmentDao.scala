@@ -33,7 +33,7 @@ trait AssessmentsTables extends VersionedTables {
     def platform = column[Platform]("platform")
     def assessmentType = column[AssessmentType]("type")
     def storedBrief = column[StoredBrief]("brief")
-    def invigilators = column[List[String]]("invigilators")
+    def invigilators = column[List[Usercode]]("invigilators")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
   }
@@ -76,7 +76,7 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
-    invigilators: List[String],
+    invigilators: List[Usercode],
     created: OffsetDateTime,
     version: OffsetDateTime
   ) extends Versioned[StoredAssessment] {
@@ -135,7 +135,7 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
-    invigilators: List[String],
+    invigilators: List[Usercode],
     created: OffsetDateTime,
     version: OffsetDateTime,
     operation: DatabaseOperation,
@@ -176,8 +176,8 @@ trait AssessmentDao {
   def getByCode(code: String): DBIO[StoredAssessment]
   def getToday: DBIO[Seq[StoredAssessment]]
   def getInWindow: DBIO[Seq[StoredAssessment]]
-  def getByInvigilator(usercodes: List[String]): DBIO[Seq[StoredAssessment]]
-  def getByIdAndInvigilator(id: UUID, usercodes: List[String]): DBIO[StoredAssessment]
+  def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]]
+  def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[StoredAssessment]
 }
 
 @Singleton
@@ -213,9 +213,9 @@ class AssessmentDaoImpl @Inject()(
   }
 
 
-  override def getByInvigilator(usercodes: List[String]): DBIO[Seq[StoredAssessment]] =
+  override def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]] =
     assessments.table.filter(_.invigilators @> usercodes).result
 
-  override def getByIdAndInvigilator(id: UUID, usercodes: List[String]): DBIO[StoredAssessment] =
+  override def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[StoredAssessment] =
     assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes).result.head
 }
