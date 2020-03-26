@@ -44,15 +44,9 @@
             @assessment.assessment.startTime.map { startTime =>
                 <dt>Can start</dt>
                 <dd>
-                    <i class="fad themed-duotone fa-clock fa-fw"></i>@JavaTime.Relative(startTime.plusHours(8))
-                    until
-                @JavaTime.Relative(startTime.plus(Assessment.window).plusHours(8))
-                <span class="text-muted">Asia/Shanghai</span>
-                <br>
-                <i class="fad themed-duotone fa-clock fa-fw"></i>@JavaTime.Relative(startTime)
-                    until
-                @JavaTime.Relative(startTime.plus(Assessment.window))
-                    <span class="text-muted">Europe/London</span>
+                    @defining(startTime.plus(Assessment.window)) { endTime =>
+                        @localisedDatetimeRange(startTime, endTime)
+                    }
                 </dd>
             }
         </dl>
