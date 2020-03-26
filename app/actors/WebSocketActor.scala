@@ -89,10 +89,10 @@ class WebSocketActor @Inject() (
     case AssessmentAnnouncement(announcement, universityId) => out ! Json.obj(
       "type" -> "announcement",
       "message" -> announcement,
-      "user" -> universityId.map(_.string)
+      "user" -> JsString(universityId
+        .map(_.string)
         .orElse(loginContext.user.map(u => u.usercode.string))
-        .map(JsString)
-        .getOrElse(JsString("Anonymous"))
+        .getOrElse("Anonymous"))
     )
 
     case AssessmentAnnouncementForUniversityIds(announcement, universityIds) => {
