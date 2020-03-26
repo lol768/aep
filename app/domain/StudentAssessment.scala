@@ -15,6 +15,7 @@ sealed trait BaseStudentAssessment {
 }
 
 case class StudentAssessment(
+  id: UUID,
   assessmentId: UUID,
   studentId: UniversityID,
   inSeat: Boolean,

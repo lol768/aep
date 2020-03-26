@@ -36,22 +36,26 @@ trait StudentAssessmentsTables extends VersionedTables {
   class StudentAssessments(tag: Tag) extends Table[StoredStudentAssessment](tag, "student_assessment")
     with VersionedTable[StoredStudentAssessment]
     with CommonProperties {
-    override def matchesPrimaryKey(other: StoredStudentAssessment): Rep[Boolean] = (assessmentId === other.assessmentId && studentId === other.studentId)
-    def pk = primaryKey("pk_student_assessment", (assessmentId, studentId))
+    override def matchesPrimaryKey(other: StoredStudentAssessment): Rep[Boolean] = id === other.id
+    def id = column[UUID]("id", O.PrimaryKey)
+
+    def pk = primaryKey("pk_student_assessment", id)
+    def ck = index("ck_student_assessment", (assessmentId, studentId), unique = true)
 
     override def * : ProvenShape[StoredStudentAssessment] =
-      (assessmentId, studentId, inSeat, startTime, finaliseTime, uploadedFiles, created, version).mapTo[StoredStudentAssessment]
+      (id, assessmentId, studentId, inSeat, startTime, finaliseTime, uploadedFiles, created, version).mapTo[StoredStudentAssessment]
   }
 
   class StudentAssessmentVersions(tag: Tag) extends Table[StoredStudentAssessmentVersion](tag, "student_assessment_version")
     with StoredVersionTable[StoredStudentAssessment]
     with CommonProperties {
+    def id = column[UUID]("id")
     def operation = column[DatabaseOperation]("version_operation")
     def timestamp = column[OffsetDateTime]("version_timestamp_utc")
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredStudentAssessmentVersion] =
-      (assessmentId, studentId, inSeat, startTime, finaliseTime, uploadedFiles, created, version, operation, timestamp, auditUser).mapTo[StoredStudentAssessmentVersion]
+      (id, assessmentId, studentId, inSeat, startTime, finaliseTime, uploadedFiles, created, version, operation, timestamp, auditUser).mapTo[StoredStudentAssessmentVersion]
     def pk = primaryKey("pk_student_assessment_version", (assessmentId, studentId, timestamp))
   }
 
@@ -61,6 +65,7 @@ trait StudentAssessmentsTables extends VersionedTables {
 
 object StudentAssessmentsTables {
   case class StoredStudentAssessment(
+    id: UUID,
     assessmentId: UUID,
     studentId: UniversityID,
     inSeat: Boolean,
@@ -70,8 +75,9 @@ object StudentAssessmentsTables {
     created: OffsetDateTime,
     version: OffsetDateTime
   ) extends Versioned[StoredStudentAssessment] {
-    def asStudentAssessment(fileMap: Map[UUID, UploadedFile]) =
+    def asStudentAssessment(fileMap: Map[UUID, UploadedFile]): StudentAssessment =
       StudentAssessment(
+        id,
         assessmentId,
         studentId,
         inSeat,
@@ -94,6 +100,7 @@ object StudentAssessmentsTables {
 
     override def storedVersion[B <: StoredVersion[StoredStudentAssessment]](operation: DatabaseOperation, timestamp: OffsetDateTime)(implicit ac: AuditLogContext): B =
       StoredStudentAssessmentVersion(
+        id,
         assessmentId,
         studentId,
         inSeat,
@@ -109,6 +116,7 @@ object StudentAssessmentsTables {
   }
 
   case class StoredStudentAssessmentVersion(
+    id: UUID,
     assessmentId: UUID,
     studentId: UniversityID,
     inSeat: Boolean,
