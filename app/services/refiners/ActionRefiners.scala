@@ -39,9 +39,11 @@ class ActionRefiners @Inject() (
   def WithStudentAssessmentWithAssessment(assessmentId: UUID): Refiner[AuthenticatedRequest, AssessmentSpecificRequest] =
     new Refiner[AuthenticatedRequest, AssessmentSpecificRequest] {
       override protected def apply[A](implicit request: AuthenticatedRequest[A]): Refinement[AssessmentSpecificRequest[A]] = {
-        studentAssessmentService.getWithAssessment(universityId.get, assessmentId).map { studentAssessmentWithAssessment =>
+        studentAssessmentService.getWithAssessment(universityId.get, assessmentId).map { _.map { studentAssessmentWithAssessment =>
           Right(new AssessmentSpecificRequest[A](studentAssessmentWithAssessment, request))
-        }
+        }.getOrElse {
+          Left(NotFound(views.html.errors.notFound()))
+        }}
       }
     }
 

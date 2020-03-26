@@ -143,7 +143,7 @@ trait StudentAssessmentDao {
   def update(studentAssessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]]
   def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]]
-  def get(studentId: UniversityID, assessmentId: UUID): DBIO[StoredStudentAssessment]
+  def get(studentId: UniversityID, assessmentId: UUID): DBIO[Option[StoredStudentAssessment]]
 }
 
 @Singleton
@@ -168,7 +168,7 @@ class StudentAssessmentDaoImpl @Inject()(
   override def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]] =
     studentAssessments.table.filter(_.assessmentId === assessmentId).result
 
-  override def get(studentId: UniversityID, assessmentId: UUID): DBIO[StoredStudentAssessment] =
-    studentAssessments.table.filter(_.studentId === studentId).filter(_.assessmentId === assessmentId).result.head
+  override def get(studentId: UniversityID, assessmentId: UUID): DBIO[Option[StoredStudentAssessment]] =
+    studentAssessments.table.filter(_.studentId === studentId).filter(_.assessmentId === assessmentId).result.headOption
 
 }
