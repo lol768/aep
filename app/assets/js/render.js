@@ -15,6 +15,9 @@ import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
 import JDDT from './jddt';
+import WebSocketConnection from './web-sockets';
+import initAnnouncements from './assessment-announcements';
+import initTiming from './assessment-timing';
 
 initErrorReporter();
 
@@ -37,12 +40,23 @@ JDDT.initialise(document);
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.body.classList.contains('connect-ws')) {
-    import('./assessment-announcements');
+    let websocket;
+    import('./web-sockets').then(() => {
+      websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`, {
+        onConnect: () => {},
+        onError: () => {},
+        onData: () => {},
+        onClose: () => {},
+      });
+      websocket.connect();
+
+      initAnnouncements(websocket);
+
+      if (document.querySelector('.timing-information')) initTiming(websocket);
+    });
   }
 
   if (document.querySelectorAll('.undisable-with-checkbox[data-undisable-selector]').length > 0) {
     import('./undisable-with-checkbox');
   }
-
-  if (document.querySelector('.timing-information')) import('./assessment-timing');
 });

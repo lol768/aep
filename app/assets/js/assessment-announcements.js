@@ -1,5 +1,3 @@
-import WebSocketConnection from './web-sockets';
-
 function setVisibilityByClassName(className, visible) {
   document.querySelectorAll(`.${className}`).forEach((node) => {
     if (visible) {
@@ -10,8 +8,19 @@ function setVisibilityByClassName(className, visible) {
   });
 }
 
-import('./web-sockets').then(() => {
-  const websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`, {
+function checkNotificationPromise() {
+  // https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API
+  try {
+    Notification.requestPermission().then();
+  } catch (e) {
+    return false;
+  }
+
+  return true;
+}
+
+export default function initAnnouncements(websocket) {
+  websocket.add({
     onConnect: () => {
       setVisibilityByClassName('ws-connected', true);
       setVisibilityByClassName('ws-disconnected', false);
@@ -49,70 +58,60 @@ import('./web-sockets').then(() => {
       setVisibilityByClassName('ws-disconnected', true);
     },
   });
-  websocket.connect();
-});
 
-function checkNotificationPromise() {
-  // https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API
-  try {
-    Notification.requestPermission().then();
-  } catch (e) {
-    return false;
-  }
+  const button = document.getElementById('request-notification-permission');
+  const testButton = document.getElementById('send-test-notification');
 
-  return true;
-}
-
-const button = document.getElementById('request-notification-permission');
-const testButton = document.getElementById('send-test-notification');
-
-if ('Notification' in window) {
-  if (Notification.permission === 'granted') {
-    button.disabled = true;
-    testButton.disabled = false;
-    button.textContent = 'Notifications enabled';
-  } else if (Notification.permission === 'denied') {
-    button.disabled = true;
-    testButton.disabled = true;
-    button.textContent = 'Notifications blocked';
-  } else {
-    testButton.disabled = true;
-
-    const callback = (permission) => {
-      button.disabled = true;
-
-      if (permission === 'granted') {
-        button.textContent = 'Notifications enabled';
+  if (button && testButton) {
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        button.disabled = true;
         testButton.disabled = false;
+        button.textContent = 'Notifications enabled';
+      } else if (Notification.permission === 'denied') {
+        button.disabled = true;
+        testButton.disabled = true;
+        button.textContent = 'Notifications blocked';
+      } else {
+        testButton.disabled = true;
 
-        new Notification('Notifications enabled', { // eslint-disable-line no-new
-          body: 'Notifications are enabled. Any announcements made during your exam will appear here.',
+        const callback = (permission) => {
+          button.disabled = true;
+
+          if (permission === 'granted') {
+            button.textContent = 'Notifications enabled';
+            testButton.disabled = false;
+
+            new Notification('Notifications enabled', { // eslint-disable-line no-new
+              body: 'Notifications are enabled. Any announcements made during your exam will appear here.',
+              requireInteraction: true,
+            });
+          } else {
+            button.textContent = 'Notifications blocked';
+          }
+        };
+
+        button.addEventListener('click', () => {
+          if (checkNotificationPromise()) {
+            Notification.requestPermission().then(callback);
+          } else {
+            Notification.requestPermission(callback);
+          }
+        });
+      }
+    } else {
+      button.disabled = true;
+      testButton.disabled = true;
+      button.textContent = 'Notifications unsupported';
+    }
+
+    testButton.addEventListener('click', () => {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Test notification', { // eslint-disable-line no-new
+          body: 'This is a test notification.',
           requireInteraction: true,
         });
-      } else {
-        button.textContent = 'Notifications blocked';
-      }
-    };
-
-    button.addEventListener('click', () => {
-      if (checkNotificationPromise()) {
-        Notification.requestPermission().then(callback);
-      } else {
-        Notification.requestPermission(callback);
       }
     });
   }
-} else {
-  button.disabled = true;
-  testButton.disabled = true;
-  button.textContent = 'Notifications unsupported';
 }
-
-testButton.addEventListener('click', () => {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Test notification', { // eslint-disable-line no-new
-      body: 'This is a test notification.',
-      requireInteraction: true,
-    });
-  }
-});

@@ -1,5 +1,4 @@
 import msToHumanReadable from './time-helper';
-import WebSocketConnection from './web-sockets';
 
 const clearWarning = ({ parentElement }) => {
   parentElement.classList.remove('text-danger');
@@ -91,8 +90,8 @@ const refreshAll = () => {
 
 refreshAll();
 
-import('./web-sockets').then(() => {
-  const websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`, {
+export default function initTiming(websocket) {
+  websocket.add({
     onConnect: () => {},
     onError: () => refreshAll(),
     onData: (d) => {
@@ -116,4 +115,4 @@ import('./web-sockets').then(() => {
     },
   });
   websocket.connect();
-});
+}

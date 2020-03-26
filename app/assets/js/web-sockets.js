@@ -33,22 +33,30 @@ export default class WebSocketConnection {
    * @param {function} onClose Callback for if connection is closed.
    * @param {function} onData Callback for when JSON data is received.
    * @param {function} onHeartbeat Function called at regular intervals to send messages to server
-   * @param {number} heartBeatInterval Interval at which the onHeartbeat function is called (in ms)
    */
   constructor(endpoint, {
-    onConnect, onError, onClose, onData, onHeartbeat, heartBeatInterval,
+    onConnect, onError, onClose, onData, onHeartbeat,
   } = {}) {
     // polyfill
     if (!endpoint.includes('wss://')) {
       throw new Error(`${endpoint} doesn't look like a valid WebSocket URL`);
     }
     this.endpoint = endpoint;
-    this.onConnect = onConnect;
-    this.onError = onError;
-    this.onClose = onClose;
-    this.onData = onData;
-    this.onHeartbeat = onHeartbeat || defaultHeartbeat;
-    this.heartBeatInterval = heartBeatInterval || HEARTBEAT_INTERVAL_MS;
+    this.onConnect = onConnect ? [onConnect] : [];
+    this.onError = onError ? [onError] : [];
+    this.onClose = onClose ? [onClose] : [];
+    this.onData = onData ? [onData] : [];
+    this.onHeartbeat = onHeartbeat ? [defaultHeartbeat, onHeartbeat] : [defaultHeartbeat];
+  }
+
+  add({
+    onConnect, onError, onClose, onData, onHeartbeat,
+  } = {}) {
+    if (onConnect) this.onConnect.push(onConnect);
+    if (onError) this.onError.push(onError);
+    if (onClose) this.onClose.push(onClose);
+    if (onData) this.onData.push(onData);
+    if (onHeartbeat) this.onHeartbeat.push(onHeartbeat);
   }
 
   connect() {
@@ -67,23 +75,17 @@ export default class WebSocketConnection {
 
     ws.onmessage = (d) => {
       if ('data' in d) {
-        if (this.onData) {
-          this.onData(JSON.parse(d.data));
-        }
+        this.onData.forEach((onData) => onData(JSON.parse(d.data)));
       }
     };
 
-    if (this.onConnect) {
-      ws.addEventListener('open', this.onConnect);
-    }
+    this.onConnect.forEach((onConnect) => ws.addEventListener('open', onConnect));
 
     // Heartbeat
     ws.addEventListener('open', this.sendHeartbeat.bind(this));
 
     ws.addEventListener('close', (e) => {
-      if (this.onClose) {
-        this.onClose(e);
-      }
+      this.onClose.forEach((onClose) => onClose(e));
 
       if (this.heartbeatTimeout !== undefined) {
         clearTimeout(this.heartbeatTimeout);
@@ -94,9 +96,7 @@ export default class WebSocketConnection {
     });
 
     const errorHandler = (e) => {
-      if (this.onError) {
-        this.onError(e);
-      }
+      this.onError.forEach((onError) => onError(e));
       ws.close();
       this.reconnectIfRightTime();
       log('Disconnected from websocket, trying to reconnect');
@@ -125,8 +125,8 @@ export default class WebSocketConnection {
 
   sendHeartbeat() {
     this.heartbeatTimeout = setTimeout(() => {
-      this.onHeartbeat(this.ws);
+      this.onHeartbeat.forEach((onHeartbeat) => onHeartbeat(this.ws));
       this.sendHeartbeat();
-    }, this.heartBeatInterval);
+    }, HEARTBEAT_INTERVAL_MS);
   }
 }
