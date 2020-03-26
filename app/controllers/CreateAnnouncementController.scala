@@ -1,7 +1,7 @@
 package controllers
 
 import java.util.UUID
-import CreateAssessmentAnnouncementController._
+import CreateAnnouncementController._
 import domain.Announcement
 import play.api.data.Forms._
 import javax.inject.{Inject, Singleton}
@@ -14,9 +14,9 @@ import warwick.sso.AuthenticatedRequest
 import play.api.mvc.Result
 import scala.concurrent.{ExecutionContext, Future}
 
-object CreateAssessmentAnnouncementController {
+object CreateAnnouncementController {
 
-  case class AssessmentAnnouncementData(
+  case class AnnouncementData(
     assessmentId: UUID,
     message: String
   )
@@ -24,11 +24,11 @@ object CreateAssessmentAnnouncementController {
   val form = Form(mapping(
     "assessmentId" -> uuid,
     "message" -> nonEmptyText
-  )(AssessmentAnnouncementData.apply)(AssessmentAnnouncementData.unapply))
+  )(AnnouncementData.apply)(AnnouncementData.unapply))
 }
 
 @Singleton
-class CreateAssessmentAnnouncementController @Inject()(
+class CreateAnnouncementController @Inject()(
  security: SecurityService,
  assessmentService: AssessmentService,
  announcementService: AnnouncementService,
@@ -46,7 +46,7 @@ class CreateAssessmentAnnouncementController @Inject()(
       data => {
         assessmentService.getByIdForInvigilator(data.assessmentId, List(currentUser().usercode)).successFlatMap { assessment =>
           announcementService.save(Announcement(assessment = assessment.id, text = data.message)).map( _ =>
-            Redirect(controllers.routes.CreateAssessmentAnnouncementController.index)
+            Redirect(controllers.routes.CreateAnnouncementController.index)
               .flashing("success" -> Messages("flash.assessment.announcement.created"))
           )
         }
@@ -55,7 +55,7 @@ class CreateAssessmentAnnouncementController @Inject()(
   }}
 
 
-  private def renderForm(form: Form[AssessmentAnnouncementData])(implicit req: AuthenticatedRequest[_]): Future[Result] = {
+  private def renderForm(form: Form[AnnouncementData])(implicit req: AuthenticatedRequest[_]): Future[Result] = {
     assessmentService.listForInvigilator(List(currentUser().usercode)).successMap{ assessments =>
       Ok(views.html.assessment.announcement(assessments, form))
     }

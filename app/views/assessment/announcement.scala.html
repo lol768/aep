@@ -1,8 +1,8 @@
 @import domain.Assessment
-@import controllers.CreateAssessmentAnnouncementController.AssessmentAnnouncementData
+@import controllers.CreateAnnouncementController.AnnouncementData
 @(
     assessments: Seq[Assessment],
-    form: Form[AssessmentAnnouncementData]
+    form: Form[AnnouncementData]
 )(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
 
 @frontend("Assessment Announcement", extraClasses = Seq("grey-nopad")) {
@@ -10,7 +10,7 @@
     @if(assessments.isEmpty) {
         <p>Sorry there are no assessments available</p>
     } else {
-        @b3.vertical.formCSRF(controllers.routes.CreateAssessmentAnnouncementController.add) { implicit fc =>
+        @b3.vertical.formCSRF(controllers.routes.CreateAnnouncementController.add) { implicit fc =>
             @views.html.tags.globalErrors(form)
 
             @b3.select(form("assessmentId"),

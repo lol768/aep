@@ -21,8 +21,8 @@ GET         /assessment/:id                         @controllers.AssessmentContr
 POST        /assessment/:id                         @controllers.AssessmentController.start(id: UUID)
 POST        /assessment/:id/done                    @controllers.AssessmentController.finish(id: UUID)
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
-GET         /assessment/announcement/add            @controllers.CreateAssessmentAnnouncementController.index
-POST        /assessment/announcement/add            @controllers.CreateAssessmentAnnouncementController.add
+GET         /assessment/announcement/add            @controllers.CreateAnnouncementController.index
+POST        /assessment/announcement/add            @controllers.CreateAnnouncementController.add
 
 # Websocket
 GET         /websocket                              @controllers.WebSocketController.socket
