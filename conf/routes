@@ -25,8 +25,8 @@ POST        /assessment/:id/upload                  @controllers.AssessmentContr
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
-GET         /admin/assessment/announcement/add      @controllers.admin.CreateAnnouncementController.index
-POST        /admin/assessment/announcement/add      @controllers.admin.CreateAnnouncementController.add
+GET         /admin/assessment/announcement/add      @controllers.admins.CreateAnnouncementController.index
+POST        /admin/assessment/announcement/add      @controllers.admins.CreateAnnouncementController.add
 
 POST        /assessment/:id/file/:fileID/delete     @controllers.AssessmentController.deleteFile(id: UUID, fileID: UUID)
 

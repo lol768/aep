@@ -1,8 +1,8 @@
-package controllers.admin
+package controllers.admins
 
 import java.util.UUID
 
-import controllers.admin.CreateAnnouncementController._
+import controllers.admins.CreateAnnouncementController._
 import controllers.BaseController
 import domain.Announcement
 import javax.inject.{Inject, Singleton}
@@ -47,7 +47,7 @@ class CreateAnnouncementController @Inject()(
       data => {
         assessmentService.getByIdForInvigilator(data.assessmentId, List(currentUser().usercode)).successFlatMap { assessment =>
           announcementService.save(Announcement(assessment = assessment.id, text = data.message)).map( _ =>
-            Redirect(controllers.admin.routes.CreateAnnouncementController.index)
+            Redirect(controllers.admins.routes.CreateAnnouncementController.index)
               .flashing("success" -> Messages("flash.assessment.announcement.created"))
           )
         }
