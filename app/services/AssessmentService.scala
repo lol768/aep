@@ -67,8 +67,9 @@ class AssessmentServiceImpl @Inject()(
 
   override def update(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] = {
     daoRunner.run(for {
-      stored <- dao.getById(assessment.id)
-      result <- dao.update(stored.copy(
+      stored <- dao.getById(assessment.id).map(_.getOrElse(throw new NoSuchElementException(s"Could not find an Assessment with ID ${assessment.id}")))
+      _ <- dao.update(StoredAssessment(
+        id = assessment.id,
         code = assessment.code,
         title = assessment.title,
         startTime = assessment.startTime,
@@ -80,7 +81,9 @@ class AssessmentServiceImpl @Inject()(
           fileIds = assessment.brief.files.map(_.id),
           url = assessment.brief.url
         ),
-        state = assessment.state
+        state = assessment.state,
+        created = stored.created,
+        version = stored.version
       ))
     } yield Done).map(ServiceResults.success)
   }
