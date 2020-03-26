@@ -73,16 +73,28 @@ class AssessmentController @Inject()(
     val files = request.body.files.map(_.ref)
     AssessmentController.attachFilesToAssessmentForm.bindFromRequest().fold(
       _ => Future.successful(BadRequest(views.html.exam.index(request.studentAssessmentWithAssessment, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes))),
-      form =>
-        studentAssessmentService.attachFilesToAssessment(request.studentAssessmentWithAssessment.studentAssessment, files.map(f => (f.in, f.metadata))).successMap { _ =>
-          val flashMessage = "success" -> Messages("flash.assessment.filesUploaded")
-          if (form.xhr) {
-            Ok.flashing(flashMessage)
-          } else {
-            redirectToAssessment(assessmentId).flashing(flashMessage)
+      form => {
+        val existingUploadedFiles = request.studentAssessmentWithAssessment.studentAssessment.uploadedFiles
+        val intersection = existingUploadedFiles.map(uf => uf.fileName.toLowerCase).intersect(files.map(f => f.metadata.fileName.toLowerCase))
+        if (intersection.nonEmpty) {
+          val flashMessage = "error" -> Messages("flash.assessment.filesDuplicates", intersection.head)
+          Future.successful(redirectOrReturn200(assessmentId, form, flashMessage))
+        } else {
+          studentAssessmentService.attachFilesToAssessment(request.studentAssessmentWithAssessment.studentAssessment, files.map(f => (f.in, f.metadata))).successMap { _ =>
+            val flashMessage = "success" -> Messages("flash.assessment.filesUploaded")
+            redirectOrReturn200(assessmentId, form, flashMessage)
           }
         }
+      }
     )
+  }
+
+  private def redirectOrReturn200(assessmentId: UUID, form: AssessmentController.UploadFilesFormData, flashMessage: (String, String)) = {
+    if (form.xhr) {
+      Ok.flashing(flashMessage)
+    } else {
+      redirectToAssessment(assessmentId).flashing(flashMessage)
+    }
   }
 
   def deleteFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
