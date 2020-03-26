@@ -18,18 +18,19 @@
       </div>
     </div>
 
-    @b3.inputWrapped("number", form("durationMinutes"), Symbol("_label") -> "Duration", Symbol("min") -> 1, Symbol("max") -> 24 * 12) { input =>
-      <div class="input-group">
-        @input
-        <div class="input-group-addon">minutes</div>
-      </div>
-    }
+    @b3.select(form("durationMinutes"), Seq("" -> "", "30" -> "30 minutes", "60" -> "1 hour", "90" -> "1 hour and 30 minutes", "120" -> "2 hours", "180" -> "3 hours"), Symbol("_label") -> "Duration")
+@*    @b3.inputWrapped("number", form("durationMinutes"), Symbol("_label") -> "Duration", Symbol("min") -> 1, Symbol("max") -> 24 * 12) { input =>*@
+@*      <div class="input-group">*@
+@*        @input*@
+@*        <div class="input-group-addon">minutes</div>*@
+@*      </div>*@
+@*    }*@
 
     @b3.textarea(form("description"), Symbol("_label") -> "Description", Symbol("rows") -> 5)
 
     @b3.text(form("url"), Symbol("_label") -> "URL to exam")
 
-    @b3.freeFormGroup(Seq(Symbol("_label") -> "Files")) { _ =>
+    @b3.freeFormGroup(Seq(Symbol("_label") -> "Files", Symbol("id") -> "files")) { _ =>
       <div class="well">
         @if(assessment.brief.files.isEmpty) {
           <p>
@@ -54,7 +55,7 @@
     }
 
     @b3.free() {
-      <button type="submit" class="btn btn-primary">Save</button>
+      <button type="submit" class="btn btn-primary">Save for approval</button>
       <a href="@controllers.admin.routes.AssessmentsController.index()" class="btn btn-default">Cancel</a>
     }
   }
