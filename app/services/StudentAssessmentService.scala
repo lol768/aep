@@ -3,15 +3,16 @@ package services
 import java.util.UUID
 
 import com.google.common.io.ByteSource
-import slick.dbio.DBIO
 import com.google.inject.ImplementedBy
+import domain.AuditEvent._
+import domain._
+import StudentAssessmentService._
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
-import domain.dao.{AssessmentDao, DaoRunner, StudentAssessmentDao}
-import domain.{Assessment, StudentAssessment, StudentAssessmentWithAssessment, StudentAssessmentWithAssessmentMetadata, UploadedFileOwner}
-import domain.AuditEvent._
+import domain.dao._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
+import slick.dbio.DBIO
 import system.routes.Types.UniversityID
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -27,9 +28,9 @@ trait StudentAssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]]
-  def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[Option[StudentAssessmentWithAssessment]]
-  def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessmentMetadata]
-  def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[Seq[StudentAssessmentWithAssessmentMetadata]]
+  def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessmentWithAssessment]]]
+  def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]]
+  def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
@@ -45,55 +46,42 @@ class StudentAssessmentServiceImpl @Inject()(
   assessmentService: AssessmentService,
   assessmentDao: AssessmentDao,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
-
-  private def inflateWithUploadedFiles(storedStudentAssessments: Seq[StoredStudentAssessment])(implicit t: TimingContext) =
-    uploadedFileService.get(storedStudentAssessments.flatMap(_.uploadedFiles)).map { uploadedFiles =>
-      storedStudentAssessments.map(_.asStudentAssessment(uploadedFiles.map(f => f.id -> f).toMap))
-    }
-
-  private def inflateWithUploadedFiles(storedStudentAssessment: StoredStudentAssessment)(implicit t: TimingContext) =
-    uploadedFileService.get(storedStudentAssessment.uploadedFiles).map { uploadedFiles =>
-      storedStudentAssessment.asStudentAssessment(uploadedFiles.map(f => f.id -> f).toMap)
-    }
-
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    daoRunner.run(dao.all).flatMap(inflateWithUploadedFiles).map(ServiceResults.success)
+    daoRunner.run(dao.loadAllWithUploadedFiles)
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
 
   override def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    daoRunner.run(dao.getByAssessmentId(assessmentId)).flatMap(inflateWithUploadedFiles).map(ServiceResults.success)
+    daoRunner.run(dao.loadByAssessmentIdWithUploadedFiles(assessmentId))
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
 
   override def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]] = {
-    daoRunner.run(dao.getByUniversityId(universityId)).flatMap(inflateWithUploadedFiles).flatMap { studentAssessments =>
-      assessmentService.getByIds(studentAssessments.map(_.assessmentId)).successMapTo { assessments =>
-        val assessmentsMap = assessments.map(a => a.id -> a).toMap
-        studentAssessments.map(sa => StudentAssessmentWithAssessment(sa, assessmentsMap(sa.assessmentId)))
+    daoRunner.run(dao.loadByUniversityIdWithUploadedFiles(universityId))
+      .map(inflateRowsWithUploadedFiles)
+      .flatMap { studentAssessments =>
+        assessmentService.getByIds(studentAssessments.map(_.assessmentId)).successMapTo { assessments =>
+          val assessmentsMap = assessments.map(a => a.id -> a).toMap
+          studentAssessments.map(sa => StudentAssessmentWithAssessment(sa, assessmentsMap(sa.assessmentId)))
+        }
       }
-    }
   }
 
-  override def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[Option[StudentAssessmentWithAssessment]] = {
+  override def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessmentWithAssessment]]] = {
     daoRunner.run(
       for {
-        studentAssessment <- dao.get(universityId, assessmentId)
-        assessment <- assessmentDao.getById(assessmentId)
-      } yield (studentAssessment, assessment)
-    ).flatMap {
-      case (storedStudentAssessment: Some[StoredStudentAssessment], storedAssessment: Some[StoredAssessment]) => {
-        val studentAssessmentFuture = inflateWithUploadedFiles(storedStudentAssessment.get)
+        studentAssessmentRows <- dao.loadWithUploadedFiles(universityId, assessmentId)
+        assessmentRows <- assessmentDao.loadByIdWithUploadedFiles(assessmentId)
+      } yield (inflateRowWithUploadedFiles(studentAssessmentRows), AssessmentService.inflateRowWithUploadedFiles(assessmentRows))
+    ).map {
+      case (Some(studentAssessment), Some(assessment)) =>
+        Some(StudentAssessmentWithAssessment(studentAssessment, assessment))
 
-        val assessmentFuture = uploadedFileService.get(storedAssessment.get.storedBrief.fileIds).map { uploadedFiles =>
-          storedAssessment.get.asAssessment(uploadedFiles.map(f => f.id -> f).toMap)
-        }
-        for {
-          studentAssessment <- studentAssessmentFuture
-          assessment <- assessmentFuture
-        } yield Some(StudentAssessmentWithAssessment(studentAssessment, assessment))
-      }
-      case _ => Future.successful(None)
-    }
+      case _ => None
+    }.map(ServiceResults.success)
   }
 
-  override def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessmentMetadata] =
+  override def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]] =
     daoRunner.run(
       for {
         studentAssessment <- dao.get(universityId, assessmentId)
@@ -103,9 +91,9 @@ class StudentAssessmentServiceImpl @Inject()(
           .asStudentAssessmentMetadata,
         assessment.getOrElse(noAssessmentFound(assessmentId))
           .asAssessmentMetadata)
-    )
+    ).map(ServiceResults.success)
 
-  override def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[Seq[StudentAssessmentWithAssessmentMetadata]] = {
+  override def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]] = {
     daoRunner.run(
       for {
         studentAssessments <- dao.getByUniversityId(universityId)
@@ -114,7 +102,7 @@ class StudentAssessmentServiceImpl @Inject()(
         val assessmentsMap = assessments.map(a => a.id -> a.asAssessmentMetadata).toMap
         studentAssessments.map(sA => StudentAssessmentWithAssessmentMetadata(sA.asStudentAssessmentMetadata, assessmentsMap(sA.assessmentId)))
       }
-    )
+    ).map(ServiceResults.success)
   }
 
   private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
@@ -136,19 +124,20 @@ class StudentAssessmentServiceImpl @Inject()(
             storedAssessmentOption.getOrElse(noAssessmentFound(studentAssessment.assessmentId)),
             storedStudentAssessmentOption.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId))
           ))
-          updatedStudentAssessment <- {
+          _ <- {
             storedStudentAssessmentOption.map { storedStudentAssessment =>
-              if(storedStudentAssessment.startTime.isEmpty) {
+              if (storedStudentAssessment.startTime.isEmpty) {
                 dao.update(storedStudentAssessment.copy(startTime = Some(JavaTime.offsetDateTime)))
               } else {
                 DBIO.successful(storedStudentAssessment)
               }
-            }.getOrElse{
+            }.getOrElse {
               noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
             }
           }
-        } yield updatedStudentAssessment
-      ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
+          updatedStudentAssessmentRows <- dao.loadWithUploadedFiles(studentAssessment.studentId, studentAssessment.assessmentId)
+        } yield updatedStudentAssessmentRows
+      ).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
     }
   }
 
@@ -166,9 +155,9 @@ class StudentAssessmentServiceImpl @Inject()(
               noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
             }
           ))
-          updatedStudentAssessment <- {
+          _ <- {
             storedStudentAssessmentOption.map { storedStudentAssessment =>
-              if(storedStudentAssessment.startTime.isDefined) {
+              if (storedStudentAssessment.startTime.isDefined) {
                 dao.update(storedStudentAssessment.copy(finaliseTime = Some(JavaTime.offsetDateTime)))
               } else {
                 DBIO.failed(new IllegalArgumentException("Cannot finalise an assessment which has not been started"))
@@ -177,8 +166,9 @@ class StudentAssessmentServiceImpl @Inject()(
               noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
             }
           }
-        } yield updatedStudentAssessment
-      ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
+          updatedStudentAssessmentRows <- dao.loadWithUploadedFiles(studentAssessment.studentId, studentAssessment.assessmentId)
+        } yield updatedStudentAssessmentRows
+      ).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
     }
   }
 
@@ -201,13 +191,14 @@ class StudentAssessmentServiceImpl @Inject()(
               UploadedFileOwner.StudentAssessment
             ).map(_.id)
           })
-          updatedStudentAssessment <- dao.update( storedStudentAssessment.map { ssa =>
+          _ <- dao.update(storedStudentAssessment.map { ssa =>
             ssa.copy(uploadedFiles = ssa.uploadedFiles ::: fileIds)
           }.getOrElse {
             noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
           })
-        } yield updatedStudentAssessment
-      ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
+          updatedStudentAssessmentRows <- dao.loadWithUploadedFiles(studentAssessment.studentId, studentAssessment.assessmentId)
+        } yield updatedStudentAssessmentRows
+      ).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
     }
 
   override def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
@@ -220,16 +211,18 @@ class StudentAssessmentServiceImpl @Inject()(
             storedAssessment.getOrElse(noAssessmentFound(studentAssessment.assessmentId)),
             storedStudentAssessment.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId))
           ))
-          // TODO: do we want to delete the object storage file?
-          updatedStudentAssessment <- dao.update(
+          // We don't delete the file from object storage, just de-reference it
+          // TODO: Do we need to remove the owner from the file?
+          _ <- dao.update(
             storedStudentAssessment.map { ssa =>
               ssa.copy(uploadedFiles = ssa.uploadedFiles.filterNot(_ == file))
             }.getOrElse{
               noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId)
             }
           )
-        } yield updatedStudentAssessment
-      ).flatMap(inflateWithUploadedFiles(_)).map(ServiceResults.success)
+          updatedStudentAssessmentRows <- dao.loadWithUploadedFiles(studentAssessment.studentId, studentAssessment.assessmentId)
+        } yield updatedStudentAssessmentRows
+      ).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
     }
   }
 
@@ -239,4 +232,16 @@ class StudentAssessmentServiceImpl @Inject()(
 
   private def noStudentAssessmentFound(assessmentId: UUID, studentId: UniversityID) =
     throw new NoSuchElementException(s"Could not find student assessment with id ${assessmentId.toString} and student id ${studentId.string}")
+}
+
+object StudentAssessmentService {
+  def inflateRowsWithUploadedFiles(rows: Seq[(StudentAssessmentsTables.StoredStudentAssessment, Set[UploadedFilesTables.StoredUploadedFile])]): Seq[StudentAssessment] =
+    rows.map { case (studentAssessment, storedUploadedFiles) =>
+      studentAssessment.asStudentAssessment(
+        storedUploadedFiles.map(f => f.id -> f.asUploadedFile).toMap
+      )
+    }
+
+  def inflateRowWithUploadedFiles(row: Option[(StudentAssessmentsTables.StoredStudentAssessment, Set[UploadedFilesTables.StoredUploadedFile])]): Option[StudentAssessment] =
+    inflateRowsWithUploadedFiles(row.toSeq).headOption
 }

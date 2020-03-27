@@ -31,8 +31,8 @@ export default function initAnnouncements(websocket) {
       setVisibilityByClassName('ws-error', true);
     },
     onData: (d) => {
-      if (d.type === 'announcement' && document.querySelector('.message-list') !== undefined) {
-        const messageList = document.querySelector('.message-list');
+      const messageList = document.querySelector('.message-list');
+      if (messageList && d.type === 'announcement') {
         const el = document.createElement('div');
         el.classList.add('alert', 'alert-info');
         const icon = document.createElement('i');

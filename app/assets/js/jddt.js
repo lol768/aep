@@ -87,12 +87,15 @@ function relativeDateName(date) {
   return SOME_SUNNY_DAY;
 }
 
-let browserLocalTimezoneName;
-if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
-  const dtf = Intl.DateTimeFormat();
-  if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {
-    browserLocalTimezoneName = dtf.resolvedOptions().timeZone;
+function browserLocalTimezoneName() {
+  if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
+    const dtf = Intl.DateTimeFormat();
+    if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {
+      return dtf.resolvedOptions().timeZone;
+    }
   }
+
+  return undefined;
 }
 
 /**
@@ -249,12 +252,11 @@ export default class JDDT {
     // but these can be overridden for testing using setLocalTimezone
 
     this.localTimezoneOffset = this.jsDateLocal.getTimezoneOffset();
-    if (browserLocalTimezoneName === undefined) {
+    this.localTimezoneName = browserLocalTimezoneName();
+    if (this.localTimezoneName === undefined) {
       this.localTimezoneName = `${this.localTimezoneOffset < 0 ? '-' : '+'}\
         ${pad0(Math.floor(Math.abs(this.localTimezoneOffset / 60)))}:\
         ${pad0(Math.abs(this.localTimezoneOffset) % 60)}`;
-    } else {
-      this.localTimezoneName = browserLocalTimezoneName;
     }
 
     // These are the defaults, but should be overwritten using setServerTimezone

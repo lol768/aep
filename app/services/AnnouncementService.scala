@@ -3,6 +3,7 @@ package services
 import java.time.OffsetDateTime
 import java.util.UUID
 
+import actors.WebSocketActor.AssessmentAnnouncement
 import akka.Done
 import com.google.inject.ImplementedBy
 import domain.Announcement
@@ -13,6 +14,8 @@ import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
+import warwick.core.helpers.ServiceResults.Implicits._
+import warwick.sso.UniversityID
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -30,6 +33,8 @@ class AnnouncementServiceImpl @Inject()(
   auditService: AuditService,
   daoRunner: DaoRunner,
   dao: AnnouncementDao,
+  pubSubService: PubSubService,
+  studentAssessmentService: StudentAssessmentService,
 )(implicit ec: ExecutionContext) extends AnnouncementService {
 
   override def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] = {
@@ -40,7 +45,10 @@ class AnnouncementServiceImpl @Inject()(
       created = OffsetDateTime.now(),
       version = OffsetDateTime.now()
     )
-
+    pubSubService.publish(
+      topic = announcement.assessment.toString,
+      AssessmentAnnouncement(announcement.text)
+    )
     daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
   }
 

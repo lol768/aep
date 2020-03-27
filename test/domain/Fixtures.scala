@@ -4,7 +4,7 @@ import java.time._
 import java.util.UUID
 
 import com.typesafe.config.Config
-import domain.Assessment.{AssessmentType, Platform}
+import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
@@ -103,7 +103,7 @@ object Fixtures {
     def storedBrief: StoredBrief =
       StoredBrief(
         Some(DataGeneration.dummyWords(Random.between(6,30))),
-        Seq(UUID.randomUUID()),
+        Seq.empty,
         Some(DataGeneration.fakePath)
       )
 
@@ -114,6 +114,7 @@ object Fixtures {
       val code = f"${DataGeneration.fakeDept}${Random.between(101, 999)}%03d-${Random.between(1, 99)}%02d"
       val platform = Platform.values(Random.nextInt(Platform.values.size))
       val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
+      val state = State.values(Random.nextInt(State.values.size))
 
       StoredAssessment(
         id = uuid,
@@ -125,7 +126,8 @@ object Fixtures {
         assessmentType = assType,
         storedBrief = storedBrief,
         created = createTime.asOffsetDateTime,
-        version = createTime.asOffsetDateTime
+        version = createTime.asOffsetDateTime,
+        state = state
       )
     }
   }
@@ -229,7 +231,7 @@ object Fixtures {
       }
     }
     override val jdbcTypes: PostgresCustomJdbcTypes = new PostgresCustomJdbcTypes(dbConfigProvider)
-    import dbConfig.profile.api._
+    import profile.api._
 
     def truncateAndReset =
       auditEvents.delete andThen

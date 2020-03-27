@@ -1,10 +1,12 @@
 package controllers
 
+import java.util.UUID
+
 import actors.WebSocketActor.AssessmentAnnouncement
 import actors.{PubSubActor, WebSocketActor}
 import akka.actor.{ActorRefFactory, ActorSystem}
 import akka.stream.Materializer
-import controllers.WebSocketController.broadcastForm
+import controllers.WebSocketController._
 import play.api.data.Forms._
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
@@ -32,6 +34,16 @@ object WebSocketController {
     "user" -> nonEmptyText.transform[Usercode](s => Usercode(s), u => u.string),
     "message" -> nonEmptyText,
   )(SendBroadcastForm.apply)(SendBroadcastForm.unapply))
+
+  case class SendAssessmentAnnouncementForm(
+    assessment: UUID,
+    message: String
+  )
+
+  val assessmentAnnouncementForm: Form[SendAssessmentAnnouncementForm] = Form(mapping(
+    "assessment" -> uuid,
+    "message" -> nonEmptyText,
+  )(SendAssessmentAnnouncementForm.apply)(SendAssessmentAnnouncementForm.unapply))
 }
 
 @Singleton
@@ -56,11 +68,23 @@ class WebSocketController @Inject()(
   def socket: WebSocket = WebSocket.acceptOrResult[JsValue, JsValue] { implicit request =>
     if (securityService.isOriginSafe(request.headers("Origin"))) {
       SecureWebsocket(request) { loginContext: LoginContext =>
-        loginContext.user.map(_.usercode) match {
-          case Some(usercode) =>
-            logger.info(s"WebSocket opening for ${usercode.string}")
-            val flow = ActorFlow.actorRef(out => WebSocketActor.props(loginContext, pubSubActor, out, studentAssessmentService))
-            Future.successful(Right(flow))
+        loginContext.user match {
+          case Some(user) =>
+            logger.info(s"WebSocket opening for ${user.usercode.string}")
+            studentAssessmentService
+              .byUniversityId(user.universityId.get)
+              .successMapTo(_.map(_.assessment.id.toString))
+              .map(_.getOrElse(Nil))
+              .map { relatedAssessmentIds =>
+                ActorFlow.actorRef(out => WebSocketActor.props(
+                  loginContext = loginContext,
+                  pubsub = pubSubActor,
+                  out = out,
+                  studentAssessmentService = studentAssessmentService,
+                  additionalTopics = relatedAssessmentIds,
+                ))
+              }
+              .map(Right(_))
           case None =>
             Future.successful(Left(Forbidden("Only logged-in users can connect for live data using a WebSocket")))
         }
@@ -75,7 +99,7 @@ class WebSocketController @Inject()(
   }
 
   def broadcastTest: Action[AnyContent] = RequireSysadmin { implicit request =>
-    Ok(views.html.sysadmin.broadcastTest(broadcastForm))
+    Ok(views.html.sysadmin.broadcastTest(broadcastForm, assessmentAnnouncementForm))
   }
 
   def sendBroadcast: Action[AnyContent] = RequireSysadmin { implicit request =>
@@ -83,6 +107,20 @@ class WebSocketController @Inject()(
       _ => BadRequest,
       data => {
         pubSub.publish(data.user.string, data.toAnnouncement)
+        Redirect(controllers.routes.WebSocketController.sendBroadcast())
+          .flashing("success" -> Messages("flash.websocket.published"))
+      }
+    )
+  }
+
+  def sendAnnouncement: Action[AnyContent] = RequireSysadmin { implicit request =>
+    assessmentAnnouncementForm.bindFromRequest().fold(
+      _ => BadRequest,
+      data => {
+        pubSub.publish(
+          data.assessment.toString,
+          AssessmentAnnouncement(data.message),
+        )
         Redirect(controllers.routes.WebSocketController.sendBroadcast())
           .flashing("success" -> Messages("flash.websocket.published"))
       }

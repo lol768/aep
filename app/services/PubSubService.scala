@@ -2,7 +2,7 @@ package services
 
 import akka.actor.ActorSystem
 import akka.cluster.pubsub.DistributedPubSub
-import akka.cluster.pubsub.DistributedPubSubMediator.Publish
+import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe}
 import com.google.inject.{ImplementedBy, Inject}
 
 // Borrowed from B-A-D to abstract over Akka
