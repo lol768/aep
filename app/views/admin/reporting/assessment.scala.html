@@ -1,0 +1,28 @@
+@import controllers.admin.SittingMetadata
+@import domain.Assessment
+@import tags._
+@(assessment: Assessment, sittings: SittingMetadata)(implicit context: RequestContext)
+
+@frontend(assessment.title) {
+  @assessmentMetadata(assessment)
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Expected</th>
+        <th>Started</th>
+        <th>Submitted</th>
+        <th>Finalised</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>@sittings.expected.length</td>
+        <td>@sittings.started.length</td>
+        <td>@sittings.submitted.length</td>
+        <td>@sittings.finalised.length</td>
+      </tr>
+    </tbody>
+  </table>
+}

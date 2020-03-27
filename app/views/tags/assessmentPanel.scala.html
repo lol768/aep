@@ -1,8 +1,4 @@
-@import warwick.core.helpers.JavaTime
-@import org.apache.commons.lang3.time.DurationFormatUtils
 @import domain.Assessment.Platform
-@import domain.Assessment.AssessmentType
-@import domain.Assessment
 @import domain.StudentAssessmentWithAssessment
 @import tags._
 
@@ -24,28 +20,8 @@
             <h4>@assessment.assessment.title</h4>
         }
 
-        <dl>
-            <dt>Module</dt>
-            <dd>
-            @assessment.assessment.code
-            </dd>
-            <dt>Type</dt>
-            <dd>
-            @assessment.assessment.assessmentType.label
-            </dd>
-            <dt>Duration</dt>
-            <dd>
-                <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@DurationFormatUtils.formatDurationWords(assessment.assessment.duration.toMillis, true, true)
-            </dd>
-            @assessment.assessment.startTime.map { startTime =>
-                <dt>Can start</dt>
-                <dd>
-                    @defining(startTime.plus(Assessment.window)) { endTime =>
-                        @localisedDatetimeRange(startTime, endTime)
-                    }
-                </dd>
-            }
-        </dl>
+        @assessmentMetadata(assessment.assessment)
+
         @assessment.assessment.platform match {
             case Platform.OnlineExams => {
                 @if(isAssessmentPage) {
