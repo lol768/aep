@@ -1,23 +1,24 @@
 package domain.dao
 
-import java.time.ZonedDateTime
+import java.time.LocalDateTime
 import java.util.UUID
 
 import domain.Fixtures
 import domain.Fixtures.{announcements, assessments}
 import helpers.CleanUpDatabaseAfterEachTest
 import uk.ac.warwick.util.core.DateTimeUtils
-import warwick.core.helpers.JavaTime
 
 import scala.concurrent.Future
 
 class AnnouncementDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
+  import domain.Fixtures.dateConversion._
+
   private val assDao = get[AssessmentDao]
   private val dao = get[AnnouncementDao]
 
   "AnnouncementDao" should {
-    val now = ZonedDateTime.of(2019, 1, 1, 10, 0, 0, 0, JavaTime.timeZone).toInstant
+    val now = LocalDateTime.of(2019, 1, 1, 10, 0, 0, 0).asInstant
 
     "save and retrieve an announcement" in {
       DateTimeUtils.useMockDateTime(now, () => {

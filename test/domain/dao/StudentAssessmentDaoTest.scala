@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.{Clock, ZonedDateTime}
+import java.time.{Clock, LocalDateTime}
 import java.util.UUID
 
 import domain.Fixtures.{assessments, studentAssessments, users}
@@ -12,13 +12,15 @@ import scala.concurrent.Future
 
 class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
+  import domain.Fixtures.dateConversion._
+
   private val assDao = get[AssessmentDao]
   private val dao = get[StudentAssessmentDao]
 
   "StudentAssessmentDao" should {
     val student1 = users.student1.universityId.get
     val student2 = users.student2.universityId.get
-    val now = ZonedDateTime.of(2019, 1, 1, 10, 0, 0, 0, JavaTime.timeZone).toInstant
+    val now = LocalDateTime.of(2019, 1, 1, 10, 0, 0, 0).asInstant
 
     "save, retrieve, and update a student assessment" in {
       val earlier = now.minusSeconds(600)

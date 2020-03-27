@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.{Clock, ZonedDateTime}
+import java.time.{Clock, LocalDateTime}
 import java.util.UUID
 
 import domain.Assessment.State
@@ -13,12 +13,14 @@ import scala.concurrent.Future
 
 class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
+  import domain.Fixtures.dateConversion._
+
   private val dao = get[AssessmentDao]
   private def lookupException = throw new Exception("DAO lookup failed")
 
   "AssessmentDao" should {
     "save and retrieve an assessment" in {
-      val now = ZonedDateTime.of(2019, 1, 1, 10, 0, 0, 0, JavaTime.timeZone).toInstant
+      val now = LocalDateTime.of(2019, 1, 1, 10, 0, 0, 0).asInstant
 
       DateTimeUtils.useMockDateTime(now, () => {
         val id = UUID.randomUUID()
@@ -46,7 +48,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
     }
 
     "update an assessment" in {
-      val now = ZonedDateTime.of(2019, 1, 1, 10, 0, 0, 0, JavaTime.timeZone).toInstant
+      val now = LocalDateTime.of(2019, 1, 1, 10, 0, 0, 0).asInstant
       val earlier = now.minusSeconds(600)
 
       val id = UUID.randomUUID()
