@@ -33,7 +33,7 @@ object AssessmentsTables {
     version: OffsetDateTime,
   ) extends Versioned[StoredAssessment] {
 
-    def asAssessment(fileMap: Map[UUID, UploadedFile]) =
+    def asAssessment(fileMap: Map[UUID, UploadedFile]): Assessment =
       Assessment(
         id,
         code,
@@ -46,7 +46,7 @@ object AssessmentsTables {
         state,
       )
 
-    def asAssessmentMetadata =
+    def asAssessmentMetadata: AssessmentMetadata =
       AssessmentMetadata(
         id,
         code,
@@ -101,7 +101,7 @@ object AssessmentsTables {
     fileIds: Seq[UUID],
     url: Option[String],
   ) {
-    def asBrief(fileMap: Map[UUID, UploadedFile]) =
+    def asBrief(fileMap: Map[UUID, UploadedFile]): Brief =
       Brief(
         text,
         fileIds.map(fileMap),
@@ -123,15 +123,15 @@ trait AssessmentDao {
   import profile.api._
 
   def all: DBIO[Seq[StoredAssessment]]
-  def loadAllWithUploadedFiles: DBIO[Seq[(StoredAssessment, Option[StoredUploadedFile])]]
+  def loadAllWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
   def findByStates(states: Seq[State]): DBIO[Seq[StoredAssessment]]
-  def findByStatesWithUploadedFiles(states: Seq[State]): DBIO[Seq[(StoredAssessment, Option[StoredUploadedFile])]]
+  def findByStatesWithUploadedFiles(states: Seq[State]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
   def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
   def update(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
   def getById(id: UUID): DBIO[Option[StoredAssessment]]
-  def loadByIdWithUploadedFiles(id: UUID): DBIO[Seq[(StoredAssessment, Option[StoredUploadedFile])]]
+  def loadByIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
   def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]]
-  def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Option[StoredUploadedFile])]]
+  def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
   def getByCode(code: String): DBIO[Option[StoredAssessment]]
   def getToday: DBIO[Seq[StoredAssessment]]
   def getInWindow: DBIO[Seq[StoredAssessment]]
@@ -153,8 +153,8 @@ class AssessmentDaoImpl @Inject()(
   override def all: DBIO[Seq[StoredAssessment]] =
     allQuery.result
 
-  override def loadAllWithUploadedFiles: DBIO[Seq[(StoredAssessment, Option[StoredUploadedFile])]] =
-    allQuery.withUploadedFiles.result
+  override def loadAllWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
+    allQuery.withUploadedFiles.result.map(OneToMany.leftJoinUnordered)
 
   private def findByStatesQuery(states: Seq[State]): Query[Assessments, StoredAssessment, Seq] =
     assessments.table.filter(_.state inSetBind states)
@@ -162,8 +162,8 @@ class AssessmentDaoImpl @Inject()(
   override def findByStates(states: Seq[State]): DBIO[Seq[StoredAssessment]] =
     findByStatesQuery(states).result
 
-  override def findByStatesWithUploadedFiles(states: Seq[State]): DBIO[Seq[(StoredAssessment, Option[StoredUploadedFile])]] =
-    findByStatesQuery(states).withUploadedFiles.result
+  override def findByStatesWithUploadedFiles(states: Seq[State]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
+    findByStatesQuery(states).withUploadedFiles.result.map(OneToMany.leftJoinUnordered)
 
   override def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment] =
     assessments.insert(assessment)
@@ -177,8 +177,9 @@ class AssessmentDaoImpl @Inject()(
   override def getById(id: UUID): DBIO[Option[StoredAssessment]] =
     getByIdQuery(id).result.headOption
 
-  override def loadByIdWithUploadedFiles(id: UUID): DBIO[Seq[(StoredAssessment, Option[StoredUploadedFile])]] =
+  override def loadByIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]] =
     getByIdQuery(id).withUploadedFiles.result
+      .map(OneToMany.leftJoinUnordered(_).headOption)
 
   private def getByIdsQuery(ids: Seq[UUID]): Query[Assessments, StoredAssessment, Seq] =
     assessments.table.filter(_.id inSetBind ids)
@@ -186,8 +187,8 @@ class AssessmentDaoImpl @Inject()(
   override def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]] =
     getByIdsQuery(ids).result
 
-  override def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Option[StoredUploadedFile])]] =
-    getByIdsQuery(ids).withUploadedFiles.result
+  override def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
+    getByIdsQuery(ids).withUploadedFiles.result.map(OneToMany.leftJoinUnordered)
 
   override def getByCode(code: String): DBIO[Option[StoredAssessment]] =
     assessments.table.filter(_.code === code).result.headOption

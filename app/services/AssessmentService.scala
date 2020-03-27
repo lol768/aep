@@ -7,7 +7,7 @@ import com.google.inject.ImplementedBy
 import domain.Assessment.State
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
-import domain.{Assessment, OneToMany, UploadedFileOwner}
+import domain.{Assessment, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
 import services.AssessmentService._
 import slick.dbio.DBIO
@@ -53,7 +53,7 @@ class AssessmentServiceImpl @Inject()(
 
   override def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]] =
     daoRunner.run(dao.loadByIdWithUploadedFiles(id))
-      .map(inflateRowsWithUploadedFiles(_).headOption)
+      .map(inflateRowWithUploadedFiles)
       .map(_.fold[ServiceResult[Assessment]](ServiceResults.error(s"Could not find an Assessment with ID $id"))(ServiceResults.success))
 
   override def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
@@ -88,18 +88,18 @@ class AssessmentServiceImpl @Inject()(
         version = stored.version
       ))
       updated <- dao.loadByIdWithUploadedFiles(assessment.id)
-    } yield updated).map { rows =>
-      ServiceResults.success(inflateRowsWithUploadedFiles(rows).head)
-    }
+    } yield updated).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
   }
 }
 
 object AssessmentService {
-  def inflateRowsWithUploadedFiles(rows: Seq[(AssessmentsTables.StoredAssessment, Option[UploadedFilesTables.StoredUploadedFile])]): Seq[Assessment] =
-    OneToMany.leftJoinUnordered(rows)
-      .map { case (storedAssessment, storedUploadedFiles) =>
-        storedAssessment.asAssessment(
-          storedUploadedFiles.map(f => f.id -> f.asUploadedFile).toMap
-        )
-      }
+  def inflateRowsWithUploadedFiles(rows: Seq[(AssessmentsTables.StoredAssessment, Set[UploadedFilesTables.StoredUploadedFile])]): Seq[Assessment] =
+    rows.map { case (assessment, storedUploadedFiles) =>
+      assessment.asAssessment(
+        storedUploadedFiles.map(f => f.id -> f.asUploadedFile).toMap
+      )
+    }
+
+  def inflateRowWithUploadedFiles(row: Option[(AssessmentsTables.StoredAssessment, Set[UploadedFilesTables.StoredUploadedFile])]): Option[Assessment] =
+    inflateRowsWithUploadedFiles(row.toSeq).headOption
 }

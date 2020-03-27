@@ -6,12 +6,12 @@ import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
 import domain.AuditEvent._
 import domain._
+import StudentAssessmentService._
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
-import services.StudentAssessmentService._
 import slick.dbio.DBIO
 import system.routes.Types.UniversityID
 import warwick.core.helpers.ServiceResults.Implicits._
@@ -72,7 +72,7 @@ class StudentAssessmentServiceImpl @Inject()(
       for {
         studentAssessmentRows <- dao.loadWithUploadedFiles(universityId, assessmentId)
         assessmentRows <- assessmentDao.loadByIdWithUploadedFiles(assessmentId)
-      } yield (inflateRowsWithUploadedFiles(studentAssessmentRows).headOption, AssessmentService.inflateRowsWithUploadedFiles(assessmentRows).headOption)
+      } yield (inflateRowWithUploadedFiles(studentAssessmentRows), AssessmentService.inflateRowWithUploadedFiles(assessmentRows))
     ).map {
       case (Some(studentAssessment), Some(assessment)) =>
         Some(StudentAssessmentWithAssessment(studentAssessment, assessment))
@@ -137,7 +137,7 @@ class StudentAssessmentServiceImpl @Inject()(
           }
           updatedStudentAssessmentRows <- dao.loadWithUploadedFiles(studentAssessment.studentId, studentAssessment.assessmentId)
         } yield updatedStudentAssessmentRows
-      ).map(inflateRowsWithUploadedFiles(_).head).map(ServiceResults.success)
+      ).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
     }
   }
 
@@ -168,7 +168,7 @@ class StudentAssessmentServiceImpl @Inject()(
           }
           updatedStudentAssessmentRows <- dao.loadWithUploadedFiles(studentAssessment.studentId, studentAssessment.assessmentId)
         } yield updatedStudentAssessmentRows
-      ).map(inflateRowsWithUploadedFiles(_).head).map(ServiceResults.success)
+      ).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
     }
   }
 
@@ -198,7 +198,7 @@ class StudentAssessmentServiceImpl @Inject()(
           })
           updatedStudentAssessmentRows <- dao.loadWithUploadedFiles(studentAssessment.studentId, studentAssessment.assessmentId)
         } yield updatedStudentAssessmentRows
-      ).map(inflateRowsWithUploadedFiles(_).head).map(ServiceResults.success)
+      ).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
     }
 
   override def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
@@ -222,7 +222,7 @@ class StudentAssessmentServiceImpl @Inject()(
           )
           updatedStudentAssessmentRows <- dao.loadWithUploadedFiles(studentAssessment.studentId, studentAssessment.assessmentId)
         } yield updatedStudentAssessmentRows
-      ).map(inflateRowsWithUploadedFiles(_).head).map(ServiceResults.success)
+      ).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
     }
   }
 
@@ -235,11 +235,13 @@ class StudentAssessmentServiceImpl @Inject()(
 }
 
 object StudentAssessmentService {
-  def inflateRowsWithUploadedFiles(rows: Seq[(StudentAssessmentsTables.StoredStudentAssessment, Option[UploadedFilesTables.StoredUploadedFile])]): Seq[StudentAssessment] =
-    OneToMany.leftJoinUnordered(rows)
-      .map { case (storedStudentAssessment, storedUploadedFiles) =>
-        storedStudentAssessment.asStudentAssessment(
-          storedUploadedFiles.map(f => f.id -> f.asUploadedFile).toMap
-        )
-      }
+  def inflateRowsWithUploadedFiles(rows: Seq[(StudentAssessmentsTables.StoredStudentAssessment, Set[UploadedFilesTables.StoredUploadedFile])]): Seq[StudentAssessment] =
+    rows.map { case (studentAssessment, storedUploadedFiles) =>
+      studentAssessment.asStudentAssessment(
+        storedUploadedFiles.map(f => f.id -> f.asUploadedFile).toMap
+      )
+    }
+
+  def inflateRowWithUploadedFiles(row: Option[(StudentAssessmentsTables.StoredStudentAssessment, Set[UploadedFilesTables.StoredUploadedFile])]): Option[StudentAssessment] =
+    inflateRowsWithUploadedFiles(row.toSeq).headOption
 }

@@ -91,15 +91,15 @@ trait StudentAssessmentDao {
   import profile.api._
 
   def all: DBIO[Seq[StoredStudentAssessment]]
-  def loadAllWithUploadedFiles: DBIO[Seq[(StoredStudentAssessment, Option[StoredUploadedFile])]]
+  def loadAllWithUploadedFiles: DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def insert(assessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def update(studentAssessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]]
-  def loadByAssessmentIdWithUploadedFiles(assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Option[StoredUploadedFile])]]
+  def loadByAssessmentIdWithUploadedFiles(assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]]
-  def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Option[StoredUploadedFile])]]
+  def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def get(studentId: UniversityID, assessmentId: UUID): DBIO[Option[StoredStudentAssessment]]
-  def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Option[StoredUploadedFile])]]
+  def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Option[(StoredStudentAssessment, Set[StoredUploadedFile])]]
 }
 
 @Singleton
@@ -118,8 +118,8 @@ class StudentAssessmentDaoImpl @Inject()(
   override def all: DBIO[Seq[StoredStudentAssessment]] =
     allQuery.result
 
-  override def loadAllWithUploadedFiles: DBIO[Seq[(StoredStudentAssessment, Option[StoredUploadedFile])]] =
-    allQuery.withUploadedFiles.result
+  override def loadAllWithUploadedFiles: DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]] =
+    allQuery.withUploadedFiles.result.map(OneToMany.leftJoinUnordered)
 
   override def insert(assessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment] =
     studentAssessments.insert(assessment)
@@ -133,8 +133,8 @@ class StudentAssessmentDaoImpl @Inject()(
   override def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]] =
     getByUniversityIdQuery(studentId).result
 
-  override def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Option[StoredUploadedFile])]] =
-    getByUniversityIdQuery(studentId).withUploadedFiles.result
+  override def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]] =
+    getByUniversityIdQuery(studentId).withUploadedFiles.result.map(OneToMany.leftJoinUnordered)
 
   private def getByAssessmentIdQuery(assessmentId: UUID): Query[StudentAssessments, StoredStudentAssessment, Seq] =
     studentAssessments.table.filter(_.assessmentId === assessmentId)
@@ -142,8 +142,8 @@ class StudentAssessmentDaoImpl @Inject()(
   override def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]] =
     getByAssessmentIdQuery(assessmentId).result
 
-  override def loadByAssessmentIdWithUploadedFiles(assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Option[StoredUploadedFile])]] =
-    getByAssessmentIdQuery(assessmentId).withUploadedFiles.result
+  override def loadByAssessmentIdWithUploadedFiles(assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]] =
+    getByAssessmentIdQuery(assessmentId).withUploadedFiles.result.map(OneToMany.leftJoinUnordered)
 
   private def getQuery(studentId: UniversityID, assessmentId: UUID): Query[StudentAssessments, StoredStudentAssessment, Seq] =
     studentAssessments.table
@@ -153,6 +153,7 @@ class StudentAssessmentDaoImpl @Inject()(
   override def get(studentId: UniversityID, assessmentId: UUID): DBIO[Option[StoredStudentAssessment]] =
     getQuery(studentId, assessmentId).result.headOption
 
-  override def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Option[StoredUploadedFile])]] =
+  override def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Option[(StoredStudentAssessment, Set[StoredUploadedFile])]] =
     getQuery(studentId, assessmentId).withUploadedFiles.result
+      .map(OneToMany.leftJoinUnordered(_).headOption)
 }
