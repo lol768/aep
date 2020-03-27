@@ -36,19 +36,19 @@ class ApprovalsController @Inject()(
   import ApprovalsController._
   import security._
 
-  def index: Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def index: Action[AnyContent] = RequireApprover.async { implicit request =>
     assessmentService.findByStates(Seq(State.Submitted)).successMap { assessments =>
       Ok(views.html.admin.approvals.index(assessments))
     }
   }
 
-  def show(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def show(id: UUID): Action[AnyContent] = RequireApprover.async { implicit request =>
     assessmentService.get(id).successMap { assessment =>
       Ok(views.html.admin.approvals.show(assessment, form))
     }
   }
 
-  def update(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def update(id: UUID): Action[AnyContent] = RequireApprover.async { implicit request =>
     assessmentService.get(id).successFlatMap { assessment =>
       form.bindFromRequest().fold(
         formWithErrors => Future.successful(Ok(views.html.admin.approvals.show(assessment, formWithErrors))),
@@ -60,7 +60,7 @@ class ApprovalsController @Inject()(
     }
   }
 
-  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireApprover.async { implicit request =>
     assessmentService.get(assessmentId).successFlatMap { assessment =>
       assessment.brief.files.find(_.id == fileId)
         .map(uploadedFileControllerHelper.serveFile)
