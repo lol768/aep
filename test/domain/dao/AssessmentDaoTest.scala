@@ -20,15 +20,15 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       val now = ZonedDateTime.of(2019, 1, 1, 10, 0, 0, 0, JavaTime.timeZone).toInstant
 
       DateTimeUtils.useMockDateTime(now, () => {
-        val id = UUID.randomUUID
+        val id = UUID.randomUUID()
         val ass = Fixtures.assessments.storedAssessment(id)
 
         val test = for {
           result <- dao.insert(ass)
           existsAfter <- dao.getById(id)
           _ <- DBIO.from(Future.successful {
+            result.created.toInstant mustBe ass.created.toInstant
             result.version.toInstant mustBe now
-
             result.code mustBe ass.code
             result.title mustBe ass.title
             result.assessmentType mustBe ass.assessmentType
@@ -63,6 +63,12 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
 
       val codeResult = execWithCommit(dao.getByCode(first.code)).getOrElse(lookupException)
       codeResult.id mustEqual first.id
+
+      val noIdResult = execWithCommit(dao.getById(UUID.randomUUID()))
+      noIdResult.isEmpty mustBe true
+
+      val noCodeResult = execWithCommit(dao.getByCode("nonexistent-code"))
+      noCodeResult.isEmpty mustBe true
     }
 
     "getByIds" in {
