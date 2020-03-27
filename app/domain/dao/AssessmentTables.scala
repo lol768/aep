@@ -110,7 +110,7 @@ class AssessmentTables @Inject()(
     def withUploadedFiles = q
       .joinLeft(uploadedFiles.table)
       .on { case (a, f) =>
-        a.id === f.ownerId && f.ownerType === (UploadedFileOwner.StudentAssessment: UploadedFileOwner) && a.uploadedFiles.any === f.id
+        a.id === f.ownerId && f.ownerType === (UploadedFileOwner.StudentAssessment: UploadedFileOwner) && f.id === a.uploadedFiles.any
       }
   }
 

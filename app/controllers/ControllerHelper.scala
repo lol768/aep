@@ -2,7 +2,7 @@ package controllers
 
 import helpers.Json._
 import play.api.libs.json.Json
-import play.api.mvc.{AcceptExtractors, Rendering, RequestHeader, Result, Results}
+import play.api.mvc._
 import system.ImplicitRequestContext
 import warwick.core.Logging
 import warwick.core.helpers.ServiceResults.Implicits._

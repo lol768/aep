@@ -9,6 +9,7 @@ import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
 import domain.{Assessment, OneToMany, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
+import services.AssessmentService._
 import slick.dbio.DBIO
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -34,14 +35,6 @@ class AssessmentServiceImpl @Inject()(
   dao: AssessmentDao,
   uploadedFileService: UploadedFileService,
 )(implicit ec: ExecutionContext) extends AssessmentService {
-  private def inflateRowsWithUploadedFiles(rows: Seq[(AssessmentsTables.StoredAssessment, Option[UploadedFilesTables.StoredUploadedFile])]): Seq[Assessment] =
-    OneToMany.leftJoinUnordered(rows)
-      .map { case (storedAssessment, storedUploadedFiles) =>
-        storedAssessment.asAssessment(
-          storedUploadedFiles.map(f => f.id -> f.asUploadedFile).toMap
-        )
-      }
-
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
     daoRunner.run(dao.loadAllWithUploadedFiles)
       .map(inflateRowsWithUploadedFiles)
@@ -99,4 +92,14 @@ class AssessmentServiceImpl @Inject()(
       ServiceResults.success(inflateRowsWithUploadedFiles(rows).head)
     }
   }
+}
+
+object AssessmentService {
+  def inflateRowsWithUploadedFiles(rows: Seq[(AssessmentsTables.StoredAssessment, Option[UploadedFilesTables.StoredUploadedFile])]): Seq[Assessment] =
+    OneToMany.leftJoinUnordered(rows)
+      .map { case (storedAssessment, storedUploadedFiles) =>
+        storedAssessment.asAssessment(
+          storedUploadedFiles.map(f => f.id -> f.asUploadedFile).toMap
+        )
+      }
 }
