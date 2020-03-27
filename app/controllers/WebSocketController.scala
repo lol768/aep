@@ -1,5 +1,7 @@
 package controllers
 
+import java.util.UUID
+
 import actors.WebSocketActor.AssessmentAnnouncement
 import actors.{PubSubActor, WebSocketActor}
 import akka.actor.{ActorRefFactory, ActorSystem}
@@ -34,12 +36,12 @@ object WebSocketController {
   )(SendBroadcastForm.apply)(SendBroadcastForm.unapply))
 
   case class SendAssessmentAnnouncementForm(
-    assessment: String,
+    assessment: UUID,
     message: String
   )
 
   val assessmentAnnouncementForm: Form[SendAssessmentAnnouncementForm] = Form(mapping(
-    "assessment" -> nonEmptyText,
+    "assessment" -> uuid,
     "message" -> nonEmptyText,
   )(SendAssessmentAnnouncementForm.apply)(SendAssessmentAnnouncementForm.unapply))
 }
@@ -116,7 +118,7 @@ class WebSocketController @Inject()(
       _ => BadRequest,
       data => {
         pubSub.publish(
-          data.assessment,
+          data.assessment.toString,
           AssessmentAnnouncement(data.message),
         )
         Redirect(controllers.routes.WebSocketController.sendBroadcast())
