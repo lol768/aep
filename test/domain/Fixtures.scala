@@ -5,7 +5,10 @@ import java.util.UUID
 
 import com.typesafe.config.Config
 import domain.Assessment.{AssessmentType, Platform, State}
+import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
+import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
+import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import services.sandbox.DataGeneration
@@ -67,6 +70,11 @@ object Fixtures {
       universityId = Some(UniversityID("1900001")),
       name = Name(Some("Student"), Some("User1"))
     )
+    val student2: User = baseStudent.copy(
+      usercode = Usercode("student2"),
+      universityId = Some(UniversityID("1900002")),
+      name = Name(Some("Student"), Some("User2"))
+    )
   }
 
   object assessments {
@@ -78,7 +86,7 @@ object Fixtures {
       )
 
     def storedAssessment(uuid: UUID = UUID.randomUUID): StoredAssessment = {
-      val date = LocalDate.of(2018, 1, 1)
+      val date = LocalDate.of(2016, 1, 1)
       val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
       val localStartTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
       val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
@@ -104,6 +112,43 @@ object Fixtures {
     }
   }
 
+  object studentAssessments {
+    def storedStudentAssessment(assId: UUID, studentId: UniversityID = users.student1.universityId.get): StoredStudentAssessment = {
+      val date = LocalDate.of(2016, 1, 1)
+      val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
+      val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
+
+      StoredStudentAssessment(
+        id = UUID.randomUUID(),
+        assessmentId = assId,
+        studentId = studentId,
+        inSeat = false,
+        startTime = None,
+        finaliseTime = None,
+        uploadedFiles = List.empty,
+        created = createTime,
+        version = createTime
+      )
+    }
+  }
+
+  object announcements {
+    def storedAnnouncement(assId: UUID): StoredAnnouncement = {
+      val date = LocalDate.of(2016, 1, 1)
+      val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
+      val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
+      val text = DataGeneration.dummyWords(Random.between(6,30))
+
+      StoredAnnouncement(
+        id = UUID.randomUUID(),
+        assessmentId = assId,
+        text = text,
+        created = createTime,
+        version = createTime
+      )
+    }
+  }
+
   object uploadedFiles {
     import helpers.FileResourceUtils._
 
@@ -117,6 +162,42 @@ object Fixtures {
       val path = "/home-office-statement.pdf"
       val uploadedFileSave = UploadedFileSave(path, 8153L, "application/pdf")
       def temporaryUploadedFile = TemporaryUploadedFile("file", byteSourceResource(path), uploadedFileSave)
+    }
+
+    def storedUploadedAssessmentFile() = {
+      val date = LocalDate.of(2016, 1, 1)
+      val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
+      val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
+
+      StoredUploadedFile(
+        id = UUID.randomUUID(),
+        fileName = homeOfficeStatementPDF.uploadedFileSave.fileName,
+        contentLength = homeOfficeStatementPDF.uploadedFileSave.contentLength,
+        contentType = homeOfficeStatementPDF.uploadedFileSave.contentType,
+        uploadedBy = users.staff1.usercode,
+        ownerId = None,
+        ownerType = Some(UploadedFileOwner.Assessment),
+        created = createTime,
+        version = createTime
+      )
+    }
+
+    def storedUploadedStudentAssessmentFile(studentAssessmentId: UUID) = {
+      val date = LocalDate.of(2016, 1, 1)
+      val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
+      val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
+
+      StoredUploadedFile(
+        id = UUID.randomUUID(),
+        fileName = specialJPG.uploadedFileSave.fileName,
+        contentLength = specialJPG.uploadedFileSave.contentLength,
+        contentType = specialJPG.uploadedFileSave.contentType,
+        uploadedBy = users.student1.usercode,
+        ownerId = Some(studentAssessmentId),
+        ownerType = Some(UploadedFileOwner.StudentAssessment),
+        created = createTime,
+        version = createTime
+      )
     }
   }
 

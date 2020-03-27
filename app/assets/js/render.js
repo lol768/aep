@@ -10,7 +10,7 @@
  */
 
 import './polyfills';
-import initErrorReporter from './error-reporter';
+import './error-reporter-init';
 import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
@@ -19,7 +19,6 @@ import WebSocketConnection from './web-sockets';
 import initAnnouncements from './assessment-announcements';
 import initTiming from './assessment-timing';
 
-initErrorReporter();
 
 // dynamic import, fire and forget.
 /* eslint-ignore no-unused-expressions */

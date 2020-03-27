@@ -1,0 +1,88 @@
+package domain.dao
+
+import java.time.{Clock, ZonedDateTime}
+
+import domain.Fixtures.{assessments, studentAssessments, uploadedFiles}
+import helpers.CleanUpDatabaseAfterEachTest
+import uk.ac.warwick.util.core.DateTimeUtils
+import warwick.core.helpers.JavaTime
+
+import scala.concurrent.Future
+
+class UploadedFileDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
+
+  private val dao = get[UploadedFileDao]
+
+  "UploadedFileDao" should {
+    val now = ZonedDateTime.of(2019, 1, 1, 10, 0, 0, 0, JavaTime.timeZone).toInstant
+
+    "save and retrieve an uploaded file by ID" in {
+      DateTimeUtils.useMockDateTime(now, () => {
+        val file = uploadedFiles.storedUploadedAssessmentFile()
+
+        val test = for {
+          result <- dao.insert(file)
+          existsAfter <- dao.find(file.id)
+          _ <- DBIO.from(Future.successful {
+            result.created.toInstant mustBe file.created.toInstant
+            result.version.toInstant mustBe now
+            result.id mustBe file.id
+            result.fileName mustBe file.fileName
+            result.contentType mustBe file.contentType
+            result.contentLength mustBe file.contentLength
+            result.uploadedBy mustBe file.uploadedBy
+            result.ownerId mustBe file.ownerId
+            result.ownerType mustBe file.ownerType
+
+            existsAfter must contain(result)
+          })
+        } yield result
+
+        exec(test)
+      })
+    }
+
+    "fetch all, find multiple IDs, and delete a file" in {
+      val earlier = now.minusSeconds(600)
+
+      val test = for {
+        _ <- DBIO.from(Future.successful {
+          DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(earlier, JavaTime.timeZone)
+        })
+
+        files = (1 to 10).map(_ => uploadedFiles.storedUploadedAssessmentFile())
+        _ <- DBIO.sequence(files.map(dao.insert))
+
+        _ <- DBIO.from(Future.successful {
+          DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(now, JavaTime.timeZone)
+        })
+
+        all <- dao.all
+
+        _ <- DBIO.from(Future.successful {
+          all.length mustEqual 10
+          all.map(_.id).distinct.length mustEqual 10
+        })
+
+        firstTwo = Seq(files(0).id, files(1).id)
+        findFirstTwo <- dao.find(firstTwo)
+
+        _ <- DBIO.from(Future.successful {
+          findFirstTwo.length mustEqual 2
+          findFirstTwo.map(_.id) mustEqual firstTwo
+        })
+
+        afterDelete <- dao.delete(files(0).id) andThen dao.all
+
+        _ <- DBIO.from(Future.successful {
+          afterDelete.length mustEqual 9
+          afterDelete.map(_.id).distinct.length mustEqual 9
+          afterDelete.count(_.id == files(0).id) mustEqual 0
+        })
+      } yield afterDelete
+
+      exec(test)
+      DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.systemDefaultZone
+    }
+  }
+}
