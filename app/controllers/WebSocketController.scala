@@ -4,7 +4,7 @@ import actors.WebSocketActor.AssessmentAnnouncement
 import actors.{PubSubActor, WebSocketActor}
 import akka.actor.{ActorRefFactory, ActorSystem}
 import akka.stream.Materializer
-import controllers.WebSocketController.broadcastForm
+import controllers.WebSocketController._
 import play.api.data.Forms._
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
@@ -32,6 +32,16 @@ object WebSocketController {
     "user" -> nonEmptyText.transform[Usercode](s => Usercode(s), u => u.string),
     "message" -> nonEmptyText,
   )(SendBroadcastForm.apply)(SendBroadcastForm.unapply))
+
+  case class SendAssessmentAnnouncementForm(
+    assessment: String,
+    message: String
+  )
+
+  val assessmentAnnouncementForm: Form[SendAssessmentAnnouncementForm] = Form(mapping(
+    "assessment" -> nonEmptyText,
+    "message" -> nonEmptyText,
+  )(SendAssessmentAnnouncementForm.apply)(SendAssessmentAnnouncementForm.unapply))
 }
 
 @Singleton
@@ -87,7 +97,7 @@ class WebSocketController @Inject()(
   }
 
   def broadcastTest: Action[AnyContent] = RequireSysadmin { implicit request =>
-    Ok(views.html.sysadmin.broadcastTest(broadcastForm))
+    Ok(views.html.sysadmin.broadcastTest(broadcastForm, assessmentAnnouncementForm))
   }
 
   def sendBroadcast: Action[AnyContent] = RequireSysadmin { implicit request =>
@@ -95,6 +105,20 @@ class WebSocketController @Inject()(
       _ => BadRequest,
       data => {
         pubSub.publish(data.user.string, data.toAnnouncement)
+        Redirect(controllers.routes.WebSocketController.sendBroadcast())
+          .flashing("success" -> Messages("flash.websocket.published"))
+      }
+    )
+  }
+
+  def sendAnnouncement: Action[AnyContent] = RequireSysadmin { implicit request =>
+    assessmentAnnouncementForm.bindFromRequest().fold(
+      _ => BadRequest,
+      data => {
+        pubSub.publish(
+          data.assessment,
+          AssessmentAnnouncement(data.message),
+        )
         Redirect(controllers.routes.WebSocketController.sendBroadcast())
           .flashing("success" -> Messages("flash.websocket.published"))
       }
