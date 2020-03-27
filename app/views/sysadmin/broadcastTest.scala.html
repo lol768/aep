@@ -1,10 +1,5 @@
-@import controllers.sysadmin.SysadminTestController.{EmailFormData, MyWarwickFormData}
-@import org.apache.tika.mime.MediaType
-@import warwick.core.helpers.JavaTime
-@import warwick.fileuploads.UploadedFile
+@import controllers.WebSocketController.{SendAssessmentAnnouncementForm, SendBroadcastForm}
 
-@import controllers.WebSocketController.SendBroadcastForm
-@import controllers.WebSocketController.SendAssessmentAnnouncementForm
 @(sendBroadcastForm: Form[SendBroadcastForm], assessmentAnnouncementForm: Form[SendAssessmentAnnouncementForm])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @admin("Broadcast test") {
