@@ -139,7 +139,7 @@ trait UploadedFileDao {
   def find(id: UUID): DBIO[Option[StoredUploadedFile]]
   def find(ids: Seq[UUID]): DBIO[Seq[StoredUploadedFile]]
   def insert(file: StoredUploadedFile)(implicit ac: AuditLogContext): DBIO[StoredUploadedFile]
-  def delete(file: StoredUploadedFile)(implicit ac: AuditLogContext): DBIO[Done]
+  def delete(id: UUID)(implicit ac: AuditLogContext): DBIO[Boolean]
 }
 
 @Singleton
@@ -162,7 +162,6 @@ class UploadedFileDaoImpl @Inject()(
   override def insert(file: StoredUploadedFile)(implicit ac: AuditLogContext): DBIO[StoredUploadedFile] =
     uploadedFiles.insert(file)
 
-  override def delete(file: StoredUploadedFile)(implicit ac: AuditLogContext): DBIO[Done] =
-    uploadedFiles.delete(file)
-
+  override def delete(id: UUID)(implicit ac: AuditLogContext): DBIO[Boolean] =
+    uploadedFiles.table.filter(_.id === id).delete.map(_ > 0)
 }
