@@ -53,6 +53,7 @@ class NavigationServiceImpl extends NavigationService {
   private lazy val emailQueue = NavigationPage("Email queue", controllers.sysadmin.routes.EmailQueueController.queued())
   private lazy val sentEmails = NavigationPage("View sent emails", controllers.sysadmin.routes.ViewEmailsController.listAll())
   private lazy val myWarwickQueue = NavigationPage("My Warwick queue", controllers.sysadmin.routes.MyWarwickQueueController.queued())
+  private lazy val dataGeneration = NavigationPage("Data generation", controllers.sysadmin.routes.DummyDataGenerationController.showForm())
 
   private lazy val sysadmin =
     NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), Seq(
@@ -60,6 +61,7 @@ class NavigationServiceImpl extends NavigationService {
       sentEmails,
       myWarwickQueue,
       masquerade,
+      dataGeneration,
     ))
 
   private def sysadminMenu(loginContext: LoginContext): Seq[Navigation] =
