@@ -11,9 +11,9 @@ trait PubSubService {
   def publish(topic: String, message: Any): Unit
 }
 
-class AkkaPubSubService @Inject()(akka: ActorSystem) extends PubSubService {
+class AkkaPubSubService @Inject() (akka: ActorSystem) extends PubSubService {
   private val pubsub = DistributedPubSub(akka)
   private val mediator = pubsub.mediator
 
-  override def publish(topic: String, message: Any): Unit = mediator ! Publish(topic, message)
+  override def publish(topic: String, message: Any) = mediator ! Publish(topic, message)
 }
