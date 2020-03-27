@@ -2,14 +2,14 @@ package services
 
 import java.util.UUID
 
-import akka.Done
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
 import domain.Assessment.State
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
+import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
 import domain.{Assessment, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
+import services.AssessmentService._
 import slick.dbio.DBIO
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -25,7 +25,7 @@ trait AssessmentService {
   def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
-  def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
+  def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 }
 
 @Singleton
@@ -33,42 +33,30 @@ class AssessmentServiceImpl @Inject()(
   auditService: AuditService,
   daoRunner: DaoRunner,
   dao: AssessmentDao,
-  uploadedFileService: UploadedFileService
+  uploadedFileService: UploadedFileService,
 )(implicit ec: ExecutionContext) extends AssessmentService {
-
-  private def inflate(storedAssessments: Seq[AssessmentsTables.StoredAssessment])(implicit t: TimingContext) = {
-    uploadedFileService.get(storedAssessments.flatMap(_.storedBrief.fileIds)).map { uploadedFiles =>
-      ServiceResults.success(storedAssessments.map(_.asAssessment(uploadedFiles.map(f => f.id -> f).toMap)))
-    }
-  }
-
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
-    daoRunner.run(dao.all).flatMap(inflate)
+    daoRunner.run(dao.loadAllWithUploadedFiles)
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
   }
 
-  override def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
-    daoRunner.run(dao.findByStates(state)).flatMap(inflate)
-  }
+  override def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.findByStatesWithUploadedFiles(state))
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
 
-  override def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
-    daoRunner.run(dao.getByIds(ids)).flatMap(inflate)
-  }
+  override def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.loadByIdsWithUploadedFiles(ids))
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
 
-  override def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
-    daoRunner.run(dao.getById(id)).flatMap { storedAssessmentOption =>
-      storedAssessmentOption.map { storedAssessment =>
-        uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
-          ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
-        }
-      }.getOrElse {
-        Future.successful(ServiceResults.error(s"Could not find an Assessment with ID $id"))
-      }
-    }.recover {
-      case _: NoSuchElementException => ServiceResults.error(s"Could not find an Assessment with ID $id")
-    }
-  }
+  override def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]] =
+    daoRunner.run(dao.loadByIdWithUploadedFiles(id))
+      .map(inflateRowWithUploadedFiles)
+      .map(_.fold[ServiceResult[Assessment]](ServiceResults.error(s"Could not find an Assessment with ID $id"))(ServiceResults.success))
 
-  override def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Done]] = {
+  override def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
     daoRunner.run(for {
       stored <- dao.getById(assessment.id).map(_.getOrElse(throw new NoSuchElementException(s"Could not find an Assessment with ID ${assessment.id}")))
       fileIds <- if (files.nonEmpty) {
@@ -99,6 +87,19 @@ class AssessmentServiceImpl @Inject()(
         created = stored.created,
         version = stored.version
       ))
-    } yield Done).map(ServiceResults.success)
+      updated <- dao.loadByIdWithUploadedFiles(assessment.id)
+    } yield updated).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
   }
+}
+
+object AssessmentService {
+  def inflateRowsWithUploadedFiles(rows: Seq[(AssessmentsTables.StoredAssessment, Set[UploadedFilesTables.StoredUploadedFile])]): Seq[Assessment] =
+    rows.map { case (assessment, storedUploadedFiles) =>
+      assessment.asAssessment(
+        storedUploadedFiles.map(f => f.id -> f.asUploadedFile).toMap
+      )
+    }
+
+  def inflateRowWithUploadedFiles(row: Option[(AssessmentsTables.StoredAssessment, Set[UploadedFilesTables.StoredUploadedFile])]): Option[Assessment] =
+    inflateRowsWithUploadedFiles(row.toSeq).headOption
 }

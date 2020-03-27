@@ -81,7 +81,7 @@ object Fixtures {
     def storedBrief: StoredBrief =
       StoredBrief(
         Some(DataGeneration.dummyWords(Random.between(6,30))),
-        Seq(UUID.randomUUID()),
+        Seq.empty,
         Some(DataGeneration.fakePath)
       )
 
@@ -214,7 +214,7 @@ object Fixtures {
       }
     }
     override val jdbcTypes: PostgresCustomJdbcTypes = new PostgresCustomJdbcTypes(dbConfigProvider)
-    import dbConfig.profile.api._
+    import profile.api._
 
     def truncateAndReset =
       auditEvents.delete andThen
