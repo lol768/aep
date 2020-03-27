@@ -66,7 +66,6 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
               integrationTestJob()
             )
         )
-        .slackNotifications(SLACK_CHANNEL, false)
         .customConfig(plan ->
           plan.planBranchManagement(
             new PlanBranchManagement()
