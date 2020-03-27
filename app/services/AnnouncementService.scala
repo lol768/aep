@@ -3,7 +3,7 @@ package services
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import actors.WebSocketActor.AssessmentAnnouncementForUniversityIds
+import actors.WebSocketActor.AssessmentAnnouncement
 import akka.Done
 import com.google.inject.ImplementedBy
 import domain.Announcement
@@ -48,26 +48,10 @@ class AnnouncementServiceImpl @Inject()(
 
     daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
 
-    pubSubService.subscribe(
-      topic = announcement.id.toString,
-      group = None,
+    pubSubService.publish(
+      topic = announcement.assessment.toString,
+      AssessmentAnnouncement(announcement.text)
     )
-
-    for {
-      affectedStudents <- studentAssessmentService
-        .byAssessmentId(announcement.id)
-        .successMapTo(_.map(_.studentId))
-        .map(_.getOrElse(Nil))
-    } yield {
-      pubSubService.publish(
-        topic = announcement.id.toString,
-        AssessmentAnnouncementForUniversityIds(
-          message = announcement.text,
-          universityIds = affectedStudents,
-        )
-      )
-      ServiceResults.success(Done)
-    }
   }
 
   override def delete(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Done]] =

@@ -9,8 +9,6 @@ import com.google.inject.{ImplementedBy, Inject}
 @ImplementedBy(classOf[AkkaPubSubService])
 trait PubSubService {
   def publish(topic: String, message: Any): Unit
-
-  def subscribe(topic: String, group: Option[String]): Unit
 }
 
 class AkkaPubSubService @Inject()(akka: ActorSystem) extends PubSubService {
@@ -18,6 +16,4 @@ class AkkaPubSubService @Inject()(akka: ActorSystem) extends PubSubService {
   private val mediator = pubsub.mediator
 
   override def publish(topic: String, message: Any): Unit = mediator ! Publish(topic, message)
-
-  override def subscribe(topic: String, group: Option[String]): Unit = mediator ! Subscribe(topic, group, mediator)
 }

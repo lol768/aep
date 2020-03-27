@@ -15,15 +15,16 @@ import scala.concurrent.ExecutionContext
 
 object WebSocketActor {
 
-  def props(loginContext: LoginContext, pubsub: ActorRef, out: ActorRef, studentAssessmentService: StudentAssessmentService)(implicit ec: ExecutionContext, t: TimingContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService))
+  def props(
+    loginContext: LoginContext,
+    pubsub: ActorRef,
+    out: ActorRef,
+    studentAssessmentService: StudentAssessmentService,
+    additionalTopics: Seq[String],
+  )(implicit ec: ExecutionContext, t: TimingContext): Props =
+    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, additionalTopics))
 
   case class AssessmentAnnouncement(message: String)
-
-  case class AssessmentAnnouncementForUniversityIds(
-    message: String,
-    universityIds: Seq[UniversityID],
-  )
 
   case class ClientMessage(
     `type`: String,
@@ -70,6 +71,7 @@ class WebSocketActor @Inject() (
   pubsub: ActorRef,
   loginContext: LoginContext,
   @Assisted studentAssessmentService: StudentAssessmentService,
+  additionalTopics: Seq[String],
 )(implicit
   ec: ExecutionContext
 ) extends Actor with ActorLogging {
@@ -88,15 +90,6 @@ class WebSocketActor @Inject() (
       "message" -> announcement,
       "user" -> JsString(loginContext.user.map(u => u.usercode.string).getOrElse("Anonymous"))
     )
-
-    case AssessmentAnnouncementForUniversityIds(announcement, universityIds) =>
-      universityIds.foreach { universityId =>
-        out ! Json.obj(
-          "type" -> "announcement",
-          "message" -> announcement,
-          "user" -> JsString(universityId.string)
-        )
-      }
 
     case SubscribeAck(Subscribe(topic, _, _)) =>
       log.debug(s"WebSocket subscribed to PubSub messages on the topic of '$topic'")
@@ -134,11 +127,12 @@ class WebSocketActor @Inject() (
 
   private def pubsubSubscribe(): Unit = loginContext.user.foreach { user =>
     pubsub ! Subscribe(user.usercode.string, self)
+    additionalTopics.foreach(pubsub ! Subscribe(_, self))
   }
 
   private def pubsubUnsubscribe(): Unit = loginContext.user.foreach { user =>
     // UnsubscribeAck is swallowed by pubsub, so don't expect a reply to this.
     pubsub ! Unsubscribe(user.usercode.string, self)
+    additionalTopics.foreach(pubsub ! Unsubscribe(_, self))
   }
-
 }
