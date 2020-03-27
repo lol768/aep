@@ -54,7 +54,7 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
   @Override
   protected Collection<Plan> builds() {
     return Collections.singleton(
-      build(PROJECT, "ONLINE", "Online Exams")
+      build(PROJECT, "ONLINE", "Tabula Assessment Portal")
         .linkedRepository(LINKED_REPOSITORY)
         .description("Build application")
         .stage(
