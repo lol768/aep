@@ -3,20 +3,26 @@ package actors
 import java.util.UUID
 
 import akka.actor._
-import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
+import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
 import javax.inject.Inject
 import play.api.libs.json._
 import services.StudentAssessmentService
 import warwick.core.timing.TimingContext
-import warwick.sso.LoginContext
+import warwick.sso.{LoginContext, UniversityID}
 
 import scala.concurrent.ExecutionContext
 
 object WebSocketActor {
 
-  def props(loginContext: LoginContext, pubsub: ActorRef, out: ActorRef, studentAssessmentService: StudentAssessmentService)(implicit ec: ExecutionContext, t: TimingContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService))
+  def props(
+    loginContext: LoginContext,
+    pubsub: ActorRef,
+    out: ActorRef,
+    studentAssessmentService: StudentAssessmentService,
+    additionalTopics: Seq[String],
+  )(implicit ec: ExecutionContext, t: TimingContext): Props =
+    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, additionalTopics))
 
   case class AssessmentAnnouncement(message: String)
 
@@ -65,6 +71,7 @@ class WebSocketActor @Inject() (
   pubsub: ActorRef,
   loginContext: LoginContext,
   @Assisted studentAssessmentService: StudentAssessmentService,
+  additionalTopics: Seq[String],
 )(implicit
   ec: ExecutionContext
 ) extends Actor with ActorLogging {
@@ -120,11 +127,12 @@ class WebSocketActor @Inject() (
 
   private def pubsubSubscribe(): Unit = loginContext.user.foreach { user =>
     pubsub ! Subscribe(user.usercode.string, self)
+    additionalTopics.foreach(pubsub ! Subscribe(_, self))
   }
 
   private def pubsubUnsubscribe(): Unit = loginContext.user.foreach { user =>
     // UnsubscribeAck is swallowed by pubsub, so don't expect a reply to this.
     pubsub ! Unsubscribe(user.usercode.string, self)
+    additionalTopics.foreach(pubsub ! Unsubscribe(_, self))
   }
-
 }
