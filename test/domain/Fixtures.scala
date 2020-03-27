@@ -214,7 +214,7 @@ object Fixtures {
       }
     }
     override val jdbcTypes: PostgresCustomJdbcTypes = new PostgresCustomJdbcTypes(dbConfigProvider)
-    import dbConfig.profile.api._
+    import profile.api._
 
     def truncateAndReset =
       auditEvents.delete andThen
