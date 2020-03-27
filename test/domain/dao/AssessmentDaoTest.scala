@@ -3,6 +3,7 @@ package domain.dao
 import java.time.ZonedDateTime
 import java.util.UUID
 
+import domain.Assessment.State
 import domain._
 import helpers.CleanUpDatabaseAfterEachTest
 import uk.ac.warwick.util.core.DateTimeUtils
@@ -44,6 +45,41 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       })
     }
 
+    "update an assessment" in {
+      val now = ZonedDateTime.of(2019, 1, 1, 10, 0, 0, 0, JavaTime.timeZone).toInstant
+
+      DateTimeUtils.useMockDateTime(now, () => {
+        val id = UUID.randomUUID()
+        val ass = Fixtures.assessments.storedAssessment(id)
+
+        val test = for {
+          inserted <- dao.insert(ass)
+
+          // java.lang.Exception: Optimistic locking failed - tried to update version 2019-01-01T10:01Z but current value is 2019-01-01T10:00Z for class class domain.dao.AssessmentsTables$StoredAssessment
+          result <- dao.update(inserted.copy(title = "why is this not fine", version = inserted.version.plusMinutes(1)))
+
+          // org.postgresql.util.PSQLException: ERROR: duplicate key value violates unique constraint "pk_assessment_version"
+          otherResult <- dao.update(inserted.copy(title = "why is this not fine"))
+
+          existsAfter <- dao.getById(id)
+          _ <- DBIO.from(Future.successful {
+            result.created.toInstant mustBe ass.created.toInstant
+            result.version.toInstant mustBe now
+            result.code mustBe ass.code
+            result.title mustBe ass.title
+            result.assessmentType mustBe ass.assessmentType
+            result.platform mustBe ass.platform
+            result.startTime mustBe ass.startTime
+            result.duration mustBe ass.duration
+
+            existsAfter must contain(result)
+          })
+        } yield result
+
+        exec(test)
+      })
+    }
+
     "fetch all" in {
       val assessments = (1 to 10).map(_ => Fixtures.assessments.storedAssessment())
       execWithCommit(DBIO.sequence(assessments.map(dao.insert)))
@@ -51,6 +87,23 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       val result = execWithCommit(dao.all)
       result.length mustEqual 10
       result.map(_.code).sorted mustEqual assessments.map(_.code).sorted
+    }
+
+    "find by states" in {
+      val draft = Fixtures.assessments.storedAssessment().copy(state = State.Draft)
+      val submitted = Fixtures.assessments.storedAssessment().copy(state = State.Submitted)
+      val approved = Fixtures.assessments.storedAssessment().copy(state = State.Approved)
+
+      execWithCommit(DBIO.sequence(Seq(draft, submitted, approved).map(dao.insert)))
+
+      val draftResult = execWithCommit(dao.findByStates(Seq(State.Draft)))
+      draftResult.map(_.id) must contain only draft.id
+
+      val draftAndSubmittedResult = execWithCommit(dao.findByStates(Seq(State.Draft, State.Submitted)))
+      draftAndSubmittedResult.map(_.id) must contain allOf (draft.id, submitted.id)
+
+      val approvedResult = execWithCommit(dao.findByStates(Seq(State.Approved)))
+      approvedResult.map(_.id) must contain only approved.id
     }
 
     "getById/Code" in {
