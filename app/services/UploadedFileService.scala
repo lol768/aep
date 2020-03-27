@@ -106,11 +106,12 @@ class UploadedFileServiceImpl @Inject()(
       daoRunner.run(storeDBIO(in, metadata, ac.usercode.get, ownerId, ownerType)).map(Right.apply)
     }
 
-  override def deleteDBIO(id: UUID)(implicit ac: AuditLogContext): DBIO[Done] =
-    for {
-      existing <- dao.find(id)
-      done <- dao.delete(existing.getOrElse(throw new NoSuchElementException(s"Could not find file with id ${id.toString}")))
-    } yield done
+  override def deleteDBIO(id: UUID)(implicit ac: AuditLogContext): DBIO[Done] = {
+    dao.delete(id).map {
+      case true => Done
+      case false => throw new NoSuchElementException(s"Could not find file with id ${id.toString}")
+    }
+  }
 
   override def delete(id: UUID)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] =
     auditService.audit(Operation.UploadedFile.Delete, id.toString, Target.UploadedFile, Json.obj()) {
