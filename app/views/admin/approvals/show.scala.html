@@ -1,0 +1,68 @@
+@import domain.Assessment
+@import domain.Assessment.Platform
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@import controllers.admin.ApprovalsController.ApprovalFormData
+
+@(assessment: Assessment, form: Form[ApprovalFormData])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
+
+@adminLayout(s"Review assessment for ${assessment.code}") {
+  <dl>
+    <dt>Title</dt>
+    <dd>@assessment.title</dd>
+
+    <dt>Type</dt>
+    <dd>@assessment.assessmentType.label</dd>
+
+    <dt>Platform</dt>
+    <dd>@assessment.platform.label</dd>
+
+    <dt>Duration</dt>
+    <dd>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)</dd>
+
+    @assessment.brief.text.map { text =>
+      <dt>Description</dt>
+      <dd>@text</dd>
+    }
+
+    @if(assessment.platform != Platform.OnlineExams) {
+      @assessment.brief.url.map { url =>
+        <dt>URL to exam</dt>
+        <dd>@url</dd>
+      }
+    }
+
+    @if(assessment.platform == Platform.OnlineExams) {
+      <dt>Files</dt>
+      @if(assessment.brief.files.isEmpty) {
+        <dd >
+          No files attached.
+        </dd>
+      } else {
+        <dd>
+          <ul>
+          @assessment.brief.files.map { file =>
+            <li>
+              <a href="@controllers.admin.routes.ApprovalsController.getFile(assessment.id, file.id)" target="_blank">
+                <i class="fad fa-file fa-fw"></i>@file.fileName
+              </a>
+            </li>
+          }
+          </ul>
+        </dd>
+      }
+    }
+  </dl>
+
+  <div class="panel panel-default">
+    <div class="panel-body">
+    @b3.vertical.formCSRF(action = controllers.admin.routes.ApprovalsController.update(assessment.id)) { implicit vfc =>
+      @b3.checkbox(form("approved"), Symbol("_text") -> "The alternative assessments approval group has reviewed this assessment and confirms that it is fit for purpose and can be delivered to students")
+
+      @b3.free() {
+        <button type="submit" class="btn btn-primary">Approve</button>
+        <a href="@controllers.admin.routes.ApprovalsController.index()" class="btn btn-default">Cancel</a>
+      }
+    }
+    </div>
+  </div>
+}

@@ -8,6 +8,7 @@ import './polyfills';
 import $ from 'jquery';
 import * as flexiPicker from './flexi-picker';
 import '@universityofwarwick/statuspage-widget/dist/main';
+import './admin/assessment-setup';
 
 /**
  * Attach handlers to all elements inside $scope. All jQuery selects

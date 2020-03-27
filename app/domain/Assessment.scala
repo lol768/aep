@@ -16,6 +16,7 @@ sealed trait BaseAssessment {
   def duration: Duration
   def platform: Platform
   def assessmentType: AssessmentType
+  def state: State
 
   def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
   def hasWindowPassed: Boolean = endTime.exists(_.isAfter(JavaTime.offsetDateTime))
@@ -30,6 +31,7 @@ case class Assessment(
   platform: Platform,
   assessmentType: AssessmentType,
   brief: Brief,
+  state: State,
 ) extends BaseAssessment
 
 case class AssessmentMetadata(
@@ -40,25 +42,42 @@ case class AssessmentMetadata(
   duration: Duration,
   platform: Platform,
   assessmentType: AssessmentType,
+  state: State,
 ) extends BaseAssessment
 
 object Assessment {
-  sealed trait Platform extends EnumEntry
+  sealed trait Platform extends EnumEntry {
+    val label: String
+  }
 
   object Platform extends PlayEnum[Platform] {
-    case object Moodle extends Platform
-    case object OnlineExams extends Platform
-    case object QuestionmarkPerception extends Platform
+    case object OnlineExams extends Platform {
+      val label = "Online Exams"
+    }
+    case object Moodle extends Platform {
+      val label = "Moodle"
+    }
+    case object QuestionmarkPerception extends Platform {
+      val label = "Questionmark Perception"
+    }
 
     val values: IndexedSeq[Platform] = findValues
   }
 
-  sealed trait AssessmentType extends EnumEntry
+  sealed trait AssessmentType extends EnumEntry {
+    val label: String
+  }
 
   object AssessmentType extends PlayEnum[AssessmentType] {
-    case object OpenBook extends AssessmentType
-    case object Spoken extends AssessmentType
-    case object MultipleChoice extends AssessmentType
+    case object OpenBook extends AssessmentType {
+      val label = "Open book"
+    }
+    case object MultipleChoice extends AssessmentType {
+      val label = "Multiple choice"
+    }
+    case object Spoken extends AssessmentType {
+      val label = "Spoken"
+    }
 
     val values: IndexedSeq[AssessmentType] = findValues
   }
@@ -74,5 +93,17 @@ object Assessment {
   }
 
   val window: Duration = Duration.ofHours(8)
+
+  sealed trait State extends EnumEntry {
+    val label: String = entryName
+  }
+
+  object State extends PlayEnum[State] {
+    case object Draft extends State
+    case object Submitted extends State
+    case object Approved extends State
+
+    val values: IndexedSeq[State] = findValues
+  }
 }
 
