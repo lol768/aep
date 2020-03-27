@@ -12,11 +12,13 @@ import scala.concurrent.Future
 
 class AnnouncementDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
+  import domain.Fixtures.dateConversion._
+
   private val assDao = get[AssessmentDao]
   private val dao = get[AnnouncementDao]
 
   "AnnouncementDao" should {
-    val now = LocalDateTime.of(2019, 1, 1, 10, 0, 0, 0)
+    val now = LocalDateTime.of(2019, 1, 1, 10, 0, 0, 0).asInstant
 
     "save and retrieve an announcement" in {
       DateTimeUtils.useMockDateTime(now, () => {

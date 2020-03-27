@@ -11,12 +11,14 @@ import scala.concurrent.Future
 
 class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
+  import domain.Fixtures.dateConversion._
+
   private val dao = get[AssessmentDao]
   private def lookupException = throw new Exception("DAO lookup failed")
 
   "AssessmentDao" should {
     "save and retrieve an assessment" in {
-      val now = LocalDateTime.of(2019, 1, 1, 10, 0, 0, 0)
+      val now = LocalDateTime.of(2019, 1, 1, 10, 0, 0, 0).asInstant
 
       DateTimeUtils.useMockDateTime(now, () => {
         val id = UUID.randomUUID()
