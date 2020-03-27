@@ -27,9 +27,9 @@ trait StudentAssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]]
-  def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[Option[StudentAssessmentWithAssessment]]
-  def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessmentMetadata]
-  def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[Seq[StudentAssessmentWithAssessmentMetadata]]
+  def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessmentWithAssessment]]]
+  def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]]
+  def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
@@ -71,7 +71,7 @@ class StudentAssessmentServiceImpl @Inject()(
     }
   }
 
-  override def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[Option[StudentAssessmentWithAssessment]] = {
+  override def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessmentWithAssessment]]] = {
     daoRunner.run(
       for {
         studentAssessment <- dao.get(universityId, assessmentId)
@@ -90,10 +90,10 @@ class StudentAssessmentServiceImpl @Inject()(
         } yield Some(StudentAssessmentWithAssessment(studentAssessment, assessment))
       }
       case _ => Future.successful(None)
-    }
+    }.map(ServiceResults.success)
   }
 
-  override def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[StudentAssessmentWithAssessmentMetadata] =
+  override def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]] =
     daoRunner.run(
       for {
         studentAssessment <- dao.get(universityId, assessmentId)
@@ -103,9 +103,9 @@ class StudentAssessmentServiceImpl @Inject()(
           .asStudentAssessmentMetadata,
         assessment.getOrElse(noAssessmentFound(assessmentId))
           .asAssessmentMetadata)
-    )
+    ).map(ServiceResults.success)
 
-  override def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[Seq[StudentAssessmentWithAssessmentMetadata]] = {
+  override def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]] = {
     daoRunner.run(
       for {
         studentAssessments <- dao.getByUniversityId(universityId)
@@ -114,7 +114,7 @@ class StudentAssessmentServiceImpl @Inject()(
         val assessmentsMap = assessments.map(a => a.id -> a.asAssessmentMetadata).toMap
         studentAssessments.map(sA => StudentAssessmentWithAssessmentMetadata(sA.asStudentAssessmentMetadata, assessmentsMap(sA.assessmentId)))
       }
-    )
+    ).map(ServiceResults.success)
   }
 
   private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {

@@ -2,7 +2,8 @@ package controllers
 
 import helpers.Json._
 import play.api.libs.json.Json
-import play.api.mvc.{RequestHeader, Result, Results}
+import play.api.mvc.{AcceptExtractors, Rendering, RequestHeader, Result, Results}
+import system.ImplicitRequestContext
 import warwick.core.Logging
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.{ServiceError, ServiceResult}
@@ -11,16 +12,8 @@ import warwick.sso.{AuthenticatedRequest, User}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
-trait ControllerHelper extends Results with Logging {
-  self: BaseController =>
-
+trait ControllerHelper extends ServiceResultErrorRendering with Logging {
   def currentUser()(implicit request: AuthenticatedRequest[_]): User = request.context.user.get
-
-  def showErrors(errors: Seq[_ <: ServiceError])(implicit request: RequestHeader): Result =
-    render {
-      case Accepts.Json() => BadRequest(Json.toJson(JsonClientError(status = "bad_request", errors = errors.map(_.message))))
-      case _ => BadRequest(views.html.errors.multiple(errors))
-    }
 
   implicit class FutureServiceResultControllerOps[A](val future: Future[ServiceResult[A]]) {
     def successMap(fn: A => Result)(implicit r: RequestHeader, ec: ExecutionContext): Future[Result] =
@@ -39,4 +32,12 @@ trait ControllerHelper extends Results with Logging {
 
   implicit def futureServiceResultOps[A](future: Future[ServiceResult[A]]): FutureServiceResultOps[A] =
     new FutureServiceResultOps[A](future)
+}
+
+trait ServiceResultErrorRendering extends Results with Rendering with AcceptExtractors with ImplicitRequestContext {
+  def showErrors(errors: Seq[_ <: ServiceError])(implicit request: RequestHeader): Result =
+    render {
+      case Accepts.Json() => BadRequest(Json.toJson(JsonClientError(status = "bad_request", errors = errors.map(_.message))))
+      case _ => BadRequest(views.html.errors.multiple(errors))
+    }
 }

@@ -106,6 +106,14 @@ class AssessmentTables @Inject()(
     def pk = primaryKey("pk_student_assessment_version", (assessmentId, studentId, timestamp))
   }
 
+  implicit class StudentAssessmentExtensions[C[_]](q: Query[StudentAssessments, StoredStudentAssessment, C]) {
+    def withUploadedFiles = q
+      .joinLeft(uploadedFiles.table)
+      .on { case (a, f) =>
+        a.id === f.ownerId && f.ownerType === (UploadedFileOwner.StudentAssessment: UploadedFileOwner) && a.uploadedFiles.any === f.id
+      }
+  }
+
   val studentAssessments: VersionedTableQuery[StoredStudentAssessment, StoredStudentAssessmentVersion, StudentAssessments, StudentAssessmentVersions] =
     VersionedTableQuery(TableQuery[StudentAssessments], TableQuery[StudentAssessmentVersions])
 

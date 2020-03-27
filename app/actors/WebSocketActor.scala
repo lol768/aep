@@ -8,6 +8,7 @@ import com.google.inject.assistedinject.Assisted
 import javax.inject.Inject
 import play.api.libs.json._
 import services.StudentAssessmentService
+import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.timing.TimingContext
 import warwick.sso.LoginContext
 
@@ -97,7 +98,7 @@ class WebSocketActor @Inject() (
 
         case m if m.`type` == "RequestAssessmentTiming" && m.data.exists(_.validate[RequestAssessmentTiming](readsRequestAssessmentTiming).isSuccess) =>
           val assessmentId = m.data.get.as[RequestAssessmentTiming](readsRequestAssessmentTiming).assessmentId
-          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get, assessmentId)(TimingContext.none).map { assessment =>
+          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get, assessmentId)(TimingContext.none).successMapTo { assessment =>
             out ! Json.obj(
               "type"-> "AssessmentTimingInformation",
               "assessments"-> Json.arr(Json.toJson(assessment.getTimingInfo))
@@ -105,7 +106,7 @@ class WebSocketActor @Inject() (
           }
 
         case m if m.`type` == "RequestAssessmentTiming" =>
-          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get)(TimingContext.none).map { assessments =>
+          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get)(TimingContext.none).successMapTo { assessments =>
             out ! Json.obj(
               "type"-> "AssessmentTimingInformation",
               "assessments"-> JsArray(assessments.map(a => Json.toJson(a.getTimingInfo)))

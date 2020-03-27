@@ -39,7 +39,7 @@ class AssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterEac
       val updated = service.update(base, Seq(file1, file2)).serviceValue
       updated.brief.files.map(_.fileName) mustBe Seq(file1, file2).map(_._2.fileName)
 
-      val updated2 = service.update(base, Seq(file2, file1)).serviceValue
+      val updated2 = service.update(updated, Seq(file2, file1)).serviceValue
       updated2.brief.files.map(_.fileName) mustBe Seq(file2, file1).map(_._2.fileName)
     }
   }
