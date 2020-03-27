@@ -20,16 +20,14 @@ trait ReportingService {
   def expectedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
   def startedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
   def submittedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
+  def finalisedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
 }
 
 @Singleton
 class ReportingServiceImpl @Inject()(
-  auditService: AuditService,
   daoRunner: DaoRunner,
   assDao: AssessmentDao,
-  sittingDao: StudentAssessmentDao,
-  uploadedFileService: UploadedFileService,
-  assessmentService: AssessmentService
+  sittingDao: StudentAssessmentDao
 )(implicit ec: ExecutionContext) extends ReportingService {
 
   override def todayAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
@@ -42,8 +40,11 @@ class ReportingServiceImpl @Inject()(
     daoRunner.run(sittingDao.getByAssessmentId(assessment)).map(a => ServiceResults.success(a.map(_.asStudentAssessmentMetadata)))
 
   override def startedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]] =
-    expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.inSeat == true))
+    expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.startTime.isDefined))
 
   override def submittedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]] =
     expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.uploadedFileCount > 0))
+
+  override def finalisedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]] =
+    expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.finaliseTime.isDefined))
 }
