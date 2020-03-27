@@ -56,12 +56,12 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
         _ <- DBIO.from(Future.successful {
           DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(earlier, JavaTime.timeZone)
         })
-        _ <- dao.insert(ass)
+        inserted <- dao.insert(ass)
 
         _ <- DBIO.from(Future.successful {
           DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(now, JavaTime.timeZone)
         })
-        result <- dao.update(ass.copy(title = "is this fine yet"))
+        result <- dao.update(inserted.copy(title = "is this fine yet"))
 
         existsAfter <- dao.getById(id)
         _ <- DBIO.from(Future.successful {
