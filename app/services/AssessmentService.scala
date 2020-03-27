@@ -25,7 +25,7 @@ trait AssessmentService {
   def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
-  def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
+  def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 }
 
 @Singleton
@@ -63,12 +63,10 @@ class AssessmentServiceImpl @Inject()(
       }.getOrElse {
         Future.successful(ServiceResults.error(s"Could not find an Assessment with ID $id"))
       }
-    }.recover {
-      case _: NoSuchElementException => ServiceResults.error(s"Could not find an Assessment with ID $id")
     }
   }
 
-  override def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Done]] = {
+  override def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
     daoRunner.run(for {
       stored <- dao.getById(assessment.id).map(_.getOrElse(throw new NoSuchElementException(s"Could not find an Assessment with ID ${assessment.id}")))
       fileIds <- if (files.nonEmpty) {
@@ -82,7 +80,7 @@ class AssessmentServiceImpl @Inject()(
           ).map(_.id)
         })
       } else DBIO.successful(assessment.brief.files.map(_.id))
-      _ <- dao.update(StoredAssessment(
+      updated <- dao.update(StoredAssessment(
         id = assessment.id,
         code = assessment.code,
         title = assessment.title,
@@ -99,6 +97,10 @@ class AssessmentServiceImpl @Inject()(
         created = stored.created,
         version = stored.version
       ))
-    } yield Done).map(ServiceResults.success)
+    } yield updated).flatMap { storedAssessment =>
+      uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
+        ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
+      }
+    }
   }
 }

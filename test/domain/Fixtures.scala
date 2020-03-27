@@ -81,7 +81,7 @@ object Fixtures {
     def storedBrief: StoredBrief =
       StoredBrief(
         Some(DataGeneration.dummyWords(Random.between(6,30))),
-        Seq(UUID.randomUUID()),
+        Seq.empty,
         Some(DataGeneration.fakePath)
       )
 
