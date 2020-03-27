@@ -45,13 +45,11 @@ class AnnouncementServiceImpl @Inject()(
       created = OffsetDateTime.now(),
       version = OffsetDateTime.now()
     )
-
-    daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
-
     pubSubService.publish(
       topic = announcement.assessment.toString,
       AssessmentAnnouncement(announcement.text)
     )
+    daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
   }
 
   override def delete(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Done]] =
