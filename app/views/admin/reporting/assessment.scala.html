@@ -1,10 +1,9 @@
 @import controllers.admin.SittingMetadata
-@import domain.Assessment
 @import tags._
-@(assessment: Assessment, sittings: SittingMetadata)(implicit context: RequestContext)
+@(sittings: SittingMetadata)(implicit context: RequestContext)
 
-@frontend(assessment.title) {
-  @assessmentMetadata(assessment)
+@frontend(sittings.assessment.title) {
+  @assessmentMetadata(sittings.assessment)
 
   <table class="table table-bordered">
     <thead>
