@@ -1,13 +1,3 @@
-function setVisibilityByClassName(className, visible) {
-  document.querySelectorAll(`.${className}`).forEach((node) => {
-    if (visible) {
-      node.classList.remove('hide');
-    } else {
-      node.classList.add('hide');
-    }
-  });
-}
-
 function checkNotificationPromise() {
   // https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API
   try {
@@ -21,15 +11,6 @@ function checkNotificationPromise() {
 
 export default function initAnnouncements(websocket) {
   websocket.add({
-    onConnect: () => {
-      setVisibilityByClassName('ws-connected', true);
-      setVisibilityByClassName('ws-disconnected', false);
-      setVisibilityByClassName('ws-error', false);
-    },
-    onError: () => {
-      setVisibilityByClassName('ws-connected', false);
-      setVisibilityByClassName('ws-error', true);
-    },
     onData: (d) => {
       const messageList = document.querySelector('.message-list');
       if (messageList && d.type === 'announcement') {
@@ -52,10 +33,6 @@ export default function initAnnouncements(websocket) {
           });
         }
       }
-    },
-    onClose: () => {
-      setVisibilityByClassName('ws-connected', false);
-      setVisibilityByClassName('ws-disconnected', true);
     },
   });
 
