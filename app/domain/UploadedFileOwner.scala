@@ -9,5 +9,5 @@ object UploadedFileOwner extends PlayEnum[UploadedFileOwner] {
   case object Assessment extends UploadedFileOwner
   case object StudentAssessment extends UploadedFileOwner
 
-  val values: immutable.IndexedSeq[UploadedFileOwner] = findValues
+  val values: IndexedSeq[UploadedFileOwner] = findValues
 }
