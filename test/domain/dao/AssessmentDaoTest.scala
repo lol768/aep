@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.ZonedDateTime
+import java.time.{Clock, ZonedDateTime}
 import java.util.UUID
 
 import domain.Assessment.State
@@ -47,37 +47,39 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
 
     "update an assessment" in {
       val now = ZonedDateTime.of(2019, 1, 1, 10, 0, 0, 0, JavaTime.timeZone).toInstant
+      val earlier = now.minusSeconds(600)
 
-      DateTimeUtils.useMockDateTime(now, () => {
-        val id = UUID.randomUUID()
-        val ass = Fixtures.assessments.storedAssessment(id)
+      val id = UUID.randomUUID()
+      val ass = Fixtures.assessments.storedAssessment(id)
 
-        val test = for {
-          inserted <- dao.insert(ass)
+      val test = for {
+        _ <- DBIO.from(Future.successful {
+          DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(earlier, JavaTime.timeZone)
+        })
+        _ <- dao.insert(ass)
 
-          // java.lang.Exception: Optimistic locking failed - tried to update version 2019-01-01T10:01Z but current value is 2019-01-01T10:00Z for class class domain.dao.AssessmentsTables$StoredAssessment
-          result <- dao.update(inserted.copy(title = "why is this not fine", version = inserted.version.plusMinutes(1)))
+        _ <- DBIO.from(Future.successful {
+          DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(now, JavaTime.timeZone)
+        })
+        result <- dao.update(ass.copy(title = "is this fine yet"))
 
-          // org.postgresql.util.PSQLException: ERROR: duplicate key value violates unique constraint "pk_assessment_version"
-          otherResult <- dao.update(inserted.copy(title = "why is this not fine"))
+        existsAfter <- dao.getById(id)
+        _ <- DBIO.from(Future.successful {
+          result.created.toInstant mustBe ass.created.toInstant
+          result.version.toInstant mustBe now
+          result.code mustBe ass.code
+          result.title mustBe "is this fine yet"
+          result.assessmentType mustBe ass.assessmentType
+          result.platform mustBe ass.platform
+          result.startTime mustBe ass.startTime
+          result.duration mustBe ass.duration
 
-          existsAfter <- dao.getById(id)
-          _ <- DBIO.from(Future.successful {
-            result.created.toInstant mustBe ass.created.toInstant
-            result.version.toInstant mustBe now
-            result.code mustBe ass.code
-            result.title mustBe ass.title
-            result.assessmentType mustBe ass.assessmentType
-            result.platform mustBe ass.platform
-            result.startTime mustBe ass.startTime
-            result.duration mustBe ass.duration
+          existsAfter must contain(result)
+        })
+      } yield result
 
-            existsAfter must contain(result)
-          })
-        } yield result
-
-        exec(test)
-      })
+      exec(test)
+      DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.systemDefaultZone
     }
 
     "fetch all" in {
