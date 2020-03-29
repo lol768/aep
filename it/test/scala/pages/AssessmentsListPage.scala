@@ -11,8 +11,8 @@ class AssessmentsListPage()(implicit driver: WebDriver, server: ServerInfo) exte
   override val path: String = "/assessments"
 
   def assessmentsList: Seq[AssessmentInfo] = driver.findElements(By.className("assessment-information-panel")).asScala.map { div =>
-            val title = div.findElements(By.tagName("h4")).asScala.head.getText
-            val viewLink = div.findElements(By.tagName("a")).asScala.head
-      AssessmentInfo(title, viewLink)
-    }.toSeq
+    val title = div.findElements(By.tagName("h4")).asScala.head.getText
+    val viewLink = div.findElements(By.tagName("a")).asScala.head
+    AssessmentInfo(title, viewLink)
+  }.toSeq
 }
