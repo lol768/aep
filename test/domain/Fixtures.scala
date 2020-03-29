@@ -107,12 +107,12 @@ object Fixtures {
         Some(DataGeneration.fakePath)
       )
 
-    def storedAssessment(uuid: UUID = UUID.randomUUID): StoredAssessment = {
+    def storedAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None): StoredAssessment = {
       val date = LocalDate.of(2016, 1, 1)
       val createTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
       val startTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
       val code = f"${DataGeneration.fakeDept}${Random.between(101, 999)}%03d-${Random.between(1, 99)}%02d"
-      val platform = Platform.values(Random.nextInt(Platform.values.size))
+      val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
       val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
       val state = State.values(Random.nextInt(State.values.size))
 
