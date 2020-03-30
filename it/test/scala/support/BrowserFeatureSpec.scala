@@ -2,12 +2,16 @@ package support
 
 import java.io.File
 
+import domain.Assessment.Platform.OnlineExams
+import domain.Fixtures
+import domain.Fixtures.{assessments, studentAssessments}
+import domain.dao.{AssessmentDao, DaoRunning, StudentAssessmentDao}
 import helpers.{FutureServiceMixins, HasApplicationGet}
 import org.apache.commons.text.StringEscapeUtils
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterEach, GivenWhenThen}
 import org.scalatestplus.selenium.{Page, WebBrowser}
-import pages.{AbstractPage, HomePage}
+import pages.{AbstractPage, AssessmentsListPage, HomePage}
 import play.api.db.DBApi
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.i18n.{Langs, MessagesApi, MessagesImpl, MessagesProvider}
@@ -31,6 +35,7 @@ case class ServerInfo(
 case class HtmlSnippet(name: String, value: String)
 
 abstract class BrowserFeatureSpec extends AbstractFunctionalTest
+  with DaoRunning
   with WebBrowser
   with GivenWhenThen
   with EmbeddedPostgres
@@ -44,6 +49,9 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
 
   protected lazy val dbConfigProvider: DatabaseConfigProvider = get[DatabaseConfigProvider]
   lazy val dbConfig: DatabaseConfig[JdbcProfile] = dbConfigProvider.get[JdbcProfile]
+
+  private val assessmentDao = get[AssessmentDao]
+  private val studentAssessmentDao = get[StudentAssessmentDao]
 
   override def fakeApplicationBuilder: GuiceApplicationBuilder = super.fakeApplicationBuilder
     .overrides(
@@ -92,6 +100,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
   def urlTo(call: Call): String = call.absoluteURL(false, s"localhost:$port")
 
   val homePage = new HomePage()
+  val assessmentsListPage = new AssessmentsListPage()
 
   def visit(path: String): Unit = {
     go to (baseUrl + path)
@@ -114,6 +123,10 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
 
   def pageMustContain(text: String, description: String = null): Unit = {
     assert(pageSource.contains(text) || pageText.contains(text), s"Page didn't contain '${Option(description).getOrElse(text)}'")
+  }
+
+  def currentUrlMustContain(text: String): Unit = {
+    assert(currentUrl.contains(text), s"Current url didn't contain '$text'")
   }
 
   def pageContentMustContain(text: String): Unit = {
@@ -166,6 +179,31 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
     def the_page_should_contain(text: String): Unit = {
       Then(s"I should see in the page the text '${unescape(text)}'")
       pageMustContain(text)
+    }
+
+    def i_am_student(): Unit = {
+      Given("I am a student")
+      setUser(Fixtures.users.student1)
+    }
+
+    def i_have_an_online_exam_to_sit(student: User): Unit = {
+      Given("I have an Online Exam to sit")
+      val assessment = assessments.storedAssessment(platformOption = Some(OnlineExams))
+      val sa1 = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
+      execWithCommit(assessmentDao.insert(assessment))
+      execWithCommit(studentAssessmentDao.insert(sa1))
+    }
+
+    def i_click_through_to_my_first_exam_from_assessments_list(): Unit = {
+      When("I click through to my exam from the assessment list")
+      visit(assessmentsListPage)
+      val assessmentList = assessmentsListPage.assessmentsList
+      assessmentList.head.viewLink.click()
+    }
+
+    def i_should_be_redirected_to_exam_page(): Unit = {
+      Then("I should be redirected to the exam page")
+      eventually(currentUrlMustContain(s"/assessment/"))
     }
   }
 

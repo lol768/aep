@@ -94,14 +94,14 @@ object DataGenerationService {
       Some(DataGeneration.fakePath)
     )
 
-  def makeStoredAssessment(uuid: UUID = UUID.randomUUID): StoredAssessment = {
+  def makeStoredAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None): StoredAssessment = {
     val date = LocalDate.of(2018, 1, 1)
     val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
     val localStartTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
     val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
     val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
     val code = f"${DataGeneration.fakeDept}${Random.between(101, 999)}%03d-${Random.between(1, 99)}%02d"
-    val platform = Platform.values(Random.nextInt(Platform.values.size))
+    val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
     val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
 
     StoredAssessment(
