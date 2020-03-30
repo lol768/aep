@@ -25,8 +25,8 @@ const updateTimingInfo = (node, data) => {
   } else if (data.timeUntilStart > 0) {
     text = `You can start in ${msToHumanReadable(data.timeUntilStart)}.`;
     setWarning(node);
-  } else if (!data.hasWindowPassed) {
-    text = `${msToHumanReadable(-data.timeUntilStart)} left to start.`;
+  } else if (data.timeUntilEndOfWindow > 0) {
+    text = `${msToHumanReadable(data.timeUntilEndOfWindow)} left to start.`;
     setWarning(node);
   } else {
     text = 'The exam window has now passed.';
@@ -65,6 +65,7 @@ const offlineRefresh = (node) => {
   const timeRemaining = inProgress ? end - now : null;
   const timeSinceStart = inProgress ? now - new Date(start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
+  const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
 
   const data = {
     timeRemaining,
@@ -72,7 +73,7 @@ const offlineRefresh = (node) => {
     timeUntilStart,
     hasStarted,
     hasFinalised,
-    hasWindowPassed,
+    timeUntilEndOfWindow,
   };
 
   if (Number.isNaN(windowStart) || Number.isNaN(windowEnd)) return;

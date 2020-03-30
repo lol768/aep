@@ -12,6 +12,8 @@ sealed trait BaseStudentAssessment {
   def inSeat: Boolean
   def startTime: Option[OffsetDateTime]
   def finaliseTime: Option[OffsetDateTime]
+
+  def hasFinalised: Boolean = finaliseTime.nonEmpty
 }
 
 case class StudentAssessment(
