@@ -25,6 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[StudentAssessmentServiceImpl])
 trait StudentAssessmentService {
+  def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessment]]]
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]]
@@ -35,6 +36,7 @@ trait StudentAssessmentService {
   def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
+  def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
 }
 
 @Singleton
@@ -46,6 +48,25 @@ class StudentAssessmentServiceImpl @Inject()(
   assessmentService: AssessmentService,
   assessmentDao: AssessmentDao,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
+
+  private def inflateWithUploadedFiles(storedStudentAssessments: Seq[StoredStudentAssessment])(implicit t: TimingContext) =
+    uploadedFileService.get(storedStudentAssessments.flatMap(_.uploadedFiles)).map { uploadedFiles =>
+      storedStudentAssessments.map(_.asStudentAssessment(uploadedFiles.map(f => f.id -> f).toMap))
+    }
+
+  private def inflateWithUploadedFiles(storedStudentAssessment: StoredStudentAssessment)(implicit t: TimingContext) =
+    uploadedFileService.get(storedStudentAssessment.uploadedFiles).map { uploadedFiles =>
+      storedStudentAssessment.asStudentAssessment(uploadedFiles.map(f => f.id -> f).toMap)
+    }
+
+  override def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessment]]] = {
+    daoRunner.run(dao.get(studentId, assessmentId))
+      .flatMap(_.map(inflateWithUploadedFiles) match {
+        case Some(f) => f.map(Some(_))
+        case None => Future.successful(None)
+      }).map(ServiceResults.success)
+  }
+
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
     daoRunner.run(dao.loadAllWithUploadedFiles)
       .map(inflateRowsWithUploadedFiles)
@@ -226,6 +247,32 @@ class StudentAssessmentServiceImpl @Inject()(
     }
   }
 
+  override def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
+    daoRunner.run(dao.get(studentAssessment.studentId, studentAssessment.assessmentId)).flatMap { result =>
+      result.map { existingSA =>
+        daoRunner.run(dao.update(existingSA.copy(
+          inSeat = studentAssessment.inSeat,
+          startTime = studentAssessment.startTime,
+          finaliseTime = studentAssessment.finaliseTime,
+          uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+        )))
+      }.getOrElse {
+        val timestamp = JavaTime.offsetDateTime
+        daoRunner.run(dao.insert(StoredStudentAssessment(
+          id = studentAssessment.id,
+          assessmentId = studentAssessment.assessmentId,
+          studentId = studentAssessment.studentId,
+          inSeat = studentAssessment.inSeat,
+          startTime = studentAssessment.startTime,
+          finaliseTime = studentAssessment.finaliseTime,
+          uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+          created = timestamp,
+          version = timestamp,
+        )))
+      }.flatMap(inflateWithUploadedFiles)
+        .map(ServiceResults.success)
+    }
+  }
 
   private def noAssessmentFound(id: UUID) =
     throw new NoSuchElementException(s"Could not find an assessment with id ${id.toString}")

@@ -1,6 +1,7 @@
 package services
 
 import java.time.ZonedDateTime
+import java.util.UUID
 
 import domain.Fixtures
 import domain.Fixtures.uploadedFiles.{homeOfficeStatementPDF, specialJPG}
@@ -41,6 +42,24 @@ class AssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterEac
 
       val updated2 = service.update(updated, Seq(file2, file1)).serviceValue
       updated2.brief.files.map(_.fileName) mustBe Seq(file2, file1).map(_._2.fileName)
+    }
+
+    "insert, get and update an assessment" in {
+      val assessmentId = UUID.randomUUID
+      val storedAssessment = Fixtures.assessments.storedAssessment(assessmentId)
+
+      service.upsert(storedAssessment.asAssessment(Map.empty)).serviceValue
+      val assessmentFromDB = service.get(assessmentId).serviceValue
+
+      assessmentFromDB.title mustBe storedAssessment.title
+      val newTitle = "Online Assessment: Workingfulness and Functioningality in Web Applications"
+      val updatedAssessment = assessmentFromDB.copy(
+        title = newTitle
+      )
+
+      service.upsert(updatedAssessment).serviceValue
+
+      service.get(assessmentId).serviceValue.title mustBe newTitle
     }
   }
 
