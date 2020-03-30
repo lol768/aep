@@ -9,6 +9,7 @@ import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
+import domain.Assessment.Platform
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import services.sandbox.DataGeneration
 import slick.basic.{BasicProfile, DatabaseConfig}
@@ -90,8 +91,8 @@ object Fixtures {
 
     def storedBrief: StoredBrief = DataGenerationService.makeStoredBrief
 
-    def storedAssessment(uuid: UUID = UUID.randomUUID): StoredAssessment =
-      DataGenerationService.makeStoredAssessment(uuid)
+    def storedAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None): StoredAssessment =
+      DataGenerationService.makeStoredAssessment(uuid, platformOption)
   }
 
   object studentAssessments {
