@@ -179,3 +179,37 @@ svg.pretty-patterns {
 .fa-hourglass-spin {
   animation: hourglass-spin 4s infinite linear;
 }
+
+.ws-connected, .ws-disconnected, .ws-error {
+  background: #fff;
+  padding: 0.5rem 1.5rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+
+  i {
+    padding-right: 0.5rem;
+  }
+}
+
+.connect-ws .id7-page-title {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 35.6px;
+  h1 {
+    border: none;
+    padding-bottom: 0;
+  }
+}
+
+@media (max-width: @screen-xs-max) {
+  .connect-ws .id7-page-title {
+    h1 {
+      margin-right: 1rem;
+    }
+  }
+
+  .uploaded-file {
+    max-width: 100%;
+  }
+}

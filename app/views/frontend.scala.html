@@ -1,3 +1,4 @@
+@import views.html.tags.connectivityInfo
 @(
   title: String = "",
   extraClasses: Seq[String] = Seq()
@@ -103,6 +104,7 @@
           @if(!title.isEmpty) {
             <div class="id7-page-title">
               <h1>@title</h1>
+              @connectivityInfo()
             </div>
           }
         </header>
