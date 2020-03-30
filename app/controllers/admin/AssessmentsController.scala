@@ -48,13 +48,13 @@ class AssessmentsController @Inject()(
   import AssessmentsController._
   import security._
 
-  def index: Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def index: Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
     assessmentService.findByStates(Seq(State.Draft)).successMap { assessments =>
       Ok(views.html.admin.assessments.index(assessments))
     }
   }
 
-  def show(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def show(id: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
     assessmentService.get(id).successMap { assessment =>
       Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
         title = assessment.title,
@@ -67,7 +67,7 @@ class AssessmentsController @Inject()(
     }
   }
 
-  def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = RequireSysadmin(uploadedFileControllerHelper.bodyParser).async { implicit request =>
+  def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = RequireDepartmentAssessmentManager(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     assessmentService.get(id).successFlatMap { assessment =>
       form.bindFromRequest().fold(
         formWithErrors => Future.successful(Ok(views.html.admin.assessments.show(assessment, formWithErrors))),
@@ -90,7 +90,7 @@ class AssessmentsController @Inject()(
     }
   }
 
-  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
     assessmentService.get(assessmentId).successFlatMap { assessment =>
       assessment.brief.files.find(_.id == fileId)
         .map(uploadedFileControllerHelper.serveFile)
