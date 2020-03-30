@@ -71,6 +71,7 @@ class DataGenerationServiceImpl @Inject()(
       platform = platform,
       assessmentType = assType,
       storedBrief = makeStoredBrief,
+      state = Assessment.State.Draft,
       created = createTime,
       version = createTime
     )

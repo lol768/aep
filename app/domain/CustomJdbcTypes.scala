@@ -1,6 +1,6 @@
 package domain
 
-import domain.Assessment.{Platform, AssessmentType}
+import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.StoredBrief
 import enumeratum.SlickEnumSupport
 import javax.inject.{Inject, Singleton}
@@ -48,8 +48,9 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject() (
   implicit val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)
   implicit val uploadedFileOwnerMapper: JdbcType[UploadedFileOwner] = mappedColumnTypeForEnum(UploadedFileOwner)
   implicit val platformTypeMapper: JdbcType[Platform] = mappedColumnTypeForEnum(Platform)
+  implicit val stateTypeMapper: JdbcType[State] = mappedColumnTypeForEnum(State)
   implicit val assessmentTypeTypeMapper: JdbcType[AssessmentType] = mappedColumnTypeForEnum(AssessmentType)
-  
+
 }
 
 class OracleCustomJdbcTypes @Inject() (

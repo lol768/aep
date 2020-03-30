@@ -24,7 +24,9 @@ trait SecurityService {
   def RequiredRoleAction(role: RoleName): AuthActionBuilder
   def RequiredActualUserRoleAction(role: RoleName): AuthActionBuilder
 
+  def RequireAdmin: AuthActionBuilder
   def RequireSysadmin: AuthActionBuilder
+  def RequireApprover: AuthActionBuilder
   def RequireMasquerader: AuthActionBuilder
 
   /**
@@ -60,7 +62,9 @@ class SecurityServiceImpl @Inject()(
   override def RequiredRoleAction(role: RoleName): AuthActionBuilder = sso.RequireRole(role, forbidden)(defaultParser)
   override def RequiredActualUserRoleAction(role: RoleName): AuthActionBuilder = sso.RequireActualUserRole(role, forbidden)(defaultParser)
 
+  val RequireAdmin: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Admin)
   val RequireSysadmin: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Sysadmin)
+  val RequireApprover: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Approver)
   val RequireMasquerader: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Masquerader)
 
   class RequireConditionActionFilter(block: AuthenticatedRequest[_] => Boolean, otherwise: AuthenticatedRequest[_] => Result)(implicit val executionContext: ExecutionContext) extends ActionFilter[AuthenticatedRequest] {

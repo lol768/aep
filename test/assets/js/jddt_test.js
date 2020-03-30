@@ -2,7 +2,7 @@ import JDDT from 'jddt';
 import {JSDOM} from 'jsdom';
 import MockDate from 'mockdate';
 
-const iconString = '<i class="fad fa-clock fa-fw" aria-hidden="true"></i>';
+const iconString = '<i class="fad themed-duotone fa-clock fa-fw" aria-hidden="true"></i>';
 const londonTimeString = '<span class="text-muted">Europe/London</span>';
 const moscowTimeString = '<span class="text-muted">Europe/Moscow</span>';
 const midwayTimeString = '<span class="text-muted">Pacific/Midway</span>';
@@ -10,7 +10,10 @@ const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
 const document = dom.window.document;
 
 // These tests will work on this assumption that today's date is as specified below:
-MockDate.set('2020-03-25');
+// 2020-03-25T09:45:00.000Z
+process.env.TZ = 'Europe/London';
+const fakeNow = 1585129500000;
+MockDate.set(fakeNow, 0);
 
 // Quick element maker for individual datetime
 function makeJDDTElement(millis, format, serverTimezoneOffset, serverTimezoneName) {
@@ -163,6 +166,28 @@ describe('JDDT date formatting', () => {
     JDDT.applyToRangeElement(el);
 
     assert.equal(el.innerHTML, `${iconString} 11:30 Tue 24th Mar '20 to 11:30, Fri 2nd Apr '21 ${londonTimeString}`);
+  });
+
+  it('handles ranges across date boundaries', () => {
+    // 14:00, 26/03/2020
+    const fromMillis = 1585231200000;
+    // 22:00, 26/03/2020
+    const toMillis = 1585260000000;
+
+    // Change the client timezone offset to match Asia/Shanghai
+    try {
+      process.env.TZ = 'Asia/Shanghai';
+      // 16:30, 26/03/2020 (00:30, 27/03/2020 local)
+      MockDate.set(1585240200000, -480);
+
+      const el = makeJDDTRangeElement(true, fromMillis, toMillis, 0, 'Europe/London');
+      JDDT.applyToRangeElement(el);
+
+      assert.equal(el.innerHTML, `${iconString} 22:00 Thu 26th Mar to 06:00, Today <span class="text-muted">Asia/Shanghai</span>`);
+    } finally {
+      process.env.TZ = 'Europe/London';
+      MockDate.set(fakeNow, 0);
+    }
   });
 
 });
