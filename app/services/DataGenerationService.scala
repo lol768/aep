@@ -28,6 +28,7 @@ trait DataGenerationService {
   def makeStoredStudentAssessment(assessmentId: UUID, studentId: UniversityID, studentAssessmentId: UUID): StoredStudentAssessment
   def putRandomAssessmentsInDatabase(howMany: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]]
   def addRandomStudentAssessmentsToAssessment(assessmentId: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]]
+  def putRandomAssessmentsWithStudentAssessmentsInDatabase(howManyAssessments: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]]
 }
 
 @Singleton
@@ -109,6 +110,21 @@ class DataGenerationServiceImpl @Inject()(
       webdevIds.map { webdevId =>
         studentAssessmentService.upsert(makeStoredStudentAssessment(assessmentId, webdevId)
           .asStudentAssessment(Map.empty))
+      }
+    }
+  }
+
+  override def putRandomAssessmentsWithStudentAssessmentsInDatabase(howManyAssessments: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]] = {
+    ServiceResults.futureSequence {
+      (1 to howManyAssessments).map { _ =>
+        assessmentService.upsert(makeStoredAssessment().asAssessment(Map.empty)).flatMap { result =>
+          result.toOption.map { insertedAssessment =>
+            addRandomStudentAssessmentsToAssessment(insertedAssessment.id)
+          }.getOrElse {
+            throw new Exception("Problem creating random assessment")
+          }
+          Future.successful(result)
+        }
       }
     }
   }

@@ -17,26 +17,38 @@ class DummyDataGenerationController @Inject()(
 
   import securityService._
 
-  val form: Form[DataGenerationFormData] = Form(mapping(
-    "howMany" -> number.verifying("Asking for 0 or fewer is stupid", i => i > 0)
+  private val form: Form[DataGenerationFormData] = Form(mapping(
+    "howMany" -> number.verifying("Asking for 0 or fewer is stupid", i => i > 0),
+    "withStudentAssessments" -> boolean
   )(DataGenerationFormData.apply)(DataGenerationFormData.unapply))
 
+  private val defaultFormData = DataGenerationFormData(
+    howMany = 5,
+    withStudentAssessments = true
+  )
+
   def showForm: Action[AnyContent] = RequireSysadmin { implicit request =>
-    Ok(views.html.sysadmin.dummyDataGenerator(form))
+    Ok(views.html.sysadmin.dummyDataGenerator(form.fill(defaultFormData)))
   }
 
   def submitForm: Action[AnyContent] = RequireSysadmin.async { implicit request =>
     def success(data: DataGenerationFormData) = {
-      dataGenerationService.putRandomAssessmentsInDatabase(data.howMany).successMap { _ =>
-        Redirect(controllers.sysadmin.routes.DummyDataGenerationController.showForm())
-          .flashing("success" -> s"Added ${data.howMany} random assessments to the database")
+      if (data.withStudentAssessments) {
+        dataGenerationService.putRandomAssessmentsWithStudentAssessmentsInDatabase(data.howMany).successMap { _ =>
+          Redirect(controllers.sysadmin.routes.DummyDataGenerationController.showForm())
+            .flashing("success" -> s"Added ${data.howMany} random assessments with associated student assessments to the database")
+        }
+      } else {
+        dataGenerationService.putRandomAssessmentsInDatabase(data.howMany).successMap { _ =>
+          Redirect(controllers.sysadmin.routes.DummyDataGenerationController.showForm())
+            .flashing("success" -> s"Added ${data.howMany} random assessments to the database")
+        }
       }
     }
 
     def failure(formWithErrors: Form[DataGenerationFormData]) =
       Future.successful{
-        Redirect(controllers.sysadmin.routes.DummyDataGenerationController.showForm())
-          .flashing("error" -> "Oh noes!")
+        BadRequest(views.html.sysadmin.dummyDataGenerator(formWithErrors))
       }
 
     form.bindFromRequest().fold(failure, success)
@@ -44,5 +56,6 @@ class DummyDataGenerationController @Inject()(
 }
 
 case class DataGenerationFormData(
-  howMany: Int
+  howMany: Int,
+  withStudentAssessments: Boolean,
 )

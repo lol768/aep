@@ -23,6 +23,9 @@
         @b3.number(form("howMany"),
           Symbol("_label") -> "Number of assessments to create"
         )
+        @b3.checkbox(form("withStudentAssessments"),
+          Symbol("_text") -> "Add student assessments for each assessment"
+        )
         <button type="submit" class="btn btn-primary">
           <i class="fal fa-fw fa-starship"></i>
           Make it so
