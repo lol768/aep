@@ -181,6 +181,7 @@ class AssessmentServiceImpl @Inject()(
           platform = assessment.platform,
           assessmentType = assessment.assessmentType,
           storedBrief = assessment.brief.toStoredBrief,
+          invigilators = sortedInvigilators(assessment),
           state = assessment.state,
           created = timestamp,
           version = timestamp

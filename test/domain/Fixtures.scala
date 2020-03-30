@@ -87,18 +87,7 @@ object Fixtures {
   }
 
   object assessments {
-    import dateConversion._
 
-
-    val invigilator1 = "Mary"
-    val invigilator2 = "Bob"
-
-    def storedBrief: StoredBrief =
-      StoredBrief(
-        Some(DataGeneration.dummyWords(Random.between(6,30))),
-        Seq.empty,
-        Some(DataGeneration.fakePath)
-      )
     def storedBrief: StoredBrief = DataGenerationService.makeStoredBrief
 
     def storedAssessment(uuid: UUID = UUID.randomUUID): StoredAssessment =

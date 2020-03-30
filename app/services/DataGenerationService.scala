@@ -83,6 +83,10 @@ object DataGenerationService {
   import warwick.core.helpers.JavaTime.{timeZone => zone}
   import helpers.DateConversion
 
+
+  val invigilator1 = "Mary"
+  val invigilator2 = "Bob"
+
   def makeStoredBrief: StoredBrief =
     StoredBrief(
       Some(DataGeneration.dummyWords(Random.between(6,30))),
@@ -109,6 +113,7 @@ object DataGenerationService {
       platform = platform,
       assessmentType = assType,
       storedBrief = makeStoredBrief,
+      invigilators = List(invigilator1, invigilator2),
       state = Assessment.State.Draft,
       created = createTime,
       version = createTime
