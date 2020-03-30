@@ -1,0 +1,25 @@
+# Validation messages
+
+
+
+# Flash messages
+
+flash.emails.queued=Queued {0} emails.
+flash.mywarwick.queued=Queued My Warwick alert.
+flash.websocket.published=Published WebSocket message.
+flash.files.uploaded=Uploaded {0} files.
+flash.assessment.finish.must-check-box=You must check the checkbox to finish the assessment.
+flash.assessment.started=The assessment has begun.
+flash.assessment.filesUploaded=The files have been uploaded to the assessment. Please check them and finish the assessment when you are done.
+flash.assessment.filesDuplicates=You uploaded at least one file, {0}, which already exists. Please delete it first.
+flash.assessment.fileDeleted=1 file has been deleted. You can now upload a replacement, if you wish.
+flash.assessment.approved=The assessment has been approved.
+flash.dataGeneration.randomAssessments=Added {0} randomly generated assessments to the database.
+flash.dataGeneration.randomAssessmentsWithStudentAssessments=Added {0} randomly generated assessments with associated student assessments to the database.
+flash.assessment.announcement.created=Assessment announcement created
+
+# Overrides of keys in messages.default
+
+error.required=This field is required.
+error.approval.must-check-box=You must check the checkbox to approve the assessment.
+

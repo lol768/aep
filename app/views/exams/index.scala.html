@@ -1,0 +1,46 @@
+@import domain.StudentAssessmentWithAssessment
+@import tags._
+
+@(assessments: Seq[StudentAssessmentWithAssessment])(implicit requestHeader: RequestHeader, context: RequestContext)
+
+@frontend("My exams", extraClasses = Seq("grey-nopad", "connect-ws")) {
+
+  <div class="media">
+    <div class="media-left">
+      <i class="fa fa-exclamation-triangle text-danger"></i>
+    </div>
+    <div class="media-body">
+      This page lists all the exams you are scheduled to take during summer 2020. Please check carefully to make sure that all the exams you expect to take are shown here; if an exam does not appear in this list, you will not be able to take it. If there are exams you are expecting to take which do not appear here, please <a href="mailto:someone">tell us about it as soon as possible</a>.
+    </div>
+  </div>
+
+  <hr>
+
+@*  <div class="panel panel-default panel-lg">*@
+@*    <div class="panel-body">*@
+@*      <h2>Your in-progress exam</h2>*@
+
+@*      <p>CS118-15 Open book Java programming</p>*@
+
+@*      <p>*@
+@*        <span class="text-muted">*@
+@*          <i class="fad fa-fw fa-hourglass-half"></i>Started 1 hour 2 minutes ago. 1 hour 57 minutes remaining*@
+@*        </span>*@
+@*      </p>*@
+
+@*      <a href="/service/stub" class="btn btn-primary btn-lg">*@
+@*        Continue*@
+@*      </a>*@
+@*    </div>*@
+@*  </div>*@
+
+  @assessments.grouped(2).map { row =>
+    <div class="row">
+      @row.map { a =>
+        <div class="col-md-6">
+          @assessmentPanel(a)
+        </div>
+      }
+    </div>
+  }
+}

@@ -16,3 +16,25 @@ case class AuditEvent(
   targetId: String,
   targetType: Symbol
 )
+
+object AuditEvent {
+  def tupled = (apply _).tupled
+
+  object Target {
+    val UploadedFile = Symbol("UploadedFile")
+    val StudentAssessment = Symbol("StudentAssessment")
+  }
+
+  object Operation {
+    object UploadedFile {
+      val Save = Symbol("UploadedFileStore")
+      val Delete = Symbol("UploadedFileDelete")
+    }
+    object Assessment {
+      val StartAssessment = Symbol("StartAssessment")
+      val AttachFilesToAssessment = Symbol("AttachFilesToAssessment")
+      val DeleteAttachedAssessmentFile = Symbol("DeleteAttachedAssessmentFile")
+      val FinishAssessment = Symbol("FinishAssessment")
+    }
+  }
+}

@@ -1,0 +1,53 @@
+@import controllers.sysadmin.MyWarwickQueueController.QueuedMyWarwickActivity
+@import org.quartz.Trigger.TriggerState
+@import play.api.libs.json.Json
+@import warwick.core.helpers.JavaTime
+
+@(
+  activities: Seq[QueuedMyWarwickActivity]
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@adminLayout("My Warwick activity queue") {
+  <table class="table table-default">
+    <thead>
+      <tr>
+        <th>Created</th>
+        <th>Instance</th>
+        <th>Activity</th>
+        <th>Type</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      @activities.map { activity =>
+        <tr>
+          <td>@JavaTime.Relative(activity.created)</td>
+          <td>@activity.instanceBaseUrl</td>
+          <td><pre>@Json.prettyPrint(activity.request)</pre></td>
+          <td>
+            @if(activity.transient) {
+              Transient
+            } else {
+              @if(activity.alert) {
+                Alert
+              } else {
+                Activity
+              }
+            }
+          </td>
+          <td>
+            <span class="label label-info">@activity.state</span>
+            @if(activity.state == TriggerState.ERROR) {
+              @b3.inline.formCSRF(controllers.sysadmin.routes.MyWarwickQueueController.reschedule(activity.key.getName, activity.key.getGroup), Symbol("class") -> "inline-form") { implicit ifc =>
+                <button type="submit" class="btn btn-primary btn-xs">
+                  <i class="fal fa-clock"></i>
+                  Reschedule
+                </button>
+              }
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

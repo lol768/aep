@@ -17,12 +17,14 @@ case class RequestContext(
   actualUser: Option[User],
   loginUrl: String,
   logoutUrl: String,
+  myWarwickBaseUrl: String,
   navigation: Seq[Navigation],
   flash: Flash,
   csrfHelper: CSRFPageHelper,
   userAgent: Option[String],
   ipAddress: String,
-  timingData: TimingContext.Data
+  timingData: TimingContext.Data,
+  appFullName: String
 ) extends TimingContext {
   def isMasquerading: Boolean = user != actualUser
 }
@@ -56,12 +58,14 @@ object RequestContext {
       actualUser = actualUser,
       loginUrl = linkGenerator.getLoginUrl,
       logoutUrl = linkGenerator.getLogoutUrl,
+      myWarwickBaseUrl = configuration.get[String]("mywarwick.instances.0.baseUrl"),
       navigation = navigation,
       flash = Try(request.flash).getOrElse(Flash()),
       csrfHelper = transformCsrfHelper(csrfHelperFactory, request),
       userAgent = request.headers.get("User-Agent"),
       ipAddress = request.remoteAddress,
-      timingData = request.attrs.get(ServerTimingFilter.TimingData).getOrElse(new TimingContext.Data)
+      timingData = request.attrs.get(ServerTimingFilter.TimingData).getOrElse(new TimingContext.Data),
+      appFullName = configuration.get[String]("app.name.full")
     )
   }
 

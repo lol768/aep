@@ -5,11 +5,11 @@
   <parent>
     <groupId>com.atlassian.bamboo</groupId>
     <artifactId>bamboo-specs-parent</artifactId>
-    <version>6.10.3</version>
+    <version>7.0.2</version>
     <relativePath />
   </parent>
 
-  <groupId>uk.ac.warwick.yourapp</groupId>
+  <groupId>uk.ac.warwick.onlineexams</groupId>
   <artifactId>bamboo-specs</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>

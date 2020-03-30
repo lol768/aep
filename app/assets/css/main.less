@@ -10,9 +10,172 @@
 @import "sysadmin-notices";
 @import "error-pages";
 @import "flexi-picker";
+@import "assessment-announcements";
 
 @id7-ignore-id6-legacy: true;
 @id7-image-root-dir: './lib/id7/images';
 @icon-font-path: './lib/fontawesome-pro/webfonts';
 @fa-font-path: './lib/fontawesome-pro/webfonts';
 @brand-colour: #a14418;
+
+.grey-nopad {
+  .navbar-secondary .navbar-nav > li.active:before {
+    border-bottom-color: #f7f6f4
+  }
+
+  .id7-main-content-area {
+    background: #f7f6f4
+  }
+
+  .panel {
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .05);
+    border: 1px solid #edebe7;
+  }
+}
+
+.panel-lg .panel-body {
+  margin: 20px 15px;
+}
+
+dl {
+  dt {
+    color: @text-muted;
+    font-weight: normal;
+  }
+
+  dd {
+    margin-bottom: 10px;
+  }
+}
+
+.finish-exam-panel {
+  margin-top: 1.5rem;
+
+  .panel-body {
+    padding: 3rem;
+  }
+
+  form .form-group {
+    margin-bottom: 0;
+  }
+
+  p.lead {
+    font-weight: 400;
+    margin-bottom: 1rem;
+  }
+
+  ul, label, p:not(.lead) {
+    margin-bottom: 1.5rem;
+  }
+
+}
+
+.brand-stripe {
+  box-shadow: inset 0 4px 0 0 #3e7a73;
+  width: 100%;
+  height: 4px;
+}
+
+.themed-duotone {
+  --fa-primary-color: #244740;
+  --fa-secondary-color: #1d857e;
+  --fa-secondary-opacity: 0.6;
+}
+
+.uploaded-file {
+  max-width: 33.33333333%;
+  margin-bottom: -1px;
+}
+
+.uploaded-file {
+  margin-left: -1px;
+
+  form > p {
+    margin-bottom: 0;
+  }
+}
+
+.timing-information {
+  white-space: pre-line;
+}
+
+.uploaded-files {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  position: relative;
+  right: -1px;
+  margin-bottom: 1.5rem;
+}
+
+
+svg.pretty-patterns {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.pattern-item {
+  color: rgba(29, 133, 126, 0.1);
+}
+
+.assessment-information-panel {
+  overflow: hidden;
+  position: relative;
+}
+
+
+.blankslate {
+  position: relative;
+  padding: 32px;
+  text-align: center;
+
+  h3 {
+    font-size: 20px;
+  }
+
+  p {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  .btn {
+    margin-top: 1rem;
+  }
+
+  i + i {
+    margin-left: 0.5rem;
+  }
+
+  max-width: 600px;
+  margin: 0 auto;
+
+  .left-align {
+    text-align: left;
+  }
+}
+
+.mr-half {
+  margin-right: 0.5rem;
+}
+
+.ml-half {
+  margin-left: 0.5rem;
+}
+
+// Credit: https://github.com/loadingio/loading.css/blob/c2ed18310230611885514f82c4c62c746f7b91a9/dist/entries/spin.css
+@keyframes hourglass-spin {
+  0%,
+  50% {
+    animation-timing-function: cubic-bezier(0.5856, 0.0703, 0.4143, 0.9297);
+    transform: rotate(0deg);
+  }
+  75%,
+  100% {
+    transform: rotate(180deg);
+  }
+}
+
+.fa-hourglass-spin {
+  animation: hourglass-spin 4s infinite linear;
+}

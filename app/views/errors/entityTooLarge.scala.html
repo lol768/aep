@@ -1,0 +1,14 @@
+@import warwick.fileuploads.UploadedFileControllerHelper.UploadedFileConfiguration
+
+@(
+  config: UploadedFileConfiguration
+)(implicit context: RequestContext)
+
+@frontend("Uploaded files too large") {
+  <p>Sorry, the attachments you tried to upload are larger than the
+    maximum allowable attachment size.</p>
+
+  <p>
+    The maximum allowable size for attachments is @helpers.humanReadableSize(config.maxTotalFileSizeBytes).
+  </p>
+}

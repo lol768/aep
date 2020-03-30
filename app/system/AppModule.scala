@@ -1,23 +1,21 @@
 package system
 
-import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
+import controllers.UploadedFileErrorProviderImpl
+import net.codingwell.scalaguice.ScalaModule
+import org.quartz.Scheduler
 import play.api.{Configuration, Environment}
-import services.healthcheck._
-import uk.ac.warwick.util.service.ServiceHealthcheckProvider
+import services.tabula.{TabulaAssessmentService, TabulaAssessmentServiceImpl}
+import warwick.fileuploads.UploadedFileErrorProvider
 
 class AppModule(environment: Environment, configuration: Configuration) extends ScalaModule {
   override def configure(): Unit = {
-    bind[AppStartup].asEagerSingleton()
-    bindHealthChecks()
-  }
+    // Enables Scheduler for injection. Scheduler.start() happens separately, in SchedulerConfigModule
+    bind[Scheduler].toProvider[SchedulerProvider]
+    bind[UploadedFileErrorProvider].to[UploadedFileErrorProviderImpl]
+        bind(classOf[ClusterLifecycle]).asEagerSingleton()
 
-  def bindHealthChecks(): Unit = {
-    val healthchecks = ScalaMultibinder.newSetBinder[ServiceHealthcheckProvider](binder)
-    healthchecks.addBinding.to[UptimeHealthCheck]
-
-    healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("default"))
-    configuration.get[Configuration]("threads").subKeys.toSeq.foreach { name =>
-      healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck(name))
-    }
+    bind[TabulaAssessmentService]
+      .annotatedWithName("TabulaAssessmentService-NoCache")
+      .to[TabulaAssessmentServiceImpl]
   }
 }

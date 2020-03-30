@@ -1,0 +1,63 @@
+@import java.time.OffsetDateTime
+@import warwick.core.helpers.JavaTime
+@import java.util.TimeZone
+@import java.time.format.DateTimeFormatter
+@(fromDatetime: OffsetDateTime, toDatetime: OffsetDateTime)
+
+  @titleCase3Chars(input: Any) = {
+    @{input.toString.substring(0, 1).toUpperCase + input.toString.substring(1, 3).toLowerCase}
+  }
+
+  @th(i: Int) = {
+    @if(i > 10 && i < 14) {
+      @{i}th
+    } else {
+      @{i % 10 match {
+        case 1 => i.toString + "st"
+        case 2 => i.toString + "nd"
+        case 3 => i.toString + "rd"
+        case _ => i.toString + "th"
+      }}
+    }
+  }
+
+  @defining(fromDatetime.getYear == toDatetime.getYear) { sameYear =>
+    @defining(sameYear && fromDatetime.getMonth == toDatetime.getMonth) { sameMonth =>
+      @defining(sameYear && sameMonth && fromDatetime.getDayOfMonth == toDatetime.getDayOfMonth) { sameDate =>
+        @defining(JavaTime.offsetDateTime) { now =>
+          <i class="fad themed-duotone fa-clock fa-fw"></i>
+          @fromDatetime.format(DateTimeFormatter.ofPattern("HH:mm"))
+          @if(!sameDate) {
+            @titleCase3Chars(fromDatetime.getDayOfWeek) @th(fromDatetime.getDayOfMonth)
+          }
+          @if(!sameMonth) {
+            @titleCase3Chars(fromDatetime.getMonth)
+          }
+          @if(!sameYear) {
+            '@fromDatetime.getYear.toString.substring(2, 4)
+          }
+          to
+          @toDatetime.format(DateTimeFormatter.ofPattern("HH:mm")),
+          @if(sameDate && toDatetime.getYear == now.getYear && toDatetime.getMonth == now.getMonth && toDatetime.getDayOfMonth == now.getDayOfMonth) {
+            Today
+          } else {
+            @titleCase3Chars(toDatetime.getDayOfWeek) @th(toDatetime.getDayOfMonth) @titleCase3Chars(toDatetime.getMonth)
+            @if(!sameYear || toDatetime.getYear != JavaTime.offsetDateTime.getYear) {
+              '@toDatetime.getYear.toString.substring(2, 4)
+            }
+          }
+          <span class="text-muted">@JavaTime.timeZone</span><br />
+        }
+      }
+    }
+  }
+
+
+
+  <span class="jddt-range"
+  data-short="true"
+  data-from-millis="@fromDatetime.toInstant.toEpochMilli"
+  data-to-millis="@toDatetime.toInstant.toEpochMilli"
+  data-server-timezone-offset="@{TimeZone.getTimeZone(JavaTime.timeZone).getOffset(fromDatetime.toInstant.toEpochMilli)}"
+  data-server-timezone-name="@JavaTime.timeZone"
+  ></span>

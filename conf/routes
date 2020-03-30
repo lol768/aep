@@ -16,11 +16,73 @@ GET         /service/healthcheck                    @warwick.healthcheck.Injecte
 POST        /service/flexipicker                    @controllers.FlexiPickerController.queryJson
 
 GET         /                                       @controllers.IndexController.home
+GET         /assessments                            @controllers.AssessmentsController.index
+GET         /assessment/:id                         @controllers.AssessmentController.view(id: UUID)
+POST        /assessment/:id                         @controllers.AssessmentController.start(id: UUID)
+POST        /assessment/:id/done                    @controllers.AssessmentController.finish(id: UUID)
+POST        /assessment/:id/upload                  @controllers.AssessmentController.uploadFiles(id: UUID)
+
+# https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
++nocsp
+GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
+GET         /admin/assessment/announcement/add      @controllers.admins.CreateAnnouncementController.index
+POST        /admin/assessment/announcement/add      @controllers.admins.CreateAnnouncementController.add
+
+POST        /assessment/:id/file/:fileID/delete     @controllers.AssessmentController.deleteFile(id: UUID, fileID: UUID)
+
+# https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
++nocsp
+GET         /assessment/:id/attachment/:fileID      @controllers.AssessmentController.downloadAttachment(id: UUID, fileID: UUID)
+
+# Websocket
+GET         /websocket                              @controllers.WebSocketController.socket
+
+
+## Admins ##
+
+GET         /admin                                                @controllers.admin.IndexController.home
+GET         /admin/approvals                                      @controllers.admin.ApprovalsController.index
+GET         /admin/approvals/:id                                  @controllers.admin.ApprovalsController.show(id: UUID)
+POST        /admin/approvals/:id                                  @controllers.admin.ApprovalsController.update(id: UUID)
+GET         /admin/approvals/:assessmentId/files/:fileId            @controllers.admin.ApprovalsController.getFile(assessmentId: UUID, fileId: UUID)
+
+GET         /admin/assessments                                    @controllers.admin.AssessmentsController.index
+GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.show(id: UUID)
+POST        /admin/assessments/:id                                @controllers.admin.AssessmentsController.update(id: UUID)
+GET         /admin/assessments/:assessmentId/files/:fileId          @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
+
+GET         /admin/reporting                                      @controllers.admin.ReportingController.index
+GET         /admin/reporting/:id                                  @controllers.admin.ReportingController.assessment(id: UUID)
 
 ## Sysadmins ##
 
-GET         /sysadmin                               @controllers.IndexController.redirectToPath(path = "/sysadmin/masquerade")
+GET         /sysadmin                               @controllers.sysadmin.SysadminTestController.home
+GET         /sysadmin/upload-test                   @controllers.sysadmin.SysadminTestController.uploadTest()
+GET         /sysadmin/websocket-test                @controllers.WebSocketController.websocketTest()
+GET         /sysadmin/broadcast-test                @controllers.WebSocketController.broadcastTest()
+POST        /sysadmin/broadcast-test                @controllers.WebSocketController.sendBroadcast()
+POST        /sysadmin/announcement-test             @controllers.WebSocketController.sendAnnouncement()
+POST        /sysadmin/upload-test/save              @controllers.sysadmin.SysadminTestController.receiveUpload()
 GET         /sysadmin/masquerade                    @controllers.sysadmin.MasqueradeController.masquerade
+GET         /sysadmin/sent-emails                   @controllers.sysadmin.ViewEmailsController.listAll(page: Int ?= 0)
+GET         /sysadmin/sent-emails/:id               @controllers.sysadmin.ViewEmailsController.viewEmail(id: UUID)
+GET         /sysadmin/emails                        @controllers.sysadmin.EmailQueueController.queued()
+POST        /sysadmin/emails/:id                    @controllers.sysadmin.EmailQueueController.enqueue(id: UUID)
+GET         /sysadmin/mywarwick                     @controllers.sysadmin.MyWarwickQueueController.queued()
+POST        /sysadmin/mywarwick/reschedule          @controllers.sysadmin.MyWarwickQueueController.reschedule(triggerName: String, triggerGroup: String)
+GET         /sysadmin/assessments-test              @controllers.sysadmin.SysadminTestController.assessmentComponents()
+GET         /sysadmin/assessment-members-test       @controllers.sysadmin.SysadminTestController.assessmentComponentMembers()
+GET         /sysadmin/departments-test              @controllers.sysadmin.SysadminTestController.departments()
+GET         /sysadmin/dummy-data-generation         @controllers.sysadmin.DummyDataGenerationController.showForm()
+POST        /sysadmin/dummy-data-generation         @controllers.sysadmin.DummyDataGenerationController.submitForm()
+
+POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
+POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()
+POST        /sysadmin/test/upload                   @controllers.sysadmin.SysadminTestController.uploadFile()
+GET         /sysadmin/test/:id/download             @controllers.sysadmin.SysadminTestController.downloadFile(id: UUID)
+
++nocsrf
+POST        /api/errors/js                          @controllers.api.ErrorsController.js
 
 ## Fallbacks ##
 

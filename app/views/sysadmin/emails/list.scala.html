@@ -1,0 +1,59 @@
+@import domain.OutgoingEmail
+@import domain.Pagination
+@import views.tags.formatDate
+@import services.EmailFilter
+@(
+  emails: Seq[OutgoingEmail],
+  pagination: Pagination,
+  emailFilter: Form[EmailFilter]
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@adminLayout("Sent emails") {
+
+  @b3.inline.formCSRF(controllers.sysadmin.routes.ViewEmailsController.listAll(), Symbol("class") -> "text-center") { implicit fc =>
+    @b3.text(emailFilter("query"),
+      Symbol("class") -> "flexi-picker",
+      Symbol("_class") -> "flexi-picker-container",
+      Symbol("placeholder") -> "Uni ID, usercode, email",
+      Symbol("data-universityid") -> "true"
+    )
+    @b3.datetimePicker(emailFilter("startDate"), Symbol("value") -> None, Symbol("placeholder") -> "From (optional)")
+    @b3.datetimePicker(emailFilter("endDate"), Symbol("value") -> None, Symbol("placeholder") -> "To (optional)")
+    @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fad fa-search fa-fw"></i> Search }
+    @b3.free() {
+      <a class="btn btn-default" href="@controllers.sysadmin.routes.ViewEmailsController.listAll()" title="Clear search results">Clear</a>
+    }
+  }
+
+  @if(emails.isEmpty) {
+    <hr/>
+    <p>Sorry, there are no emails to show</p>
+  } else {
+    <table class="table table-hover table-striped table-paginated">
+      <thead>
+        <tr>
+          <th>Sent</th>
+          <th>To</th>
+          <th>Subject</th>
+          <th>&nbsp;</th>
+        </tr>
+      </thead>
+      <tbody>
+        @emails.map{ email =>
+          <tr>
+            <td>@email.sent.map(sent => formatDate.dateTime(sent)).getOrElse("Unknown")</td>
+            <td>@email.emailAddress</td>
+            <td>@email.email.subject</td>
+            <td>
+              @email.id.map { id =>
+                <a class="btn btn-sm btn-default" href="@controllers.sysadmin.routes.ViewEmailsController.viewEmail(id)" title="View email"><i class="fad fa-eye fa-fw"></i> View</a>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @tags.pageNumberPagination(pagination, Seq(emailFilter))
+  }
+}

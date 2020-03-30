@@ -1,30 +1,25 @@
 
-import controllers.sysadmin
-import org.scalatest._
-import org.scalatestplus.play._
-import play.api.test._
-import play.api.test.Helpers._
+import support.BrowserFeatureSpec
 
-class GuestSpec extends AppFeatureSpec {
+class GuestSpec extends BrowserFeatureSpec {
 
   "A guest user" should {
 
-    "be able to view the home page" in {
-
+    "not be able to view the home page" in {
       Given("I am signed out")
 
       When("I visit the home page")
       visit(homePage)
 
-      Then("I should see some welcome text")
-      pageMustContain("Lorem ipsum")
+      Then("I should be sent to web sign-on")
+      mustRedirectToWebsignon()
     }
 
     "not be able to view the masquerade form" in {
       Given("I am signed out")
 
       When("I visit the masquerade form")
-      visit(sysadmin.routes.MasqueradeController.masquerade().url)
+      visit(controllers.sysadmin.routes.MasqueradeController.masquerade().url)
 
       Then("I should be sent to web sign-on")
       mustRedirectToWebsignon()

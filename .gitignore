@@ -26,6 +26,7 @@ browserify-cache*.json
 *.swp
 *ensime*
 *.log
+/.babel-loader-caches
 
 npm-debug.log
 node_modules
@@ -38,3 +39,5 @@ node_modules
 !/.idea/play2*.xml
 *.code-workspace/
 .bloop
+.metals
+/project/metals.sbt

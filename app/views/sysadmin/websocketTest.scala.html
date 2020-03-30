@@ -1,0 +1,18 @@
+@import tags._
+
+@()(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@frontend("Websocket test", Seq("connect-ws")) {
+    <p>
+        <button class="btn btn-default" id="request-notification-permission">
+            Enable notifications
+        </button>
+
+        <button class="btn btn-default" id="send-test-notification">
+            Send test notification
+        </button>
+    </p>
+
+    @connectivityInfo()
+    <div class="message-list"></div>
+}

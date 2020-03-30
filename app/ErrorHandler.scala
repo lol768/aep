@@ -1,12 +1,13 @@
 import controllers.RequestContext
 import helpers.Json._
 import javax.inject.{Inject, Singleton}
-import play.api.{Environment, Mode}
+import play.api.{Configuration, Environment, Mode}
 import play.api.http.{DefaultHttpErrorHandler, Status}
 import play.api.libs.json.Json
 import play.api.mvc._
 import system.ImplicitRequestContext
 import warwick.core.Logging
+import warwick.fileuploads.UploadedFileControllerHelper.UploadedFileConfiguration
 
 import scala.concurrent.Future
 
@@ -16,7 +17,10 @@ import scala.concurrent.Future
 @Singleton
 class ErrorHandler @Inject()(
   environment: Environment,
+  config: Configuration,
 ) extends DefaultHttpErrorHandler with Results with Status with Logging with Rendering with AcceptExtractors with ImplicitRequestContext {
+
+  private[this] val uploadedFileConfiguration = UploadedFileConfiguration.fromConfiguration(config)
 
   override def onClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] = {
     implicit val context: RequestContext = requestContext(request)
@@ -32,6 +36,14 @@ class ErrorHandler @Inject()(
             case Accepts.Json() => NotFound(Json.toJson(JsonClientError(status = "not_found", errors = Seq(message))))
             case _ => NotFound(views.html.errors.notFound())
           }(request)
+
+          // This is caught by PlayBodyParsers if the _whole_ request is over-sized before it can get to
+          // UploadedFileControllerHelper so we have to replicate the correct behaviour here
+          case REQUEST_ENTITY_TOO_LARGE => render {
+            case Accepts.Json() => EntityTooLarge(Json.toJson(JsonClientError(status = "entity_too_large", errors = Seq(s"Sorry, the attachments are larger than the maximum attachment size (${helpers.humanReadableSize(uploadedFileConfiguration.maxTotalFileSizeBytes)})."))))
+            case _ => EntityTooLarge(views.html.errors.entityTooLarge(uploadedFileConfiguration))
+          }(request)
+
           case _ => render {
             case Accepts.Json() => Status(statusCode)(Json.toJson(JsonClientError(status = statusCode.toString, errors = Seq(message))))
             case _ => Status(statusCode)(views.html.errors.clientError(statusCode, message))

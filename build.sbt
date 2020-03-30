@@ -26,7 +26,7 @@ updateOptions := updateOptions.value.withCachedResolution(true)
 lazy val root = (project in file("."))
   .enablePlugins(WarwickProject, PlayScala)
   .settings(
-    name := """play-app-template""",
+    name := """onlineexams""",
     packageZipTarball in Universal := (packageZipTarball in Universal).dependsOn(webpack).value,
     libraryDependencies ++= (appDeps ++ testDeps).map(excludeBadTransitiveDeps),
     PlayKeys.devSettings := Seq("play.server.http.port" -> "8080"),
@@ -62,9 +62,10 @@ lazy val integration = (project in file("it"))
 val enumeratumVersion = "1.5.15"
 val enumeratumPlayVersion = "1.5.17"
 val enumeratumSlickVersion = "1.5.16"
-val playUtilsVersion = "1.46"
+val playUtilsVersion = "1.47"
+val akkaVersion = "2.6.3"
 val ssoClientVersion = "2.81"
-val warwickUtilsVersion = "20200221"
+val warwickUtilsVersion = "20200323"
 
 val appDeps = Seq(
   guice,
@@ -78,22 +79,40 @@ val appDeps = Seq(
   "com.typesafe.slick" %% "slick" % "3.3.2",
   "org.postgresql" % "postgresql" % "42.2.10",
   "com.github.tminglei" %% "slick-pg" % "0.18.1",
+  "com.github.tminglei" %% "slick-pg_play-json" % "0.18.1",
+
+  "com.typesafe.play" %% "play-mailer" % "8.0.0",
+  "com.typesafe.play" %% "play-mailer-guice" % "8.0.0",
+
+  // in-memory JNDI context used by Play to pass DataSource to Quartz
+  "tyrex" % "tyrex" % "1.0.1",
+  "org.quartz-scheduler" % "quartz" % "2.3.2" exclude("com.zaxxer", "HikariCP-java6"),
 
   "net.codingwell" %% "scala-guice" % "4.2.6",
   "com.google.inject.extensions" % "guice-multibindings" % "4.2.2",
   "com.adrianhurt" %% "play-bootstrap" % "1.5.1-P27-B3",
+
+  "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
+  "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
+  "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
+  "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+  "com.typesafe.akka" %% "akka-http" % "10.1.11",
 
   "uk.ac.warwick.sso" %% "sso-client-play" % ssoClientVersion,
 
   "uk.ac.warwick.play-utils" %% "accesslog" % playUtilsVersion,
   "ch.qos.logback" % "logback-access" % "1.2.3",
   "uk.ac.warwick.play-utils" %% "core" % playUtilsVersion,
+  "uk.ac.warwick.play-utils" %% "caching" % playUtilsVersion,
+  "uk.ac.warwick.play-utils" %% "fileuploads" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "healthcheck" % playUtilsVersion,
   "uk.ac.warwick.play-utils" %% "slick" % playUtilsVersion,
 
   "uk.ac.warwick.util" % "warwickutils-core" % warwickUtilsVersion,
   "net.logstash.logback" % "logstash-logback-encoder" % "5.3",
+  "uk.ac.warwick.util" % "warwickutils-mywarwick" % warwickUtilsVersion,
   "uk.ac.warwick.util" % "warwickutils-service" % warwickUtilsVersion,
+  "uk.ac.warwick.util" % "warwickutils-web" % warwickUtilsVersion,
 
   "com.github.mumoshu" %% "play2-memcached-play28" % "0.11.0",
 
@@ -127,6 +146,11 @@ def excludeBadTransitiveDeps(mod: ModuleID): ModuleID = mod.excludeAll(
 
 // Make built output available as Play assets.
 Assets / unmanagedResourceDirectories  += baseDirectory.value / "target/assets"
+
+// Imported by the routes compiler
+routesImport += "system.routes.PathBindables._" // to use our types as path variables
+routesImport += "system.routes.QueryStringBindables._" // to use our types as query string variables
+routesImport += "system.routes.Types._" // type aliases so they don't need to be fully qualified
 
 resolvers += ("Local Maven Repository" at "file:///" + Path.userHome.absolutePath + "/.m2/repository")
 resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
@@ -170,3 +194,8 @@ webpack := {
 runner := runner.dependsOn(webpack).value
 dist := dist.dependsOn(webpack).value
 stage := stage.dependsOn(webpack).value
+
+// Generate a new AES key for object store encryption
+lazy val newEncryptionKey = taskKey[Unit]("Generate and print a new encryption key")
+newEncryptionKey := println(EncryptionKey.generate())
+

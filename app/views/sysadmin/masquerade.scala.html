@@ -5,7 +5,7 @@
 
 @()(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@main("Masquerade") {
+@adminLayout("Masquerade") {
   @if(context.isMasquerading) {
     <p>
       You're currently masquerading as

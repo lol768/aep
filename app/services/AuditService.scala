@@ -35,7 +35,7 @@ class AuditServiceImpl @Inject()(
   daoRunner: DaoRunner
 )(implicit ec: ExecutionContext) extends AuditService {
 
-  lazy val AUDIT_LOGGER: AuditLogger = AuditLogger.getAuditLogger("APP_NAME")
+  lazy val AUDIT_LOGGER: AuditLogger = AuditLogger.getAuditLogger("onlineexams")
 
   private def doAudit[A](operation: Symbol, targetId: String, targetType: Symbol, data: JsValue)(implicit context: AuditLogContext): Unit = {
     def handle(value: JsValue): AnyRef = value match {

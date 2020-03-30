@@ -1,0 +1,20 @@
+@(mimeType: String)
+
+@mimeType match {
+    case "application/pdf" => {<i class="fad fa-2x themed-duotone fa-file-pdf"></i>}
+    case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => {<i class="fad fa-2x themed-duotone fa-file-word"></i>}
+    case "application/msword" => {<i class="fad fa-2x themed-duotone fa-file-word"></i>}
+    case "text/plain" => {<i class="fad fa-2x themed-duotone fa-file-alt"></i>}
+    case "application/rtf" => {<i class="fad fa-2x themed-duotone fa-file-alt"></i>}
+    case "application/postscript" => {<i class="fad fa-2x themed-duotone fa-file-image"></i>}
+    case "application/vnd.oasis.opendocument.text" => {<i class="fad fa-2x themed-duotone fa-file-word"></i>}
+    case "application/vnd.ms-powerpoint" => {<i class="fad fa-2x themed-duotone fa-file-powerpoint"></i>}
+    case "application/vnd.oasis.opendocument.presentation" => {<i class="fad fa-2x themed-duotone fa-file-powerpoint"></i>}
+    case "application/vnd.openxmlformats-officedocument.presentationml.presentation" => {<i class="fad fa-2x themed-duotone fa-file-powerpoint"></i>}
+    case "application/vnd.ms-excel" => {<i class="fad fa-2x themed-duotone fa-file-excel"></i>}
+    case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => {<i class="fad fa-2x themed-duotone fa-file-excel"></i>}
+    case t if t.startsWith("image/") => {<i class="fad fa-2x themed-duotone fa-file-image"></i>}
+    case t if t.startsWith("video/") => {<i class="fad fa-2x themed-duotone fa-file-video"></i>}
+    case t if t.startsWith("audio/") => {<i class="fad fa-2x themed-duotone fa-file-music"></i>}
+    case _ => {<i class="fad fa-2x themed-duotone fa-file"></i>}
+}
