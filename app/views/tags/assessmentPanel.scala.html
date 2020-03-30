@@ -17,10 +17,15 @@
     }
     <div class="panel-body">
         @if(!isAssessmentPage) {
-            <h4>@assessment.assessment.title</h4>
+            <h4>
+                @if(assessment.finalised) {
+                    <i class="fad themed-duotone fa-check fa-fw"></i>
+                }
+                @assessment.assessment.title
+            </h4>
         }
 
-        @assessmentMetadata(assessment.assessment)
+        @studentAssessmentMetadata(assessment)
 
         @assessment.assessment.platform match {
             case Platform.OnlineExams => {

@@ -52,7 +52,7 @@ class ActionRefiners @Inject() (
     new Filter[AssessmentSpecificRequest] {
       override protected def apply[A](implicit request: AssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
-          if (request.studentAssessmentWithAssessment.studentAssessment.startTime.isEmpty)
+          if (!request.studentAssessmentWithAssessment.started)
             Some(Forbidden(views.html.errors.assessmentNotStarted(request.studentAssessmentWithAssessment)))
           else
             None
@@ -63,7 +63,7 @@ class ActionRefiners @Inject() (
     new Filter[AssessmentSpecificRequest] {
       override protected def apply[A](implicit request: AssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
-          if (request.studentAssessmentWithAssessment.studentAssessment.finaliseTime.isDefined)
+          if (request.studentAssessmentWithAssessment.finalised)
             Some(Forbidden(views.html.errors.assessmentFinished(request.studentAssessmentWithAssessment)))
           else
             None

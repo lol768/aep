@@ -9,7 +9,10 @@ sealed trait BaseStudentAssessmentWithAssessment {
   def studentAssessment: BaseStudentAssessment
   def assessment: BaseAssessment
 
-  def inProgress = studentAssessment.startTime.nonEmpty && studentAssessment.finaliseTime.isEmpty
+  def inProgress: Boolean = started && !finalised
+
+  def started: Boolean = studentAssessment.startTime.nonEmpty
+  def finalised: Boolean = studentAssessment.finaliseTime.nonEmpty
 
   def getTimingInfo: AssessmentTimingInformation = {
     val now = JavaTime.offsetDateTime
@@ -18,8 +21,8 @@ sealed trait BaseStudentAssessmentWithAssessment {
       timeRemaining = if (inProgress) Some(assessment.duration.minus(Duration.between(studentAssessment.startTime.get, now)).toMillis) else None,
       timeSinceStart = if (inProgress) Some(Duration.between(studentAssessment.startTime.get, now).toMillis) else None,
       timeUntilStart = if (studentAssessment.startTime.isEmpty && !assessment.hasWindowPassed) Some(Duration.between(assessment.startTime.get, now).toMillis) else None,
-      hasStarted = studentAssessment.startTime.nonEmpty,
-      hasFinalised = studentAssessment.finaliseTime.nonEmpty,
+      hasStarted = started,
+      hasFinalised = finalised,
       hasWindowPassed = assessment.hasWindowPassed
     )
   }
