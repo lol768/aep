@@ -43,8 +43,7 @@ object AssessmentsTables {
         platform,
         assessmentType,
         storedBrief.asBrief(fileMap),
-        invigilators.map(Usercode).toSet
-        storedBrief.asBrief(fileMap),
+        invigilators.map(Usercode).toSet,
         state,
       )
 

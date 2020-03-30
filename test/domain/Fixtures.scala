@@ -130,8 +130,6 @@ object Fixtures {
         assessmentType = assType,
         storedBrief = storedBrief,
         invigilators = List(invigilator1,invigilator2),
-        created = createTime,
-        version = createTime
         created = createTime.asOffsetDateTime,
         version = createTime.asOffsetDateTime,
         state = state

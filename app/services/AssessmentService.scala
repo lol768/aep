@@ -6,16 +6,14 @@ import java.util.UUID
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
 import domain.Assessment.State
-import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
-import domain.{Assessment, UploadedFileOwner}
+import domain.dao.UploadedFilesTables
+import domain.UploadedFileOwner
 import domain.Assessment
 import domain.Assessment.Brief
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
 import javax.inject.{Inject, Singleton}
 import services.AssessmentService._
-import slick.dbio.DBIO
 import slick.dbio.DBIO
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -87,10 +85,6 @@ class AssessmentServiceImpl @Inject()(
     )
   }
 
-  override def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
-    daoRunner.run(dao.getByIds(ids)).flatMap(inflate)
-  }
-
   override def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
     daoRunner.run(dao.loadByIdsWithUploadedFiles(ids))
       .map(inflateRowsWithUploadedFiles)
@@ -128,6 +122,7 @@ class AssessmentServiceImpl @Inject()(
           fileIds = fileIds,
           url = assessment.brief.url
         ),
+        invigilators = sortedInvigilators(assessment),
         state = assessment.state,
         created = stored.created,
         version = stored.version
@@ -135,6 +130,25 @@ class AssessmentServiceImpl @Inject()(
       updated <- dao.loadByIdWithUploadedFiles(assessment.id)
     } yield updated).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
   }
+
+  override def insert(assessment: Assessment, brief: Brief)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
+    daoRunner.run(dao.insert(StoredAssessment(
+      UUID.randomUUID(),
+      assessment.code,
+      assessment.title,
+      assessment.startTime,
+      assessment.duration,
+      assessment.platform,
+      assessment.assessmentType,
+      StoredBrief(brief.text, brief.files.map(_.id), brief.url),
+      sortedInvigilators(assessment),
+      assessment.state,
+      OffsetDateTime.now,
+      OffsetDateTime.now
+    ))).map(r => ServiceResults.success(r.asAssessment(brief.files.map(f => f.id -> f).toMap)))
+  }
+
+  private def sortedInvigilators(assessment: Assessment): List[String] = assessment.invigilators.toSeq.sortBy(_.string).map(_.string).toList
 }
 
 object AssessmentService {
