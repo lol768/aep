@@ -1,15 +1,17 @@
 package services
 
+import java.time.OffsetDateTime
 import java.util.UUID
-
 import com.google.inject.ImplementedBy
 import domain.Assessment
-import domain.dao.AssessmentsTables.StoredAssessment
+import domain.Assessment.Brief
+import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
 import javax.inject.{Inject, Singleton}
 import slick.dbio.DBIO
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 import warwick.sso.Usercode
 
@@ -22,6 +24,7 @@ trait AssessmentService {
   def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]]
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
+  def insert(assessment: Assessment, brief: Brief)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 }
 
 @Singleton
@@ -76,5 +79,21 @@ class AssessmentServiceImpl @Inject()(
       dao.getById(id),
       s"Could not find Assessment with ID ${id}"
     )
+  }
+
+  override def insert(assessment: Assessment, brief: Brief)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
+    daoRunner.run(dao.insert(StoredAssessment(
+      UUID.randomUUID(),
+      assessment.code,
+      assessment.title,
+      assessment.startTime,
+      assessment.duration,
+      assessment.platform,
+      assessment.assessmentType,
+      StoredBrief(brief.text, brief.files.map(_.id), brief.url),
+      assessment.invigilators.toSeq.sortBy(_.string).map(_.string).toList,
+      OffsetDateTime.now,
+      OffsetDateTime.now
+    ))).map(r => ServiceResults.success(r.asAssessment(brief.files.map(f => f.id -> f).toMap)))
   }
 }

@@ -191,7 +191,7 @@ class AssessmentDaoImpl @Inject()(
   override def all: DBIO[Seq[StoredAssessment]] = assessments.result
 
   override def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment] =
-    assessments.insert(assessment.copy(invigilators = assessment.invigilators.sorted))
+    assessments.insert(assessment)
 
   override def getById(id: UUID): DBIO[Option[StoredAssessment]] =
     assessments.table.filter(_.id === id).result.headOption
