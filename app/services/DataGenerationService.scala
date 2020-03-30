@@ -4,6 +4,7 @@ import java.time.{Duration, LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
+import domain.Assessment.Platform.OnlineExams
 import domain.{Assessment, StudentAssessment}
 import domain.Assessment.{AssessmentType, Platform}
 import domain.dao.DaoRunner
@@ -23,7 +24,6 @@ import scala.util.Random
 @ImplementedBy(classOf[DataGenerationServiceImpl])
 trait DataGenerationService {
   def putRandomAssessmentsInDatabase(howMany: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]]
-  def addRandomStudentAssessmentsToAssessment(assessmentId: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def putRandomAssessmentsWithStudentAssessmentsInDatabase(howManyAssessments: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]]
 }
 
@@ -50,26 +50,28 @@ class DataGenerationServiceImpl @Inject()(
     }
   }
 
-  override def addRandomStudentAssessmentsToAssessment(assessmentId: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] = {
-    ServiceResults.futureSequence {
-      webdevIds.map { webdevId =>
-        studentAssessmentService.upsert(makeStoredStudentAssessment(assessmentId, webdevId)
-          .asStudentAssessment(Map.empty))
-      }
-    }
-  }
-
   override def putRandomAssessmentsWithStudentAssessmentsInDatabase(howManyAssessments: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]] = {
     ServiceResults.futureSequence {
       (1 to howManyAssessments).map { _ =>
         assessmentService.upsert(makeStoredAssessment().asAssessment(Map.empty)).flatMap { result =>
           result.toOption.map { insertedAssessment =>
-            addRandomStudentAssessmentsToAssessment(insertedAssessment.id)
+            if (insertedAssessment.platform == OnlineExams) { // Guard against calling this for other platforms
+              addRandomStudentAssessmentsToAssessment(insertedAssessment.id)
+            }
           }.getOrElse {
             throw new Exception("Problem creating random assessment")
           }
           Future.successful(result)
         }
+      }
+    }
+  }
+
+  private def addRandomStudentAssessmentsToAssessment(assessmentId: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] = {
+    ServiceResults.futureSequence {
+      webdevIds.map { webdevId =>
+        studentAssessmentService.upsert(makeStoredStudentAssessment(assessmentId, webdevId)
+          .asStudentAssessment(Map.empty))
       }
     }
   }
