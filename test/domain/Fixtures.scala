@@ -87,6 +87,7 @@ object Fixtures {
   }
 
   object assessments {
+
     def storedBrief: StoredBrief = DataGenerationService.makeStoredBrief
 
     def storedAssessment(uuid: UUID = UUID.randomUUID): StoredAssessment =

@@ -15,7 +15,6 @@ import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
-
 import scala.concurrent.ExecutionContext
 
 object AssessmentsTables {
@@ -28,6 +27,7 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
+    invigilators: List[String],
     state: State,
     created: OffsetDateTime,
     version: OffsetDateTime,
@@ -43,6 +43,7 @@ object AssessmentsTables {
         platform,
         assessmentType,
         storedBrief.asBrief(fileMap),
+        invigilators.map(Usercode).toSet,
         state,
       )
 
@@ -70,6 +71,7 @@ object AssessmentsTables {
         platform,
         assessmentType,
         storedBrief,
+        invigilators,
         state,
         created,
         version,
@@ -88,6 +90,7 @@ object AssessmentsTables {
     platform: Platform,
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
+    invigilators: List[String],
     state: State,
     created: OffsetDateTime,
     version: OffsetDateTime,
@@ -135,6 +138,8 @@ trait AssessmentDao {
   def getByCode(code: String): DBIO[Option[StoredAssessment]]
   def getToday: DBIO[Seq[StoredAssessment]]
   def getInWindow: DBIO[Seq[StoredAssessment]]
+  def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]]
+  def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]]
 }
 
 @Singleton
@@ -203,4 +208,10 @@ class AssessmentDaoImpl @Inject()(
     assessments.table.filter(a => a.startTime < now && a.startTime > now.minus(Assessment.window)).result
   }
 
+
+  override def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]] =
+    assessments.table.filter(_.invigilators @> usercodes.map(_.string)).result
+
+  override def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]] =
+    assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes.map(_.string)).result.headOption
 }
