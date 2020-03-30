@@ -151,8 +151,7 @@ class OutgoingEmailDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
   val jdbcTypes: PostgresCustomJdbcTypes,
 )(implicit executionContext: ExecutionContext) extends OutgoingEmailDao with OutgoingEmailsTables with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
-
-  import dbConfig.profile.api._
+  import profile.api._
 
   override def insert(email: OutgoingEmail)(implicit ac: AuditLogContext): DBIO[StoredOutgoingEmail] =
     outgoingEmails.insert(StoredOutgoingEmail(

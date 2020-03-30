@@ -5,14 +5,12 @@
  * server for reporting purposes.
  */
 
-import {
-  throttle as _throttle,
-} from 'lodash-es';
+import { throttle } from 'lodash-es';
 import * as log from './log';
 
 let errors = [];
 
-const postErrorsThrottled = _throttle(() => {
+const postErrorsThrottled = throttle(() => {
   const errorsToPost = errors;
   fetch(
     '/api/errors/js',

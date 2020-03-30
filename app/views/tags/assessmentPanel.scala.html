@@ -1,8 +1,4 @@
-@import warwick.core.helpers.JavaTime
-@import org.apache.commons.lang3.time.DurationFormatUtils
 @import domain.Assessment.Platform
-@import domain.Assessment.AssessmentType
-@import domain.Assessment
 @import domain.StudentAssessmentWithAssessment
 @import tags._
 
@@ -10,7 +6,7 @@
 <div class="panel panel-default assessment-information-panel">
     @if(isAssessmentPage) {
         <div class="brand-stripe"></div>
-        <svg class="pretty-patterns" width="640" height="784" fill="none" viewBox="0 0 640 784">
+        <svg class="pretty-patterns visible-lg" width="640" height="784" fill="none" viewBox="0 0 640 784">
             <defs>
                 <pattern id="pattern" x="118" width="20" height="20" patternUnits="userSpaceOnUse" y="2">
                     <rect width="4" height="4" class="pattern-item" fill="currentColor" y="7" x="8"></rect>
@@ -24,38 +20,8 @@
             <h4>@assessment.assessment.title</h4>
         }
 
-        <dl>
-            <dt>Module</dt>
-            <dd>
-            @assessment.assessment.code
-            </dd>
-            <dt>Type</dt>
-            <dd>
-            @assessment.assessment.assessmentType match {
-                case AssessmentType.OpenBook => { Open book }
-                case AssessmentType.Spoken => { Spoken }
-                case AssessmentType.MultipleChoice => { Multiple choice }
-            }
-            </dd>
-            <dt>Duration</dt>
-            <dd>
-                <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@DurationFormatUtils.formatDurationWords(assessment.assessment.duration.toMillis, true, true)
-            </dd>
-            @assessment.assessment.startTime.map { startTime =>
-                <dt>Can start</dt>
-                <dd>
-                    <i class="fad themed-duotone fa-clock fa-fw"></i>@JavaTime.Relative(startTime.plusHours(8))
-                    until
-                @JavaTime.Relative(startTime.plus(Assessment.window).plusHours(8))
-                <span class="text-muted">Asia/Shanghai</span>
-                <br>
-                <i class="fad themed-duotone fa-clock fa-fw"></i>@JavaTime.Relative(startTime)
-                    until
-                @JavaTime.Relative(startTime.plus(Assessment.window))
-                    <span class="text-muted">Europe/London</span>
-                </dd>
-            }
-        </dl>
+        @assessmentMetadata(assessment.assessment)
+
         @assessment.assessment.platform match {
             case Platform.OnlineExams => {
                 @if(isAssessmentPage) {
@@ -67,6 +33,7 @@
                         }
                         @assessmentTiming(assessment)
                     }
+                    @connectivityInfo()
                 } else {
                     <a href="@routes.AssessmentController.view(assessment.assessment.id)" class="btn btn-primary">
                         View

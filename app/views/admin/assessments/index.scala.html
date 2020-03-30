@@ -1,0 +1,43 @@
+@import domain.Assessment
+@import warwick.core.helpers.JavaTime
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@import domain.Assessment.AssessmentType
+
+@(assessments: Seq[Assessment])(implicit context: RequestContext)
+
+@adminLayout("Assessments") {
+  <h2>Assessments for setup</h2>
+
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Title</th>
+        <th>Date</th>
+        <th>Duration</th>
+        <th>Type</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @assessments.map { assessment =>
+        <tr>
+          <td>@assessment.code</td>
+          <td>@assessment.title</td>
+          <td>
+            @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)
+          </td>
+          <td>
+            @DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
+          </td>
+          <td>
+            @assessment.assessmentType.label
+          </td>
+          <td class="text-right">
+            <a href="@controllers.admin.routes.AssessmentsController.show(assessment.id)" class="btn btn-default btn-sm">View</a>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

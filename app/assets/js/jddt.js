@@ -4,7 +4,7 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TODAY = 'Today ';
 const SOME_SUNNY_DAY = '';
-const iconString = '<i class="fad fa-clock fa-fw" aria-hidden="true"></i>';
+const iconString = '<i class="fad themed-duotone fa-clock fa-fw" aria-hidden="true"></i>';
 
 /**
  * Returns number n as string with extra 0 prepended if it's only 1 digit
@@ -87,12 +87,15 @@ function relativeDateName(date) {
   return SOME_SUNNY_DAY;
 }
 
-let browserLocalTimezoneName;
-if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
-  const dtf = Intl.DateTimeFormat();
-  if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {
-    browserLocalTimezoneName = dtf.resolvedOptions().timeZone;
+function browserLocalTimezoneName() {
+  if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
+    const dtf = Intl.DateTimeFormat();
+    if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {
+      return dtf.resolvedOptions().timeZone;
+    }
   }
+
+  return undefined;
 }
 
 /**
@@ -219,7 +222,7 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
     fromDateDayString = `${stringifyDay(fromDate.getDay(), short)} `;
   }
 
-  return `<i class="fad fa-clock fa-fw" aria-hidden="true"></i> \
+  return `${iconString} \
 ${stringifyTime(fromDate)} \
 ${fromDateDayString}${fromDateNumberString}${fromMonthString}${fromYearString}\
 to \
@@ -249,12 +252,11 @@ export default class JDDT {
     // but these can be overridden for testing using setLocalTimezone
 
     this.localTimezoneOffset = this.jsDateLocal.getTimezoneOffset();
-    if (browserLocalTimezoneName === undefined) {
+    this.localTimezoneName = browserLocalTimezoneName();
+    if (this.localTimezoneName === undefined) {
       this.localTimezoneName = `${this.localTimezoneOffset < 0 ? '-' : '+'}\
         ${pad0(Math.floor(Math.abs(this.localTimezoneOffset / 60)))}:\
         ${pad0(Math.abs(this.localTimezoneOffset) % 60)}`;
-    } else {
-      this.localTimezoneName = browserLocalTimezoneName;
     }
 
     // These are the defaults, but should be overwritten using setServerTimezone
