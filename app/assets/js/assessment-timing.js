@@ -19,7 +19,7 @@ const updateTimingInfo = (node, data) => {
       text += ` ${msToHumanReadable(data.timeRemaining)} remaining.`;
       clearWarning(node);
     } else {
-      text += ` Exceeded deadline by ${msToHumanReadable(-data.timeRemaining)}.`;
+      text += `\nExceeded deadline by ${msToHumanReadable(-data.timeRemaining)}.`;
       setWarning(node);
     }
   } else if (data.timeUntilStart > 0) {
