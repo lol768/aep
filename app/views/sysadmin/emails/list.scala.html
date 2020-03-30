@@ -8,7 +8,7 @@
   emailFilter: Form[EmailFilter]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@admin("Sent emails") {
+@adminLayout("Sent emails") {
 
   @b3.inline.formCSRF(controllers.sysadmin.routes.ViewEmailsController.listAll(), Symbol("class") -> "text-center") { implicit fc =>
     @b3.text(emailFilter("query"),

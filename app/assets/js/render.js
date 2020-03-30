@@ -10,7 +10,7 @@
  */
 
 import './polyfills';
-import initErrorReporter from './error-reporter';
+import './error-reporter-init';
 import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
@@ -18,8 +18,8 @@ import JDDT from './jddt';
 import WebSocketConnection from './web-sockets';
 import initAnnouncements from './assessment-announcements';
 import initTiming from './assessment-timing';
+import showWSConnectivity from './ws-connectivity';
 
-initErrorReporter();
 
 // dynamic import, fire and forget.
 /* eslint-ignore no-unused-expressions */
@@ -42,17 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.body.classList.contains('connect-ws')) {
     let websocket;
     import('./web-sockets').then(() => {
-      websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`, {
-        onConnect: () => {},
-        onError: () => {},
-        onData: () => {},
-        onClose: () => {},
-      });
-      websocket.connect();
+      websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`);
 
       initAnnouncements(websocket);
-
+      showWSConnectivity(websocket);
       if (document.querySelector('.timing-information')) initTiming(websocket);
+
+      websocket.connect();
     });
   }
 

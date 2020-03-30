@@ -1,9 +1,10 @@
 # --- !Ups
 
-alter table assessment ADD COLUMN invigilators text[] not null default '{}';
-alter table assessment_version ADD COLUMN invigilators text[] not null default '{}';
+alter table assessment add column state varchar not null default 'Draft';
+alter table assessment_version add column state varchar not null default 'Draft';
 
 # --- !Downs
 
-alter table assessment DROP COLUMN invigilators;
-alter table assessment_version DROP COLUMN invigilators;
+alter table assessment_version drop column state;
+alter table assessment drop column state;
+

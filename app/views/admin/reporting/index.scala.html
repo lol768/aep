@@ -1,0 +1,28 @@
+@import domain.AssessmentMetadata
+@(live: Seq[AssessmentMetadata], notLive: Seq[AssessmentMetadata])(implicit context: RequestContext)
+
+@frontend("Today's assessments") {
+  <h2>Live</h2>
+
+  @if(live.isEmpty) {
+    <p><i class="fad fa-align-slash"></i> There are currently no live assessments.</p>
+  } else {
+    <ul>
+    @live.map { assessment =>
+      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.code</b>: @assessment.title</a></li>
+    }
+    </ul>
+  }
+
+  <h2>Non-live (completed and pending)</h2>
+
+  @if(notLive.isEmpty) {
+    <p><i class="fad fa-align-slash"></i> There are no non-live assessments right now.</p>
+  } else {
+    <ul>
+    @notLive.map { assessment =>
+      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.code</b>: @assessment.title</a></li>
+    }
+    </ul>
+  }
+}

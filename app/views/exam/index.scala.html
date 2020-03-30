@@ -27,6 +27,8 @@
       <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
     }
     <h2>Uploaded answer files</h2>
+    <p class="text-muted"><i class="fad themed-duotone fa-info-circle" aria-hidden="true"></i> We accept all common file formats: PDF, Word/Excel/Powerpoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
+    </p>
     @if(assessment.studentAssessment.uploadedFiles.nonEmpty) {
       @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
         @b3.free(Symbol("_label") -> "Attach file") {

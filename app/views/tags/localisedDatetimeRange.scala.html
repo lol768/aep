@@ -25,7 +25,7 @@
     @defining(sameYear && fromDatetime.getMonth == toDatetime.getMonth) { sameMonth =>
       @defining(sameYear && sameMonth && fromDatetime.getDayOfMonth == toDatetime.getDayOfMonth) { sameDate =>
         @defining(JavaTime.offsetDateTime) { now =>
-          <i class="fad fa-clock fa-fw"></i>
+          <i class="fad themed-duotone fa-clock fa-fw"></i>
           @fromDatetime.format(DateTimeFormatter.ofPattern("HH:mm"))
           @if(!sameDate) {
             @titleCase3Chars(fromDatetime.getDayOfWeek) @th(fromDatetime.getDayOfMonth)

@@ -1,12 +1,12 @@
-# Online Exams
+# Tabula Assessment Portal
 
-A system for managing online exams.
+A system for managing alternative assessments to be taken online.
 
 Getting started
 ---------------
 
 * Check out the latest source
-* Ensure you're using node.js v13 (e.g. using `n` or `nvm`)
+* Ensure you're using node.js v13 (e.g. using `n` or `nvm` or `nodenv`)
 * Ensure you have memcached running locally (or accessible elsewhere, with appropriate modification to local-dev.conf)
 * Ensure you have configured Font Awesome credentials: `npm config set "@fortawesome:registry" https://npm.fontawesome.com/ && npm config set "//npm.fontawesome.com/:_authToken" REDACTED`
 * Install latest asset dependencies: `npm ci`
