@@ -4,9 +4,11 @@ import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import domain.Assessment._
+import domain.dao.AssessmentsTables.StoredBrief
 import enumeratum.{EnumEntry, PlayEnum}
 import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFile
+import warwick.sso.Usercode
 
 sealed trait BaseAssessment {
   def id: UUID
@@ -31,6 +33,7 @@ case class Assessment(
   platform: Platform,
   assessmentType: AssessmentType,
   brief: Brief,
+  invigilators: Set[Usercode],
   state: State,
 ) extends BaseAssessment
 
@@ -86,7 +89,13 @@ object Assessment {
     text: Option[String],
     files: Seq[UploadedFile],
     url: Option[String],
-  )
+  ) {
+    def toStoredBrief: StoredBrief = StoredBrief(
+      text = text,
+      fileIds = files.map(_.id),
+      url = url
+    )
+  }
 
   object Brief {
     def empty: Brief = Brief(None, Seq.empty, None)

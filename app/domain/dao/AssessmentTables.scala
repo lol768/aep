@@ -30,6 +30,7 @@ class AssessmentTables @Inject()(
     def platform = column[Platform]("platform")
     def assessmentType = column[AssessmentType]("type")
     def storedBrief = column[StoredBrief]("brief")
+    def invigilators = column[List[String]]("invigilators")
     def state = column[State]("state")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
@@ -41,7 +42,7 @@ class AssessmentTables @Inject()(
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, state, created, version).mapTo[StoredAssessment]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, created, version).mapTo[StoredAssessment]
 
     def idx = index("id_assessment_code", code)
   }
@@ -55,7 +56,7 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, state, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }
 

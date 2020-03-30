@@ -1,0 +1,39 @@
+@import controllers.RequestContext
+@import play.api.data.Form
+@import play.api.data.Forms._
+@import warwick.sso.Usercode
+@import controllers.sysadmin.DataGenerationFormData
+
+@(form: Form[DataGenerationFormData])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@adminLayout("Generate dummy data") {
+  <div class="alert alert-warning media">
+    <div class="media-left">
+      <i class="fas fa-radiation-alt"></i>
+    </div>
+    <div class="media-body">
+      <strong>ACHTUNG!</strong> Clicking buttons on this page will put all sorts of nonsense in the database. Tread carefully.
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-6">
+      <h2>Generate random assessments</h2>
+      @b3.vertical.formCSRF(controllers.sysadmin.routes.DummyDataGenerationController.submitForm()) { implicit fc =>
+        @b3.number(form("howMany"),
+          Symbol("_label") -> "Number of assessments to create"
+        )
+        @b3.checkbox(form("withStudentAssessments"),
+          Symbol("_text") -> "Add student assessments for each assessment"
+        )
+        <button type="submit" class="btn btn-primary">
+          <i class="fal fa-fw fa-starship"></i>
+          Make it so
+        </button>
+      }
+    </div>
+    <div class="col-sm-6">
+
+    </div>
+  </div>
+}

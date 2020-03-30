@@ -9,7 +9,6 @@ import play.api.libs.json.{Format, JsValue, Json, OFormat}
 import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 import warwick.sso.{GroupName, UniversityID, Usercode}
-
 import scala.reflect.ClassTag
 
 /**

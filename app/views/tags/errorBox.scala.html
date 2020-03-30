@@ -1,0 +1,18 @@
+@import play.twirl.api._
+@(errors: Seq[FormError], prelude: Html = HtmlFormat.empty)(implicit messagesProvider: MessagesProvider)
+
+@if(errors.nonEmpty) {
+  <div class="alert alert-danger">
+    @prelude
+    @for(error <- errors) {
+      <div class="media media--compact">
+        <div class="media-left">
+          <i class="far fa-fw fa-times-square"></i>
+        </div>
+        <div class="media-body">
+          @error.format
+        </div>
+      </div>
+    }
+  </div>
+}

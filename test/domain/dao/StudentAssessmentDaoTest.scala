@@ -12,7 +12,7 @@ import scala.concurrent.Future
 
 class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
-  import domain.Fixtures.dateConversion._
+  import helpers.DateConversion._
 
   private val assDao = get[AssessmentDao]
   private val dao = get[StudentAssessmentDao]
