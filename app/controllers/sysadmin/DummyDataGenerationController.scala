@@ -4,6 +4,7 @@ import controllers.BaseController
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent}
 import services.{DataGenerationService, SecurityService}
 
@@ -36,12 +37,12 @@ class DummyDataGenerationController @Inject()(
       if (data.withStudentAssessments) {
         dataGenerationService.putRandomAssessmentsWithStudentAssessmentsInDatabase(data.howMany).successMap { _ =>
           Redirect(controllers.sysadmin.routes.DummyDataGenerationController.showForm())
-            .flashing("success" -> s"Added ${data.howMany} random assessments with associated student assessments to the database")
+            .flashing("success" -> Messages("flash.dataGeneration.randomAssessmentsWithStudentAssessments", data.howMany))
         }
       } else {
         dataGenerationService.putRandomAssessmentsInDatabase(data.howMany).successMap { _ =>
           Redirect(controllers.sysadmin.routes.DummyDataGenerationController.showForm())
-            .flashing("success" -> s"Added ${data.howMany} random assessments to the database")
+            .flashing("success" -> Messages("flash.dataGeneration.randomAssessments", data.howMany))
         }
       }
     }
