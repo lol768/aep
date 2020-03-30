@@ -101,7 +101,7 @@ object Fixtures {
   }
 
   object announcements {
-    import helpers.dateConversion._
+    import helpers.DateConversion._
 
     def storedAnnouncement(assId: UUID): StoredAnnouncement = {
       val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
@@ -118,7 +118,7 @@ object Fixtures {
   }
 
   object uploadedFiles {
-    import helpers.dateConversion._
+    import helpers.DateConversion._
     import helpers.FileResourceUtils._
 
     object specialJPG {

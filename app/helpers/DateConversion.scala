@@ -2,7 +2,7 @@ package helpers
 
 import java.time.{Instant, LocalDateTime, OffsetDateTime, zone}
 
-object dateConversion {
+object DateConversion {
   import warwick.core.helpers.JavaTime.{timeZone => zone}
 
   implicit class localDateTimeConversion(ldt: LocalDateTime) {

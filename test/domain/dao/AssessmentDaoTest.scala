@@ -13,7 +13,7 @@ import scala.concurrent.Future
 
 class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
-  import helpers.dateConversion._
+  import helpers.DateConversion._
 
   private val dao = get[AssessmentDao]
   private def lookupException = throw new Exception("DAO lookup failed")

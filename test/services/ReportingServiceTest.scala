@@ -27,7 +27,7 @@ class ReportingServiceTest
   private val baseTime = LocalDateTime.of(2019, 4, 20, 0, 0, 0, 0)
 
   private trait Fixture {
-    import helpers.dateConversion._
+    import helpers.DateConversion._
 
     val now = baseTime.plusHours(10).plusMinutes(30)
 

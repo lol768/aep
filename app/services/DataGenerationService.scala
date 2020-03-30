@@ -81,7 +81,7 @@ class DataGenerationServiceImpl @Inject()(
 object DataGenerationService {
 
   import warwick.core.helpers.JavaTime.{timeZone => zone}
-  import helpers.dateConversion
+  import helpers.DateConversion
 
   def makeStoredBrief: StoredBrief =
     StoredBrief(
@@ -120,7 +120,7 @@ object DataGenerationService {
     studentId: UniversityID,
     studentAssessmentId: UUID = UUID.randomUUID
   ): StoredStudentAssessment = {
-    import dateConversion._
+    import DateConversion._
     val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
     StoredStudentAssessment(
       id = studentAssessmentId,
