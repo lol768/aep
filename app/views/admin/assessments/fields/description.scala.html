@@ -2,4 +2,4 @@
 @import controllers.admin.AssessmentsController.AbstractAssessmentFormData
 @()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
-@b3.text(form("title"), Symbol("_label") -> "Title")
+@b3.textarea(form("description"), Symbol("_label") -> "Description", Symbol("rows") -> 5)
