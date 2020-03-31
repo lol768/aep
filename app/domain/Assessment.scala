@@ -32,13 +32,15 @@ sealed trait BaseAssessment {
 
   def departmentCode: DepartmentCode
 
+  def sequence: String //MAB sequence
+
   def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
   def hasWindowPassed: Boolean = endTime.exists(_.isAfter(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
-  id: UUID = UUID.randomUUID(),
+  id: UUID,
   code: String,
   title: String,
   startTime: Option[OffsetDateTime],
@@ -50,7 +52,8 @@ case class Assessment(
   state: State,
   tabulaAssessmentId: Option[UUID], //for assessments created within app directly this will be blank.
   moduleCode: String,
-  departmentCode: DepartmentCode
+  departmentCode: DepartmentCode,
+  sequence: String
 
 ) extends BaseAssessment
 
@@ -66,6 +69,7 @@ case class AssessmentMetadata(
   tabulaAssessmentId: Option[UUID],
   moduleCode: String,
   departmentCode: DepartmentCode,
+  sequence: String,
 ) extends BaseAssessment
 
 object Assessment {

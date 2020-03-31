@@ -108,6 +108,7 @@ object DataGenerationService {
     val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
     val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
     val moduleCode =  f"$stemModuleCode-$cats"
+    val sequence = f"E${Random.between(1, 9)}%02d"
 
     StoredAssessment(
       id = uuid,
@@ -123,6 +124,7 @@ object DataGenerationService {
       tabulaAssessmentId = None,
       moduleCode = moduleCode,
       departmentCode = DepartmentCode(deptCode),
+      sequence = sequence,
       created = createTime,
       version = createTime
     )

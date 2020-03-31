@@ -283,7 +283,8 @@ object TabulaResponseParsers {
       (__ \ "type").read[SitsAssessmentType] and
       (__ \ "examPaper").readNullable[ExamPaper](examPaperReads) and
       (__ \ "module").read[Module](moduleReads) and
-      (__ \ "cats").read[String]
+      (__ \ "cats").readNullable[String] and
+      (__ \ "sequence").read[String]
     ) (AssessmentComponent.apply _)
 
   val examMembershipReads: Reads[ExamMembership] = (

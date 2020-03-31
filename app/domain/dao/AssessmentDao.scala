@@ -15,6 +15,7 @@ import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
+
 import scala.concurrent.ExecutionContext
 
 object AssessmentsTables {
@@ -33,6 +34,7 @@ object AssessmentsTables {
     tabulaAssessmentId: Option[UUID],
     moduleCode: String,
     departmentCode: DepartmentCode,
+    sequence: String, //MAB sequence
     created: OffsetDateTime,
     version: OffsetDateTime,
   ) extends Versioned[StoredAssessment] {
@@ -51,7 +53,8 @@ object AssessmentsTables {
         state,
         tabulaAssessmentId,
         moduleCode,
-        departmentCode: DepartmentCode
+        departmentCode,
+        sequence
       )
 
     def asAssessmentMetadata: AssessmentMetadata =
@@ -66,7 +69,8 @@ object AssessmentsTables {
         state,
         tabulaAssessmentId,
         moduleCode,
-        departmentCode
+        departmentCode,
+        sequence
       )
 
     override def atVersion(at: OffsetDateTime): StoredAssessment = copy(version = at)
@@ -86,6 +90,7 @@ object AssessmentsTables {
         tabulaAssessmentId,
         moduleCode,
         departmentCode,
+        sequence,
         created,
         version,
         operation,
@@ -108,6 +113,7 @@ object AssessmentsTables {
     tabulaAssessmentId: Option[UUID],
     moduleCode: String,
     departmentCode: DepartmentCode,
+    sequence: String,
     created: OffsetDateTime,
     version: OffsetDateTime,
     operation: DatabaseOperation,
@@ -157,6 +163,8 @@ trait AssessmentDao {
 
   def getById(id: UUID): DBIO[Option[StoredAssessment]]
 
+  def loadByTabulaAssessmentIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def loadByIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
 
   def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]]
@@ -168,7 +176,9 @@ trait AssessmentDao {
   def getToday: DBIO[Seq[StoredAssessment]]
 
   def getInWindow: DBIO[Seq[StoredAssessment]]
+
   def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]]
+
   def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]]
 }
 
@@ -212,6 +222,10 @@ class AssessmentDaoImpl @Inject()(
 
   override def getById(id: UUID): DBIO[Option[StoredAssessment]] =
     getByIdQuery(id).result.headOption
+
+  override def loadByTabulaAssessmentIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]] =
+    assessments.table.filter(_.tabulaAssessmentId === id).withUploadedFiles.result
+      .map(OneToMany.leftJoinUnordered(_).headOption)
 
   override def loadByIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]] =
     getByIdQuery(id).withUploadedFiles.result

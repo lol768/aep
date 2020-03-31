@@ -1,5 +1,10 @@
 package domain
 
+import java.time.{Duration, OffsetDateTime}
+import java.util.UUID
+
+import domain.Assessment.State.Imported
+import domain.Assessment.{AssessmentType, Brief, Platform}
 import services.tabula.TabulaResponseParsers.SitsAssessmentType
 
 package object tabula {
@@ -25,12 +30,31 @@ package object tabula {
   )
 
   case class AssessmentComponent(
-    id: String,
+    id: String, //tabula Id
     assessmentType: SitsAssessmentType,
     examPaper: Option[ExamPaper],
     module: Module,
-    cats: String
-  )
+    cats: Option[String], //TODO -some API data has null cats - check this again once we know for sure tabula will provide active assessments
+    sequence: String
+  ) {
+    def asAssessment(existingAssessment: Option[Assessment]): Assessment = Assessment(
+      id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
+      code = examPaper.map(_.code).getOrElse(""),
+      title = examPaper.map(_.title.getOrElse("")).getOrElse(""),
+      startTime = Some(OffsetDateTime.now), //TODO This would be populated from API
+      duration = Duration.ofHours(3), //TODO - This would be populated from API.
+      platform = existingAssessment.map(_.platform).getOrElse(Platform.OnlineExams),
+      assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
+      brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
+      invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
+      state = existingAssessment.map(_.state).getOrElse(Imported),
+      tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(UUID.fromString(id))), //for assessments created within app directly this will be blank.
+      moduleCode = s"${module.code}-${cats.getOrElse("0")}",
+      departmentCode = DepartmentCode(module.adminDepartment.code),
+      sequence = sequence
+    )
+
+  }
 
   case class ExamMembership(
     moduleCode: String,

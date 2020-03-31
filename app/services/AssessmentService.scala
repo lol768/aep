@@ -1,49 +1,47 @@
 package services
 
-import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
+import java.time.OffsetDateTime
 import java.util.UUID
 
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
-import domain.Assessment.{AssessmentType, Brief, Platform, State}
-import domain.dao.UploadedFilesTables
-import domain.UploadedFileOwner
-import domain.Assessment
-import domain.Assessment.Brief
-import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
+import domain.Assessment.{Brief, State}
 import domain.{Assessment, UploadedFileOwner}
-import domain.Assessment
-import domain.Assessment.State.Imported
-import domain.dao.AssessmentsTables.StoredAssessment
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
+import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
+import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
 import javax.inject.{Inject, Singleton}
 import services.AssessmentService._
 import slick.dbio.DBIO
-import warwick.core.helpers.ServiceResults
-import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileSave
 import warwick.sso.Usercode
-import warwick.core.helpers.JavaTime.{timeZone => zone}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[AssessmentServiceImpl])
 trait AssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def listForInvigilator(usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]]
+
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
+
+  def getByTabulaAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]]
+
   def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
+
   def insert(assessment: Assessment, brief: Brief)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
+
   def upsert(assessment: Assessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Assessment]]
-  def insert(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 }
 
 @Singleton
@@ -106,6 +104,12 @@ class AssessmentServiceImpl @Inject()(
       .map(inflateRowWithUploadedFiles)
       .map(_.fold[ServiceResult[Assessment]](ServiceResults.error(s"Could not find an Assessment with ID $id"))(ServiceResults.success))
 
+  override def getByTabulaAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]] = {
+    daoRunner.run(dao.loadByTabulaAssessmentIdWithUploadedFiles(id))
+      .map(inflateRowWithUploadedFiles)
+      .map(ServiceResults.success)
+  }
+
   override def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
     daoRunner.run(for {
       stored <- dao.getById(assessment.id).map(_.getOrElse(throw new NoSuchElementException(s"Could not find an Assessment with ID ${assessment.id}")))
@@ -135,9 +139,10 @@ class AssessmentServiceImpl @Inject()(
         ),
         invigilators = sortedInvigilators(assessment),
         state = assessment.state,
-        tabulaAssessmentId = Some(assessment.id),
+        tabulaAssessmentId = assessment.tabulaAssessmentId,
         moduleCode = assessment.moduleCode,
         departmentCode = assessment.departmentCode,
+        sequence = assessment.sequence,
         created = stored.created,
         version = stored.version
       ))
@@ -147,7 +152,7 @@ class AssessmentServiceImpl @Inject()(
 
   override def insert(assessment: Assessment, brief: Brief)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
     daoRunner.run(dao.insert(StoredAssessment(
-      UUID.randomUUID(),
+      assessment.id,
       assessment.code,
       assessment.title,
       assessment.startTime,
@@ -157,9 +162,10 @@ class AssessmentServiceImpl @Inject()(
       StoredBrief(brief.text, brief.files.map(_.id), brief.url),
       sortedInvigilators(assessment),
       assessment.state,
-      Some(assessment.id),
+      assessment.tabulaAssessmentId,
       assessment.moduleCode,
       assessment.departmentCode,
+      assessment.sequence,
       OffsetDateTime.now,
       OffsetDateTime.now
     ))).map(r => ServiceResults.success(r.asAssessment(brief.files.map(f => f.id -> f).toMap)))
@@ -195,6 +201,7 @@ class AssessmentServiceImpl @Inject()(
           tabulaAssessmentId = Some(assessment.id),
           moduleCode = assessment.moduleCode,
           departmentCode = assessment.departmentCode,
+          sequence = assessment.sequence,
           created = timestamp,
           version = timestamp
         )))
@@ -202,37 +209,12 @@ class AssessmentServiceImpl @Inject()(
         uploadedFileService.get(result.storedBrief.fileIds).map { files =>
           ServiceResults.success(result.asAssessment(files.map(f => f.id -> f).toMap))
         }.recoverWith {
-          case e:Exception => Future.successful(ServiceResults.error(e.getMessage))
+          case e: Exception => Future.successful(ServiceResults.error(e.getMessage))
         }
       }
     }
   }
 
-  override def insert(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
-
-    val dt = LocalDateTime.of(LocalDate.now(), LocalTime.now())
-
-
-    val stored = StoredAssessment(
-      id = assessment.id,
-      code = assessment.code,
-      title = assessment.title,
-      startTime = Some(dt.atOffset(zone.getRules.getOffset(dt))), //TODO This needs to be set
-      duration = Duration.ofHours(3), //TODO - This would be populated from API
-      platform = Platform.OnlineExams,
-      assessmentType = AssessmentType.OpenBook,
-      storedBrief = StoredBrief(None, Nil, None),
-      invigilators = sortedInvigilators(assessment),
-      state = Imported,
-      tabulaAssessmentId = Some(assessment.id),
-      moduleCode = assessment.moduleCode,
-      departmentCode = assessment.departmentCode,
-      created = dt.atOffset(zone.getRules.getOffset(dt)),
-      version = dt.atOffset(zone.getRules.getOffset(dt))
-    )
-
-    daoRunner.run(dao.insert(stored)).map(_ => Right(assessment))
-  }
 }
 
 object AssessmentService {
