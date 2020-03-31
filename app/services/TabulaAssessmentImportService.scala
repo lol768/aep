@@ -4,9 +4,10 @@ import java.time.Duration
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
-import domain.Assessment
+import domain.Assessment.State.Imported
 import domain.Assessment.{AssessmentType, Brief, Platform}
 import domain.tabula.AssessmentComponent
+import domain.{Assessment, DepartmentCode}
 import javax.inject.{Inject, Singleton}
 import services.tabula.TabulaAssessmentService.GetAssessmentsOptions
 import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
@@ -68,14 +69,18 @@ class TabulaAssessmentImportServiceImpl @Inject()(
     val assessment = Assessment(
       id = UUID.fromString(ac.id),
       code = ac.examPaper.map(_.code).getOrElse(""),
-      title = ac.examPaper.map(_.title).getOrElse(""),
+      title = ac.examPaper.map(_.title.getOrElse("")).getOrElse(""), //TODO Fix this as this will be assessment title to be exposed via Tabula API. Time being set as paper title
       startTime = None, //TODO This would need to be set
       duration = Duration.ofHours(3), //TODO - This would be populated from API
       platform = Platform.OnlineExams,
       assessmentType = AssessmentType.OpenBook,
-      brief = Brief(None, Nil, None)
+      brief = Brief(None, Nil, None),
+      state = Imported,
+      tabulaAssessmentId = Some(UUID.fromString(ac.id)), //for assessments created within app directly this will be blank.
+      moduleCode = s"${ac.module.code}-${ac.cats}",
+      departmentCode = DepartmentCode(ac.module.adminDepartment.code)
     )
-    assessmentService.save(assessment).successFlatMapTo { row => Future.successful(Right(row))
+    assessmentService.insert(assessment).successFlatMapTo { row => Future.successful(Right(row))
     }
   }
 
@@ -86,7 +91,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
         ServiceResults.success(DepartmentWithAssessments(departmentCode, Nil, true))
       },
       assessmentComponents => {
-        try{
+        try {
           val components = assessmentComponents.flatMap { assessmentComponent =>
             Await.result(generateAssessment(assessmentComponent), 10.seconds).toOption
           }

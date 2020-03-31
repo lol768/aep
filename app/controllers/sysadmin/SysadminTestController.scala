@@ -3,19 +3,19 @@ package controllers.sysadmin
 import java.util.UUID
 
 import controllers.BaseController
-import domain.tabula.{AssessmentComponent, Department, ExamMembership, ExamPaper, DepartmentIdentity}
+import domain.tabula._
+import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
+import org.quartz.Scheduler
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
+import play.api.libs.json.{JsString, Json, Writes}
 import play.api.libs.mailer.{Attachment, Email}
 import play.api.mvc.{Action, AnyContent, MultipartFormData}
 import services._
-import helpers.StringUtils._
-import org.quartz.Scheduler
-import play.api.libs.json.{JsString, Json, Reads, Writes}
-import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
 import services.tabula.TabulaAssessmentService.{GetAssessmentGroupMembersOptions, GetAssessmentsOptions}
+import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
 import uk.ac.warwick.util.mywarwick.MyWarwickService
 import uk.ac.warwick.util.mywarwick.model.request.Activity
 import uk.ac.warwick.util.termdates.AcademicYear
@@ -24,8 +24,8 @@ import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.sso.{GroupName, UniversityID, UserLookupService, Usercode}
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 
 object SysadminTestController {
   case class EmailFormData(to: Usercode, email: Email)
@@ -142,7 +142,11 @@ class SysadminTestController @Inject()(
 
   def assessmentComponents(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
     implicit val writeExam = Json.writes[ExamPaper]
+    implicit val writesDepartmentIdentity = Json.writes[DepartmentIdentity]
+    implicit val writesModule = Json.writes[Module]
+
     implicit val writes = Json.writes[AssessmentComponent]
+
     tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = "CH", withExamPapersOnly = true)).successMap { r =>
       Ok(Json.toJson(r)(Writes.seq(writes)))
     }

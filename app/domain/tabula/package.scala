@@ -16,13 +16,20 @@ package object tabula {
 
   case class ExamPaper(
     code: String,
-    title: String,
+    title: Option[String]
+  )
+
+  case class Module(
+    adminDepartment: DepartmentIdentity,
+    code: String
   )
 
   case class AssessmentComponent(
     id: String,
     assessmentType: SitsAssessmentType,
     examPaper: Option[ExamPaper],
+    module: Module,
+    cats: String
   )
 
   case class ExamMembership(
@@ -91,7 +98,7 @@ package object tabula {
     def universityId(e: Either[UniversityID, SitsProfile]): UniversityID = e.fold(identity, _.universityID)
   }
 
-  case class Course (
+  case class Course(
     code: String,
     name: String
   )
@@ -107,9 +114,13 @@ package object tabula {
     val values: immutable.IndexedSeq[UserType] = findValues
 
     case object Other extends UserType
+
     case object Student extends UserType
+
     case object Staff extends UserType
+
     case object EmeritusAcademic extends UserType
+
     case object Applicant extends UserType
 
     def apply(user: User): UserType =
@@ -128,7 +139,9 @@ package object tabula {
     val values: immutable.IndexedSeq[Attendance] = findValues
 
     case object FullTime extends Attendance("F", "Full-time")
+
     case object PartTime extends Attendance("P", "Part-time")
+
   }
 
   sealed abstract class StudentGroup(override val entryName: String, val description: String) extends EnumEntry {
@@ -141,9 +154,13 @@ package object tabula {
     val values: immutable.IndexedSeq[StudentGroup] = findValues
 
     case object Foundation extends StudentGroup("F", "Foundation course")
+
     case object Undergraduate extends StudentGroup("UG", "Undergraduate")
+
     case object PGT extends StudentGroup("PG(T)", "Postgraduate (taught)")
+
     case object PGR extends StudentGroup("PG(R)", "Postgraduate (research)")
+
   }
 
   case class YearOfStudy(
@@ -162,7 +179,7 @@ package object tabula {
     description: String,
   )
 
-  case class Address (
+  case class Address(
     line1: Option[String],
     line2: Option[String],
     line3: Option[String],
@@ -174,7 +191,7 @@ package object tabula {
       .flatten.filter(_.hasText).mkString(", ")
   }
 
-  case class VisaStatus (
+  case class VisaStatus(
     tier4: Boolean,
     requiresClearance: Boolean
   )
