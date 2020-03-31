@@ -20,12 +20,23 @@
     @if(assessment.assessment.brief.text.isDefined) {
       <blockquote>@assessment.assessment.brief.text</blockquote>
     }
-    @if(assessment.assessment.brief.url.isDefined) {
-      <a href="@assessment.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
-    }
-    @assessment.assessment.brief.files.map { file =>
-      <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
-    }
+    <ul class="list-unstyled">
+      @if(assessment.assessment.brief.url.isDefined) {
+        <li>
+          <a href="@assessment.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
+        </li>
+      }
+      @assessment.assessment.brief.files.map { file =>
+        <li>
+          <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
+        </li>
+      }
+      <li>
+        <a href="@controllers.routes.MessageController.showForm(assessment.assessment.id)" target="_blank">
+          <i class="fad themed-duotone fa-comment-alt-lines mr-half" aria-hidden="true"></i>Contact an invigilator
+        </a>
+      </li>
+    </ul>
     <h2>Uploaded answer files</h2>
     <p class="text-muted"><i class="fad themed-duotone fa-info-circle" aria-hidden="true"></i> We accept all common file formats: PDF, Word/Excel/Powerpoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
     </p>
