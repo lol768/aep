@@ -7,8 +7,9 @@ import controllers.BaseController
 import domain.Assessment
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import javax.inject.{Inject, Singleton}
-import play.api.data.Form
+import play.api.data.{Form, FormError}
 import play.api.data.Forms._
+import play.api.data.format.Formatter
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData}
 import services.{AssessmentService, SecurityService, UploadedFileService}
@@ -17,6 +18,7 @@ import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.sso.Usercode
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 object AssessmentsController {
 
@@ -76,7 +78,7 @@ object AssessmentsController {
       .transform[LocalDateTime](LocalDateTime.parse(_), _.toString)
       .transform[Option[LocalDateTime]](Option.apply, _.get),
     "invigilators" -> set(text)
-      .transform[Set[Usercode]](_.map(Usercode), _.map(_.string))
+      .transform[Set[Usercode]](codes => codes.filter(_.nonEmpty).map(Usercode), _.map(_.string))
       .transform[Option[Set[Usercode]]](Option.apply, _.get),
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),

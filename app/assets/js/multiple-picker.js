@@ -2,6 +2,7 @@ import $ from 'jquery';
 
 export default function MultiplePickers(collection, callback) {
   const $collection = $(collection);
+  const fieldNameBase = $collection.data('name-base');
   const containerClass = $collection.data('containers') || 'flexi-picker-container';
   const $blankInput = $collection
     .find(`.${containerClass}`)
@@ -32,6 +33,7 @@ export default function MultiplePickers(collection, callback) {
       const lastFocused = (ev.type === 'focusin' && ev.target === $last[0]);
       if (lastFocused || $last.val().trim() !== '') {
         const input = $blankInput.clone();
+        $(input).find('input').attr('name', `${fieldNameBase}[${$collection.find(`.${containerClass}`).length}]`);
         $collection.append(input);
         callback(input.find('input').first()[0]);
       }

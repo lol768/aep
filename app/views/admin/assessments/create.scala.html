@@ -8,8 +8,9 @@
             @b3.text(form("moduleCode"), Symbol("_label") -> "Module code")
 
             <label class="control-label" for="invigilators">Invigilators</label>
-            <div class="flexi-picker-collection" data-automatic="true">
-            @b3.text(form("invigilators"),
+            <div class="flexi-picker-collection" data-automatic="true" data-name-base = "invigilators">
+            @b3.text(
+                form("invigilators[0]"),
                 Symbol("class") -> "flexi-picker",
                 Symbol("_class") -> "flexi-picker-container",
                 Symbol("data-automatic") -> true,
