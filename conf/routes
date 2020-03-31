@@ -22,6 +22,9 @@ POST        /assessment/:id                         @controllers.AssessmentContr
 POST        /assessment/:id/done                    @controllers.AssessmentController.finish(id: UUID)
 POST        /assessment/:id/upload                  @controllers.AssessmentController.uploadFiles(id: UUID)
 
+GET         /assessment/:id/messages                @controllers.MessageController.showForm(id: UUID)
+POST        /assessment/:id/messages                @controllers.MessageController.submitForm(id: UUID)
+
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)

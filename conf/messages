@@ -18,6 +18,7 @@ flash.assessment.approved=The assessment has been approved.
 flash.dataGeneration.randomAssessments=Added {0} randomly generated assessments to the database.
 flash.dataGeneration.randomAssessmentsWithStudentAssessments=Added {0} randomly generated assessments with associated student assessments to the database.
 flash.assessment.announcement.created=Assessment announcement created
+flash.messages.sentToInvigilator=Message sent to invigilator
 
 # Overrides of keys in messages.default
 
