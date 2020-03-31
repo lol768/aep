@@ -9,3 +9,5 @@ import 'whatwg-fetch';
 
 // For the upload component:
 import 'core-js/features/dom-collections/for-each';
+
+import './closest';
