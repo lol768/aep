@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.{Clock, LocalDateTime}
+import java.time.{Clock, Duration, LocalDateTime}
 import java.util.UUID
 
 import domain.Fixtures.{assessments, studentAssessments, users}
@@ -46,12 +46,13 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
           inserted.assessmentId mustEqual assessment.id
           inserted.studentId mustEqual student1
           inserted.startTime mustBe None
+          inserted.extraTimeAdjustment mustBe None
           inserted.finaliseTime mustBe None
           inserted.inSeat mustBe false
           inserted.uploadedFiles.isEmpty mustBe true
         })
 
-        updated <- dao.update(inserted.copy(inSeat = true, startTime = Some(JavaTime.offsetDateTime)))
+        updated <- dao.update(inserted.copy(inSeat = true, startTime = Some(JavaTime.offsetDateTime), extraTimeAdjustment = Some(Duration.ofMinutes(30L))))
 
         _ <- DBIO.from(Future.successful {
           updated.created.toInstant mustBe sa.created.toInstant
@@ -60,6 +61,7 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
           updated.assessmentId mustEqual assessment.id
           updated.studentId mustEqual student1
           updated.startTime mustBe Some(JavaTime.offsetDateTime)
+          updated.extraTimeAdjustment mustBe Some(Duration.ofMinutes(30L))
           updated.finaliseTime mustBe None
           updated.inSeat mustBe true
           updated.uploadedFiles.isEmpty mustBe true

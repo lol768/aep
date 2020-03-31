@@ -264,6 +264,7 @@ class StudentAssessmentServiceImpl @Inject()(
           studentId = studentAssessment.studentId,
           inSeat = studentAssessment.inSeat,
           startTime = studentAssessment.startTime,
+          extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
           finaliseTime = studentAssessment.finaliseTime,
           uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
           created = timestamp,
