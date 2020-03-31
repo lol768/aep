@@ -9,6 +9,7 @@ flash.mywarwick.queued=Queued My Warwick alert.
 flash.websocket.published=Published WebSocket message.
 flash.spreadsheetImport.processed=Processed {0} rows.
 flash.files.uploaded=Uploaded {0} files.
+flash.assessment.created=Assessment "{0}" has been created and staged for approval.
 flash.assessment.finish.must-check-box=You must check the checkbox to finish the assessment.
 flash.assessment.started=The assessment has begun.
 flash.assessment.filesUploaded=The files have been uploaded to the assessment. Please check them and finish the assessment when you are done.

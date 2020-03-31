@@ -104,7 +104,6 @@ class AssessmentsController @Inject()(
       formWithErrors => Future.successful(Ok(views.html.admin.assessments.create(formWithErrors))),
       data => {
         import helpers.DateConversion._
-        val files = request.body.files.map(_.ref)
         assessmentService.insert(
           Assessment(
             code = data.moduleCode,
@@ -121,9 +120,9 @@ class AssessmentsController @Inject()(
             invigilators = data.invigilators,
             state = State.Submitted,
           ),
-          files = files.map(f => (f.in, f.metadata))
+          files = request.body.files.map(_.ref).map(f => (f.in, f.metadata)),
         ).successMap { _ =>
-          Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
+          Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessment.created", data.title))
         }
       })
   }
