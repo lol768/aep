@@ -10,9 +10,20 @@ const setWarning = ({ parentElement }) => {
   parentElement.classList.remove('text-info');
 };
 
+const markParentForm = (node, data) => {
+  const form = node.closest('form');
+  const submitBtn = form.querySelector('.btn[type=submit]');
+  if (!submitBtn) return;
+  if (data.timeUntilStart > 0) {
+    submitBtn.classList.add('hide');
+  } else if (data.timeUntilEndOfWindow > 0) {
+    submitBtn.classList.remove('hide');
+  }
+};
+
 const updateTimingInfo = (node, data) => {
   let text;
-
+  markParentForm(node, data);
   if (data.hasStarted && !data.hasFinalised) {
     text = `Started ${msToHumanReadable(data.timeSinceStart)} ago.`;
     if (data.timeRemaining > 0) {
