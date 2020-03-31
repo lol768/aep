@@ -7,9 +7,8 @@ import controllers.BaseController
 import domain.Assessment
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import javax.inject.{Inject, Singleton}
-import play.api.data.{Form, FormError}
+import play.api.data.Form
 import play.api.data.Forms._
-import play.api.data.format.Formatter
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData}
 import services.{AssessmentService, SecurityService, UploadedFileService}
@@ -18,7 +17,6 @@ import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.sso.Usercode
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 object AssessmentsController {
 
