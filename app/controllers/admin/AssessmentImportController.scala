@@ -42,7 +42,7 @@ class AssessmentImportController @Inject()(
   def processImport: Action[MultipartFormData[TemporaryFile]] = RequireAdmin(parse.multipartFormData).async { implicit request =>
     val files = request.body.files.map(_.ref)
     // NB: *Not* in object storage
-    AssessmentController.attachFilesToAssessmentForm.bindFromRequest().fold(
+    AssessmentImportController.uploadSpreadsheetToImport.bindFromRequest().fold(
       _ => Future.successful(BadRequest(views.html.admin.spreadsheetImport.index(AssessmentImportController.uploadSpreadsheetToImport))),
       form => {
         val flashMessage = "success" -> Messages("flash.spreadsheetImport.processed", Random.between(1, 101))
