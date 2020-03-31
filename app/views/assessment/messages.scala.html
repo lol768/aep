@@ -1,0 +1,37 @@
+@import domain.Assessment
+@import controllers.MessageController.MessageData
+@(
+    assessment: Assessment,
+    form: Form[MessageData],
+)(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
+
+@frontend(s"Messages for ${assessment.title}") {
+    <div class="alert alert-info media">
+        <div class="media-left">
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+        </div>
+        <div class="media-body">
+            If you have concerns with specific parts of the examination, you can use this
+            form to bring it to the attention of an invigilator. Invigilators cannot assist
+            you with understanding the assessment, but can look into potential errors
+            and alert the entire cohort if necessary.
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-6">
+            @b3.vertical.formCSRF(controllers.routes.MessageController.submitForm(assessment.id)) { implicit fc =>
+                @b3.textarea(form("messageText"),
+                    Symbol("_label") -> "Enter your message for the invigilator")
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
+            }
+        </div>
+        <div class="col-sm-6">
+            @* Good spot to put responses if we do those *@
+        </div>
+    </div>
+
+}
