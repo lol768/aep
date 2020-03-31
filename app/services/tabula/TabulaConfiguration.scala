@@ -2,6 +2,7 @@ package services.tabula
 
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
+import system.routes.Types.UniversityID
 import uk.ac.warwick.util.termdates.AcademicYear
 
 @Singleton
@@ -17,5 +18,8 @@ class TabulaConfiguration @Inject() (c: Configuration) {
 
   def getDepartmentUrl(): String =
     s"$rootUrl/api/v1/department"
+
+  def getStudentInformationUrl(universityID: UniversityID): String =
+    s"$rootUrl/api/v1/member/${universityID.string}"
 
 }
