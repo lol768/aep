@@ -48,8 +48,13 @@
               }
             }
           } else {
-            @if(sameDate) {
+            @if(fromDatetime.getYear == now.getYear && fromDatetime.getMonth == now.getMonth && fromDatetime.getDayOfMonth == now.getDayOfMonth) {
               Today
+            } else {
+              @titleCase3Chars(fromDatetime.getDayOfWeek) @th(fromDatetime.getDayOfMonth) @titleCase3Chars(fromDatetime.getMonth)
+              @if(fromDatetime.getYear != JavaTime.offsetDateTime.getYear) {
+                '@fromDatetime.getYear.toString.substring(2, 4)
+              }
             }
           }
           <span class="text-muted">@JavaTime.timeZone</span><br />
