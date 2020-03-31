@@ -9,10 +9,7 @@ import warwick.core.system.AuditLogContext
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * Sends a single outgoing email for a particular user.
-  */
-@PersistJobDataAfterExecution
+
 class ImportTabulaAssessmentsJob @Inject()(
   assessmentImportService: TabulaAssessmentImportService,
   scheduler: Scheduler
