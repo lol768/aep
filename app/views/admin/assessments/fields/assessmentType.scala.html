@@ -5,7 +5,6 @@
 
 @()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
-@b3.text(form("title"), Symbol("_label") -> "Title")
 <div class="row">
     <div class="col-sm-6">
     @b3.radio(form("assessmentType"), AssessmentType.values.map(p => (p.entryName, p.label)), Symbol("_label") -> "Type")

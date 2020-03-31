@@ -75,11 +75,9 @@ object AssessmentsController {
     "startTime" -> nonEmptyText
       .transform[LocalDateTime](LocalDateTime.parse(_), _.toString)
       .transform[Option[LocalDateTime]](Option.apply, _.get),
-    "invigilators" -> optional(set(optional(text)))
-      .transform[Set[Option[String]]](_.getOrElse(Set.empty), Option.apply)
-      .transform[Set[String]](_.flatten, _.map(Option.apply))
+    "invigilators" -> set(text)
       .transform[Set[Usercode]](_.map(Usercode), _.map(_.string))
-      .transform[Option[Set[Usercode]]](Option.apply, _.getOrElse(Set.empty)),
+      .transform[Option[Set[Usercode]]](Option.apply, _.get),
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
     "durationMinutes" -> longNumber(min = 1, max = 24 * 60),
