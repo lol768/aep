@@ -25,6 +25,8 @@ POST        /assessment/:id/upload                  @controllers.AssessmentContr
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
+GET         /admin/assessment/announcement/add      @controllers.admins.CreateAnnouncementController.index
+POST        /admin/assessment/announcement/add      @controllers.admins.CreateAnnouncementController.add
 
 POST        /assessment/:id/file/:fileID/delete     @controllers.AssessmentController.deleteFile(id: UUID, fileID: UUID)
 
@@ -71,6 +73,8 @@ POST        /sysadmin/mywarwick/reschedule          @controllers.sysadmin.MyWarw
 GET         /sysadmin/assessments-test              @controllers.sysadmin.SysadminTestController.assessmentComponents()
 GET         /sysadmin/assessment-members-test       @controllers.sysadmin.SysadminTestController.assessmentComponentMembers()
 GET         /sysadmin/departments-test              @controllers.sysadmin.SysadminTestController.departments()
+GET         /sysadmin/dummy-data-generation         @controllers.sysadmin.DummyDataGenerationController.showForm()
+POST        /sysadmin/dummy-data-generation         @controllers.sysadmin.DummyDataGenerationController.submitForm()
 
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()

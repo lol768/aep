@@ -1,0 +1,6 @@
+@import play.twirl.api._
+@(form: Form[_], prelude: Html = HtmlFormat.empty)(implicit messagesProvider: MessagesProvider)
+
+@if(form.hasGlobalErrors) {
+  @errorBox(form.globalErrors, prelude)
+}

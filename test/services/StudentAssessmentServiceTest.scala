@@ -1,5 +1,7 @@
 package services
 
+import java.util.UUID
+
 import domain.Fixtures
 import domain.Fixtures.uploadedFiles.{homeOfficeStatementPDF, specialJPG}
 import domain.dao.{AbstractDaoTest, AssessmentDao, StudentAssessmentDao}
@@ -42,6 +44,26 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
 
       val updated2 = service.attachFilesToAssessment(updated, Seq(file2, file1)).serviceValue
       updated2.uploadedFiles.map(_.fileName) mustBe Seq(file1, file2, file2, file1).map(_._2.fileName)
+    }
+
+    "get, insert and update a student assessment" in new Fixture {
+      val newStudentAssessment = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("HONK"))
+
+      service.upsert(newStudentAssessment.asStudentAssessment(Map.empty)).serviceValue
+
+      val studentAssessmentFromDB = service.get(newStudentAssessment.studentId, storedAssessment.id).serviceValue
+        .getOrElse(throw new Exception("Problem getting student assessment from DB"))
+
+      val finaliseTime = JavaTime.offsetDateTime
+      val updatedStudentAssessment = studentAssessmentFromDB.copy(
+        finaliseTime = Some(finaliseTime)
+      )
+
+      service.upsert(updatedStudentAssessment).serviceValue
+
+      service.get(newStudentAssessment.studentId, storedAssessment.id).serviceValue
+        .getOrElse(throw new Exception("Problem getting student assessment from DB"))
+        .finaliseTime mustBe Some(finaliseTime)
     }
   }
 

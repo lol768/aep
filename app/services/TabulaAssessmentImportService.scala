@@ -75,6 +75,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
       platform = Platform.OnlineExams,
       assessmentType = AssessmentType.OpenBook,
       brief = Brief(None, Nil, None),
+      invigilators = Set(),
       state = Imported,
       tabulaAssessmentId = Some(UUID.fromString(ac.id)), //for assessments created within app directly this will be blank.
       moduleCode = s"${ac.module.code}-${ac.cats}",

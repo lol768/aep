@@ -13,6 +13,7 @@ import system.{ImplicitRequestContext, Roles}
 import warwick.sso._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @ImplementedBy(classOf[SecurityServiceImpl])
 trait SecurityService {
@@ -28,6 +29,8 @@ trait SecurityService {
   def RequireSysadmin: AuthActionBuilder
   def RequireApprover: AuthActionBuilder
   def RequireMasquerader: AuthActionBuilder
+  def RequireDepartmentAssessmentManager: AuthActionBuilder
+
 
   /**
     * An async result that will either do what you ask (A) or fall back to an error Result.
@@ -50,6 +53,7 @@ class SecurityServiceImpl @Inject()(
   configuration: Configuration,
   parse: PlayBodyParsers,
   actionRefiners: ActionRefiners,
+  groupService: GroupService
 )(implicit executionContext: ExecutionContext) extends SecurityService with Results with Rendering with AcceptExtractors with ImplicitRequestContext {
 
   import actionRefiners._
@@ -66,6 +70,15 @@ class SecurityServiceImpl @Inject()(
   val RequireSysadmin: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Sysadmin)
   val RequireApprover: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Approver)
   val RequireMasquerader: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Masquerader)
+  val RequireDepartmentAssessmentManager: AuthActionBuilder = RequireDeptWebGroup(configuration.get[String]("app.assessmentManagerGroup"), forbidden)(defaultParser)
+
+  def RequireDeptWebGroup[C](group: String, otherwise: AuthenticatedRequest[_] => Result)(parser: BodyParser[C]): ActionBuilder[AuthenticatedRequest, C] =
+    (sso.Strict(parser) andThen requireCondition(requireGroup(_, group), otherwise))
+
+
+  private def requireGroup[C](r: AuthenticatedRequest[_], group: String): Boolean = {
+    r.context.user.exists(u => u.department.flatMap(d => d.code).fold(false)(deptCode => groupService.isUserInGroup(r.context.user.get.usercode, GroupName(s"${deptCode.toLowerCase()}-$group")).getOrElse(false)))
+  }
 
   class RequireConditionActionFilter(block: AuthenticatedRequest[_] => Boolean, otherwise: AuthenticatedRequest[_] => Result)(implicit val executionContext: ExecutionContext) extends ActionFilter[AuthenticatedRequest] {
     override protected def filter[A](request: AuthenticatedRequest[A]): Future[Option[Result]] =

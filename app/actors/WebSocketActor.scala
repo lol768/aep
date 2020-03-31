@@ -52,9 +52,9 @@ object WebSocketActor {
     timeRemaining: Option[Long],
     timeUntilStart: Option[Long],
     timeSinceStart: Option[Long],
+    timeUntilEndOfWindow: Option[Long],
     hasStarted: Boolean,
     hasFinalised: Boolean,
-    hasWindowPassed: Boolean
   )
   implicit val writesAssessmentTimingInformation: Writes[AssessmentTimingInformation] = Json.writes[AssessmentTimingInformation]
 }

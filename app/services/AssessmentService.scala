@@ -1,41 +1,49 @@
 package services
 
-import java.time.{Duration, LocalDate, LocalDateTime, LocalTime}
+import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 import java.util.UUID
 
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
-import domain.Assessment.State.Imported
-import domain.Assessment.{AssessmentType, Platform, State}
+import domain.Assessment.{AssessmentType, Brief, Platform, State}
+import domain.dao.UploadedFilesTables
+import domain.UploadedFileOwner
+import domain.Assessment
+import domain.Assessment.Brief
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
+import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
 import domain.{Assessment, UploadedFileOwner}
+import domain.Assessment
+import domain.Assessment.State.Imported
+import domain.dao.AssessmentsTables.StoredAssessment
+import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
 import javax.inject.{Inject, Singleton}
 import services.AssessmentService._
 import slick.dbio.DBIO
-import warwick.core.helpers.JavaTime.{timeZone => zone}
 import warwick.core.helpers.ServiceResults
+import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileSave
+import warwick.sso.Usercode
+import warwick.core.helpers.JavaTime.{timeZone => zone}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[AssessmentServiceImpl])
 trait AssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
-
   def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
-
+  def listForInvigilator(usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+  def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]]
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
-
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
-
   def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
-
+  def insert(assessment: Assessment, brief: Brief)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
+  def upsert(assessment: Assessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Assessment]]
   def insert(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
-
 }
 
 @Singleton
@@ -45,6 +53,27 @@ class AssessmentServiceImpl @Inject()(
   dao: AssessmentDao,
   uploadedFileService: UploadedFileService,
 )(implicit ec: ExecutionContext) extends AssessmentService {
+
+  private def inflate(storedAssessments: Seq[AssessmentsTables.StoredAssessment])(implicit t: TimingContext) = {
+    uploadedFileService.get(storedAssessments.flatMap(_.storedBrief.fileIds)).map { uploadedFiles =>
+      ServiceResults.success(storedAssessments.map(_.asAssessment(uploadedFiles.map(f => f.id -> f).toMap)))
+    }
+  }
+
+  private def withFiles(
+    query: DBIO[Option[StoredAssessment]],
+    errorMsg: String = "Could not find results for query"
+  )(implicit t: TimingContext) =
+    daoRunner.run(query).flatMap { storedAssessmentOption =>
+      storedAssessmentOption.map { storedAssessment =>
+        uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
+          ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
+        }
+      }.getOrElse {
+        Future.successful(ServiceResults.error(errorMsg))
+      }
+    }
+
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
     daoRunner.run(dao.loadAllWithUploadedFiles)
       .map(inflateRowsWithUploadedFiles)
@@ -55,6 +84,17 @@ class AssessmentServiceImpl @Inject()(
     daoRunner.run(dao.findByStatesWithUploadedFiles(state))
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
+
+  override def listForInvigilator(usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
+    daoRunner.run(dao.getByInvigilator(usercodes)).flatMap(inflate)
+  }
+
+  def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
+    withFiles(
+      dao.getByIdAndInvigilator(id, usercodes),
+      s"Could not find Assessment with ID ${id} with invigilators ${usercodes.map(_.string).mkString(",")}"
+    )
+  }
 
   override def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
     daoRunner.run(dao.loadByIdsWithUploadedFiles(ids))
@@ -93,6 +133,7 @@ class AssessmentServiceImpl @Inject()(
           fileIds = fileIds,
           url = assessment.brief.url
         ),
+        invigilators = sortedInvigilators(assessment),
         state = assessment.state,
         tabulaAssessmentId = Some(assessment.id),
         moduleCode = assessment.moduleCode,
@@ -102,6 +143,69 @@ class AssessmentServiceImpl @Inject()(
       ))
       updated <- dao.loadByIdWithUploadedFiles(assessment.id)
     } yield updated).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
+  }
+
+  override def insert(assessment: Assessment, brief: Brief)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
+    daoRunner.run(dao.insert(StoredAssessment(
+      UUID.randomUUID(),
+      assessment.code,
+      assessment.title,
+      assessment.startTime,
+      assessment.duration,
+      assessment.platform,
+      assessment.assessmentType,
+      StoredBrief(brief.text, brief.files.map(_.id), brief.url),
+      sortedInvigilators(assessment),
+      assessment.state,
+      Some(assessment.id),
+      assessment.moduleCode,
+      assessment.departmentCode,
+      OffsetDateTime.now,
+      OffsetDateTime.now
+    ))).map(r => ServiceResults.success(r.asAssessment(brief.files.map(f => f.id -> f).toMap)))
+  }
+
+  private def sortedInvigilators(assessment: Assessment): List[String] = assessment.invigilators.toSeq.sortBy(_.string).map(_.string).toList
+
+  def upsert(assessment: Assessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Assessment]] = {
+    daoRunner.run(dao.getById(assessment.id)).flatMap { storedAssessmentOption =>
+      storedAssessmentOption.map { existingAssessment =>
+        daoRunner.run(dao.update(existingAssessment.copy(
+          code = assessment.code,
+          title = assessment.title,
+          startTime = assessment.startTime,
+          duration = assessment.duration,
+          platform = assessment.platform,
+          assessmentType = assessment.assessmentType,
+          storedBrief = assessment.brief.toStoredBrief,
+        )))
+      }.getOrElse {
+        val timestamp = JavaTime.offsetDateTime
+        daoRunner.run(dao.insert(StoredAssessment(
+          id = assessment.id,
+          code = assessment.code,
+          title = assessment.title,
+          startTime = assessment.startTime,
+          duration = assessment.duration,
+          platform = assessment.platform,
+          assessmentType = assessment.assessmentType,
+          storedBrief = assessment.brief.toStoredBrief,
+          invigilators = sortedInvigilators(assessment),
+          state = assessment.state,
+          tabulaAssessmentId = Some(assessment.id),
+          moduleCode = assessment.moduleCode,
+          departmentCode = assessment.departmentCode,
+          created = timestamp,
+          version = timestamp
+        )))
+      }.flatMap { result =>
+        uploadedFileService.get(result.storedBrief.fileIds).map { files =>
+          ServiceResults.success(result.asAssessment(files.map(f => f.id -> f).toMap))
+        }.recoverWith {
+          case e:Exception => Future.successful(ServiceResults.error(e.getMessage))
+        }
+      }
+    }
   }
 
   override def insert(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
@@ -118,6 +222,7 @@ class AssessmentServiceImpl @Inject()(
       platform = Platform.OnlineExams,
       assessmentType = AssessmentType.OpenBook,
       storedBrief = StoredBrief(None, Nil, None),
+      invigilators = sortedInvigilators(assessment),
       state = Imported,
       tabulaAssessmentId = Some(assessment.id),
       moduleCode = assessment.moduleCode,

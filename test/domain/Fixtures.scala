@@ -4,38 +4,24 @@ import java.time._
 import java.util.UUID
 
 import com.typesafe.config.Config
-import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
+import domain.Assessment.Platform
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import services.sandbox.DataGeneration
 import slick.basic.{BasicProfile, DatabaseConfig}
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.fileuploads.UploadedFileSave
 import warwick.sso.{Department => _, _}
+import services.DataGenerationService
 
 import scala.util.Random
 
 object Fixtures {
-
   import warwick.core.helpers.JavaTime.{timeZone => zone}
-
-  object dateConversion {
-
-    implicit class localDateTimeConversion(ldt: LocalDateTime) {
-      def asOffsetDateTime: OffsetDateTime = ldt.atOffset(zone.getRules.getOffset(ldt))
-
-      def asInstant: Instant = ldt.toInstant(zone.getRules.getOffset(ldt))
-    }
-
-    implicit class instantConversion(instant: Instant) {
-      def asOffsetDateTime: OffsetDateTime = instant.atOffset(zone.getRules.getOffset(instant))
-    }
-
-  }
 
   object users {
     val noUniId: User = Users.create(Usercode("nouniid"))
@@ -103,75 +89,25 @@ object Fixtures {
 
   object assessments {
 
-    import dateConversion._
+    def storedBrief: StoredBrief = DataGenerationService.makeStoredBrief
 
-    def storedBrief: StoredBrief =
-      StoredBrief(
-        Some(DataGeneration.dummyWords(Random.between(6, 30))),
-        Seq.empty,
-        Some(DataGeneration.fakePath)
-      )
-
-    def storedAssessment(uuid: UUID = UUID.randomUUID): StoredAssessment = {
-      val departmentCode = DepartmentCode(DataGeneration.fakeDept)
-      val stemModuleCode = f"${departmentCode.string}${Random.between(101, 999)}%03d"
-      val date = LocalDate.of(2016, 1, 1)
-      val createTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
-      val startTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
-      val code = f"${stemModuleCode}${Random.between(1, 9)}" //papercode
-      val platform = Platform.values(Random.nextInt(Platform.values.size))
-      val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
-      val state = State.values(Random.nextInt(State.values.size))
-      val moduleCode = f"${stemModuleCode}-${Random.between(1, 99)}%02d"
-
-
-      StoredAssessment(
-        id = uuid,
-        code = code,
-        title = DataGeneration.fakeTitle,
-        startTime = Some(startTime.asOffsetDateTime),
-        duration = Duration.ofHours(3),
-        platform = platform,
-        assessmentType = assType,
-        storedBrief = storedBrief,
-        created = createTime.asOffsetDateTime,
-        version = createTime.asOffsetDateTime,
-        state = state,
-        tabulaAssessmentId = None,
-        moduleCode = moduleCode,
-        departmentCode = departmentCode
-      )
-    }
+    def storedAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None): StoredAssessment =
+      DataGenerationService.makeStoredAssessment(uuid, platformOption)
   }
 
   object studentAssessments {
 
-    import dateConversion._
-
     def storedStudentAssessment(assId: UUID, studentId: UniversityID = users.student1.universityId.get): StoredStudentAssessment = {
-      val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
-
-      StoredStudentAssessment(
-        id = UUID.randomUUID(),
-        assessmentId = assId,
-        studentId = studentId,
-        inSeat = false,
-        startTime = None,
-        finaliseTime = None,
-        uploadedFiles = List.empty,
-        created = createTime.asOffsetDateTime,
-        version = createTime.asOffsetDateTime
-      )
+      DataGenerationService.makeStoredStudentAssessment(assId, studentId)
     }
   }
 
   object announcements {
-
-    import dateConversion._
+    import helpers.DateConversion._
 
     def storedAnnouncement(assId: UUID): StoredAnnouncement = {
       val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
-      val text = DataGeneration.dummyWords(Random.between(6, 30))
+      val text = DataGeneration.dummyWords(Random.between(6,30))
 
       StoredAnnouncement(
         id = UUID.randomUUID(),
@@ -184,21 +120,18 @@ object Fixtures {
   }
 
   object uploadedFiles {
-
-    import dateConversion._
+    import helpers.DateConversion._
     import helpers.FileResourceUtils._
 
     object specialJPG {
       val path = "/night-heron-500-beautiful.jpg"
       val uploadedFileSave = UploadedFileSave(path, 8832L, "image/jpeg")
-
       def temporaryUploadedFile = TemporaryUploadedFile("file", byteSourceResource(path), uploadedFileSave)
     }
 
     object homeOfficeStatementPDF {
       val path = "/home-office-statement.pdf"
       val uploadedFileSave = UploadedFileSave(path, 8153L, "application/pdf")
-
       def temporaryUploadedFile = TemporaryUploadedFile("file", byteSourceResource(path), uploadedFileSave)
     }
 
@@ -240,20 +173,14 @@ object Fixtures {
     override protected val dbConfigProvider: DatabaseConfigProvider = new DatabaseConfigProvider {
       override def get[P <: BasicProfile] = new DatabaseConfig[P] {
         override val profile: P = new ExtendedPostgresProfile {}.asInstanceOf[P]
-
         override def db: P#Backend#Database = ???
-
         override val driver: P = ???
-
         override def config: Config = ???
-
         override def profileName: String = ???
-
         override def profileIsObject: Boolean = ???
       }
     }
     override val jdbcTypes: PostgresCustomJdbcTypes = new PostgresCustomJdbcTypes(dbConfigProvider)
-
     import profile.api._
 
     def truncateAndReset =
@@ -261,5 +188,4 @@ object Fixtures {
         outgoingEmails.table.delete andThen
         outgoingEmails.versionsTable.delete
   }
-
 }
