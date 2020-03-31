@@ -12,6 +12,7 @@ const setWarning = ({ parentElement }) => {
 
 const markParentForm = (node, data) => {
   const form = node.closest('form');
+  if (!form) return;
   const submitBtn = form.querySelector('.btn[type=submit]');
   if (!submitBtn) return;
   if (data.timeUntilStart > 0) {
