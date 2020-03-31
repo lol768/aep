@@ -20,6 +20,26 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object AssessmentsController {
 
+  trait AbstractAssessmentFormData {
+    val moduleCode: Option[String] = None
+
+    val startTime: Option[LocalDateTime] = None
+
+    val invigilators: Option[Set[Usercode]] = None
+
+    val title: String
+
+    val description: Option[String]
+
+    val durationMinutes: Long
+
+    val platform: Platform
+
+    val assessmentType: AssessmentType
+
+    val url: Option[String]
+  }
+
   case class AssessmentFormData(
     title: String,
     description: Option[String],
@@ -27,7 +47,7 @@ object AssessmentsController {
     platform: Platform,
     assessmentType: AssessmentType,
     url: Option[String]
-  )
+  ) extends AbstractAssessmentFormData
 
   val form: Form[AssessmentFormData] = Form(mapping(
     "title" -> nonEmptyText,
@@ -39,23 +59,40 @@ object AssessmentsController {
   )(AssessmentFormData.apply)(AssessmentFormData.unapply))
 
   case class AdHocAssessmentFormData(
-    moduleCode: String,
-    startTime: LocalDateTime,
-    invigilators: Set[Usercode],
+    override val moduleCode: Option[String],
+    override val startTime: Option[LocalDateTime],
+    override val invigilators: Option[Set[Usercode]],
     title: String,
     description: Option[String],
     durationMinutes: Long,
     platform: Platform,
     assessmentType: AssessmentType,
     url: Option[String]
-  )
+  ) extends AbstractAssessmentFormData
+
+  //
+  //  case class AdHocAssessmentFormData(
+  //    moduleCode: String,
+  //    startTime: LocalDateTime,
+  //    invigilators: Set[Usercode],
+  //    title: String,
+  //    description: Option[String],
+  //    durationMinutes: Long,
+  //    platform: Platform,
+  //    assessmentType: AssessmentType,
+  //    url: Option[String]
+  //  )
 
   val adHocAssessmentForm: Form[AdHocAssessmentFormData] = Form(mapping(
-    "moduleCode" -> nonEmptyText,
-    "startTime" -> nonEmptyText.transform[LocalDateTime](LocalDateTime.parse(_), _.toString),
-    "invigilators" -> set(optional(text))
+    "moduleCode" -> nonEmptyText.transform[Option[String]](Some(_), _.get),
+    "startTime" -> nonEmptyText
+      .transform[LocalDateTime](LocalDateTime.parse(_), _.toString)
+      .transform[Option[LocalDateTime]](Option.apply, _.get),
+    "invigilators" -> optional(set(optional(text)))
+      .transform[Set[Option[String]]](_.getOrElse(Set.empty), Option.apply)
       .transform[Set[String]](_.flatten, _.map(Option.apply))
-      .transform[Set[Usercode]](_.map(Usercode), _.map(_.string)),
+      .transform[Set[Usercode]](_.map(Usercode), _.map(_.string))
+      .transform[Option[Set[Usercode]]](Option.apply, _.getOrElse(Set.empty)),
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
     "durationMinutes" -> longNumber(min = 1, max = 24 * 60),
@@ -106,9 +143,9 @@ class AssessmentsController @Inject()(
         import helpers.DateConversion._
         assessmentService.insert(
           Assessment(
-            code = data.moduleCode,
+            code = data.moduleCode.get,
             title = data.title,
-            startTime = Option(data.startTime).map(_.asOffsetDateTime),
+            startTime = data.startTime.map(_.asOffsetDateTime),
             duration = Duration.ofMinutes(data.durationMinutes),
             platform = data.platform,
             assessmentType = data.assessmentType,
@@ -117,7 +154,7 @@ class AssessmentsController @Inject()(
               url = data.url,
               files = Nil,
             ),
-            invigilators = data.invigilators,
+            invigilators = data.invigilators.get,
             state = State.Submitted,
           ),
           files = request.body.files.map(_.ref).map(f => (f.in, f.metadata)),

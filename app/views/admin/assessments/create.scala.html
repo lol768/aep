@@ -7,7 +7,7 @@
 
 @adminLayout(s"Create assessment") {
     @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.save(), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
-        @b3.text(form("title"), Symbol("_label") -> "Title")
+        @admin.assessments.fields.title()
         @b3.text(form("moduleCode"), Symbol("_label") -> "Module code")
 
         <div class="row">
