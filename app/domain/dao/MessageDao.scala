@@ -39,7 +39,6 @@ class MessageDao @Inject()(
     .result
 
   def forStudentAssessment(assessmentId: UUID, client: UniversityID): DBIO[Seq[Message]] = messages.table
-    .filter(_.sender === (MessageSender.Client: MessageSender))
     .filter(_.assessmentId === assessmentId)
     .filter(_.client === client)
     .sortBy(_.created)

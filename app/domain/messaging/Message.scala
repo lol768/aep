@@ -9,8 +9,6 @@ import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.sso.{UniversityID, User, Usercode}
 
-import scala.collection.immutable
-
 /**
   * Conversational message which can be attached to an Enquiry or Case.
   * Can be either to or from the client.
@@ -104,6 +102,6 @@ object MessageSender extends PlayEnum[MessageSender] {
   case object Client extends MessageSender
   case object Team extends MessageSender
 
-  val values: immutable.IndexedSeq[MessageSender] = findValues
+  val values: IndexedSeq[MessageSender] = findValues
 }
 
