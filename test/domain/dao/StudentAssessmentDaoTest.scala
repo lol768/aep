@@ -31,7 +31,7 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
         })
 
         assessment = assessments.storedAssessment()
-        sa = studentAssessments.storedStudentAssessment(assessment.id, student1)
+        sa = studentAssessments.storedStudentAssessment(assessment.id, student1).copy(extraTimeAdjustment = None)
         _ <- assDao.insert(assessment)
         inserted <- dao.insert(sa)
 
