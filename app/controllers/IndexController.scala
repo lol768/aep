@@ -16,11 +16,11 @@ class IndexController @Inject()(
   import security._
 
   def home: Action[AnyContent] = SigninRequiredAction.async { implicit request =>
-    val user = currentUser()
+    val userRoles = currentUserRoles()
 
     val checkRedirectToAssessmentsView: Future[ServiceResult[Boolean]] =
-      if (user.isStudent || user.isPGR) Future.successful(ServiceResults.success(true))
-      else user.universityId.map { universityId =>
+      if (userRoles.isStudent || userRoles.isPGR) Future.successful(ServiceResults.success(true))
+      else userRoles.user.universityId.map { universityId =>
         studentAssessmentService.byUniversityId(universityId).map(_.map(_.nonEmpty))
       }.getOrElse(Future.successful(ServiceResults.success(true)))
 
@@ -28,7 +28,7 @@ class IndexController @Inject()(
       case true => Redirect(controllers.routes.AssessmentsController.index())
       case _ =>
         // At some point in the future we may redirect somewhere useful for staff
-        Ok(views.html.home())
+        Ok(views.html.home(userRoles))
     }
   }
 
