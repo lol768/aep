@@ -17,7 +17,7 @@ const icons = {
 };
 
 const dateTimeHiddenFieldFormat = 'YYYY-MM-DD[T]HH:mm';
-const dateHiddenFieldFormat = 'YYYY-MM-DD';
+// const dateHiddenFieldFormat = 'YYYY-MM-DD';
 const dateTextFieldFormat = 'Do MMM YYYY';
 const dateTimeTextFieldFormat = 'Do MMM YYYY, HH:mm';
 const dayAndDateTimeTextFieldFormat = 'ddd Do MMM YYYY, HH:mm';
@@ -38,7 +38,7 @@ function PopupDatePicker(container, format) {
 
   let currentDate;
   if (hiddenField.val()) {
-    currentDate = moment(hiddenField.val(), dateHiddenFieldFormat);
+    currentDate = moment(hiddenField.val(), dateTimeHiddenFieldFormat);
     textField.val(currentDate.format(dateTextFieldFormat));
   }
 
@@ -48,7 +48,7 @@ function PopupDatePicker(container, format) {
     date: currentDate,
     allowInputToggle: true,
     ...options,
-  }).on('dp.change', ({date}) => hiddenField.val(moment(date, format).format(dateHiddenFieldFormat)));
+  }).on('dp.change', ({ date }) => hiddenField.val(moment(date, format).format(dateTimeHiddenFieldFormat)));
 }
 
 export function DatePicker(container) {
@@ -86,7 +86,7 @@ function InlinePicker(container, format) {
     date: currentDate,
     inline: true,
     ...options,
-  }).on('dp.change', ({date}) => {
+  }).on('dp.change', ({ date }) => {
     const d = moment(date, format);
     hiddenField.val(d.format(dateTimeHiddenFieldFormat));
     updateLabel(d);

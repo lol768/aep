@@ -7,6 +7,8 @@ import './polyfills';
 
 import $ from 'jquery';
 import * as flexiPicker from './flexi-picker';
+import * as dateTimePicker from './date-time-picker';
+
 import '@universityofwarwick/statuspage-widget/dist/main';
 import './admin/assessment-setup';
 import './date-time-picker';
@@ -22,6 +24,10 @@ function bindTo($scope) {
   $('[data-toggle="popover"]', $scope).popover();
 
   flexiPicker.bindTo($scope);
+
+  $('.datetimepicker', $scope).each((i, container) => {
+    dateTimePicker.DateTimePicker(container);
+  });
 }
 
 $(() => {

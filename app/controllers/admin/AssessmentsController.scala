@@ -52,7 +52,7 @@ object AssessmentsController {
 
   val adHocAssessmentForm: Form[AdHocAssessmentFormData] = Form(mapping(
     "moduleCode" -> nonEmptyText,
-    "startTime" -> localDateTime,
+    "startTime" -> nonEmptyText.transform[LocalDateTime](LocalDateTime.parse(_), _.toString),
     "invigilators" -> set(optional(text))
       .transform[Set[String]](_.flatten, _.map(Option.apply))
       .transform[Set[Usercode]](_.map(Usercode), _.map(_.string)),
