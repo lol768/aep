@@ -18,33 +18,33 @@ class MessageController @Inject()(
   studentAssessmentService: StudentAssessmentService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
   import security._
+  import MessageController._
 
-  val blankForm: Form[MessageData] = Form(mapping(
-    "messageText" -> nonEmptyText
-  )(MessageData.apply)(MessageData.unapply))
-
-  def showForm(assessmentId: UUID): Action[AnyContent] = SigninRequiredAction.async { implicit request =>
-    assessmentService.get(assessmentId).successMap { assessment =>
-      Ok(views.html.assessment.messages(assessment, blankForm))
-    }
+  def showForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId) { implicit request =>
+    Ok(views.html.assessment.messages(request.studentAssessmentWithAssessment.assessment, blankForm))
   }
 
-  def submitForm(assessmentId: UUID): Action[AnyContent] = SigninRequiredAction.async { implicit request =>
+  def submitForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId) { implicit request =>
     // This should actually do something once we have the back end set up.
-    def success(data: MessageData) = Future.successful {
+    def success(data: MessageData) =
       Redirect(controllers.routes.MessageController.showForm(assessmentId))
         .flashing("success" -> Messages("flash.messages.sentToInvigilator"))
-    }
 
     def failure(badForm: Form[MessageData]) =
-      assessmentService.get(assessmentId).successMap { assessment =>
-        BadRequest(views.html.assessment.messages(assessment, badForm))
-      }
+      BadRequest(views.html.assessment.messages(request.studentAssessmentWithAssessment.assessment, badForm))
 
     blankForm.bindFromRequest().fold(failure, success)
   }
 }
 
-case class MessageData(
-  messageText: String
-)
+object MessageController {
+  case class MessageData(
+    messageText: String
+  )
+
+  val blankForm: Form[MessageData] = Form(mapping(
+    "messageText" -> nonEmptyText
+  )(MessageData.apply)(MessageData.unapply))
+}
+
+

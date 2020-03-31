@@ -23,12 +23,12 @@
     <ul class="list-unstyled">
       @if(assessment.assessment.brief.url.isDefined) {
         <li>
-          <a href="@assessment.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a><br>
+          <a href="@assessment.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
         </li>
       }
       @assessment.assessment.brief.files.map { file =>
         <li>
-          <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a><br>
+          <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
         </li>
       }
       <li>
