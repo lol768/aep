@@ -20,7 +20,7 @@
         <dt>Can start</dt>
         <dd>
             @defining(startTime.plus(Assessment.window)) { endTime =>
-                @localisedDatetimeRange(startTime, endTime)
+                @localisedDatetimeRange(startTime, endTime, true)
             }
         </dd>
     }
