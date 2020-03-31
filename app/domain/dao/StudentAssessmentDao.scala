@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
@@ -22,6 +22,7 @@ object StudentAssessmentsTables {
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
+    extraTimeAdjustment: Option[Duration],
     finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
     created: OffsetDateTime,
@@ -34,6 +35,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
+        extraTimeAdjustment,
         finaliseTime,
         uploadedFiles.map(fileMap)
       )
@@ -44,6 +46,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
+        extraTimeAdjustment,
         finaliseTime,
         uploadedFiles.length
       )
@@ -57,6 +60,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
+        extraTimeAdjustment,
         finaliseTime,
         uploadedFiles,
         created,
@@ -73,6 +77,7 @@ object StudentAssessmentsTables {
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
+    extraTimeAdjustment: Option[Duration],
     finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
     created: OffsetDateTime,
