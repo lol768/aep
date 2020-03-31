@@ -48,7 +48,7 @@ GET         /admin/approvals/:assessmentId/files/:fileId            @controllers
 
 GET         /admin/assessments                                    @controllers.admin.AssessmentsController.index
 GET         /admin/assessments/create                             @controllers.admin.AssessmentsController.create
-POST        /admin/assessments/save                               @controllers.admin.AssessmentsController.save
+POST        /admin/assessments/create                             @controllers.admin.AssessmentsController.save
 GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.show(id: UUID)
 POST        /admin/assessments/:id                                @controllers.admin.AssessmentsController.update(id: UUID)
 GET         /admin/assessments/:assessmentId/files/:fileId          @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
