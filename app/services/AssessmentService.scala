@@ -152,8 +152,8 @@ class AssessmentServiceImpl @Inject()(
           ).map(_.id)
         })
       } else DBIO.successful(assessment.brief.files.map(_.id))
-      _ <- dao.insert(StoredAssessment(
-        id = UUID.randomUUID(),
+      assessment <- dao.insert(StoredAssessment(
+        id = assessment.id,
         code = assessment.code,
         title = assessment.title,
         startTime = assessment.startTime,
@@ -171,7 +171,9 @@ class AssessmentServiceImpl @Inject()(
         version = OffsetDateTime.now,
       ))
       inserted <- dao.loadByIdWithUploadedFiles(assessment.id)
-    } yield inserted).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
+    } yield inserted).map { r =>
+      inflateRowWithUploadedFiles(r).get
+    }.map(ServiceResults.success)
   }
 
   private def sortedInvigilators(assessment: Assessment): List[String] = assessment.invigilators.toSeq.sortBy(_.string).map(_.string).toList
