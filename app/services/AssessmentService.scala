@@ -5,7 +5,7 @@ import java.util.UUID
 
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
-import domain.Assessment.State.Draft
+import domain.Assessment.State.Imported
 import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
@@ -13,22 +13,27 @@ import domain.{Assessment, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
 import services.AssessmentService._
 import slick.dbio.DBIO
+import warwick.core.helpers.JavaTime.{timeZone => zone}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileSave
-import warwick.core.helpers.JavaTime.{timeZone => zone}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[AssessmentServiceImpl])
 trait AssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
+
   def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
+
   def insert(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 
 }
@@ -89,6 +94,9 @@ class AssessmentServiceImpl @Inject()(
           url = assessment.brief.url
         ),
         state = assessment.state,
+        tabulaAssessmentId = Some(assessment.id),
+        moduleCode = assessment.moduleCode,
+        departmentCode = assessment.departmentCode,
         created = stored.created,
         version = stored.version
       ))
@@ -110,7 +118,10 @@ class AssessmentServiceImpl @Inject()(
       platform = Platform.OnlineExams,
       assessmentType = AssessmentType.OpenBook,
       storedBrief = StoredBrief(None, Nil, None),
-      state = Draft,
+      state = Imported,
+      tabulaAssessmentId = Some(assessment.id),
+      moduleCode = assessment.moduleCode,
+      departmentCode = assessment.departmentCode,
       created = dt.atOffset(zone.getRules.getOffset(dt)),
       version = dt.atOffset(zone.getRules.getOffset(dt))
     )

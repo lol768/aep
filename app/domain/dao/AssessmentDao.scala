@@ -19,6 +19,7 @@ import warwick.sso.Usercode
 import scala.concurrent.ExecutionContext
 
 object AssessmentsTables {
+
   case class StoredAssessment(
     id: UUID = UUID.randomUUID(),
     code: String,
@@ -29,6 +30,9 @@ object AssessmentsTables {
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
     state: State,
+    tabulaAssessmentId: Option[UUID],
+    moduleCode: String,
+    departmentCode: DepartmentCode,
     created: OffsetDateTime,
     version: OffsetDateTime,
   ) extends Versioned[StoredAssessment] {
@@ -44,6 +48,9 @@ object AssessmentsTables {
         assessmentType,
         storedBrief.asBrief(fileMap),
         state,
+        tabulaAssessmentId,
+        moduleCode,
+        departmentCode: DepartmentCode
       )
 
     def asAssessmentMetadata: AssessmentMetadata =
@@ -56,6 +63,9 @@ object AssessmentsTables {
         platform,
         assessmentType,
         state,
+        tabulaAssessmentId,
+        moduleCode,
+        departmentCode
       )
 
     override def atVersion(at: OffsetDateTime): StoredAssessment = copy(version = at)
@@ -71,6 +81,9 @@ object AssessmentsTables {
         assessmentType,
         storedBrief,
         state,
+        tabulaAssessmentId,
+        moduleCode,
+        departmentCode,
         created,
         version,
         operation,
@@ -89,6 +102,9 @@ object AssessmentsTables {
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,
     state: State,
+    tabulaAssessmentId: Option[UUID],
+    moduleCode: String,
+    departmentCode: DepartmentCode,
     created: OffsetDateTime,
     version: OffsetDateTime,
     operation: DatabaseOperation,
@@ -111,8 +127,10 @@ object AssessmentsTables {
 
   object StoredBrief {
     implicit val format: Format[StoredBrief] = Json.format[StoredBrief]
+
     def empty: StoredBrief = StoredBrief(None, Seq.empty, None)
   }
+
 }
 
 
@@ -123,17 +141,29 @@ trait AssessmentDao {
   import profile.api._
 
   def all: DBIO[Seq[StoredAssessment]]
+
   def loadAllWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def findByStates(states: Seq[State]): DBIO[Seq[StoredAssessment]]
+
   def findByStatesWithUploadedFiles(states: Seq[State]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
+
   def update(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
+
   def getById(id: UUID): DBIO[Option[StoredAssessment]]
+
   def loadByIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]]
+
   def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def getByCode(code: String): DBIO[Option[StoredAssessment]]
+
   def getToday: DBIO[Seq[StoredAssessment]]
+
   def getInWindow: DBIO[Seq[StoredAssessment]]
 }
 
@@ -143,6 +173,7 @@ class AssessmentDaoImpl @Inject()(
   val jdbcTypes: PostgresCustomJdbcTypes,
   tables: AssessmentTables,
 )(implicit ec: ExecutionContext) extends AssessmentDao with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
+
   import profile.api._
   import jdbcTypes._
   import tables._
