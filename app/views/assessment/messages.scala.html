@@ -5,6 +5,16 @@
 )(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
 
 @frontend(s"Messages for ${assessment.title}") {
+    <div class="alert alert-info media">
+        <div class="media-left">
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+        </div>
+        <div class="media-body">
+            Invigilators will not reply directly the messages you submit here, but will make an
+            announcement to everyone taking part in the assessment if appropriate.
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-sm-6">
             @b3.vertical.formCSRF(controllers.routes.MessageController.submitForm(assessment.id)) { implicit fc =>
@@ -17,7 +27,7 @@
             }
         </div>
         <div class="col-sm-6">
-            @* Good spot to put responses when we do those *@
+            @* Good spot to put responses if we do those *@
         </div>
     </div>
 
