@@ -74,7 +74,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
           assessmentService.update(ac.asAssessment(Some(existingAssessment)), Nil).successFlatMapTo { row => Future.successful(Right(row)) }
         case _ => {
           val newAssessment = ac.asAssessment(None)
-          assessmentService.insert(newAssessment, newAssessment.brief).successFlatMapTo { row =>
+          assessmentService.insert(newAssessment, Nil).successFlatMapTo { row =>
             Future.successful(Right(row))
           }
         }

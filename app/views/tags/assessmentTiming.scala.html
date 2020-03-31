@@ -20,6 +20,7 @@
                 "end" -> studentAssessmentWithAssessment.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli + studentAssessmentWithAssessment.assessment.duration.toMillis)).getOrElse(JsNull),
                 "hasStarted" -> JsBoolean(studentAssessmentWithAssessment.studentAssessment.startTime.nonEmpty),
                 "hasFinalised" -> JsBoolean(studentAssessmentWithAssessment.studentAssessment.finaliseTime.nonEmpty),
+                "extraTimeAdjustment" -> studentAssessmentWithAssessment.studentAssessment.extraTimeAdjustment.map(et => JsNumber(et.toMillis)).getOrElse(JsNull)
             )))
         }"
         ></span>

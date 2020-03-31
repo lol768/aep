@@ -5,10 +5,10 @@ import java.util.UUID
 
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
-import domain.Assessment.{Brief, State}
-import domain.{Assessment, UploadedFileOwner}
+import domain.Assessment.State
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
+import domain.{Assessment, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
 import services.AssessmentService._
 import slick.dbio.DBIO
@@ -39,7 +39,7 @@ trait AssessmentService {
 
   def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 
-  def insert(assessment: Assessment, brief: Brief)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
+  def insert(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 
   def upsert(assessment: Assessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Assessment]]
 }
@@ -150,25 +150,45 @@ class AssessmentServiceImpl @Inject()(
     } yield updated).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
   }
 
-  override def insert(assessment: Assessment, brief: Brief)(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
-    daoRunner.run(dao.insert(StoredAssessment(
-      assessment.id,
-      assessment.code,
-      assessment.title,
-      assessment.startTime,
-      assessment.duration,
-      assessment.platform,
-      assessment.assessmentType,
-      StoredBrief(brief.text, brief.files.map(_.id), brief.url),
-      sortedInvigilators(assessment),
-      assessment.state,
-      assessment.tabulaAssessmentId,
-      assessment.moduleCode,
-      assessment.departmentCode,
-      assessment.sequence,
-      OffsetDateTime.now,
-      OffsetDateTime.now
-    ))).map(r => ServiceResults.success(r.asAssessment(brief.files.map(f => f.id -> f).toMap)))
+  override def insert(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
+    daoRunner.run(for {
+      fileIds <- if (files.nonEmpty) {
+        DBIO.sequence(files.toList.map { case (in, metadata) =>
+          uploadedFileService.storeDBIO(
+            in,
+            metadata,
+            ac.usercode.get,
+            assessment.id,
+            UploadedFileOwner.Assessment
+          ).map(_.id)
+        })
+      } else DBIO.successful(assessment.brief.files.map(_.id))
+      assessment <- dao.insert(StoredAssessment(
+        id = assessment.id,
+        code = assessment.code,
+        title = assessment.title,
+        startTime = assessment.startTime,
+        duration = assessment.duration,
+        platform = assessment.platform,
+        assessmentType = assessment.assessmentType,
+        storedBrief = StoredBrief(
+          text = assessment.brief.text,
+          fileIds = fileIds,
+          url = assessment.brief.url
+        ),
+        invigilators = sortedInvigilators(assessment),
+        state = assessment.state,
+        assessment.tabulaAssessmentId,
+        assessment.moduleCode,
+        assessment.departmentCode,
+        assessment.sequence,
+        created = OffsetDateTime.now,
+        version = OffsetDateTime.now,
+      ))
+      inserted <- dao.loadByIdWithUploadedFiles(assessment.id)
+    } yield inserted).map { r =>
+      inflateRowWithUploadedFiles(r).get
+    }.map(ServiceResults.success)
   }
 
   private def sortedInvigilators(assessment: Assessment): List[String] = assessment.invigilators.toSeq.sortBy(_.string).map(_.string).toList

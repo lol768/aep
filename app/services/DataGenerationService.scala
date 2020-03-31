@@ -25,6 +25,7 @@ import scala.util.Random
 trait DataGenerationService {
   def putRandomAssessmentsInDatabase(howMany: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]]
   def putRandomAssessmentsWithStudentAssessmentsInDatabase(howManyAssessments: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]]
+  val numberOfIds: Int
 }
 
 @Singleton
@@ -39,8 +40,11 @@ class DataGenerationServiceImpl @Inject()(
   import DataGenerationService._
 
   private lazy val webdevIds =
-    Seq("cuslaj", "omsjab", "u1473579", "cusebr", "cusfal", "cusxad", "u1574595", "cuscav", "cusdag", "cuscao", "u1574999", "cusxac", "u1673477", "cuslat")
+    Seq("0970148", "0672089", "0672088", "0770884", "1673477", "9872987", "1171795", "1574999", "1574595", "0270954", "0380083", "1572165", "1170836", "9876004")
       .map(UniversityID)
+
+  // Just for testing purposes
+  override lazy val numberOfIds: Int = webdevIds.length
 
   override def putRandomAssessmentsInDatabase(howMany: Int = 1)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]] = {
     ServiceResults.futureSequence {
@@ -81,11 +85,12 @@ class DataGenerationServiceImpl @Inject()(
 object DataGenerationService {
 
   import warwick.core.helpers.JavaTime.{timeZone => zone}
-  import helpers.DateConversion
+  import helpers.DateConversion._
 
+  private val invigilator1 = "Mary"
+  private val invigilator2 = "Bob"
 
-  val invigilator1 = "Mary"
-  val invigilator2 = "Bob"
+  private val extraTimeAdjustmentDurations = Seq(20, 30, 45, 60, 90, 120).map(_.toLong)
 
   def makeStoredBrief: StoredBrief =
     StoredBrief(
@@ -135,14 +140,18 @@ object DataGenerationService {
     studentId: UniversityID,
     studentAssessmentId: UUID = UUID.randomUUID
   ): StoredStudentAssessment = {
-    import DateConversion._
+
     val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
+    val twentyPercentChance = Random.nextInt(5) == 0
+    val extraTimeAdjustment = if (twentyPercentChance) Some(Duration.ofMinutes(extraTimeAdjustmentDurations(Random.nextInt(extraTimeAdjustmentDurations.length)))) else None
+
     StoredStudentAssessment(
       id = studentAssessmentId,
       assessmentId = assessmentId,
       studentId = studentId,
       inSeat = false,
       startTime = None,
+      extraTimeAdjustment = extraTimeAdjustment,
       finaliseTime = None,
       uploadedFiles = List.empty,
       created = createTime.asOffsetDateTime,

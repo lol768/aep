@@ -1,0 +1,8 @@
+@import views.html.b3.vertical.VerticalFieldConstructor
+@import controllers.admin.AssessmentsController.AbstractAssessmentFormData
+@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+
+@b3.free() {
+    <button type="submit" class="btn btn-primary">Save for approval</button>
+    <a href="@controllers.admin.routes.AssessmentsController.index()" class="btn btn-default">Cancel</a>
+}

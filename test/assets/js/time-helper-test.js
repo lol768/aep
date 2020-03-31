@@ -13,5 +13,7 @@ describe('time-helper', () => {
     assert.equal(msToHumanReadable(60000 * 60 * 24 * 2 + 60000 * 60 + 60000), '2 days, 1 hour and 1 minute');
     assert.equal(msToHumanReadable(60000 * 60 * 24 * 5 + 60000 * 60 + 60000), '5 days, 1 hour and 1 minute');
     assert.equal(msToHumanReadable(432946802), '5 days and 15 minutes');
+    assert.equal(msToHumanReadable(432946802), '5 days and 15 minutes');
+    assert.equal(msToHumanReadable(60000 * 60 * 24 * 30 + 60000 * 60 + 60000), '30 days, 1 hour and 1 minute');
   });
 });

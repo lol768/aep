@@ -27,7 +27,7 @@ class DataGenerationServiceTest extends AbstractDaoTest with CleanUpDatabaseAfte
       assessmentData.length mustBe 5
 
       val studentAssessmentData = studentAssessmentService.list.serviceValue
-      studentAssessmentData.length % assessmentData.length mustBe 0 // Should be exact multiple of number of assessments created
+      studentAssessmentData.length % dataGenerationService.numberOfIds mustBe 0 // Should be exact multiple of number of assessments created
       studentAssessmentData.map(_.assessmentId).foreach { id =>
         assessmentData.map(_.id) must contain(id)
       }

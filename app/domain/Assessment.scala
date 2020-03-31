@@ -36,7 +36,7 @@ sealed trait BaseAssessment {
 
   def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
-  def hasWindowPassed: Boolean = endTime.exists(_.isAfter(JavaTime.offsetDateTime))
+  def hasWindowPassed: Boolean = endTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
@@ -108,7 +108,6 @@ object Assessment {
     case object MultipleChoice extends AssessmentType {
       val label = "Multiple choice"
     }
-
     case object Spoken extends AssessmentType {
       val label = "Spoken"
     }

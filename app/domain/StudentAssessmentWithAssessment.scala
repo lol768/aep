@@ -13,11 +13,25 @@ sealed trait BaseStudentAssessmentWithAssessment {
 
   def getTimingInfo: AssessmentTimingInformation = {
     val now = JavaTime.offsetDateTime
+    val baseDuration = assessment.duration
+    val (timeRemaining, extraTimeAdjustment) = studentAssessment.startTime match {
+      case _ if !inProgress =>
+        (None, None)
+      case Some(studentStart) =>
+        studentAssessment.extraTimeAdjustment.map { et => (
+          Some(baseDuration.plus(et).minus(Duration.between(studentStart, now)).toMillis),
+          Some(et.toMillis)
+        )}.getOrElse(
+          (Some(baseDuration.minus(Duration.between(studentStart, now)).toMillis), None)
+        )
+    }
+
     AssessmentTimingInformation(
       id = assessment.id,
-      timeRemaining = if (inProgress) Some(assessment.duration.minus(Duration.between(studentAssessment.startTime.get, now)).toMillis) else None,
+      timeRemaining = timeRemaining,
+      extraTimeAdjustment = extraTimeAdjustment,
       timeSinceStart = if (inProgress) Some(Duration.between(studentAssessment.startTime.get, now).toMillis) else None,
-      timeUntilStart = if (studentAssessment.startTime.isEmpty && !assessment.hasWindowPassed) Some(Duration.between(assessment.startTime.get, now).toMillis) else None,
+      timeUntilStart = if (studentAssessment.startTime.isEmpty && !assessment.hasWindowPassed) Some(Duration.between(now, assessment.startTime.get).toMillis) else None,
       timeUntilEndOfWindow = if (!studentAssessment.hasFinalised) assessment.endTime.map(Duration.between(now, _).toMillis) else None,
       hasStarted = studentAssessment.startTime.nonEmpty,
       hasFinalised = studentAssessment.hasFinalised
