@@ -28,7 +28,11 @@ const updateTimingInfo = (node, data) => {
   if (data.hasStarted && !data.hasFinalised) {
     text = `Started ${msToHumanReadable(data.timeSinceStart)} ago.`;
     if (data.timeRemaining > 0) {
-      text += ` ${msToHumanReadable(data.timeRemaining)} remaining.`;
+      text += ` ${msToHumanReadable(data.timeRemaining)} remaining`;
+      if (data.extraTimeAdjustment) {
+        text += ` (including ${msToHumanReadable(data.extraTimeAdjustment)} additional time)`;
+      }
+      text += '.';
       clearWarning(node);
     } else {
       text += `\nExceeded deadline by ${msToHumanReadable(-data.timeRemaining)}.`;
@@ -67,6 +71,7 @@ const offlineRefresh = (node) => {
     end,
     hasStarted,
     hasFinalised,
+    extraTimeAdjustment,
   } = JSON.parse(rendering);
 
   const now = Number(new Date());
@@ -74,13 +79,15 @@ const offlineRefresh = (node) => {
   const hasWindowPassed = now > windowEnd;
   const inProgress = hasStarted && !hasFinalised;
   const notYetStarted = !hasStarted && !hasWindowPassed;
-  const timeRemaining = inProgress ? end - now : null;
+  const extraTime = extraTimeAdjustment || 0;
+  const timeRemaining = inProgress ? end - now + extraTime : null;
   const timeSinceStart = inProgress ? now - new Date(start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
 
   const data = {
     timeRemaining,
+    extraTimeAdjustment,
     timeSinceStart,
     timeUntilStart,
     hasStarted,
