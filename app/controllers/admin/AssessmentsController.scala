@@ -70,19 +70,6 @@ object AssessmentsController {
     url: Option[String]
   ) extends AbstractAssessmentFormData
 
-  //
-  //  case class AdHocAssessmentFormData(
-  //    moduleCode: String,
-  //    startTime: LocalDateTime,
-  //    invigilators: Set[Usercode],
-  //    title: String,
-  //    description: Option[String],
-  //    durationMinutes: Long,
-  //    platform: Platform,
-  //    assessmentType: AssessmentType,
-  //    url: Option[String]
-  //  )
-
   val adHocAssessmentForm: Form[AdHocAssessmentFormData] = Form(mapping(
     "moduleCode" -> nonEmptyText.transform[Option[String]](Some(_), _.get),
     "startTime" -> nonEmptyText
