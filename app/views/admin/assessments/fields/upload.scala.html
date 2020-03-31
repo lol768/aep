@@ -1,0 +1,30 @@
+@import views.html.b3.vertical.VerticalFieldConstructor
+@import controllers.admin.AssessmentsController.AbstractAssessmentFormData
+@import domain.Assessment
+@(assessment: Option[Assessment] = None)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+
+@b3.freeFormGroup(Seq(Symbol("_label") -> "Files", Symbol("id") -> "files")) { _ =>
+    <div class="well">
+        @if(assessment.isEmpty || assessment.exists(_.brief.files.isEmpty)) {
+            <p>
+                No files attached.
+            </p>
+        } else {
+            <p>Attached files:</p>
+            <ul>
+            @assessment.map { assessment =>
+                @assessment.brief.files.map { file =>
+                    <li>
+                        <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
+                            <i class="fad fa-file fa-fw"></i>@file.fileName
+                        </a>
+                    </li>
+                }
+            }
+            </ul>
+            <p>Uploading new files replaces all existing files.</p>
+        }
+    </div>
+
+    <input type="file" name="file" id="file" multiple>
+}

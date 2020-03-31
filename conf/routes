@@ -53,6 +53,8 @@ POST        /admin/assessment/announcement/add                    @controllers.a
 GET         /admin/assessments                                    @controllers.admin.AssessmentsController.index
 GET         /admin/spreadsheet/import                             @controllers.admin.AssessmentImportController.index
 POST        /admin/spreadsheet/import                             @controllers.admin.AssessmentImportController.processImport
+GET         /admin/assessments/create                             @controllers.admin.AssessmentsController.create
+POST        /admin/assessments/create                             @controllers.admin.AssessmentsController.save
 GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.show(id: UUID)
 POST        /admin/assessments/:id                                @controllers.admin.AssessmentsController.update(id: UUID)
 GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
