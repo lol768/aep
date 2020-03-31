@@ -25,6 +25,7 @@ import scala.util.Random
 trait DataGenerationService {
   def putRandomAssessmentsInDatabase(howMany: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]]
   def putRandomAssessmentsWithStudentAssessmentsInDatabase(howManyAssessments: Int)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]]
+  val numberOfIds: Int
 }
 
 @Singleton
@@ -41,6 +42,9 @@ class DataGenerationServiceImpl @Inject()(
   private lazy val webdevIds =
     Seq("0970148", "0672089", "0672088", "0770884", "1673477", "9872987", "1171795", "1574999", "1574595", "0270954", "0380083", "1572165", "1170836", "9876004")
       .map(UniversityID)
+
+  // Just for testing purposes
+  override lazy val numberOfIds: Int = webdevIds.length
 
   override def putRandomAssessmentsInDatabase(howMany: Int = 1)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]] = {
     ServiceResults.futureSequence {
