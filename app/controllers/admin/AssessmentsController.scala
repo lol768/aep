@@ -104,9 +104,7 @@ class AssessmentsController @Inject()(
       formWithErrors => Future.successful(Ok(views.html.admin.assessments.create(formWithErrors))),
       data => {
         import helpers.DateConversion._
-
         val files = request.body.files.map(_.ref)
-
         assessmentService.insert(
           Assessment(
             code = data.moduleCode,
