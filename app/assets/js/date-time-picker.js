@@ -17,7 +17,6 @@ const icons = {
 };
 
 const dateTimeHiddenFieldFormat = 'YYYY-MM-DD[T]HH:mm';
-// const dateHiddenFieldFormat = 'YYYY-MM-DD';
 const dateTextFieldFormat = 'Do MMM YYYY';
 const dateTimeTextFieldFormat = 'Do MMM YYYY, HH:mm';
 const dayAndDateTimeTextFieldFormat = 'ddd Do MMM YYYY, HH:mm';
