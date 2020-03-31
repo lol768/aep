@@ -50,7 +50,7 @@ object WebSocketActor {
   case class AssessmentTimingInformation(
     id: UUID,
     timeRemaining: Option[Long],
-    extraTimeAdjustmentRemaining: Option[Long],
+    extraTimeAdjustment: Option[Long],
     timeUntilStart: Option[Long],
     timeSinceStart: Option[Long],
     timeUntilEndOfWindow: Option[Long],
