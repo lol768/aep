@@ -1,5 +1,18 @@
-@()(implicit context: RequestContext)
+@import views.tags.contactEmail
+@(userRoles: UserRoles)(implicit context: RequestContext)
 
-@frontend("Home") {
-  <p>Lorem ipsum dolor sit amet</p>
+@frontend() {
+
+  <p class="lead">
+    The Tabula Assessment Portal is our online examination service. It appears that
+    your Warwick account is not currently associated with any assessments, either as
+    a participant, an examiner or an invigilator.
+  </p>
+
+  @if(!userRoles.isAdmin && !userRoles.isSysAdmin && !userRoles.isStudent) {
+    <p class="lead">
+      If you believe that this is incorrect, please contact @{contactEmail()}.
+    </p>
+  }
+
 }

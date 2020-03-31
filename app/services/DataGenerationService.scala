@@ -39,7 +39,7 @@ class DataGenerationServiceImpl @Inject()(
   import DataGenerationService._
 
   private lazy val webdevIds =
-    Seq("cuslaj", "omsjab", "u1473579", "cusebr", "cusfal", "cusxad", "u1574595", "cuscav", "cusdag", "cuscao", "u1574999", "cusxac", "u1673477", "cuslat")
+    Seq("0970148", "0672089", "0672088", "0770884", "1673477", "9872987", "1171795", "1574999", "1574595", "0270954", "0380083", "1572165", "1170836", "9876004")
       .map(UniversityID)
 
   override def putRandomAssessmentsInDatabase(howMany: Int = 1)(implicit ctx: AuditLogContext): Future[ServiceResult[Seq[Assessment]]] = {
