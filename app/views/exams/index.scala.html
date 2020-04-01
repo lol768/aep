@@ -17,9 +17,9 @@
 
   <hr>
 
-  @rows("Current exams", assessments.filter(a => a.inProgress || a.assessment.isWithinWindow))
+  @rows("Current exams", assessments.filter(a => a.inProgress || a.isLiveForStudent))
 
   @rows("Upcoming exams", assessments.filter(_.assessment.isInFuture))
 
-  @rows("Past exams", assessments.filter(a => !a.inProgress && a.assessment.hasWindowPassed))
+  @rows("Past exams", assessments.filter(a => !a.inProgress && !a.isLiveForStudent && !a.assessment.isInFuture))
 }
