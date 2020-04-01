@@ -23,6 +23,8 @@ sealed trait BaseAssessment {
   def moduleCode: String
   def departmentCode: DepartmentCode
   def sequence: String //MAB sequence
+
+  def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
