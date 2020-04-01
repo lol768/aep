@@ -8,7 +8,6 @@ import play.api.Logger
 import play.api.cache.AsyncCacheApi
 import play.api.libs.ws.WSClient
 import services.tabula.TabulaDepartmentService.DepartmentsReturn
-
 import scala.concurrent.duration._
 import system.TimingCategories
 import uk.ac.warwick.sso.client.trusted.TrustedApplicationsManager
@@ -17,9 +16,7 @@ import warwick.core.Logging
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.{TimingContext, TimingService}
-
 import scala.concurrent.{ExecutionContext, Future}
-
 
 @ImplementedBy(classOf[CachingTabulaDepartmentService])
 trait TabulaDepartmentService {
