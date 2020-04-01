@@ -175,8 +175,6 @@ trait AssessmentDao {
 
   def getToday: DBIO[Seq[StoredAssessment]]
 
-  def getInWindow: DBIO[Seq[StoredAssessment]]
-
   def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]]
 
   def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]]
@@ -247,12 +245,6 @@ class AssessmentDaoImpl @Inject()(
     val today = JavaTime.localDate.atStartOfDay(JavaTime.timeZone).toOffsetDateTime
     assessments.table.filter(a => a.startTime >= today && a.startTime < today.plusDays(1)).result
   }
-
-  override def getInWindow: DBIO[Seq[StoredAssessment]] = {
-    val now = JavaTime.offsetDateTime
-    assessments.table.filter(a => a.startTime < now && a.startTime > now.minus(Assessment.window)).result
-  }
-
 
   override def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]] =
     assessments.table.filter(_.invigilators @> usercodes.map(_.string)).result
