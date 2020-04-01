@@ -27,7 +27,7 @@
         }
         @assessment.assessment.brief.files.map { file =>
           <li>
-            <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
+            <a class="assessment-brief-file" href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
           </li>
         }
         <li>
@@ -79,7 +79,7 @@
                   @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(assessment.assessment.id, file.id)) { implicit ifc =>
                     <p>
                       <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
-                        Download</a> <button type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i>
+                        Download</a> <button delete type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i>
                       Delete</button>
                     </p>
                   }
