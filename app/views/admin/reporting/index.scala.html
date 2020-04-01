@@ -9,7 +9,7 @@
   } else {
     <ul>
     @live.map { assessment =>
-      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.code</b>: @assessment.title</a></li>
+      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.paperCode</b>: @assessment.title</a></li>
     }
     </ul>
   }
@@ -21,7 +21,7 @@
   } else {
     <ul>
     @notLive.map { assessment =>
-      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.code</b>: @assessment.title</a></li>
+      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.paperCode</b>: @assessment.title</a></li>
     }
     </ul>
   }

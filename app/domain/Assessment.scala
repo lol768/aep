@@ -12,36 +12,25 @@ import warwick.sso.Usercode
 
 sealed trait BaseAssessment {
   def id: UUID
-
-  def code: String // paperCode currently.May be we need to rename this field?
+  def paperCode: String
   def title: String
-
   def startTime: Option[OffsetDateTime]
-
   def duration: Duration
-
   def platform: Platform
-
   def assessmentType: AssessmentType
-
   def state: State
-
   def tabulaAssessmentId: Option[UUID]
-
+  def examProfileCode: String
   def moduleCode: String
-
   def departmentCode: DepartmentCode
-
   def sequence: String //MAB sequence
-
   def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
-
   def hasWindowPassed: Boolean = endTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
   id: UUID,
-  code: String,
+  paperCode: String,
   title: String,
   startTime: Option[OffsetDateTime],
   duration: Duration,
@@ -51,15 +40,15 @@ case class Assessment(
   invigilators: Set[Usercode],
   state: State,
   tabulaAssessmentId: Option[UUID], //for assessments created within app directly this will be blank.
+  examProfileCode: String,
   moduleCode: String,
   departmentCode: DepartmentCode,
   sequence: String
-
 ) extends BaseAssessment
 
 case class AssessmentMetadata(
   id: UUID = UUID.randomUUID(),
-  code: String,
+  paperCode: String,
   title: String,
   startTime: Option[OffsetDateTime],
   duration: Duration,
@@ -67,19 +56,18 @@ case class AssessmentMetadata(
   assessmentType: AssessmentType,
   state: State,
   tabulaAssessmentId: Option[UUID],
+  examProfileCode: String,
   moduleCode: String,
   departmentCode: DepartmentCode,
   sequence: String,
 ) extends BaseAssessment
 
 object Assessment {
-
   sealed trait Platform extends EnumEntry {
     val label: String
   }
 
   object Platform extends PlayEnum[Platform] {
-
     case object OnlineExams extends Platform {
       val label = "Online Exams"
     }

@@ -19,7 +19,7 @@
     <tbody>
       @assessments.map { assessment =>
         <tr>
-          <td>@assessment.code</td>
+          <td>@assessment.paperCode</td>
           <td>@assessment.title</td>
           <td>
             @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)

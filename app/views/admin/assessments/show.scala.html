@@ -3,7 +3,7 @@
 @import views.html.admin.assessments.fields
 @(assessment: Assessment, form: Form[AssessmentFormData])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
-  @adminLayout(s"Assessment for ${assessment.code}") {
+  @adminLayout(s"Assessment for ${assessment.paperCode}") {
     @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.update(assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
       @fields.title()
       @fields.assessmentType()
