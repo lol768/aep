@@ -37,9 +37,10 @@ package object tabula {
   case class AssessmentComponent(
     id: UUID,
     assessmentType: SitsAssessmentType,
+    name: String,
     examPaper: Option[ExamPaper],
     module: Module,
-    cats: String,
+    fullModuleCode: String,
     sequence: String
   ) {
     def asAssessment(existingAssessment: Option[Assessment], examProfileCode: String): Option[Assessment] =
@@ -48,7 +49,7 @@ package object tabula {
           Assessment(
             id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
             paperCode = paper.code,
-            title = paper.title.getOrElse(module.name),
+            title = paper.title.getOrElse(name),
             startTime = Some(schedule.startTime),
             duration = paper.duration.get,
             platform = existingAssessment.map(_.platform).getOrElse(Platform.OnlineExams),
@@ -58,7 +59,7 @@ package object tabula {
             state = existingAssessment.map(_.state).getOrElse(Imported),
             tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(id)),
             examProfileCode = examProfileCode,
-            moduleCode = s"${module.code}-$cats",
+            moduleCode = fullModuleCode,
             departmentCode = DepartmentCode(module.adminDepartment.code),
             sequence = sequence
           )
