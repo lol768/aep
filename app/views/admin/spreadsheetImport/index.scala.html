@@ -1,0 +1,23 @@
+@import controllers.admin.AssessmentImportController.UploadSpreadsheetData
+@(form: Form[UploadSpreadsheetData])(implicit context: RequestContext, mp: MessagesProvider, rh: RequestHeader)
+
+@frontend("Spreadsheet import", extraClasses = Seq("grey-nopad")) {
+    @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentImportController.processImport(), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
+        @b3.free(Symbol("_label") -> "Attach a file") {
+            <input type="file" class="form-control" name="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
+        }
+
+        <p class="help-block upload-info hide">
+            <span class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</span>
+            <progress value="0" max="100"></progress>
+        </p>
+        <p class="help-block upload-error hide">
+            <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
+        </p>
+
+        @b3.free(Symbol("_class") -> "spaced-buttons") {
+            <button type="submit" class="btn btn-primary">Upload</button>
+        }
+
+    }
+}

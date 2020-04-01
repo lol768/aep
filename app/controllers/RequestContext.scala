@@ -24,7 +24,8 @@ case class RequestContext(
   userAgent: Option[String],
   ipAddress: String,
   timingData: TimingContext.Data,
-  appFullName: String
+  appFullName: String,
+  appContactEmail: String,
 ) extends TimingContext {
   def isMasquerading: Boolean = user != actualUser
 }
@@ -65,7 +66,8 @@ object RequestContext {
       userAgent = request.headers.get("User-Agent"),
       ipAddress = request.remoteAddress,
       timingData = request.attrs.get(ServerTimingFilter.TimingData).getOrElse(new TimingContext.Data),
-      appFullName = configuration.get[String]("app.name.full")
+      appFullName = configuration.get[String]("app.name.full"),
+      appContactEmail = configuration.get[String]("app.contactEmail")
     )
   }
 

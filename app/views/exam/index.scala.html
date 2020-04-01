@@ -10,20 +10,32 @@
         supportedMimeTypes: Seq[MediaType]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@frontend(assessment.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws")) {
-  @assessmentPanel(assessment, isAssessmentPage = true)
-  @if(assessment.started) {
-    <h2>Exam brief</h2>
-    <p>Your department has provided the following information:</p>
-    @if(assessment.assessment.brief.text.isDefined) {
-      <blockquote>@assessment.assessment.brief.text</blockquote>
-    }
-    @if(assessment.assessment.brief.url.isDefined) {
-      <a href="@assessment.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
-    }
-    @assessment.assessment.brief.files.map { file =>
-      <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
-    }
+@defining(if (assessment.inProgress) "beforeunload" else "") { className =>
+  @frontend(assessment.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className)) {
+    @assessmentPanel(assessment, isAssessmentPage = true)
+    @if(assessment.started) {
+      <h2>Exam brief</h2>
+      <p>Your department has provided the following information:</p>
+      @if(assessment.assessment.brief.text.isDefined) {
+        <blockquote>@assessment.assessment.brief.text</blockquote>
+      }
+      <ul class="list-unstyled">
+        @if(assessment.assessment.brief.url.isDefined) {
+          <li>
+            <a href="@assessment.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
+          </li>
+        }
+        @assessment.assessment.brief.files.map { file =>
+          <li>
+            <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
+          </li>
+        }
+        <li>
+          <a href="@controllers.routes.MessageController.showForm(assessment.assessment.id)" target="_blank">
+            <i class="fad themed-duotone fa-comment-alt-lines mr-half" aria-hidden="true"></i>Contact an invigilator
+          </a>
+        </li>
+      </ul>
     <h2>Uploaded answer files</h2>
     @if(assessment.inProgress) {
       <p class="text-muted"><i class="fad themed-duotone fa-info-circle" aria-hidden="true"></i>
@@ -94,13 +106,13 @@
                 <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
               }
 
-              <div class="help-block upload-info hide">
-                <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
-                <progress value="0" max="100"></progress>
-              </div>
-              <p class="help-block upload-error hide">
-                <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
-              </p>
+                <div class="help-block upload-info hide">
+                  <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
+                  <progress value="0" max="100"></progress>
+                </div>
+                <p class="help-block upload-error hide">
+                  <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
+                </p>
 
               @b3.free(Symbol("_class") -> "spaced-buttons") {
                 <button type="submit" class="btn btn-primary">Upload files</button>
@@ -132,7 +144,7 @@
             @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish exam }
           }
         </div>
-      </div>
+      </div>}
     }
   }
 }

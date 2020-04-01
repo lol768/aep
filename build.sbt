@@ -121,6 +121,8 @@ val appDeps = Seq(
   "com.beachape" %% "enumeratum-play-json" % enumeratumPlayVersion,
   "com.beachape" %% "enumeratum-slick" % enumeratumSlickVersion,
 
+  "org.apache.jclouds.api" % "filesystem" % "2.2.0",
+
   "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1"
 )
 

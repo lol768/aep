@@ -19,6 +19,7 @@ trait ReportingService {
   def liveAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
   def expectedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
   def startedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
+  def notStartedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
   def submittedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
   def finalisedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
 }
@@ -41,6 +42,9 @@ class ReportingServiceImpl @Inject()(
 
   override def startedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]] =
     expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.startTime.isDefined))
+
+  override def notStartedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]] =
+    expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.startTime.isEmpty))
 
   override def submittedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]] =
     expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.uploadedFileCount > 0))
