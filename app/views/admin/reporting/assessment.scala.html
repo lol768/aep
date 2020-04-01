@@ -10,6 +10,7 @@
       <tr>
         <th>Expected</th>
         <th>Started</th>
+        <th>Not started</th>
         <th>Submitted</th>
         <th>Finalised</th>
       </tr>
@@ -17,10 +18,41 @@
 
     <tbody>
       <tr>
-        <td>@sittings.expected.length</td>
-        <td>@sittings.started.length</td>
-        <td>@sittings.submitted.length</td>
-        <td>@sittings.finalised.length</td>
+        <td>
+          @if(sittings.expected.nonEmpty) {
+            <a href="@controllers.admin.routes.ReportingController.expected(sittings.assessment.id)">@sittings.expected.length</a>
+          } else {
+            @sittings.expected.length
+          }
+        </td>
+        <td>
+          @if(sittings.started.nonEmpty) {
+            <a href="@controllers.admin.routes.ReportingController.started(sittings.assessment.id)">@sittings.started.length</a>
+          } else {
+            @sittings.started.length
+          }
+        </td>
+        <td>
+          @if(sittings.notStarted.nonEmpty) {
+            <a href="@controllers.admin.routes.ReportingController.notStarted(sittings.assessment.id)">@sittings.notStarted.length</a>
+          } else {
+            @sittings.notStarted.length
+          }
+        </td>
+        <td>
+          @if(sittings.submitted.nonEmpty) {
+            <a href="@controllers.admin.routes.ReportingController.submitted(sittings.assessment.id)">@sittings.submitted.length</a>
+          } else {
+            @sittings.submitted.length
+          }
+        </td>
+        <td>
+          @if(sittings.finalised.nonEmpty) {
+            <a href="@controllers.admin.routes.ReportingController.expected(sittings.assessment.id)">@sittings.finalised.length</a>
+          } else {
+            @sittings.finalised.length
+          }
+        </td>
       </tr>
     </tbody>
   </table>

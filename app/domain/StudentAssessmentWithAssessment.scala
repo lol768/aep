@@ -8,8 +8,9 @@ import warwick.core.helpers.JavaTime
 sealed trait BaseStudentAssessmentWithAssessment {
   def studentAssessment: BaseStudentAssessment
   def assessment: BaseAssessment
-
-  def inProgress: Boolean = studentAssessment.startTime.nonEmpty && studentAssessment.finaliseTime.isEmpty
+  def started: Boolean = studentAssessment.startTime.nonEmpty
+  def finalised: Boolean = studentAssessment.hasFinalised
+  def inProgress: Boolean = started && !finalised
 
   val onTimeEndForStudent: Option[OffsetDateTime] = assessment.startTime.map { st =>
     st

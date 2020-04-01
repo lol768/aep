@@ -15,9 +15,11 @@ import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
+
 import scala.concurrent.ExecutionContext
 
 object AssessmentsTables {
+
   case class StoredAssessment(
     id: UUID = UUID.randomUUID(),
     code: String,
@@ -29,6 +31,10 @@ object AssessmentsTables {
     storedBrief: StoredBrief,
     invigilators: List[String],
     state: State,
+    tabulaAssessmentId: Option[UUID],
+    moduleCode: String,
+    departmentCode: DepartmentCode,
+    sequence: String, //MAB sequence
     created: OffsetDateTime,
     version: OffsetDateTime,
   ) extends Versioned[StoredAssessment] {
@@ -45,6 +51,10 @@ object AssessmentsTables {
         storedBrief.asBrief(fileMap),
         invigilators.map(Usercode).toSet,
         state,
+        tabulaAssessmentId,
+        moduleCode,
+        departmentCode,
+        sequence
       )
 
     def asAssessmentMetadata: AssessmentMetadata =
@@ -57,6 +67,10 @@ object AssessmentsTables {
         platform,
         assessmentType,
         state,
+        tabulaAssessmentId,
+        moduleCode,
+        departmentCode,
+        sequence
       )
 
     override def atVersion(at: OffsetDateTime): StoredAssessment = copy(version = at)
@@ -73,6 +87,10 @@ object AssessmentsTables {
         storedBrief,
         invigilators,
         state,
+        tabulaAssessmentId,
+        moduleCode,
+        departmentCode,
+        sequence,
         created,
         version,
         operation,
@@ -92,6 +110,10 @@ object AssessmentsTables {
     storedBrief: StoredBrief,
     invigilators: List[String],
     state: State,
+    tabulaAssessmentId: Option[UUID],
+    moduleCode: String,
+    departmentCode: DepartmentCode,
+    sequence: String,
     created: OffsetDateTime,
     version: OffsetDateTime,
     operation: DatabaseOperation,
@@ -114,8 +136,10 @@ object AssessmentsTables {
 
   object StoredBrief {
     implicit val format: Format[StoredBrief] = Json.format[StoredBrief]
+
     def empty: StoredBrief = StoredBrief(None, Seq.empty, None)
   }
+
 }
 
 
@@ -126,18 +150,33 @@ trait AssessmentDao {
   import profile.api._
 
   def all: DBIO[Seq[StoredAssessment]]
+
   def loadAllWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def findByStates(states: Seq[State]): DBIO[Seq[StoredAssessment]]
+
   def findByStatesWithUploadedFiles(states: Seq[State]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def insert(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
+
   def update(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
+
   def getById(id: UUID): DBIO[Option[StoredAssessment]]
+
+  def loadByTabulaAssessmentIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def loadByIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def getByIds(ids: Seq[UUID]): DBIO[Seq[StoredAssessment]]
+
   def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def getByCode(code: String): DBIO[Option[StoredAssessment]]
+
   def getToday: DBIO[Seq[StoredAssessment]]
+
   def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]]
+
   def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]]
 }
 
@@ -147,6 +186,7 @@ class AssessmentDaoImpl @Inject()(
   val jdbcTypes: PostgresCustomJdbcTypes,
   tables: AssessmentTables,
 )(implicit ec: ExecutionContext) extends AssessmentDao with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
+
   import profile.api._
   import jdbcTypes._
   import tables._
@@ -180,6 +220,10 @@ class AssessmentDaoImpl @Inject()(
 
   override def getById(id: UUID): DBIO[Option[StoredAssessment]] =
     getByIdQuery(id).result.headOption
+
+  override def loadByTabulaAssessmentIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]] =
+    assessments.table.filter(_.tabulaAssessmentId === id).withUploadedFiles.result
+      .map(OneToMany.leftJoinUnordered(_).headOption)
 
   override def loadByIdWithUploadedFiles(id: UUID): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]] =
     getByIdQuery(id).withUploadedFiles.result

@@ -5,7 +5,7 @@ import java.util.UUID
 
 import com.google.inject.ImplementedBy
 import domain.Assessment.Platform.OnlineExams
-import domain.{Assessment, StudentAssessment}
+import domain.{Assessment, DepartmentCode, StudentAssessment}
 import domain.Assessment.{AssessmentType, Platform}
 import domain.dao.DaoRunner
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
@@ -100,14 +100,20 @@ object DataGenerationService {
     )
 
   def makeStoredAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None): StoredAssessment = {
+    val deptCode = DataGeneration.fakeDept
+    val stemModuleCode =  f"$deptCode${Random.between(101, 999)}%03d"
+    val cats =   f"${Random.between(1, 99)}%02d"
+
     val date = LocalDate.of(2018, 1, 1)
     val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
     val localStartTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
     val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
     val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
-    val code = f"${DataGeneration.fakeDept}${Random.between(101, 999)}%03d-${Random.between(1, 99)}%02d"
+    val code = s"$stemModuleCode${Random.between(1, 9)}" //papercode
     val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
     val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
+    val moduleCode =  s"$stemModuleCode-$cats"
+    val sequence = f"E${Random.between(1, 9)}%02d"
 
     StoredAssessment(
       id = uuid,
@@ -120,6 +126,10 @@ object DataGenerationService {
       storedBrief = makeStoredBrief,
       invigilators = List(invigilator1, invigilator2),
       state = Assessment.State.Draft,
+      tabulaAssessmentId = None,
+      moduleCode = moduleCode,
+      departmentCode = DepartmentCode(deptCode),
+      sequence = sequence,
       created = createTime,
       version = createTime
     )
