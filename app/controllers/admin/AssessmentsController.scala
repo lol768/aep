@@ -4,7 +4,7 @@ import java.time.{Duration, LocalDateTime}
 import java.util.UUID
 
 import controllers.BaseController
-import domain.Assessment
+import domain.{Assessment, DepartmentCode}
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
@@ -141,6 +141,11 @@ class AssessmentsController @Inject()(
             ),
             invigilators = data.invigilators.get,
             state = State.Submitted,
+            tabulaAssessmentId = None, //TODO CHECK THESE, added temperoray values
+            moduleCode = "MA-101", //TODO CHECK THESE
+            departmentCode = DepartmentCode("MA"), //TODO CHECK THESE
+            sequence = "EO1", //TODO CHECK THESE
+            id = UUID.randomUUID() //TODO CHECK THESE
           ),
           files = request.body.files.map(_.ref).map(f => (f.in, f.metadata)),
         ).successMap { _ =>

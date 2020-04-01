@@ -203,8 +203,13 @@ object TabulaResponseParsers {
 
   val examPaperReads: Reads[ExamPaper] = (
     (__ \ "code").read[String] and
-    (__ \ "title").read[String]
+    (__ \ "title").readNullable[String]
   ) (ExamPaper.apply _)
+
+  val moduleReads: Reads[Module] = (
+    (__ \ "adminDepartment").read[DepartmentIdentity](departmentIdentity) and
+    (__ \ "code").read[String]
+  ) (Module.apply _)
 
   case class SitsAssessmentType(
     astCode: String,
@@ -220,7 +225,10 @@ object TabulaResponseParsers {
   val assessmentComponentReads: Reads[AssessmentComponent] = (
     (__ \ "id").read[String] and
     (__ \ "type").read[SitsAssessmentType] and
-    (__ \ "examPaper").readNullable[ExamPaper](examPaperReads)
+    (__ \ "examPaper").readNullable[ExamPaper](examPaperReads) and
+    (__ \ "module").read[Module](moduleReads) and
+    (__ \ "cats").readNullable[String] and
+    (__ \ "sequence").read[String]
   ) (AssessmentComponent.apply _)
 
   val examMembershipReads: Reads[ExamMembership] = (
@@ -248,6 +256,7 @@ object TabulaResponseParsers {
 
   val responseDepartmentReads: Reads[Seq[Department]] =
     (__ \ "departments").read(Reads.seq(departmentReads))
+
 
   def validateAPIResponse[A](jsValue: JsValue, parser: Reads[A]): JsResult[A] = {
     (jsValue \ "success").validate[Boolean].flatMap {

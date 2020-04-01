@@ -12,20 +12,35 @@ import warwick.sso.Usercode
 
 sealed trait BaseAssessment {
   def id: UUID
-  def code: String
+
+  def code: String // paperCode currently.May be we need to rename this field?
   def title: String
+
   def startTime: Option[OffsetDateTime]
+
   def duration: Duration
+
   def platform: Platform
+
   def assessmentType: AssessmentType
+
   def state: State
 
+  def tabulaAssessmentId: Option[UUID]
+
+  def moduleCode: String
+
+  def departmentCode: DepartmentCode
+
+  def sequence: String //MAB sequence
+
   def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
+
   def hasWindowPassed: Boolean = endTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
-  id: UUID = UUID.randomUUID(),
+  id: UUID,
   code: String,
   title: String,
   startTime: Option[OffsetDateTime],
@@ -35,6 +50,11 @@ case class Assessment(
   brief: Brief,
   invigilators: Set[Usercode],
   state: State,
+  tabulaAssessmentId: Option[UUID], //for assessments created within app directly this will be blank.
+  moduleCode: String,
+  departmentCode: DepartmentCode,
+  sequence: String
+
 ) extends BaseAssessment
 
 case class AssessmentMetadata(
@@ -46,20 +66,28 @@ case class AssessmentMetadata(
   platform: Platform,
   assessmentType: AssessmentType,
   state: State,
+  tabulaAssessmentId: Option[UUID],
+  moduleCode: String,
+  departmentCode: DepartmentCode,
+  sequence: String,
 ) extends BaseAssessment
 
 object Assessment {
+
   sealed trait Platform extends EnumEntry {
     val label: String
   }
 
   object Platform extends PlayEnum[Platform] {
+
     case object OnlineExams extends Platform {
       val label = "Online Exams"
     }
+
     case object Moodle extends Platform {
       val label = "Moodle"
     }
+
     case object QuestionmarkPerception extends Platform {
       val label = "Questionmark Perception"
     }
@@ -72,9 +100,11 @@ object Assessment {
   }
 
   object AssessmentType extends PlayEnum[AssessmentType] {
+
     case object OpenBook extends AssessmentType {
       val label = "Open book"
     }
+
     case object MultipleChoice extends AssessmentType {
       val label = "Multiple choice"
     }
@@ -108,11 +138,17 @@ object Assessment {
   }
 
   object State extends PlayEnum[State] {
+
     case object Draft extends State
+
     case object Submitted extends State
+
     case object Approved extends State
+
+    case object Imported extends State
 
     val values: IndexedSeq[State] = findValues
   }
+
 }
 

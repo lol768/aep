@@ -7,7 +7,7 @@ import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
 import domain.dao.StudentAssessmentsTables.{StoredStudentAssessment, StoredStudentAssessmentVersion}
 import domain.dao.UploadedFilesTables.{StoredUploadedFile, StoredUploadedFileVersion}
-import domain.{DatabaseOperation, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
+import domain.{DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json.JsValue
@@ -19,22 +19,43 @@ class AssessmentTables @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
   val jdbcTypes: PostgresCustomJdbcTypes,
 ) extends HasDatabaseConfigProvider[ExtendedPostgresProfile] with VersionedTables {
+
   import profile.api._
   import jdbcTypes._
 
-  trait AssessmentCommonProperties { self: Table[_] =>
+  trait AssessmentCommonProperties {
+    self: Table[_] =>
     def code = column[String]("code")
+
     def title = column[String]("title")
+
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
+
     def duration = column[Duration]("duration")
+
     def platform = column[Platform]("platform")
+
     def assessmentType = column[AssessmentType]("type")
+
     def storedBrief = column[StoredBrief]("brief")
+
     def invigilators = column[List[String]]("invigilators")
+
     def state = column[State]("state")
+
+    def tabulaAssessmentId = column[Option[UUID]]("tabula_assessment_id")
+
+    def moduleCode = column[String]("module_code")
+
+    def departmentCode = column[DepartmentCode]("department_code")
+
+    def sequence = column[String]("sequence")
+
     def created = column[OffsetDateTime]("created_utc")
+
     def version = column[OffsetDateTime]("version_utc")
   }
+
   class Assessments(tag: Tag) extends Table[StoredAssessment](tag, "assessment")
     with VersionedTable[StoredAssessment]
     with AssessmentCommonProperties {
@@ -42,7 +63,7 @@ class AssessmentTables @Inject()(
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, created, version).mapTo[StoredAssessment]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, moduleCode, departmentCode, sequence, created, version).mapTo[StoredAssessment]
 
     def idx = index("id_assessment_code", code)
   }
@@ -56,7 +77,8 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, moduleCode, departmentCode, sequence, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }
 

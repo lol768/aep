@@ -1,25 +1,58 @@
 package domain
 
-import java.time.Duration
+import java.time.{Duration, OffsetDateTime}
+import java.util.UUID
 
+import domain.Assessment.State.Imported
+import domain.Assessment.{AssessmentType, Brief, Platform}
 import services.tabula.TabulaResponseParsers.SitsAssessmentType
 
 package object tabula {
 
+  import java.time.LocalDate
+
   import enumeratum.EnumEntry.CapitalWords
   import enumeratum.{Enum, EnumEntry}
+  import helpers.StringUtils._
+  import warwick.core.helpers.JavaTime
   import warwick.sso._
 
   case class ExamPaper(
     code: String,
-    title: String,
+    title: Option[String]
+  )
+
+  case class Module(
+    adminDepartment: DepartmentIdentity,
+    code: String
   )
 
   case class AssessmentComponent(
-    id: String,
+    id: String, //tabula Id
     assessmentType: SitsAssessmentType,
     examPaper: Option[ExamPaper],
-  )
+    module: Module,
+    cats: Option[String], //TODO -some API data has null cats - check this again once we know for sure tabula will provide active assessments
+    sequence: String
+  ) {
+    def asAssessment(existingAssessment: Option[Assessment]): Assessment = Assessment(
+      id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
+      code = examPaper.map(_.code).getOrElse(""),
+      title = examPaper.map(_.title.getOrElse("")).getOrElse(""),
+      startTime = Some(OffsetDateTime.now), //TODO This would be populated from API
+      duration = Duration.ofHours(3), //TODO - This would be populated from API.
+      platform = existingAssessment.map(_.platform).getOrElse(Platform.OnlineExams),
+      assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
+      brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
+      invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
+      state = existingAssessment.map(_.state).getOrElse(Imported),
+      tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(UUID.fromString(id))), //for assessments created within app directly this will be blank.
+      moduleCode = s"${module.code}-${cats.getOrElse("0")}",
+      departmentCode = DepartmentCode(module.adminDepartment.code),
+      sequence = sequence
+    )
+
+  }
 
   case class ExamMembership(
     moduleCode: String,
@@ -55,7 +88,7 @@ package object tabula {
     def universityId(e: Either[UniversityID, SitsProfile]): UniversityID = e.fold(identity, _.universityID)
   }
 
-  case class Course (
+  case class Course(
     code: String,
     name: String
   )
@@ -71,9 +104,13 @@ package object tabula {
     val values: IndexedSeq[UserType] = findValues
 
     case object Other extends UserType
+
     case object Student extends UserType
+
     case object Staff extends UserType
+
     case object EmeritusAcademic extends UserType
+
     case object Applicant extends UserType
 
     def apply(user: User): UserType =
@@ -92,7 +129,9 @@ package object tabula {
     val values: IndexedSeq[Attendance] = findValues
 
     case object FullTime extends Attendance("F", "Full-time")
+
     case object PartTime extends Attendance("P", "Part-time")
+
   }
 
   sealed abstract class StudentGroup(override val entryName: String, val description: String) extends EnumEntry {
@@ -105,9 +144,13 @@ package object tabula {
     val values: IndexedSeq[StudentGroup] = findValues
 
     case object Foundation extends StudentGroup("F", "Foundation course")
+
     case object Undergraduate extends StudentGroup("UG", "Undergraduate")
+
     case object PGT extends StudentGroup("PG(T)", "Postgraduate (taught)")
+
     case object PGR extends StudentGroup("PG(R)", "Postgraduate (research)")
+
   }
 
   case class YearOfStudy(
