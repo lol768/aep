@@ -10,8 +10,6 @@ package object tabula {
   import enumeratum.{Enum, EnumEntry}
   import warwick.sso._
 
-  import scala.collection.immutable
-
   case class ExamPaper(
     code: String,
     title: String,
@@ -70,7 +68,7 @@ package object tabula {
   sealed abstract class UserType extends EnumEntry with CapitalWords
 
   object UserType extends Enum[UserType] {
-    val values: immutable.IndexedSeq[UserType] = findValues
+    val values: IndexedSeq[UserType] = findValues
 
     case object Other extends UserType
     case object Student extends UserType
@@ -91,7 +89,7 @@ package object tabula {
   }
 
   object Attendance extends Enum[Attendance] {
-    val values: immutable.IndexedSeq[Attendance] = findValues
+    val values: IndexedSeq[Attendance] = findValues
 
     case object FullTime extends Attendance("F", "Full-time")
     case object PartTime extends Attendance("P", "Part-time")
@@ -104,7 +102,7 @@ package object tabula {
 
   object StudentGroup extends Enum[StudentGroup] {
 
-    val values: immutable.IndexedSeq[StudentGroup] = findValues
+    val values: IndexedSeq[StudentGroup] = findValues
 
     case object Foundation extends StudentGroup("F", "Foundation course")
     case object Undergraduate extends StudentGroup("UG", "Undergraduate")

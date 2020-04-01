@@ -2,8 +2,6 @@ package domain
 
 import enumeratum.{Enum, EnumEntry}
 
-import scala.collection.immutable
-
 sealed trait DatabaseOperation extends EnumEntry
 
 object DatabaseOperation extends Enum[DatabaseOperation] {
@@ -11,5 +9,5 @@ object DatabaseOperation extends Enum[DatabaseOperation] {
   case object Update extends DatabaseOperation
   case object Delete extends DatabaseOperation
 
-  override val values: immutable.IndexedSeq[DatabaseOperation] = findValues
+  override val values: IndexedSeq[DatabaseOperation] = findValues
 }
