@@ -1,6 +1,6 @@
 package domain.tags
 
-import java.time.{Instant, OffsetDateTime}
+import java.time.{Instant, LocalDateTime, OffsetDateTime}
 
 import specs.BaseSpec
 import views.html.tags.localisedDatetimeRange
@@ -24,10 +24,21 @@ class localisedDatetimeRangeTest extends BaseSpec {
       result must include("data-to-millis=\"1585049400000\"")
       result must include("data-server-timezone-offset=\"0\"")
       result must include("data-server-timezone-name=\"Europe/London\"")
+      result mustNot include("Today")
     }
 
     "correctly identify when the supplied date is today" in {
-      localisedDatetimeRange(JavaTime.offsetDateTime, JavaTime.offsetDateTime.plusHours(1L)).body must include("Today")
+      val thisInstant = LocalDateTime.now()
+      val today1030 = OffsetDateTime.of(LocalDateTime.of(
+        thisInstant.getYear,
+        thisInstant.getMonthValue,
+        thisInstant.getDayOfMonth,
+        10,
+        30,
+        0
+      ), JavaTime.timeZone.getRules.getOffset(JavaTime.offsetDateTime.toInstant))
+      val today1130 = today1030.plusHours(1L)
+      localisedDatetimeRange(today1030, today1130).body must include("Today")
     }
 
     "include the year when it's different to the current year" in {
