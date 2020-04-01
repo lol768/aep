@@ -24,7 +24,7 @@
             <dd>
             @department.map { dept =>
                 @dept.fullName
-                <span class="text-muted">@(s"(${dept.code})")</span>
+                <span class="text-muted">(@dept.code)</span>
             }.getOrElse {
                 @assessment.departmentCode.string
             }
@@ -58,7 +58,7 @@
                     <li>
                         @userNames.get(usercode).map { username =>
                         <span>@username</span>
-                        <span class="text-muted">@(s"(${usercode.string})")</span>
+                        <span class="text-muted">(@usercode.string)</span>
                         }.getOrElse(usercode.string)
                     </li>
                 </ul>
