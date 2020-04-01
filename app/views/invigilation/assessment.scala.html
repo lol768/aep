@@ -1,8 +1,106 @@
+@import play.api.libs.json.Json
+@import tags._
+@import org.apache.commons.lang3.time.DurationFormatUtils
 @import domain.Assessment
+@import warwick.core.helpers.JavaTime
+@import system.routes.Types.Usercode
+@import system.routes.Types.UniversityID
 @(
-    assessment: Assessment,
+        assessment: Assessment,
+        userNames: Map[Usercode, String],
+        students: Map[UniversityID, String]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-
 @adminLayout(assessment.title) {
-    TODO
+    <div class="id7-main-content">
+        <dl>
+
+            <dt>Module code</dt>
+            <dd>@assessment.moduleCode</dd>
+
+            <dt>Department code</dt>
+            <dd>@assessment.departmentCode.string</dd>
+
+            <dt>State</dt>
+            <dd>@assessment.state.label</dd>
+
+            @if(assessment.tabulaAssessmentId.nonEmpty) {
+                <dt>TabulaAssessment id</dt>
+                <dd>
+                @assessment.tabulaAssessmentId
+                </dd>
+            }
+
+            <dt>Platform</dt>
+            <dd>@assessment.platform.label</dd>
+
+            <dt>Type</dt>
+            <dd>@assessment.assessmentType.label</dd>
+
+            <dt>Starts at</dt>
+            <dd>@assessment.startTime.map { t => @localisedDatetime(t) }</dd>
+
+            <dt>Duration</dt>
+            <dd>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)</dd>
+
+
+            <dt>Invigilators</dt>
+            <dd>
+            @assessment.invigilators.map(usercode => {
+                    <ul>
+                    <li>
+                    {userNames.get(usercode)
+                            .map(username => {
+                            <span>{username}&nbsp;</span>
+                            <span class="text-muted">{s"(${usercode.string})"}</span>
+                    }).getOrElse(usercode.string)}
+                    </li>
+                    </ul>
+            })
+            </dd>
+
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <h5>Brief</h5>
+                    @if(assessment.brief.text.nonEmpty) {
+                        <dd>@assessment.brief.text.get</dd>
+                    }
+
+                    <dt>Attached files</dt>
+                    @assessment.brief.files.map { file =>
+                        <dd>
+                            <ul>
+                                <li>
+                                    <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
+                                        <i class="fad fa-file fa-fw"></i>@file.fileName
+                                    </a>
+                                </li>
+                            </ul>
+                        </dd>
+                    }
+
+                    @if(assessment.brief.url.nonEmpty) {
+                        <dt>Url</dt>
+                        <dd>@assessment.brief.url.get</dd>
+                    }
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <h5>Students</h5>
+                    @students.map { student =>
+                        <dd>
+                            <ul>
+                                <li>
+                                    <span>@student._2</span>
+                                    <span class="text-muted">(@student._1.string)</span>
+                                </li>
+                            </ul>
+                        </dd>
+                    }
+
+                </div>
+            </div>
+        </dl>
+    </div>
 }
