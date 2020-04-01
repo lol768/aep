@@ -33,10 +33,6 @@ sealed trait BaseAssessment {
   def departmentCode: DepartmentCode
 
   def sequence: String //MAB sequence
-
-  def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
-
-  def hasWindowPassed: Boolean = endTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
@@ -54,8 +50,22 @@ case class Assessment(
   moduleCode: String,
   departmentCode: DepartmentCode,
   sequence: String
-
-) extends BaseAssessment
+) extends BaseAssessment {
+  def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
+    id,
+    code,
+    title,
+    startTime,
+    duration,
+    platform,
+    assessmentType,
+    state,
+    tabulaAssessmentId,
+    moduleCode,
+    departmentCode,
+    sequence,
+  )
+}
 
 case class AssessmentMetadata(
   id: UUID = UUID.randomUUID(),
@@ -131,7 +141,10 @@ object Assessment {
     def empty: Brief = Brief(None, Seq.empty, None)
   }
 
-  val window: Duration = Duration.ofHours(8)
+  // Students are allowed an extra hour after the official finish time of the exam
+  // for them to make submissions. Anything submitted during this period should be
+  // marked as LATE though.
+  val lateSubmissionPeriod: Duration = Duration.ofHours(1)
 
   sealed trait State extends EnumEntry {
     val label: String = entryName
