@@ -9,7 +9,10 @@ sealed trait BaseStudentAssessmentWithAssessment {
   def studentAssessment: BaseStudentAssessment
   def assessment: BaseAssessment
 
-  def inProgress = studentAssessment.startTime.nonEmpty && studentAssessment.finaliseTime.isEmpty
+  def inProgress: Boolean = started && !finalised
+
+  def started: Boolean = studentAssessment.startTime.nonEmpty
+  def finalised: Boolean = studentAssessment.hasFinalised
 
   def getTimingInfo: AssessmentTimingInformation = {
     val now = JavaTime.offsetDateTime

@@ -1,21 +1,10 @@
 @import domain.Assessment
-@import org.apache.commons.lang3.time.DurationFormatUtils
-@import views.html.tags.localisedDatetimeRange
+@import views.html.tags._
 @(assessment: Assessment)(implicit context: RequestContext)
 
 <dl>
-    <dt>Module</dt>
-    <dd>
-    @assessment.paperCode
-    </dd>
-    <dt>Type</dt>
-    <dd>
-    @assessment.assessmentType.label
-    </dd>
-    <dt>Duration</dt>
-    <dd>
-        <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
-    </dd>
+    @assessmentMetadataInternal(assessment)
+
     @assessment.startTime.map { startTime =>
         <dt>Can start</dt>
         <dd>

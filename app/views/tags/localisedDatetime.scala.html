@@ -3,7 +3,7 @@
 @import java.util.TimeZone
 @(datetime: OffsetDateTime)
 
-<i class="fad fa-clock fa-fw"></i> @JavaTime.Relative(datetime) <span class="text-muted">@JavaTime.timeZone</span><br />
+<i class="fad themed-duotone fa-clock fa-fw"></i> @JavaTime.Relative(datetime) <span class="text-muted">@JavaTime.timeZone</span><br />
   <span class="jddt"
   data-format="shortLocal"
   data-millis="@datetime.toInstant.toEpochMilli"
