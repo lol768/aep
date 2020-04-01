@@ -9,7 +9,7 @@
 @import domain.tabula
 @(
         assessment: Assessment,
-        userNames: Map[Usercode, String],
+        invigilators: Map[Usercode, String],
         students: Map[Usercode, String],
         department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
@@ -50,7 +50,6 @@
             <dt>Duration</dt>
             <dd>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)</dd>
 
-
             <div class="panel panel-default">
                 <div class="panel-body">
                     <h5>Invigilators</h5>
@@ -58,7 +57,7 @@
                     @assessment.invigilators.map { usercode =>
                         <ul>
                             <li>
-                                @userNames.get(usercode).map { username =>
+                                @invigilators.get(usercode).map { username =>
                                 <span>@username</span>
                                 <span class="text-muted">(@usercode.string)</span>
                                 }.getOrElse(usercode.string)

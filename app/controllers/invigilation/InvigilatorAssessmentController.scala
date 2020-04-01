@@ -37,7 +37,7 @@ class InvigilatorAssessmentController @Inject()(
       case (departments, studentAssessments) =>
         Ok(views.html.invigilation.assessment(
           assessment = assessment,
-          userNames = userLookup
+          invigilators = userLookup
             .getUsers(assessment.invigilators.toSeq)
             .getOrElse(Nil)
             .map {
