@@ -91,6 +91,7 @@ class SysadminTestController @Inject()(
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   tabulaAssessments: TabulaAssessmentService,
   tabulaDepartments: TabulaDepartmentService,
+  tabulaAssessmentImportService: TabulaAssessmentImportService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
 
   import SysadminTestController._
@@ -140,6 +141,10 @@ class SysadminTestController @Inject()(
 
   def downloadFile(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
     uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile)
+  }
+
+  def importAssessments(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    tabulaAssessmentImportService.importAssessments().successMap(_ => Ok("Done"))
   }
 
   def assessmentComponents(deptCode: DepartmentCode, examProfileCode: String): Action[AnyContent] = RequireSysadmin.async { implicit request =>
