@@ -1,9 +1,9 @@
 package services.refiners
 
-import controllers.ServiceResultErrorRendering
+import controllers.{ControllerHelper, ServiceResultErrorRendering}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{ActionFilter, ActionRefiner, Result}
-import services.StudentAssessmentService
+import services.{AssessmentService, StudentAssessmentService}
 import system.routes.Types.UUID
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
@@ -12,7 +12,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ActionRefiners @Inject() (
-  studentAssessmentService: StudentAssessmentService
+  studentAssessmentService: StudentAssessmentService,
+  assessmentService: AssessmentService,
 )(implicit ec: ExecutionContext) extends ServiceResultErrorRendering {
 
   // Type aliases to shorten some long lines
@@ -37,20 +38,29 @@ class ActionRefiners @Inject() (
     def usercode(implicit request: AuthReq[_]): Option[Usercode] = request.context.user.map(_.usercode)
   }
 
-  def WithStudentAssessmentWithAssessment(assessmentId: UUID): Refiner[AuthenticatedRequest, AssessmentSpecificRequest] =
+  def WithAssessment(assessmentId: UUID): Refiner[AuthenticatedRequest, AssessmentSpecificRequest] =
     new Refiner[AuthenticatedRequest, AssessmentSpecificRequest] {
       override protected def apply[A](implicit request: AuthenticatedRequest[A]): Refinement[AssessmentSpecificRequest[A]] = {
-        studentAssessmentService.getWithAssessment(universityId.get, assessmentId).successMapTo[Either[Result, AssessmentSpecificRequest[A]]] { _.map { studentAssessmentWithAssessment =>
-          Right(new AssessmentSpecificRequest[A](studentAssessmentWithAssessment, request))
+        assessmentService.get(assessmentId).successMapTo { a =>
+          Right(new AssessmentSpecificRequest[A](a, request))
+        }
+    }.map(_.fold(err => Left(showErrors(err)), identity))
+}
+
+  def WithStudentAssessmentWithAssessment(assessmentId: UUID): Refiner[AuthenticatedRequest, StudentAssessmentSpecificRequest] =
+    new Refiner[AuthenticatedRequest, StudentAssessmentSpecificRequest] {
+      override protected def apply[A](implicit request: AuthenticatedRequest[A]): Refinement[StudentAssessmentSpecificRequest[A]] = {
+        studentAssessmentService.getWithAssessment(universityId.get, assessmentId).successMapTo[Either[Result, StudentAssessmentSpecificRequest[A]]] { _.map { studentAssessmentWithAssessment =>
+          Right(new StudentAssessmentSpecificRequest[A](studentAssessmentWithAssessment, request))
         }.getOrElse {
           Left(NotFound(views.html.errors.notFound()))
         }}
       }.map(_.fold(err => Left(showErrors(err)), identity))
     }
 
-  def IsStudentAssessmentStarted: Filter[AssessmentSpecificRequest] =
-    new Filter[AssessmentSpecificRequest] {
-      override protected def apply[A](implicit request: AssessmentSpecificRequest[A]): Future[Option[Result]] =
+  val IsStudentAssessmentStarted: Filter[StudentAssessmentSpecificRequest] =
+    new Filter[StudentAssessmentSpecificRequest] {
+      override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
           if (request.studentAssessmentWithAssessment.studentAssessment.startTime.isEmpty)
             Some(Forbidden(views.html.errors.assessmentNotStarted(request.studentAssessmentWithAssessment)))
@@ -59,14 +69,24 @@ class ActionRefiners @Inject() (
         }
     }
 
-  def IsStudentAssessmentNotFinished: Filter[AssessmentSpecificRequest] =
-    new Filter[AssessmentSpecificRequest] {
-      override protected def apply[A](implicit request: AssessmentSpecificRequest[A]): Future[Option[Result]] =
+  val IsStudentAssessmentNotFinished: Filter[StudentAssessmentSpecificRequest] =
+    new Filter[StudentAssessmentSpecificRequest] {
+      override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
           if (request.studentAssessmentWithAssessment.studentAssessment.finaliseTime.isDefined)
             Some(Forbidden(views.html.errors.assessmentFinished(request.studentAssessmentWithAssessment)))
           else
             None
         }
+    }
+
+  val IsInvigilator: Filter[AssessmentSpecificRequest] =
+    new Filter[AssessmentSpecificRequest] {
+      override protected def apply[A](implicit request: AssessmentSpecificRequest[A]): Future[Option[Result]] = Future.successful {
+        if (request.context.user.exists(u => request.assessment.invigilators.contains(u.usercode)))
+          None
+        else
+          Some(Forbidden(views.html.errors.forbidden(None)))
+      }
     }
 }

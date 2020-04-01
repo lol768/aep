@@ -2,6 +2,7 @@ package domain
 
 import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.StoredBrief
+import domain.messaging.MessageSender
 import enumeratum.SlickEnumSupport
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
@@ -9,6 +10,7 @@ import play.api.libs.json.{Format, JsValue, Json, OFormat}
 import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 import warwick.sso.{GroupName, UniversityID, Usercode}
+
 import scala.reflect.ClassTag
 
 /**
@@ -49,6 +51,7 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
   implicit val platformTypeMapper: JdbcType[Platform] = mappedColumnTypeForEnum(Platform)
   implicit val stateTypeMapper: JdbcType[State] = mappedColumnTypeForEnum(State)
   implicit val assessmentTypeTypeMapper: JdbcType[AssessmentType] = mappedColumnTypeForEnum(AssessmentType)
+  implicit val messageSenderMapper: JdbcType[MessageSender] = mappedColumnTypeForEnum(MessageSender)
 
 }
 

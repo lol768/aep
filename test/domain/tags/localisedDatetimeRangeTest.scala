@@ -1,6 +1,6 @@
 package domain.tags
 
-import java.time.{Instant, OffsetDateTime}
+import java.time.{Instant, LocalDateTime, LocalTime, OffsetDateTime}
 
 import specs.BaseSpec
 import views.html.tags.localisedDatetimeRange
@@ -24,10 +24,14 @@ class localisedDatetimeRangeTest extends BaseSpec {
       result must include("data-to-millis=\"1585049400000\"")
       result must include("data-server-timezone-offset=\"0\"")
       result must include("data-server-timezone-name=\"Europe/London\"")
+      result mustNot include("Today")
     }
 
     "correctly identify when the supplied date is today" in {
-      localisedDatetimeRange(JavaTime.offsetDateTime, JavaTime.offsetDateTime.plusHours(1L)).body must include("Today")
+      val tenthirty = LocalTime.of(10,30)
+      val today1030 = OffsetDateTime.now.`with`(tenthirty)
+      val today1130 = today1030.plusHours(1L)
+      localisedDatetimeRange(today1030, today1130).body must include("Today")
     }
 
     "include the year when it's different to the current year" in {
@@ -55,6 +59,21 @@ class localisedDatetimeRangeTest extends BaseSpec {
       "Tue 24th".r.findAllMatchIn(
         localisedDatetimeRange(march24_1030, march24_1130).body.replaceAll("\\s+", " ")
       ).length mustBe 1
+    }
+
+    "hide the latter part of the range when asked politely to do so" in {
+      val result = localisedDatetimeRange(march24_1030, march24_1130, hideLatter = true)
+        .body.replaceAll("\\s+", " ")
+      result must include("Tue 24th Mar")
+      result must include("10:30")
+      result mustNot include("10:30 to 11:30")
+      result must include("Europe/London")
+      result must include("class=\"jddt-range\"")
+      result must include("data-from-millis=\"1585045800000\"")
+      result must include("data-to-millis=\"1585049400000\"")
+      result must include("data-server-timezone-offset=\"0\"")
+      result must include("data-server-timezone-name=\"Europe/London\"")
+      result mustNot include("Today")
     }
 
   }

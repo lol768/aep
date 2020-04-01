@@ -1,26 +1,30 @@
 # --- !Ups
-alter table assessment
-  add column tabula_assessment_id uuid ,
-  add column module_code varchar(255),
-  add column department_code varchar(100),
-  add column sequence varchar(100);
+create table message (
+  id uuid not null,
+  sender text not null,
+  text text not null,
+  university_id text not null,
+  assessment_id uuid not null,
+  created_utc timestamp(3) not null,
+  version_utc timestamp(3) not null,
+  constraint pk_message primary key (id)
+);
 
-create unique index idx_tabula_assessment on assessment (tabula_assessment_id);
+create table message_version (
+  id uuid not null,
+  sender text not null,
+  text text not null,
+  university_id text not null,
+  assessment_id uuid not null,
+  created_utc timestamp(3) not null,
+  version_utc timestamp(3) not null,
+  version_operation char(6) not null,
+  version_timestamp_utc timestamp(3) not null,
+  version_user text null,
+  constraint pk_message_version primary key (id, version_timestamp_utc)
+);
 
-alter table assessment_version
-  add column tabula_assessment_id uuid ,
-  add column module_code varchar(255),
-  add column department_code varchar(100),
-  add column sequence varchar(100);
-
-update assessment set module_code = 'XX101-10', department_code = 'XX', sequence = 'E01';
-update assessment_version set module_code = 'XX101-10', department_code = 'XX', sequence = 'E01';
-
-
-alter table assessment alter column module_code set not null, alter column department_code set not null, alter column sequence set not null;
-alter table assessment_version alter column module_code set not null, alter column department_code set not null, alter column sequence set not null;
-
+create index idx_message on message(assessment_id, university_id);
 
 # --- !Downs
-alter table assessment drop column tabula_assessment_id, drop column module_code, drop column department_code, drop column sequence;
-alter table assessment_version drop column tabula_assessment_id, drop column module_code, drop column department_code, drop column sequence;
+drop table message_version, message;

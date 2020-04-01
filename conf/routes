@@ -62,6 +62,10 @@ GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.a
 GET         /admin/reporting                                      @controllers.admin.ReportingController.index
 GET         /admin/reporting/:id                                  @controllers.admin.ReportingController.assessment(id: UUID)
 
+## Invigilation ##
+
+GET         /invigilation/assessments/:id                         @controllers.invigilation.InvigilatorAssessmentController.view(id: UUID)
+
 ## Sysadmins ##
 
 GET         /sysadmin                               @controllers.sysadmin.SysadminTestController.home
