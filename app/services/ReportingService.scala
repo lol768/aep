@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @ImplementedBy(classOf[ReportingServiceImpl])
 trait ReportingService {
   def todayAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
-  def liveAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
+  def startedAndSubmittableAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
   def expectedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
   def startedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
   def submittedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]]
@@ -27,14 +27,15 @@ trait ReportingService {
 class ReportingServiceImpl @Inject()(
   daoRunner: DaoRunner,
   assDao: AssessmentDao,
-  sittingDao: StudentAssessmentDao
+  assessmentService: AssessmentService,
+  sittingDao: StudentAssessmentDao,
 )(implicit ec: ExecutionContext) extends ReportingService {
 
   override def todayAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
     daoRunner.run(assDao.getToday).map(_.map(_.asAssessmentMetadata)).map(ServiceResults.success)
 
-  override def liveAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
-    daoRunner.run(assDao.getInWindow).map(_.map(_.asAssessmentMetadata)).map(ServiceResults.success)
+  override def startedAndSubmittableAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
+    assessmentService.getStartedAndSubmittable.map(_.map(_.map(_.asAssessmentMetadata)))
 
   override def expectedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentMetadata]]] =
     daoRunner.run(sittingDao.getByAssessmentId(assessment)).map(a => ServiceResults.success(a.map(_.asStudentAssessmentMetadata)))

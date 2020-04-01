@@ -20,7 +20,7 @@
             <h4>@assessment.assessment.title</h4>
         }
 
-        @assessmentMetadata(assessment.assessment)
+        @assessmentMetadataForStudent(assessment)
 
         @assessment.assessment.platform match {
             case Platform.OnlineExams => {

@@ -156,14 +156,14 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
 
       val inWindow = firstStart.get.withHour(12).toInstant
       DateTimeUtils.useMockDateTime(inWindow, () => {
-        val result = execWithCommit(dao.getInWindow)
+        val result = execWithCommit(dao.getCurrentlyTakingPlace)
         result.length mustEqual 1
         result.head.id mustEqual first.id
       })
 
       val notInWindow = firstStart.get.withHour(1).toInstant
       DateTimeUtils.useMockDateTime(notInWindow, () => {
-        val result = execWithCommit(dao.getInWindow)
+        val result = execWithCommit(dao.getCurrentlyTakingPlace)
         result.length mustEqual 0
       })
     }
