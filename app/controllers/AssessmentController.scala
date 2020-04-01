@@ -111,7 +111,7 @@ class AssessmentController @Inject()(
       .fold(notFound)(uploadedFileControllerHelper.serveFile)
   }
 
-  def downloadFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
+  def downloadFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentIsStartedAction(assessmentId).async { implicit request =>
     def notFound: Future[Result] =
       Future.successful(NotFound(views.html.errors.notFound()))
 

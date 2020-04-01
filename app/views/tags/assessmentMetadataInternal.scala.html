@@ -1,0 +1,16 @@
+@import domain.Assessment
+@import org.apache.commons.lang3.time.DurationFormatUtils
+
+@(assessment: Assessment)(implicit context: RequestContext)
+
+<dt>Module</dt>
+<dd>@assessment.code</dd>
+
+<dt>Type</dt>
+<dd>@assessment.assessmentType.label</dd>
+
+<dt>Duration</dt>
+<dd>
+    <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
+</dd>
+
