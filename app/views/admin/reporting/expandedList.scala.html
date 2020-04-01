@@ -3,6 +3,7 @@
 @import domain.Assessment
 @import warwick.sso.User
 @import warwick.sso.UniversityID
+@import org.apache.commons.lang3.time.DurationFormatUtils
 @(assessment: Assessment, metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, User], title: String)(implicit context: RequestContext)
 
 @frontend(assessment.title) {
@@ -41,7 +42,7 @@
                 @localisedDatetime(time)
               }
             </td>
-            <td>@md.extraTimeAdjustment.map(_.toString)</td>
+            <td>@md.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
           </tr>
         }
       </tbody>
