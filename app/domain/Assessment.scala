@@ -37,6 +37,8 @@ sealed trait BaseAssessment {
   def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
   def hasWindowPassed: Boolean = endTime.exists(_.isBefore(JavaTime.offsetDateTime))
+  def isWithinWindow: Boolean = !isInFuture && !hasWindowPassed
+  def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
