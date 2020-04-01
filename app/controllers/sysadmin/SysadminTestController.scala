@@ -7,7 +7,7 @@ import domain.DepartmentCode
 import domain.tabula._
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
-import org.quartz.Scheduler
+import org.quartz.{Scheduler, TriggerBuilder}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
@@ -143,13 +143,14 @@ class SysadminTestController @Inject()(
   }
 
   def assessmentComponents(deptCode: DepartmentCode): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    implicit val writeExamSchedule = Json.writes[ExamPaperSchedule]
     implicit val writeExam = Json.writes[ExamPaper]
     implicit val writesDepartmentIdentity = Json.writes[DepartmentIdentity]
     implicit val writesModule = Json.writes[Module]
 
     implicit val writes = Json.writes[AssessmentComponent]
 
-    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true)).successMap { r =>
+    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true, examProfileCode = None)).successMap { r =>
       Ok(Json.toJson(r)(Writes.seq(writes)))
     }
   }

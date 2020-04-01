@@ -25,34 +25,21 @@ class AssessmentTables @Inject()(
 
   trait AssessmentCommonProperties {
     self: Table[_] =>
-    def code = column[String]("code")
-
+    def paperCode = column[String]("paper_code")
     def title = column[String]("title")
-
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
-
     def duration = column[Duration]("duration")
-
     def platform = column[Platform]("platform")
-
     def assessmentType = column[AssessmentType]("type")
-
     def storedBrief = column[StoredBrief]("brief")
-
     def invigilators = column[List[String]]("invigilators")
-
     def state = column[State]("state")
-
     def tabulaAssessmentId = column[Option[UUID]]("tabula_assessment_id")
-
+    def examProfileCode = column[String]("exam_profile_code")
     def moduleCode = column[String]("module_code")
-
     def departmentCode = column[DepartmentCode]("department_code")
-
     def sequence = column[String]("sequence")
-
     def created = column[OffsetDateTime]("created_utc")
-
     def version = column[OffsetDateTime]("version_utc")
   }
 
@@ -63,9 +50,10 @@ class AssessmentTables @Inject()(
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, moduleCode, departmentCode, sequence, created, version).mapTo[StoredAssessment]
+      (id, paperCode, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version).mapTo[StoredAssessment]
 
-    def idx = index("id_assessment_code", code)
+    def paperCodeIndex = index("idx_assessment_papercode", (paperCode, examProfileCode))
+    def tabulaAssessmentIndex = index("idx_assessment_tabula", (tabulaAssessmentId, examProfileCode), unique = true)
   }
 
   class AssessmentVersions(tag: Tag) extends Table[StoredAssessmentVersion](tag, "assessment_version")
@@ -77,7 +65,7 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, moduleCode, departmentCode, sequence, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, paperCode, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
 
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }

@@ -5,7 +5,7 @@
 
 @(assessment: Assessment, form: Form[ApprovalFormData])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
-@adminLayout(s"Review assessment for ${assessment.code}") {
+@adminLayout(s"Review assessment for ${assessment.paperCode}") {
   <dl>
     <dt>Title</dt>
     <dd>@assessment.title</dd>

@@ -21,6 +21,8 @@ sealed trait BaseStudentAssessmentWithAssessment {
   val lateEndForStudent: Option[OffsetDateTime] =
     onTimeEndForStudent.map(_.plus(Assessment.lateSubmissionPeriod))
 
+  def isCurrentForStudent: Boolean = !finalised && assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) && lateEndForStudent.exists(_.isAfter(JavaTime.offsetDateTime))
+
   def getTimingInfo: AssessmentTimingInformation = {
     val now = JavaTime.offsetDateTime
 

@@ -46,7 +46,7 @@ trait AssessmentService {
 
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
 
-  def getByTabulaAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]]
+  def getByTabulaAssessmentId(id: UUID, examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]]
 
   def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 
@@ -148,8 +148,8 @@ class AssessmentServiceImpl @Inject()(
       .map(inflateRowWithUploadedFiles)
       .map(_.fold[ServiceResult[Assessment]](ServiceResults.error(s"Could not find an Assessment with ID $id"))(ServiceResults.success))
 
-  override def getByTabulaAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]] = {
-    daoRunner.run(dao.loadByTabulaAssessmentIdWithUploadedFiles(id))
+  override def getByTabulaAssessmentId(id: UUID, examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]] = {
+    daoRunner.run(dao.loadByTabulaAssessmentIdWithUploadedFiles(id, examProfileCode))
       .map(inflateRowWithUploadedFiles)
       .map(ServiceResults.success)
   }
@@ -170,7 +170,7 @@ class AssessmentServiceImpl @Inject()(
       } else DBIO.successful(assessment.brief.files.map(_.id))
       _ <- dao.update(StoredAssessment(
         id = assessment.id,
-        code = assessment.code,
+        paperCode = assessment.paperCode,
         title = assessment.title,
         startTime = assessment.startTime,
         duration = assessment.duration,
@@ -184,6 +184,7 @@ class AssessmentServiceImpl @Inject()(
         invigilators = sortedInvigilators(assessment),
         state = assessment.state,
         tabulaAssessmentId = assessment.tabulaAssessmentId,
+        examProfileCode = assessment.examProfileCode,
         moduleCode = assessment.moduleCode,
         departmentCode = assessment.departmentCode,
         sequence = assessment.sequence,
@@ -209,7 +210,7 @@ class AssessmentServiceImpl @Inject()(
       } else DBIO.successful(assessment.brief.files.map(_.id))
       assessment <- dao.insert(StoredAssessment(
         id = assessment.id,
-        code = assessment.code,
+        paperCode = assessment.paperCode,
         title = assessment.title,
         startTime = assessment.startTime,
         duration = assessment.duration,
@@ -222,10 +223,11 @@ class AssessmentServiceImpl @Inject()(
         ),
         invigilators = sortedInvigilators(assessment),
         state = assessment.state,
-        assessment.tabulaAssessmentId,
-        assessment.moduleCode,
-        assessment.departmentCode,
-        assessment.sequence,
+        tabulaAssessmentId = assessment.tabulaAssessmentId,
+        examProfileCode = assessment.examProfileCode,
+        moduleCode = assessment.moduleCode,
+        departmentCode = assessment.departmentCode,
+        sequence = assessment.sequence,
         created = OffsetDateTime.now,
         version = OffsetDateTime.now,
       ))
@@ -241,7 +243,7 @@ class AssessmentServiceImpl @Inject()(
     daoRunner.run(dao.getById(assessment.id)).flatMap { storedAssessmentOption =>
       storedAssessmentOption.map { existingAssessment =>
         daoRunner.run(dao.update(existingAssessment.copy(
-          code = assessment.code,
+          paperCode = assessment.paperCode,
           title = assessment.title,
           startTime = assessment.startTime,
           duration = assessment.duration,
@@ -253,7 +255,7 @@ class AssessmentServiceImpl @Inject()(
         val timestamp = JavaTime.offsetDateTime
         daoRunner.run(dao.insert(StoredAssessment(
           id = assessment.id,
-          code = assessment.code,
+          paperCode = assessment.paperCode,
           title = assessment.title,
           startTime = assessment.startTime,
           duration = assessment.duration,
@@ -262,7 +264,8 @@ class AssessmentServiceImpl @Inject()(
           storedBrief = assessment.brief.toStoredBrief,
           invigilators = sortedInvigilators(assessment),
           state = assessment.state,
-          tabulaAssessmentId = Some(assessment.id),
+          tabulaAssessmentId = assessment.tabulaAssessmentId,
+          examProfileCode = assessment.examProfileCode,
           moduleCode = assessment.moduleCode,
           departmentCode = assessment.departmentCode,
           sequence = assessment.sequence,
