@@ -5,10 +5,13 @@
 @import warwick.core.helpers.JavaTime
 @import system.routes.Types.Usercode
 @import system.routes.Types.UniversityID
+@import domain.DepartmentCode
+@import domain.tabula
 @(
         assessment: Assessment,
         userNames: Map[Usercode, String],
-        students: Map[Usercode, String]
+        students: Map[Usercode, String],
+        department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout(assessment.title) {
     <div class="id7-main-content">
@@ -18,16 +21,21 @@
             <dd>@assessment.moduleCode</dd>
 
             <dt>Department code</dt>
-            <dd>@assessment.departmentCode.string</dd>
+            <dd>
+            @department.map { dept =>
+                @dept.fullName
+                <span class="text-muted">@(s"(${dept.code})")</span>
+            }.getOrElse {
+                @assessment.departmentCode.string
+            }
+            </dd>
 
             <dt>State</dt>
             <dd>@assessment.state.label</dd>
 
-            @if(assessment.tabulaAssessmentId.nonEmpty) {
+            @assessment.tabulaAssessmentId.map { tabulaId =>
                 <dt>TabulaAssessment id</dt>
-                <dd>
-                @assessment.tabulaAssessmentId
-                </dd>
+                <dd>@tabulaId</dd>
             }
 
             <dt>Platform</dt>
@@ -45,24 +53,23 @@
 
             <dt>Invigilators</dt>
             <dd>
-            @assessment.invigilators.map(usercode => {
-                    <ul>
+            @assessment.invigilators.map { usercode =>
+                <ul>
                     <li>
-                    {userNames.get(usercode)
-                            .map(username => {
-                            <span>{username}&nbsp;</span>
-                            <span class="text-muted">{s"(${usercode.string})"}</span>
-                    }).getOrElse(usercode.string)}
+                        @userNames.get(usercode).map { username =>
+                        <span>@username</span>
+                        <span class="text-muted">@(s"(${usercode.string})")</span>
+                        }.getOrElse(usercode.string)
                     </li>
-                    </ul>
-            })
+                </ul>
+            }
             </dd>
 
             <div class="panel panel-default">
                 <div class="panel-body">
                     <h5>Brief</h5>
-                    @if(assessment.brief.text.nonEmpty) {
-                        <dd>@assessment.brief.text.get</dd>
+                    @assessment.brief.text.map { text =>
+                        <dd>@text</dd>
                     }
 
                     <dt>Attached files</dt>
@@ -78,9 +85,9 @@
                         </dd>
                     }
 
-                    @if(assessment.brief.url.nonEmpty) {
+                    @assessment.brief.url.map { url =>
                         <dt>Url</dt>
-                        <dd>@assessment.brief.url.get</dd>
+                        <dd>@url</dd>
                     }
                 </div>
             </div>
@@ -98,7 +105,6 @@
                             </ul>
                         </dd>
                     }
-
                 </div>
             </div>
         </dl>
