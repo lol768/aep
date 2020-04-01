@@ -1,6 +1,6 @@
 package domain.tags
 
-import java.time.{Instant, LocalDateTime, OffsetDateTime}
+import java.time.{Instant, LocalDateTime, LocalTime, OffsetDateTime}
 
 import specs.BaseSpec
 import views.html.tags.localisedDatetimeRange
@@ -28,15 +28,8 @@ class localisedDatetimeRangeTest extends BaseSpec {
     }
 
     "correctly identify when the supplied date is today" in {
-      val thisInstant = LocalDateTime.now()
-      val today1030 = OffsetDateTime.of(LocalDateTime.of(
-        thisInstant.getYear,
-        thisInstant.getMonthValue,
-        thisInstant.getDayOfMonth,
-        10,
-        30,
-        0
-      ), JavaTime.timeZone.getRules.getOffset(JavaTime.offsetDateTime.toInstant))
+      val tenthirty = LocalTime.of(10,30)
+      val today1030 = OffsetDateTime.now.`with`(tenthirty)
       val today1130 = today1030.plusHours(1L)
       localisedDatetimeRange(today1030, today1130).body must include("Today")
     }
