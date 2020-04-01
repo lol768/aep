@@ -41,13 +41,16 @@ class MessageService @Inject() (
     // update a websocket on a live invigilator dashboard
     Future.successful(Right(Done))
 
-  def findById(id: UUID)(implicit ctx: TimingContext): Future[Option[Message]] =
+  def findById(id: UUID)(implicit ctx: TimingContext): Future[ServiceResult[Option[Message]]] =
     runner.run(dao.findById(id))
+      .map(ServiceResults.success)
 
-  def findByAssessment(assessmentId: UUID)(implicit ctx: TimingContext): Future[Seq[Message]] =
+  def findByAssessment(assessmentId: UUID)(implicit ctx: TimingContext): Future[ServiceResult[Seq[Message]]] =
     runner.run(dao.forAssessment(assessmentId))
+      .map(ServiceResults.success)
 
-  def findByStudentAssessment(assessmentId: UUID, client: UniversityID)(implicit ctx: TimingContext): Future[Seq[Message]] =
+  def findByStudentAssessment(assessmentId: UUID, client: UniversityID)(implicit ctx: TimingContext): Future[ServiceResult[Seq[Message]]] =
     runner.run(dao.forStudentAssessment(assessmentId, client))
+      .map(ServiceResults.success)
 
 }

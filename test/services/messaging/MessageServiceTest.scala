@@ -23,7 +23,7 @@ class MessageServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTe
 
     "store a message to team" in {
       val message = sendMessageForAssessment(UUID.randomUUID, client1)
-      val fetched = service.findById(message.id).futureValue.value
+      val fetched = service.findById(message.id).serviceValue.value
       fetched.text mustBe "Hello"
     }
 
@@ -36,12 +36,12 @@ class MessageServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTe
       val m3 = sendMessageForAssessment(a1, client2)
       val m4 = sendMessageForAssessment(a2, client2)
 
-      service.findByAssessment(a1).futureValue mustBe Seq(m1,m2,m3)
-      service.findByAssessment(a2).futureValue mustBe Seq(m4)
+      service.findByAssessment(a1).serviceValue mustBe Seq(m1,m2,m3)
+      service.findByAssessment(a2).serviceValue mustBe Seq(m4)
 
-      service.findByStudentAssessment(a1, client1).futureValue mustBe Seq(m1, m2)
-      service.findByStudentAssessment(a1, client2).futureValue mustBe Seq(m3)
-      service.findByStudentAssessment(a2, client2).futureValue mustBe Seq(m4)
+      service.findByStudentAssessment(a1, client1).serviceValue mustBe Seq(m1, m2)
+      service.findByStudentAssessment(a1, client2).serviceValue mustBe Seq(m3)
+      service.findByStudentAssessment(a2, client2).serviceValue mustBe Seq(m4)
     }
   }
 

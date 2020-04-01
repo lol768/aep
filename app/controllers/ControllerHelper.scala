@@ -13,8 +13,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
 trait ControllerHelper extends ServiceResultErrorRendering with Logging {
-  def currentUser()(implicit request: AuthenticatedRequest[_]): User = request.context.user.getOrElse(noUserException)
-  def currentUserId()(implicit request: AuthenticatedRequest[_]): UniversityID = currentUser().universityId.getOrElse(noUserIdException)
+  def currentUser()(implicit request: AuthenticatedRequest[_]): User =
+    request.context.user.getOrElse(noUserException)
+  def currentUniversityId()(implicit request: AuthenticatedRequest[_]): UniversityID =
+    currentUser().universityId.getOrElse(noUniversityIdException)
   def currentUserRoles()(implicit request: AuthenticatedRequest[_]): UserRoles = UserRoles(currentUser(), request)
 
   implicit class FutureServiceResultControllerOps[A](val future: Future[ServiceResult[A]]) {
@@ -36,7 +38,7 @@ trait ControllerHelper extends ServiceResultErrorRendering with Logging {
     new FutureServiceResultOps[A](future)
 
   private def noUserException = throw new NoSuchElementException("No user associated with this request")
-  private def noUserIdException = throw new NoSuchElementException("User associated with this request has no University ID")
+  private def noUniversityIdException = throw new NoSuchElementException("User associated with this request has no University ID")
 }
 
 trait ServiceResultErrorRendering extends Results with Rendering with AcceptExtractors with ImplicitRequestContext {

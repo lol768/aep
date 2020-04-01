@@ -29,7 +29,7 @@ class MessageController @Inject()(
 
   def submitForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
     def success(data: MessageData) =
-      messageService.send(MessageSave(data.messageText, MessageSender.Client), currentUserId(), assessmentId).successMap { _ =>
+      messageService.send(MessageSave(data.messageText, MessageSender.Client), currentUniversityId(), assessmentId).successMap { _ =>
         Redirect(controllers.routes.MessageController.showForm(assessmentId))
           .flashing("success" -> Messages("flash.messages.sentToInvigilator"))
       }
