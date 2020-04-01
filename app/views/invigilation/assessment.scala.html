@@ -16,7 +16,6 @@
 @adminLayout(assessment.title) {
     <div class="id7-main-content">
         <dl>
-
             <dt>Module code</dt>
             <dd>@assessment.moduleCode</dd>
 
@@ -54,16 +53,16 @@
                 <div class="panel-body">
                     <h5>Invigilators</h5>
                     <dd>
-                    @assessment.invigilators.map { usercode =>
                         <ul>
+                        @assessment.invigilators.map { usercode =>
                             <li>
                                 @invigilators.get(usercode).map { username =>
                                 <span>@username</span>
                                 <span class="text-muted">(@usercode.string)</span>
                                 }.getOrElse(usercode.string)
                             </li>
+                        }
                         </ul>
-                    }
                     </dd>
                 </div>
             </div>
@@ -77,16 +76,15 @@
 
                     <dt>Attached files</dt>
                     <dd>
-
-                    @assessment.brief.files.map { file =>
                         <ul>
+                        @assessment.brief.files.map { file =>
                             <li>
                                 <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
                                     <i class="fad fa-file fa-fw"></i>@file.fileName
                                 </a>
                             </li>
+                        }
                         </ul>
-                    }
                     </dd>
 
                     @assessment.brief.url.map { url =>
@@ -100,14 +98,14 @@
                 <div class="panel-body">
                     <h5>Students</h5>
                     <dd>
-                    @students.map { case (usercode, name) =>
-                    <ul>
-                        <li>
-                            <span>@name</span>
-                            <span class="text-muted">(@usercode.string)</span>
-                        </li>
-                    </ul>
-                    }
+                        <ul>
+                        @students.map { case (usercode, name) =>
+                            <li>
+                                <span>@name</span>
+                                <span class="text-muted">(@usercode.string)</span>
+                            </li>
+                        }
+                        </ul>
                     </dd>
                 </div>
             </div>
