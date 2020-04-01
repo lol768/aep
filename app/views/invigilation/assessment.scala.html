@@ -74,6 +74,11 @@
                         <dd>@text</dd>
                     }
 
+                    @assessment.brief.url.map { url =>
+                        <dt>Url</dt>
+                        <dd>@url</dd>
+                    }
+
                     @if(assessment.brief.files.nonEmpty) {
                         <dt>Attached files</dt>
                         <dd>
@@ -87,11 +92,6 @@
                             }
                             </ul>
                         </dd>
-                    }
-
-                    @assessment.brief.url.map { url =>
-                        <dt>Url</dt>
-                        <dd>@url</dd>
                     }
                 </div>
             </div>
