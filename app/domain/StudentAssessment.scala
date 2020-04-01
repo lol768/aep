@@ -10,7 +10,7 @@ sealed trait BaseStudentAssessment {
   def assessmentId: UUID
   def studentId: UniversityID
   def inSeat: Boolean
-  def startTime: Option[OffsetDateTime]
+  def startTime: Option[OffsetDateTime] // Time the student started the assessment, not the start time of the assessment itself
   def extraTimeAdjustment: Option[Duration]
   def finaliseTime: Option[OffsetDateTime]
 

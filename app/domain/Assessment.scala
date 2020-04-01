@@ -6,7 +6,6 @@ import java.util.UUID
 import domain.Assessment._
 import domain.dao.AssessmentsTables.StoredBrief
 import enumeratum.{EnumEntry, PlayEnum}
-import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
 
@@ -24,8 +23,6 @@ sealed trait BaseAssessment {
   def moduleCode: String
   def departmentCode: DepartmentCode
   def sequence: String //MAB sequence
-  def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
-  def hasWindowPassed: Boolean = endTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
@@ -44,7 +41,23 @@ case class Assessment(
   moduleCode: String,
   departmentCode: DepartmentCode,
   sequence: String
-) extends BaseAssessment
+) extends BaseAssessment {
+  def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
+    id,
+    paperCode,
+    title,
+    startTime,
+    duration,
+    platform,
+    assessmentType,
+    state,
+    tabulaAssessmentId,
+    examProfileCode,
+    moduleCode,
+    departmentCode,
+    sequence,
+  )
+}
 
 case class AssessmentMetadata(
   id: UUID = UUID.randomUUID(),
@@ -119,7 +132,10 @@ object Assessment {
     def empty: Brief = Brief(None, Seq.empty, None)
   }
 
-  val window: Duration = Duration.ofHours(8)
+  // Students are allowed an extra hour after the official finish time of the exam
+  // for them to make submissions. Anything submitted during this period should be
+  // marked as LATE though.
+  val lateSubmissionPeriod: Duration = Duration.ofHours(1)
 
   sealed trait State extends EnumEntry {
     val label: String = entryName

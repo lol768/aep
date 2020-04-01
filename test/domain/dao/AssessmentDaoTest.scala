@@ -138,7 +138,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       result.map(_.code) mustEqual notFirst.map(_.code)
     }
 
-    "getToday/InWindow" in {
+    "getToday" in {
       val generatedAssessments = (1 to 5).map(_ => Fixtures.assessments.storedAssessment())
       val first = generatedAssessments(0)
       val second = generatedAssessments(1)
@@ -152,19 +152,6 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
         val result = execWithCommit(dao.getToday)
         result.length mustEqual 2
         result.head.id mustEqual first.id
-      })
-
-      val inWindow = firstStart.get.withHour(12).toInstant
-      DateTimeUtils.useMockDateTime(inWindow, () => {
-        val result = execWithCommit(dao.getInWindow)
-        result.length mustEqual 1
-        result.head.id mustEqual first.id
-      })
-
-      val notInWindow = firstStart.get.withHour(1).toInstant
-      DateTimeUtils.useMockDateTime(notInWindow, () => {
-        val result = execWithCommit(dao.getInWindow)
-        result.length mustEqual 0
       })
     }
   }
