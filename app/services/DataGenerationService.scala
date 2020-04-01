@@ -100,7 +100,7 @@ object DataGenerationService {
     )
 
   def makeStoredAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None): StoredAssessment = {
-    val deptCode = f"${DataGeneration.fakeDept}"
+    val deptCode = DataGeneration.fakeDept
     val stemModuleCode =  f"$deptCode${Random.between(101, 999)}%03d"
     val cats =   f"${Random.between(1, 99)}%02d"
 
@@ -109,10 +109,10 @@ object DataGenerationService {
     val localStartTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
     val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
     val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
-    val code = f"$stemModuleCode${Random.between(1, 9)}" //papercode
+    val code = s"$stemModuleCode${Random.between(1, 9)}" //papercode
     val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
     val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
-    val moduleCode =  f"$stemModuleCode-$cats"
+    val moduleCode =  s"$stemModuleCode-$cats"
     val sequence = f"E${Random.between(1, 9)}%02d"
 
     StoredAssessment(
