@@ -8,7 +8,7 @@
 @(
         assessment: Assessment,
         userNames: Map[Usercode, String],
-        students: Map[UniversityID, String]
+        students: Map[Usercode, String]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout(assessment.title) {
     <div class="id7-main-content">

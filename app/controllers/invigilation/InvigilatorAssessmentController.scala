@@ -44,7 +44,7 @@ class InvigilatorAssessmentController @Inject()(
           .getUsers(students.map(_.studentId))
           .getOrElse(Map.empty)
           .map {
-            case (universityId, user) => universityId -> user.name.full.getOrElse(universityId.string)
+            case (_, user) => user.usercode -> user.name.full.getOrElse(user.usercode.string)
           }
       ))
 
