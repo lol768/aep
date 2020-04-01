@@ -95,16 +95,16 @@
             <div class="panel panel-default">
                 <div class="panel-body">
                     <h5>Students</h5>
-                    @students.map { student =>
-                        <dd>
-                            <ul>
-                                <li>
-                                    <span>@student._2</span>
-                                    <span class="text-muted">(@student._1.string)</span>
-                                </li>
-                            </ul>
-                        </dd>
+                    <dd>
+                    @students.map { case (usercode, name) =>
+                    <ul>
+                        <li>
+                            <span>@name</span>
+                            <span class="text-muted">(@usercode.string)</span>
+                        </li>
+                    </ul>
                     }
+                    </dd>
                 </div>
             </div>
         </dl>
