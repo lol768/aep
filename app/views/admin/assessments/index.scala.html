@@ -11,9 +11,9 @@
   <table class="table table-striped">
     <thead>
       <tr>
-        <th>Code</th>
+        <th>Paper code</th>
         <th>Title</th>
-        <th>Date</th>
+        <th>Date/time</th>
         <th>Duration</th>
         <th>Type</th>
         <th></th>
@@ -22,10 +22,10 @@
     <tbody>
       @assessments.map { assessment =>
         <tr>
-          <td>@assessment.code</td>
+          <td>@assessment.paperCode</td>
           <td>@assessment.title</td>
           <td>
-            @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)
+            @assessment.startTime.map(JavaTime.Relative(_))
           </td>
           <td>
             @DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)

@@ -1,11 +1,10 @@
 package services
 
-import java.util.UUID
-
 import com.google.inject.ImplementedBy
 import domain.Assessment
 import domain.tabula.AssessmentComponent
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import services.tabula.TabulaAssessmentService.GetAssessmentsOptions
 import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
 import warwick.core.Logging
@@ -35,8 +34,11 @@ trait TabulaAssessmentImportService {
 class TabulaAssessmentImportServiceImpl @Inject()(
   tabulaDepartmentService: TabulaDepartmentService,
   tabulaAssessmentService: TabulaAssessmentService,
-  assessmentService: AssessmentService
+  assessmentService: AssessmentService,
+  configuration: Configuration,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
+  private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
+
   def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
     tabulaDepartmentService.getDepartments().successFlatMapTo { departments =>
       logger.info(s"Import started. Total departments to process: ${departments.size}")
@@ -51,25 +53,30 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   private def process(departmentCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[DepartmentWithAssessments]] = {
     logger.info(s"Processing department $departmentCode")
 
-    tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true))
-      .successFlatMapTo { assessmentComponents =>
-        ServiceResults.futureSequence(assessmentComponents.map(generateAssessment))
-          .successMapTo { components =>
-            DepartmentWithAssessments(departmentCode, components, errorProcessingDepartment = false)
+    ServiceResults.futureSequence(
+      examProfileCodes.map { examProfileCode =>
+        tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, Some(examProfileCode)))
+          .successFlatMapTo { assessmentComponents =>
+            ServiceResults.futureSequence(assessmentComponents.map(generateAssessment(_, examProfileCode)))
           }
       }
+    ).successMapTo(components => DepartmentWithAssessments(departmentCode, components.flatten.flatten, errorProcessingDepartment = false))
   }
 
-  private def generateAssessment(ac: AssessmentComponent)(implicit ctx: AuditLogContext): Future[ServiceResult[Assessment]] = {
-    assessmentService.getByTabulaAssessmentId(UUID.fromString(ac.id)).successFlatMapTo {
+  private def generateAssessment(ac: AssessmentComponent, examProfileCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[Option[Assessment]]] = {
+    assessmentService.getByTabulaAssessmentId(ac.id, examProfileCode).successFlatMapTo {
       case Some(existingAssessment) =>
-        val updated = ac.asAssessment(Some(existingAssessment))
-        if (updated == existingAssessment) Future.successful(ServiceResults.success(existingAssessment))
-        else assessmentService.update(updated, Nil)
+        ac.asAssessment(Some(existingAssessment), examProfileCode) match {
+          case Some(notUpdated) if notUpdated == existingAssessment => Future.successful(ServiceResults.success(Some(existingAssessment)))
+          case Some(updated) => assessmentService.update(updated, Nil).successMapTo(Some.apply)
+          case _ => Future.successful(ServiceResults.success(None))
+        }
 
       case _ =>
-        val newAssessment = ac.asAssessment(None)
-        assessmentService.insert(newAssessment, Nil)
+        ac.asAssessment(None, examProfileCode) match {
+          case Some(newAssessment) => assessmentService.insert(newAssessment, Nil).successMapTo(Some.apply)
+          case _ => Future.successful(ServiceResults.success(None))
+        }
     }
   }
 }

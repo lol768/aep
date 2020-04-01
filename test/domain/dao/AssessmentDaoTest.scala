@@ -32,7 +32,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
           _ <- DBIO.from(Future.successful {
             result.created.toInstant mustBe ass.created.toInstant
             result.version.toInstant mustBe now
-            result.code mustBe ass.code
+            result.paperCode mustBe ass.paperCode
             result.title mustBe ass.title
             result.assessmentType mustBe ass.assessmentType
             result.platform mustBe ass.platform
@@ -69,7 +69,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
         _ <- DBIO.from(Future.successful {
           result.created.toInstant mustBe ass.created.toInstant
           result.version.toInstant mustBe now
-          result.code mustBe ass.code
+          result.paperCode mustBe ass.paperCode
           result.title mustBe "is this fine yet"
           result.assessmentType mustBe ass.assessmentType
           result.platform mustBe ass.platform
@@ -90,7 +90,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
 
       val result = execWithCommit(dao.all)
       result.length mustEqual 10
-      result.map(_.code).sorted mustEqual assessments.map(_.code).sorted
+      result.map(_.paperCode).sorted mustEqual assessments.map(_.paperCode).sorted
     }
 
     "find by states" in {
@@ -116,9 +116,9 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       execWithCommit(DBIO.sequence(assessments.map(dao.insert)))
 
       val idResult = execWithCommit(dao.getById(first.id)).getOrElse(lookupException)
-      idResult.code mustEqual first.code
+      idResult.paperCode mustEqual first.paperCode
 
-      val codeResult = execWithCommit(dao.getByCode(first.code)).getOrElse(lookupException)
+      val codeResult = execWithCommit(dao.getByCode(first.paperCode)).getOrElse(lookupException)
       codeResult.id mustEqual first.id
 
       val noIdResult = execWithCommit(dao.getById(UUID.randomUUID()))
@@ -135,7 +135,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
 
       val result = execWithCommit(dao.getByIds(notFirst.map(_.id)))
       result.length mustEqual notFirst.length
-      result.map(_.code) mustEqual notFirst.map(_.code)
+      result.map(_.paperCode) mustEqual notFirst.map(_.paperCode)
     }
 
     "getToday" in {

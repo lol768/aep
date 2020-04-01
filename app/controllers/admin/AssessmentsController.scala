@@ -128,7 +128,7 @@ class AssessmentsController @Inject()(
         import helpers.DateConversion._
         assessmentService.insert(
           Assessment(
-            code = data.moduleCode.get,
+            paperCode = data.moduleCode.get,
             title = data.title,
             startTime = data.startTime.map(_.asOffsetDateTime),
             duration = Duration.ofMinutes(data.durationMinutes),
@@ -142,6 +142,7 @@ class AssessmentsController @Inject()(
             invigilators = data.invigilators.get,
             state = State.Submitted,
             tabulaAssessmentId = None, //TODO CHECK THESE, added temperoray values
+            examProfileCode = "EXAPR20",
             moduleCode = "MA-101", //TODO CHECK THESE
             departmentCode = DepartmentCode("MA"), //TODO CHECK THESE
             sequence = "EO1", //TODO CHECK THESE
