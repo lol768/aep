@@ -142,7 +142,7 @@ class SysadminTestController @Inject()(
     uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile)
   }
 
-  def assessmentComponents(deptCode: DepartmentCode): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def assessmentComponents(deptCode: DepartmentCode, examProfileCode: String): Action[AnyContent] = RequireSysadmin.async { implicit request =>
     implicit val writeExamSchedule = Json.writes[ExamPaperSchedule]
     implicit val writeExam = Json.writes[ExamPaper]
     implicit val writesDepartmentIdentity = Json.writes[DepartmentIdentity]
@@ -150,7 +150,7 @@ class SysadminTestController @Inject()(
 
     implicit val writes = Json.writes[AssessmentComponent]
 
-    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true, examProfileCode = None)).successMap { r =>
+    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true, examProfileCode = Some(examProfileCode))).successMap { r =>
       Ok(Json.toJson(r)(Writes.seq(writes)))
     }
   }
