@@ -27,7 +27,7 @@
         }
         @assessment.assessment.brief.files.map { file =>
           <li>
-            <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
+            <a target="_blank" href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
           </li>
         }
         <li>
