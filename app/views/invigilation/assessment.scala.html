@@ -51,7 +51,7 @@
 
             <div class="panel panel-default">
                 <div class="panel-body">
-                    <h5>Invigilators</h5>
+                    <dt>Invigilators</dt>
                     <dd>
                         <ul>
                         @assessment.invigilators.map { usercode =>
@@ -69,23 +69,25 @@
 
             <div class="panel panel-default">
                 <div class="panel-body">
-                    <h5>Brief</h5>
+                    <dt>Brief</dt>
                     @assessment.brief.text.map { text =>
                         <dd>@text</dd>
                     }
 
-                    <dt>Attached files</dt>
-                    <dd>
-                        <ul>
-                        @assessment.brief.files.map { file =>
-                            <li>
-                                <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
-                                    <i class="fad fa-file fa-fw"></i>@file.fileName
-                                </a>
-                            </li>
-                        }
-                        </ul>
-                    </dd>
+                    @if(assessment.brief.files.nonEmpty) {
+                        <dt>Attached files</dt>
+                        <dd>
+                            <ul>
+                            @assessment.brief.files.map { file =>
+                                <li>
+                                    <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
+                                        <i class="fad fa-file fa-fw"></i>@file.fileName
+                                    </a>
+                                </li>
+                            }
+                            </ul>
+                        </dd>
+                    }
 
                     @assessment.brief.url.map { url =>
                         <dt>Url</dt>
@@ -96,7 +98,7 @@
 
             <div class="panel panel-default">
                 <div class="panel-body">
-                    <h5>Students</h5>
+                    <dt>Students</dt>
                     <dd>
                         <ul>
                         @students.map { case (usercode, name) =>
