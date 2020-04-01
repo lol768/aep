@@ -42,7 +42,7 @@ const updateTimingInfo = (node, data) => {
     text = `You can start in ${msToHumanReadable(data.timeUntilStart)}.`;
     setWarning(node);
   } else if (data.timeUntilEndOfWindow > 0) {
-    text = `${msToHumanReadable(data.timeUntilEndOfWindow)} left to start.`;
+    text = `${msToHumanReadable(data.timeUntilEndOfWindow)} remaining.`;
     setWarning(node);
   } else {
     text = 'The exam window has now passed.';

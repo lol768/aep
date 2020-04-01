@@ -2,6 +2,7 @@
 @import domain.StudentAssessmentWithAssessment
 @import tags._
 
+@import java.time.OffsetDateTime
 @(assessment: StudentAssessmentWithAssessment, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
 <div class="panel panel-default assessment-information-panel">
     @if(isAssessmentPage) {
@@ -39,10 +40,19 @@
                         @assessmentTiming(assessment)
                     }
                 } else {
-                    <a href="@routes.AssessmentController.view(assessment.assessment.id)" class="btn btn-primary">
-                        View
-                    </a>
                     @assessmentTiming(assessment)
+
+                    @if(assessment.lateEndForStudent.isDefined) {
+                        @if(assessment.assessment.startTime.get.isBefore(OffsetDateTime.now()) && (assessment.lateEndForStudent.get.isAfter(OffsetDateTime.now) || assessment.studentAssessment.finaliseTime.isDefined)) {
+                            <a href="@routes.AssessmentController.view(assessment.assessment.id)" class="btn btn-primary view-assessment">
+                                View
+                            </a>
+                        }
+                    } else {
+                        <a href="@routes.AssessmentController.view(assessment.assessment.id)" class="btn btn-primary view-assessment">
+                            View
+                        </a>
+                    }
                 }
             }
             case Platform.Moodle => {

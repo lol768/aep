@@ -2,6 +2,9 @@
 @import org.apache.commons.lang3.time.DurationFormatUtils
 @import views.html.tags.localisedDatetimeRange
 @import domain.StudentAssessmentWithAssessment
+@import java.time.OffsetDateTime
+@import warwick.core.helpers.JavaTime
+
 @(assessmentWithData: StudentAssessmentWithAssessment)(implicit context: RequestContext)
 
 <dl>
@@ -17,12 +20,35 @@
     <dd>
         <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@DurationFormatUtils.formatDurationWords(assessmentWithData.assessment.duration.toMillis, true, true)
     </dd>
-    @assessmentWithData.assessment.startTime.map { startTime =>
-        @assessmentWithData.lateEndForStudent.map { lateEndTime =>
-            <dt>Can start</dt>
-            <dd>
-                @localisedDatetimeRange(startTime, lateEndTime, hideLatter = true)
-            </dd>
-        }
-    }
 </dl>
+
+@assessmentWithData.lateEndForStudent.map { lateEndTime =>
+    @if(assessmentWithData.assessment.startTime.get.isAfter(OffsetDateTime.now)) {
+        <div class="status"><span class="label label-info">Not yet open</span></div>
+        Opens at
+    }
+
+    @if(assessmentWithData.assessment.startTime.get.isBefore(OffsetDateTime.now) && lateEndTime.isAfter(OffsetDateTime.now)) {
+        <div class="status"><span class="label label-success">Now open until @JavaTime.Relative(assessmentWithData.onTimeEndForStudent.get)</span></div>
+        Opened at
+    }
+
+    @if(lateEndTime.isBefore(OffsetDateTime.now) && assessmentWithData.studentAssessment.finaliseTime.isEmpty) {
+        <div class="status"><span class="label label-danger"><i class="far fa-times" aria-hidden="true"></i> Closed</span></div>
+
+        <span class="text-warning">You did not take this exam. <!-- Technically, you did not mark it finished -->Please contact your department for guidance.</span>
+        This assessment ran at
+    }
+
+    @if(lateEndTime.isBefore(OffsetDateTime.now) && assessmentWithData.studentAssessment.finaliseTime.isDefined) {
+        <div class="status"><span class="label label-success"><i class="far fa-check" aria-hidden="true"></i> Closed</span></div>
+        <span class="text-success"><i class="fad fa-check-circle themed-duotone" aria-hidden="true"></i> You took this exam.</span>
+        This assessment ran at
+    }
+}
+
+@assessmentWithData.assessment.startTime.map { startTime =>
+    @assessmentWithData.lateEndForStudent.map { lateEndTime =>
+        @localisedDatetimeRange(startTime, lateEndTime, hideLatter = true)
+    }
+}
