@@ -1,0 +1,52 @@
+@import tags._
+@import domain.StudentAssessmentMetadata
+@import domain.Assessment
+@import warwick.sso.User
+@import warwick.sso.UniversityID
+@(assessment: Assessment, metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, User], title: String)(implicit context: RequestContext)
+
+@frontend(assessment.title) {
+  @assessmentMetadata(assessment)
+
+  <h2>@title</h2>
+  @if(metadata.nonEmpty) {
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Department</th>
+          <th>Start time</th>
+          <th>Finalised time</th>
+          <th>Adjustments</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @metadata.map { md =>
+          <tr>
+            @userMap.get(md.studentId).map { user =>
+              <td>@user.name.full.getOrElse("Unknown name") <span class="text-muted">(@md.studentId.string)</span></td>
+              <td>@user.department.flatMap(_.name).getOrElse("Unknown department")</td>
+            }.getOrElse {
+              <td>Unknown name <span class="text-muted">(@md.studentId.string)</span></td>
+              <td>Unknown department</td>
+            }
+            <td>
+              @md.startTime.map {time =>
+                @localisedDatetime(time)
+              }
+            </td>
+            <td>
+              @md.finaliseTime.map {time =>
+                @localisedDatetime(time)
+              }
+            </td>
+            <td>@md.extraTimeAdjustment.map(_.toString)</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } else {
+    No students.
+  }
+}
