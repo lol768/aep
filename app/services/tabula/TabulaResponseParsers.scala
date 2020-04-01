@@ -237,9 +237,10 @@ object TabulaResponseParsers {
   val assessmentComponentReads: Reads[AssessmentComponent] = (
     (__ \ "id").read[UUID] and
     (__ \ "type").read[SitsAssessmentType] and
+    (__ \ "name").read[String] and
     (__ \ "examPaper").readNullable[ExamPaper](examPaperReads) and
     (__ \ "module").read[Module](moduleReads) and
-    (__ \ "cats").read[String] and
+    (__ \ "moduleCode").read[String] and
     (__ \ "sequence").read[String]
   ) (AssessmentComponent.apply _)
 
