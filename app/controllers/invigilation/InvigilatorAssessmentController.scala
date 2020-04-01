@@ -34,25 +34,27 @@ class InvigilatorAssessmentController @Inject()(
       tabulaDepartmentService.getDepartments,
       studentAssessmentService.byAssessmentId(assessmentId),
     ).successMap {
-      case (departments, students) =>
+      case (departments, studentAssessments) =>
         Ok(views.html.invigilation.assessment(
           assessment = assessment,
-          userNames = assessment.invigilators
-            .map(userLookup.getUser)
-            .flatMap(_.fold(
-              _ => None,
-              user => Some(user)
-            ))
-            .filter(_.isFound)
-            .filter(_.name.full.nonEmpty)
-            .map(user => user.usercode -> user.name.full.get)
+          userNames = userLookup
+            .getUsers(assessment.invigilators.toSeq)
+            .getOrElse(Nil)
+            .map {
+              case (_, user) => user
+            }
+            .map { user =>
+              user.usercode -> user.name.full.getOrElse(user.usercode.string)
+            }
             .toMap,
           students = userLookup
-            .getUsers(students.map(_.studentId))
-            .getOrElse(Map.empty)
+            .getUsers(studentAssessments.map(_.studentId))
+            .getOrElse(Nil)
             .map {
-              case (_, user) => user.usercode -> user.name.full.getOrElse(user.usercode.string)
-            },
+              case (_, user) => user
+            }.map { user =>
+            user.usercode -> user.name.full.getOrElse(user.usercode.string)
+          }.toMap,
           department = departments.find { dept =>
             dept.code == assessment.departmentCode.string ||
               dept.parentDepartment.exists(_.code == assessment.departmentCode.string)

@@ -51,19 +51,23 @@
             <dd>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)</dd>
 
 
-            <dt>Invigilators</dt>
-            <dd>
-            @assessment.invigilators.map { usercode =>
-                <ul>
-                    <li>
-                        @userNames.get(usercode).map { username =>
-                        <span>@username</span>
-                        <span class="text-muted">(@usercode.string)</span>
-                        }.getOrElse(usercode.string)
-                    </li>
-                </ul>
-            }
-            </dd>
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <h5>Invigilators</h5>
+                    <dd>
+                    @assessment.invigilators.map { usercode =>
+                        <ul>
+                            <li>
+                                @userNames.get(usercode).map { username =>
+                                <span>@username</span>
+                                <span class="text-muted">(@usercode.string)</span>
+                                }.getOrElse(usercode.string)
+                            </li>
+                        </ul>
+                    }
+                    </dd>
+                </div>
+            </div>
 
             <div class="panel panel-default">
                 <div class="panel-body">
@@ -73,17 +77,18 @@
                     }
 
                     <dt>Attached files</dt>
+                    <dd>
+
                     @assessment.brief.files.map { file =>
-                        <dd>
-                            <ul>
-                                <li>
-                                    <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
-                                        <i class="fad fa-file fa-fw"></i>@file.fileName
-                                    </a>
-                                </li>
-                            </ul>
-                        </dd>
+                        <ul>
+                            <li>
+                                <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
+                                    <i class="fad fa-file fa-fw"></i>@file.fileName
+                                </a>
+                            </li>
+                        </ul>
                     }
+                    </dd>
 
                     @assessment.brief.url.map { url =>
                         <dt>Url</dt>
