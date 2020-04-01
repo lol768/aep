@@ -10,8 +10,8 @@ import warwick.core.system.AuditLogContext
 import warwick.sso.{UniversityID, User, Usercode}
 
 /**
-  * Conversational message which can be attached to an Enquiry or Case.
-  * Can be either to or from the client.
+  * Private message which can be sent to an invigilator.
+  * At present this is one-way only, with replies coming in the form of announcements to the entire cohort if appropriate.
   */
 case class Message (
   id: UUID,
