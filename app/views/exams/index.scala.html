@@ -1,6 +1,7 @@
 @import domain.StudentAssessmentWithAssessment
 @import tags._
 
+@import views.html.exams.rows
 @(assessments: Seq[StudentAssessmentWithAssessment])(implicit requestHeader: RequestHeader, context: RequestContext)
 
 @frontend("My exams", extraClasses = Seq("grey-nopad", "connect-ws")) {
@@ -16,31 +17,9 @@
 
   <hr>
 
-@*  <div class="panel panel-default panel-lg">*@
-@*    <div class="panel-body">*@
-@*      <h2>Your in-progress exam</h2>*@
+  @rows("Current exams", assessments.filter(a => a.inProgress || a.isCurrentForStudent))
 
-@*      <p>CS118-15 Open book Java programming</p>*@
+  @rows("Upcoming exams", assessments.filter(_.assessment.isInFuture))
 
-@*      <p>*@
-@*        <span class="text-muted">*@
-@*          <i class="fad fa-fw fa-hourglass-half"></i>Started 1 hour 2 minutes ago. 1 hour 57 minutes remaining*@
-@*        </span>*@
-@*      </p>*@
-
-@*      <a href="/service/stub" class="btn btn-primary btn-lg">*@
-@*        Continue*@
-@*      </a>*@
-@*    </div>*@
-@*  </div>*@
-
-  @assessments.grouped(2).map { row =>
-    <div class="row">
-      @row.map { a =>
-        <div class="col-md-6">
-          @assessmentPanel(a)
-        </div>
-      }
-    </div>
-  }
+  @rows("Past exams", assessments.filter(a => !a.inProgress && !a.isCurrentForStudent && !a.assessment.isInFuture))
 }

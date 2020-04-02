@@ -9,49 +9,62 @@ import services.tabula.TabulaResponseParsers.SitsAssessmentType
 
 package object tabula {
 
-  import java.time.LocalDate
-
   import enumeratum.EnumEntry.CapitalWords
   import enumeratum.{Enum, EnumEntry}
-  import helpers.StringUtils._
-  import warwick.core.helpers.JavaTime
   import warwick.sso._
 
   case class ExamPaper(
     code: String,
-    title: Option[String]
+    duration: Option[Duration],
+    title: Option[String],
+    section: Option[String],
+    schedule: Seq[ExamPaperSchedule],
+  )
+
+  case class ExamPaperSchedule(
+    examProfileCode: String,
+    slotId: String,
+    sequence: String,
+    startTime: OffsetDateTime
   )
 
   case class Module(
     adminDepartment: DepartmentIdentity,
-    code: String
+    code: String,
+    name: String
   )
 
   case class AssessmentComponent(
-    id: String, //tabula Id
+    id: UUID,
     assessmentType: SitsAssessmentType,
+    name: String,
     examPaper: Option[ExamPaper],
     module: Module,
-    cats: Option[String], //TODO -some API data has null cats - check this again once we know for sure tabula will provide active assessments
+    fullModuleCode: String,
     sequence: String
   ) {
-    def asAssessment(existingAssessment: Option[Assessment]): Assessment = Assessment(
-      id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
-      code = examPaper.map(_.code).getOrElse(""),
-      title = examPaper.map(_.title.getOrElse("")).getOrElse(""),
-      startTime = Some(OffsetDateTime.now), //TODO This would be populated from API
-      duration = Duration.ofHours(3), //TODO - This would be populated from API.
-      platform = existingAssessment.map(_.platform).getOrElse(Platform.OnlineExams),
-      assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
-      brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
-      invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
-      state = existingAssessment.map(_.state).getOrElse(Imported),
-      tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(UUID.fromString(id))), //for assessments created within app directly this will be blank.
-      moduleCode = s"${module.code}-${cats.getOrElse("0")}",
-      departmentCode = DepartmentCode(module.adminDepartment.code),
-      sequence = sequence
-    )
-
+    def asAssessment(existingAssessment: Option[Assessment], examProfileCode: String): Option[Assessment] =
+      examPaper.flatMap { paper =>
+        paper.schedule.find(_.examProfileCode == examProfileCode).map { schedule =>
+          Assessment(
+            id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
+            paperCode = paper.code,
+            title = paper.title.getOrElse(name),
+            startTime = Some(schedule.startTime),
+            duration = paper.duration.get,
+            platform = existingAssessment.map(_.platform).getOrElse(Platform.OnlineExams),
+            assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
+            brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
+            invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
+            state = existingAssessment.map(_.state).getOrElse(Imported),
+            tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(id)),
+            examProfileCode = examProfileCode,
+            moduleCode = fullModuleCode,
+            departmentCode = DepartmentCode(module.adminDepartment.code),
+            sequence = sequence
+          )
+        }
+      }
   }
 
   case class ExamMembership(

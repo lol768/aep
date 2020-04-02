@@ -109,7 +109,7 @@ object DataGenerationService {
     val localStartTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
     val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
     val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
-    val code = s"$stemModuleCode${Random.between(1, 9)}" //papercode
+    val paperCode = s"$stemModuleCode${Random.between(1, 9)}" //papercode
     val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
     val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
     val moduleCode =  s"$stemModuleCode-$cats"
@@ -117,7 +117,7 @@ object DataGenerationService {
 
     StoredAssessment(
       id = uuid,
-      code = code,
+      paperCode = paperCode,
       title = DataGeneration.fakeTitle,
       startTime = Some(startTime),
       duration = Duration.ofHours(3),
@@ -127,6 +127,7 @@ object DataGenerationService {
       invigilators = List(invigilator1, invigilator2),
       state = Assessment.State.Draft,
       tabulaAssessmentId = None,
+      examProfileCode = "EXSUM20",
       moduleCode = moduleCode,
       departmentCode = DepartmentCode(deptCode),
       sequence = sequence,

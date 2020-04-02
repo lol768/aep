@@ -1,7 +1,8 @@
 package services.tabula
 
 import java.time.format.DateTimeFormatter
-import java.time.{Duration, LocalDate, LocalDateTime}
+import java.time.{Duration, LocalDate, LocalDateTime, OffsetDateTime}
+import java.util.UUID
 
 import domain.tabula._
 import play.api.libs.functional.syntax._
@@ -201,14 +202,25 @@ object TabulaResponseParsers {
 
   private val errorMessageReads = Json.reads[ErrorMessage]
 
+  val examPaperScheduleReads: Reads[ExamPaperSchedule] = (
+    (__ \ "examProfileCode").read[String] and
+    (__ \ "slotId").read[String] and
+    (__ \ "sequence").read[String] and
+    (__ \ "startTime").read[OffsetDateTime]
+  ) (ExamPaperSchedule.apply _)
+
   val examPaperReads: Reads[ExamPaper] = (
     (__ \ "code").read[String] and
-    (__ \ "title").readNullable[String]
+    (__ \ "duration").readNullable[Duration] and
+    (__ \ "title").readNullable[String] and
+    (__ \ "section").readNullable[String] and
+    (__ \ "schedule").read[Seq[ExamPaperSchedule]](Reads.seq(examPaperScheduleReads))
   ) (ExamPaper.apply _)
 
   val moduleReads: Reads[Module] = (
     (__ \ "adminDepartment").read[DepartmentIdentity](departmentIdentity) and
-    (__ \ "code").read[String]
+    (__ \ "code").read[String] and
+    (__ \ "name").read[String]
   ) (Module.apply _)
 
   case class SitsAssessmentType(
@@ -223,11 +235,12 @@ object TabulaResponseParsers {
   }
 
   val assessmentComponentReads: Reads[AssessmentComponent] = (
-    (__ \ "id").read[String] and
+    (__ \ "id").read[UUID] and
     (__ \ "type").read[SitsAssessmentType] and
+    (__ \ "name").read[String] and
     (__ \ "examPaper").readNullable[ExamPaper](examPaperReads) and
     (__ \ "module").read[Module](moduleReads) and
-    (__ \ "cats").readNullable[String] and
+    (__ \ "moduleCode").read[String] and
     (__ \ "sequence").read[String]
   ) (AssessmentComponent.apply _)
 
