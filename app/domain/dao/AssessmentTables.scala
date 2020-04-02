@@ -135,7 +135,7 @@ class AssessmentTables @Inject()(
     def contentLength = column[Long]("content_length")
     def contentType = column[String]("content_type")
     def uploadedBy = column[Usercode]("uploaded_by")
-    def uploadStarted = column[OffsetDateTime]("upload_started")
+    def uploadStarted = column[OffsetDateTime]("upload_started_utc")
     def ownerId = column[Option[UUID]]("owner_id")
     def ownerType = column[Option[UploadedFileOwner]]("owner_type")
     def created = column[OffsetDateTime]("created_utc")
