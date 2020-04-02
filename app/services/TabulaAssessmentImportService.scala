@@ -1,14 +1,10 @@
 package services
 
-import java.time.Duration
-import java.util.UUID
-
 import com.google.inject.ImplementedBy
-import domain.Assessment.State.Imported
-import domain.Assessment.{AssessmentType, Brief, Platform}
+import domain.Assessment
 import domain.tabula.AssessmentComponent
-import domain.{Assessment, DepartmentCode}
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import services.tabula.TabulaAssessmentService.GetAssessmentsOptions
 import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
 import warwick.core.Logging
@@ -16,11 +12,8 @@ import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
-import warwick.core.timing.TimingContext
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
-
+import scala.concurrent.{ExecutionContext, Future}
 
 case class DepartmentWithAssessments(
   departmentCode: String,
@@ -34,76 +27,58 @@ case class AssessmentImportResult(departmentWithAssessments: Seq[DepartmentWithA
 
 @ImplementedBy(classOf[TabulaAssessmentImportServiceImpl])
 trait TabulaAssessmentImportService {
-  def importAssessments(): Future[ServiceResult[AssessmentImportResult]]
-
+  def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]]
 }
-
 
 @Singleton
 class TabulaAssessmentImportServiceImpl @Inject()(
   tabulaDepartmentService: TabulaDepartmentService,
   tabulaAssessmentService: TabulaAssessmentService,
-  assessmentService: AssessmentService
-
+  assessmentService: AssessmentService,
+  configuration: Configuration,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
-  implicit val auditLogContext: AuditLogContext = AuditLogContext.empty()
-  implicit val timingContext: TimingContext = TimingContext.none
+  private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
 
+  def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
+    tabulaDepartmentService.getDepartments().successFlatMapTo { departments =>
+      logger.info(s"Import started. Total departments to process: ${departments.size}")
 
-  def importAssessments(): Future[ServiceResult[AssessmentImportResult]] = {
-    tabulaDepartmentService.getDepartments().successMapTo { departments =>
-      logger.info(s"Import started. Total departments to process: ${departments.size} ")
-      val departmentWithAssessments = departments.flatMap { department =>
-        logger.info(s"Processing department ${department.code} ")
-        Await.result(process(department.code), 30.seconds).toOption
+      ServiceResults.futureSequence(departments.map(d => process(d.code)))
+        .successMapTo { departmentWithAssessments =>
+          logger.info(s"Processed total departments: ${departmentWithAssessments.filterNot(_.errorProcessingDepartment).size}")
+          AssessmentImportResult(departmentWithAssessments)
+        }
+    }
+
+  private def process(departmentCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[DepartmentWithAssessments]] = {
+    logger.info(s"Processing department $departmentCode")
+
+    ServiceResults.futureSequence(
+      examProfileCodes.map { examProfileCode =>
+        tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, Some(examProfileCode)))
+          .successFlatMapTo { assessmentComponents =>
+            ServiceResults.futureSequence(assessmentComponents.map(generateAssessment(_, examProfileCode)))
+          }
       }
-      logger.info(s"Processed Total departments: ${departmentWithAssessments.filterNot(_.errorProcessingDepartment).size}")
-      AssessmentImportResult(departmentWithAssessments)
-    }.recover {
-      case e =>
-        logger.error(s"Error processing departments API ${e.getMessage}")
-        ServiceResults.exceptionToServiceResult(e)
+    ).successMapTo(components => DepartmentWithAssessments(departmentCode, components.flatten.flatten, errorProcessingDepartment = false))
+  }
+
+  private def generateAssessment(ac: AssessmentComponent, examProfileCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[Option[Assessment]]] = {
+    assessmentService.getByTabulaAssessmentId(ac.id, examProfileCode).successFlatMapTo {
+      case Some(existingAssessment) =>
+        ac.asAssessment(Some(existingAssessment), examProfileCode) match {
+          case Some(notUpdated) if notUpdated == existingAssessment => Future.successful(ServiceResults.success(Some(existingAssessment)))
+          case Some(updated) => assessmentService.update(updated, Nil).successMapTo(Some.apply)
+          case _ => Future.successful(ServiceResults.success(None))
+        }
+
+      case _ =>
+        ac.asAssessment(None, examProfileCode) match {
+          case Some(newAssessment) => assessmentService.insert(newAssessment, Nil).successMapTo(Some.apply)
+          case _ => Future.successful(ServiceResults.success(None))
+        }
     }
   }
-
-  private def generateAssessment(ac: AssessmentComponent): Future[ServiceResult[Assessment]] = {
-    assessmentService.getByTabulaAssessmentId(UUID.fromString(ac.id)).successFlatMapTo { optionalAssessment =>
-      optionalAssessment match {
-        case Some(existingAssessment) =>
-          //TODO  - Probably should check tabula ac has modified from last time based on some fields and then only update otherwise can just return existingAssessment
-          assessmentService.update(ac.asAssessment(Some(existingAssessment)), Nil).successFlatMapTo { row => Future.successful(Right(row)) }
-        case _ => {
-          val newAssessment = ac.asAssessment(None)
-          assessmentService.insert(newAssessment, Nil).successFlatMapTo { row =>
-            Future.successful(Right(row))
-          }
-        }
-      }
-    }
-  }
-
-  private def process(departmentCode: String): Future[ServiceResult[DepartmentWithAssessments]] = {
-    tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, true)).map(_.fold(
-      error => {
-        logger.error(s"Error processing assessment API")
-        ServiceResults.success(DepartmentWithAssessments(departmentCode, Nil, true))
-      },
-      assessmentComponents => {
-        try {
-          val components = assessmentComponents.flatMap { assessmentComponent =>
-            Await.result(generateAssessment(assessmentComponent), 10.seconds).toOption
-          }
-          ServiceResults.success(DepartmentWithAssessments(departmentCode, components, false))
-        } catch {
-          case e: Exception =>
-            logger.error(s"Error processing assessments of department $departmentCode, ${e.getMessage}")
-            // If there are db errors still need to proceed for other departments, just log department has failure
-            ServiceResults.success(DepartmentWithAssessments(departmentCode, Nil, true))
-        }
-      }
-    ))
-  }
-
 }
 
 

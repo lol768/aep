@@ -1,8 +1,116 @@
+@import play.api.libs.json.Json
+@import tags._
+@import org.apache.commons.lang3.time.DurationFormatUtils
 @import domain.Assessment
+@import warwick.core.helpers.JavaTime
+@import system.routes.Types.Usercode
+@import system.routes.Types.UniversityID
+@import domain.DepartmentCode
+@import domain.tabula
 @(
-    assessment: Assessment,
+        assessment: Assessment,
+        invigilators: Map[Usercode, String],
+        students: Map[Usercode, String],
+        department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-
 @adminLayout(assessment.title) {
-    TODO
+    <div class="id7-main-content">
+        <dl>
+            <dt>Module code</dt>
+            <dd>@assessment.moduleCode</dd>
+
+            <dt>Department code</dt>
+            <dd>
+            @department.map { dept =>
+                @dept.fullName
+                <span class="text-muted">(@dept.code)</span>
+            }.getOrElse {
+                @assessment.departmentCode.string
+            }
+            </dd>
+
+            <dt>State</dt>
+            <dd>@assessment.state.label</dd>
+
+            @assessment.tabulaAssessmentId.map { tabulaId =>
+                <dt>TabulaAssessment id</dt>
+                <dd>@tabulaId</dd>
+            }
+
+            <dt>Platform</dt>
+            <dd>@assessment.platform.label</dd>
+
+            <dt>Type</dt>
+            <dd>@assessment.assessmentType.label</dd>
+
+            <dt>Starts at</dt>
+            <dd>@assessment.startTime.map { t => @localisedDatetime(t) }</dd>
+
+            <dt>Duration</dt>
+            <dd>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)</dd>
+
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <dt>Invigilators</dt>
+                    <dd>
+                        <ul>
+                        @assessment.invigilators.map { usercode =>
+                            <li>
+                                @invigilators.get(usercode).map { username =>
+                                <span>@username</span>
+                                <span class="text-muted">(@usercode.string)</span>
+                                }.getOrElse(usercode.string)
+                            </li>
+                        }
+                        </ul>
+                    </dd>
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <dt>Brief</dt>
+                    @assessment.brief.text.map { text =>
+                        <dd>@text</dd>
+                    }
+
+                    @assessment.brief.url.map { url =>
+                        <dt>Url</dt>
+                        <dd>@url</dd>
+                    }
+
+                    @if(assessment.brief.files.nonEmpty) {
+                        <dt>Attached files</dt>
+                        <dd>
+                            <ul>
+                            @assessment.brief.files.map { file =>
+                                <li>
+                                    <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
+                                        <i class="fad fa-file fa-fw"></i>@file.fileName
+                                    </a>
+                                </li>
+                            }
+                            </ul>
+                        </dd>
+                    }
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <dt>Students</dt>
+                    <dd>
+                        <ul>
+                        @students.map { case (usercode, name) =>
+                            <li>
+                                <span>@name</span>
+                                <span class="text-muted">(@usercode.string)</span>
+                            </li>
+                        }
+                        </ul>
+                    </dd>
+                </div>
+            </div>
+        </dl>
+    </div>
 }

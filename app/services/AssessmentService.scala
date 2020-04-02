@@ -1,12 +1,19 @@
 package services
 
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
 import domain.Assessment.State
+import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, StudentAssessmentDao, UploadedFilesTables}
+import domain.UploadedFileOwner
+import domain.Assessment
+import domain.Assessment.Brief
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
+import domain.Assessment
+import domain.dao.AssessmentsTables.StoredAssessment
+import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
 import domain.{Assessment, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
@@ -29,13 +36,17 @@ trait AssessmentService {
 
   def listForInvigilator(usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
+  def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
+  def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]]
 
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Assessment]]
 
-  def getByTabulaAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]]
+  def getByTabulaAssessmentId(id: UUID, examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]]
 
   def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 
@@ -49,6 +60,7 @@ class AssessmentServiceImpl @Inject()(
   auditService: AuditService,
   daoRunner: DaoRunner,
   dao: AssessmentDao,
+  studentAssessmentDao: StudentAssessmentDao,
   uploadedFileService: UploadedFileService,
 )(implicit ec: ExecutionContext) extends AssessmentService {
 
@@ -94,6 +106,38 @@ class AssessmentServiceImpl @Inject()(
     )
   }
 
+  override def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.getToday).flatMap(inflate)
+
+  // Returns all assessments where the start time has passed, and the latest possible finish time for any student is yet to come
+  override def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    getTodaysAssessments.flatMap { result =>
+      result.toOption.map { todaysAssessments =>
+        daoRunner.run(studentAssessmentDao.getByAssessmentIds(todaysAssessments.map(_.id))).map { todaysStudentAssessments =>
+          val longestAdjustments = todaysAssessments.map { assessment =>
+            assessment.id -> todaysStudentAssessments
+              .filter(sa => sa.assessmentId == assessment.id)
+              .maxBy(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
+              .extraTimeAdjustment.getOrElse(Duration.ZERO)
+          }.toMap
+          val now = JavaTime.offsetDateTime
+          ServiceResults.success {
+            todaysAssessments.filter { a => longestAdjustments.get(a.id).exists { adjustment =>
+              a.startTime.exists {
+                st => st
+                  .plus(a.duration)
+                  .plus(Assessment.lateSubmissionPeriod)
+                  .plus(adjustment)
+                  .isAfter(now)
+              }
+            }}
+          }
+        }
+      }.getOrElse {
+        Future.successful(ServiceResults.error("Error getting today's assessments"))
+      }
+    }
+
   override def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
     daoRunner.run(dao.loadByIdsWithUploadedFiles(ids))
       .map(inflateRowsWithUploadedFiles)
@@ -104,8 +148,8 @@ class AssessmentServiceImpl @Inject()(
       .map(inflateRowWithUploadedFiles)
       .map(_.fold[ServiceResult[Assessment]](ServiceResults.error(s"Could not find an Assessment with ID $id"))(ServiceResults.success))
 
-  override def getByTabulaAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]] = {
-    daoRunner.run(dao.loadByTabulaAssessmentIdWithUploadedFiles(id))
+  override def getByTabulaAssessmentId(id: UUID, examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Option[Assessment]]] = {
+    daoRunner.run(dao.loadByTabulaAssessmentIdWithUploadedFiles(id, examProfileCode))
       .map(inflateRowWithUploadedFiles)
       .map(ServiceResults.success)
   }
@@ -126,7 +170,7 @@ class AssessmentServiceImpl @Inject()(
       } else DBIO.successful(assessment.brief.files.map(_.id))
       _ <- dao.update(StoredAssessment(
         id = assessment.id,
-        code = assessment.code,
+        paperCode = assessment.paperCode,
         title = assessment.title,
         startTime = assessment.startTime,
         duration = assessment.duration,
@@ -140,6 +184,7 @@ class AssessmentServiceImpl @Inject()(
         invigilators = sortedInvigilators(assessment),
         state = assessment.state,
         tabulaAssessmentId = assessment.tabulaAssessmentId,
+        examProfileCode = assessment.examProfileCode,
         moduleCode = assessment.moduleCode,
         departmentCode = assessment.departmentCode,
         sequence = assessment.sequence,
@@ -165,7 +210,7 @@ class AssessmentServiceImpl @Inject()(
       } else DBIO.successful(assessment.brief.files.map(_.id))
       assessment <- dao.insert(StoredAssessment(
         id = assessment.id,
-        code = assessment.code,
+        paperCode = assessment.paperCode,
         title = assessment.title,
         startTime = assessment.startTime,
         duration = assessment.duration,
@@ -178,10 +223,11 @@ class AssessmentServiceImpl @Inject()(
         ),
         invigilators = sortedInvigilators(assessment),
         state = assessment.state,
-        assessment.tabulaAssessmentId,
-        assessment.moduleCode,
-        assessment.departmentCode,
-        assessment.sequence,
+        tabulaAssessmentId = assessment.tabulaAssessmentId,
+        examProfileCode = assessment.examProfileCode,
+        moduleCode = assessment.moduleCode,
+        departmentCode = assessment.departmentCode,
+        sequence = assessment.sequence,
         created = OffsetDateTime.now,
         version = OffsetDateTime.now,
       ))
@@ -197,7 +243,7 @@ class AssessmentServiceImpl @Inject()(
     daoRunner.run(dao.getById(assessment.id)).flatMap { storedAssessmentOption =>
       storedAssessmentOption.map { existingAssessment =>
         daoRunner.run(dao.update(existingAssessment.copy(
-          code = assessment.code,
+          paperCode = assessment.paperCode,
           title = assessment.title,
           startTime = assessment.startTime,
           duration = assessment.duration,
@@ -209,7 +255,7 @@ class AssessmentServiceImpl @Inject()(
         val timestamp = JavaTime.offsetDateTime
         daoRunner.run(dao.insert(StoredAssessment(
           id = assessment.id,
-          code = assessment.code,
+          paperCode = assessment.paperCode,
           title = assessment.title,
           startTime = assessment.startTime,
           duration = assessment.duration,
@@ -218,7 +264,8 @@ class AssessmentServiceImpl @Inject()(
           storedBrief = assessment.brief.toStoredBrief,
           invigilators = sortedInvigilators(assessment),
           state = assessment.state,
-          tabulaAssessmentId = Some(assessment.id),
+          tabulaAssessmentId = assessment.tabulaAssessmentId,
+          examProfileCode = assessment.examProfileCode,
           moduleCode = assessment.moduleCode,
           departmentCode = assessment.departmentCode,
           sequence = assessment.sequence,

@@ -51,8 +51,6 @@ GET         /admin/assessment/announcement/add                    @controllers.a
 POST        /admin/assessment/announcement/add                    @controllers.admin.CreateAnnouncementController.add
 
 GET         /admin/assessments                                    @controllers.admin.AssessmentsController.index
-GET         /admin/spreadsheet/import                             @controllers.admin.AssessmentImportController.index
-POST        /admin/spreadsheet/import                             @controllers.admin.AssessmentImportController.processImport
 GET         /admin/assessments/create                             @controllers.admin.AssessmentsController.create
 POST        /admin/assessments/create                             @controllers.admin.AssessmentsController.save
 GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.show(id: UUID)
@@ -90,7 +88,8 @@ GET         /sysadmin/emails                        @controllers.sysadmin.EmailQ
 POST        /sysadmin/emails/:id                    @controllers.sysadmin.EmailQueueController.enqueue(id: UUID)
 GET         /sysadmin/mywarwick                     @controllers.sysadmin.MyWarwickQueueController.queued()
 POST        /sysadmin/mywarwick/reschedule          @controllers.sysadmin.MyWarwickQueueController.reschedule(triggerName: String, triggerGroup: String)
-GET         /sysadmin/assessments-test/:deptCode    @controllers.sysadmin.SysadminTestController.assessmentComponents(deptCode: domain.DepartmentCode)
+GET         /sysadmin/assessments-test/import       @controllers.sysadmin.SysadminTestController.importAssessments()
+GET         /sysadmin/assessments-test/:deptCode    @controllers.sysadmin.SysadminTestController.assessmentComponents(deptCode: domain.DepartmentCode, examProfileCode: String)
 GET         /sysadmin/assessment-members-test       @controllers.sysadmin.SysadminTestController.assessmentComponentMembers()
 GET         /sysadmin/departments-test              @controllers.sysadmin.SysadminTestController.departments()
 GET         /sysadmin/dummy-data-generation         @controllers.sysadmin.DummyDataGenerationController.showForm()

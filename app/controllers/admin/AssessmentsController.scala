@@ -52,7 +52,7 @@ object AssessmentsController {
   val form: Form[AssessmentFormData] = Form(mapping(
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
-    "durationMinutes" -> longNumber(min = 1, max = 24 * 60),
+    "durationMinutes" -> longNumber.verifying(Seq(120, 180).contains(_)),
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText)
@@ -80,7 +80,7 @@ object AssessmentsController {
       .transform[Option[Set[Usercode]]](Option.apply, _.get),
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
-    "durationMinutes" -> longNumber(min = 1, max = 24 * 60),
+    "durationMinutes" -> longNumber.verifying(Seq(120, 180).contains(_)),
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText)
@@ -99,7 +99,7 @@ class AssessmentsController @Inject()(
   import security._
 
   def index: Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
-    assessmentService.findByStates(Seq(State.Draft)).successMap { assessments =>
+    assessmentService.findByStates(Seq(State.Draft, State.Imported)).successMap { assessments =>
       Ok(views.html.admin.assessments.index(assessments))
     }
   }
@@ -128,7 +128,7 @@ class AssessmentsController @Inject()(
         import helpers.DateConversion._
         assessmentService.insert(
           Assessment(
-            code = data.moduleCode.get,
+            paperCode = data.moduleCode.get,
             title = data.title,
             startTime = data.startTime.map(_.asOffsetDateTime),
             duration = Duration.ofMinutes(data.durationMinutes),
@@ -142,6 +142,7 @@ class AssessmentsController @Inject()(
             invigilators = data.invigilators.get,
             state = State.Submitted,
             tabulaAssessmentId = None, //TODO CHECK THESE, added temperoray values
+            examProfileCode = "EXAPR20",
             moduleCode = "MA-101", //TODO CHECK THESE
             departmentCode = DepartmentCode("MA"), //TODO CHECK THESE
             sequence = "EO1", //TODO CHECK THESE

@@ -8,7 +8,7 @@
   <table class="table table-striped">
     <thead>
       <tr>
-        <th>Code</th>
+        <th>Paper code</th>
         <th>Title</th>
         <th>Date</th>
         <th>Duration</th>
@@ -19,7 +19,7 @@
     <tbody>
       @assessments.map { assessment =>
         <tr>
-          <td>@assessment.code</td>
+          <td>@assessment.paperCode</td>
           <td>@assessment.title</td>
           <td>
             @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)
