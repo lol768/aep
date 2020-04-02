@@ -80,7 +80,7 @@ object AssessmentsController {
       .transform[Option[Set[Usercode]]](Option.apply, _.get),
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
-    "durationMinutes" -> longNumber(min = 1, max = 24 * 60),
+    "durationMinutes" -> longNumber.verifying(Seq(120, 180).contains(_)),
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText)
