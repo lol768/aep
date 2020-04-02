@@ -67,6 +67,9 @@ GET         /admin/reporting/:id/notstarted                       @controllers.a
 GET         /admin/reporting/:id/submitted                        @controllers.admin.ReportingController.submitted(id: UUID)
 GET         /admin/reporting/:id/finalised                        @controllers.admin.ReportingController.finalised(id: UUID)
 
+GET         /admin/studentactivity                                @controllers.admin.ViewStudentActivityController.index
+POST        /admin/studentactivity                                @controllers.admin.ViewStudentActivityController.filter
+
 ## Invigilation ##
 
 GET         /invigilation/assessments/:id                         @controllers.invigilation.InvigilatorAssessmentController.view(id: UUID)

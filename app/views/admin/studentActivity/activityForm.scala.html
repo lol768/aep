@@ -1,0 +1,27 @@
+@import controllers.admin.ViewStudentActivityController.StudentActivityData
+@(
+    form: Form[StudentActivityData]
+)(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
+
+@adminLayout("Student activity") {
+
+
+        @b3.inline.formCSRF(controllers.admin.routes.ViewStudentActivityController.filter, Symbol("class") -> "text-center") { implicit fc =>
+            @views.html.tags.globalErrors(form)
+
+            @b3.text(form("usercode"),
+                Symbol("_label") -> "Student",
+                Symbol("class") -> "flexi-picker",
+                Symbol("data-include-groups") -> "false",
+                Symbol("placeholder") -> "Name or usercode",
+                Symbol("autofocus") -> true,
+                Symbol("autocomplete") -> "off"
+            )
+
+            @b3.datetimePicker(form("startDate"), Symbol("value") -> None, Symbol("placeholder") -> "From (optional)")
+            @b3.datetimePicker(form("endDate"), Symbol("value") -> None, Symbol("placeholder") -> "To (optional)")
+
+            @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fad fa-search fa-fw"></i> find }
+        }
+
+}

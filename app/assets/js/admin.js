@@ -11,7 +11,6 @@ import * as dateTimePicker from './date-time-picker';
 
 import '@universityofwarwick/statuspage-widget/dist/main';
 import './admin/assessment-setup';
-import './date-time-picker';
 
 /**
  * Attach handlers to all elements inside $scope. All jQuery selects
