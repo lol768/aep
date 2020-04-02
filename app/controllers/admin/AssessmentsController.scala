@@ -23,6 +23,8 @@ object AssessmentsController {
   trait AbstractAssessmentFormData {
     val moduleCode: Option[String] = None
 
+    val section: Option[String] = None
+
     val startTime: Option[LocalDateTime] = None
 
     val invigilators: Option[Set[Usercode]] = None
@@ -129,6 +131,7 @@ class AssessmentsController @Inject()(
         assessmentService.insert(
           Assessment(
             paperCode = data.moduleCode.get,
+            section = data.section,
             title = data.title,
             startTime = data.startTime.map(_.asOffsetDateTime),
             duration = Duration.ofMinutes(data.durationMinutes),

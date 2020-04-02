@@ -33,6 +33,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
             result.created.toInstant mustBe ass.created.toInstant
             result.version.toInstant mustBe now
             result.paperCode mustBe ass.paperCode
+            result.section mustBe ass.section
             result.title mustBe ass.title
             result.assessmentType mustBe ass.assessmentType
             result.platform mustBe ass.platform
@@ -70,6 +71,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
           result.created.toInstant mustBe ass.created.toInstant
           result.version.toInstant mustBe now
           result.paperCode mustBe ass.paperCode
+          result.section mustBe ass.section
           result.title mustBe "is this fine yet"
           result.assessmentType mustBe ass.assessmentType
           result.platform mustBe ass.platform
@@ -118,13 +120,13 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       val idResult = execWithCommit(dao.getById(first.id)).getOrElse(lookupException)
       idResult.paperCode mustEqual first.paperCode
 
-      val codeResult = execWithCommit(dao.getByCode(first.paperCode)).getOrElse(lookupException)
+      val codeResult = execWithCommit(dao.getByPaper(first.paperCode, first.section, first.examProfileCode)).getOrElse(lookupException)
       codeResult.id mustEqual first.id
 
       val noIdResult = execWithCommit(dao.getById(UUID.randomUUID()))
       noIdResult.isEmpty mustBe true
 
-      val noCodeResult = execWithCommit(dao.getByCode("nonexistent-code"))
+      val noCodeResult = execWithCommit(dao.getByPaper("nonexistent-code"))
       noCodeResult.isEmpty mustBe true
     }
 
