@@ -1,5 +1,8 @@
 .apply-brand(#5b3069);
-.apply-site-imagery(@basedir: './images'; @masthead-image: 'masthead-auberginecircles.jpg'; @border-image-left: 'lhsborder-auberginecircles.jpg'; @border-image-right: 'rhsborder-auberginecircles.jpg');
+.apply-site-imagery(@basedir: './images'; @masthead-image: 'masthead-auberginecircles.webp'; @border-image-left: 'lhsborder-auberginecircles.webp'; @border-image-right: 'rhsborder-auberginecircles.webp');
+html.no-js, html.no-webp {
+  .apply-site-imagery(@basedir: './images'; @masthead-image: 'masthead-auberginecircles.jpg'; @border-image-left: 'lhsborder-auberginecircles.jpg'; @border-image-right: 'rhsborder-auberginecircles.jpg');
+}
 
 // Override the app footer to be white
 .id7-page-footer .id7-app-footer {
