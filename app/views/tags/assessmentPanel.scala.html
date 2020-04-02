@@ -32,7 +32,7 @@
                 @if(isAssessmentPage) {
                     @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessment.assessment.id)) { implicit fc =>
                         @if(assessment.studentAssessment.startTime.isEmpty) {
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="startAssessment">
                                 Start
                             </button>
                         }
@@ -47,13 +47,18 @@
             }
             case Platform.Moodle => {
                 <a href="/service/stub" target="_blank">
-                    Assessment on Moodle<i class="fa fa-fw fa-external-link"></i>
-                  </a>
+                  Assessment on Moodle<i class="fa fa-fw fa-external-link"></i>
+                </a>
             }
             case Platform.QuestionmarkPerception => {
                 <a href="/service/stub" target="_blank">
-                    Assessment on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
-                  </a>
+                  Assessment on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
+                </a>
+            }
+            case Platform.TabulaAssignment => {
+                <a href="/service/stub" target="_blank">
+                  Assessment on Tabula<i class="fa fa-fw fa-external-link"></i>
+                </a>
             }
         }
     </div>

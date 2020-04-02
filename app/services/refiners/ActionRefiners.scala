@@ -4,6 +4,7 @@ import controllers.{ControllerHelper, ServiceResultErrorRendering}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{ActionFilter, ActionRefiner, Result}
 import services.{AssessmentService, StudentAssessmentService}
+import system.Roles
 import system.routes.Types.UUID
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
@@ -80,10 +81,10 @@ class ActionRefiners @Inject() (
         }
     }
 
-  val IsInvigilator: Filter[AssessmentSpecificRequest] =
+  val IsInvigilatorOrAdmin: Filter[AssessmentSpecificRequest] =
     new Filter[AssessmentSpecificRequest] {
       override protected def apply[A](implicit request: AssessmentSpecificRequest[A]): Future[Option[Result]] = Future.successful {
-        if (request.context.user.exists(u => request.assessment.invigilators.contains(u.usercode)))
+        if (request.context.user.exists(u => request.assessment.invigilators.contains(u.usercode)) || request.context.userHasRole(Roles.Admin))
           None
         else
           Some(Forbidden(views.html.errors.forbidden(None)))

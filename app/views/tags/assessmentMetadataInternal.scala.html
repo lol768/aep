@@ -4,7 +4,10 @@
 @(assessment: Assessment)(implicit context: RequestContext)
 
 <dt>Module</dt>
-<dd>@assessment.paperCode</dd>
+<dd>
+    @assessment.paperCode
+    @assessment.section.map(s => s"(Section $s)")
+</dd>
 
 <dt>Type</dt>
 <dd>@assessment.assessmentType.label</dd>

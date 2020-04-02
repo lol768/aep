@@ -1,17 +1,21 @@
 package support
 
 import java.io.File
+import java.time.OffsetDateTime
+import java.util.UUID
+import scala.jdk.CollectionConverters._
 
 import domain.Assessment.Platform.OnlineExams
-import domain.Fixtures
 import domain.Fixtures.{assessments, studentAssessments}
-import domain.dao.{AssessmentDao, DaoRunning, StudentAssessmentDao}
+import domain.dao.AssessmentsTables.StoredBrief
+import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunning, StudentAssessmentDao}
+import domain.{Fixtures, UploadedFileOwner}
 import helpers.{FutureServiceMixins, HasApplicationGet}
 import org.apache.commons.text.StringEscapeUtils
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterEach, GivenWhenThen}
 import org.scalatestplus.selenium.{Page, WebBrowser}
-import pages.{AbstractPage, AssessmentsListPage, HomePage}
+import pages.{AbstractPage, AssessmentPage, AssessmentsListPage, HomePage}
 import play.api.db.DBApi
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.i18n.{Langs, MessagesApi, MessagesImpl, MessagesProvider}
@@ -52,6 +56,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
 
   private val assessmentDao = get[AssessmentDao]
   private val studentAssessmentDao = get[StudentAssessmentDao]
+  private val uploadedFileService = get[UploadedFileService]
 
   override def fakeApplicationBuilder: GuiceApplicationBuilder = super.fakeApplicationBuilder
     .overrides(
@@ -101,6 +106,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
 
   val homePage = new HomePage()
   val assessmentsListPage = new AssessmentsListPage()
+  var assessmentPage: AssessmentPage = null
 
   def visit(path: String): Unit = {
     go to (baseUrl + path)
@@ -163,7 +169,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
 
     def i_should_see_the_text(text: String): Unit = {
       Then(s"I should see the text '${unescape(text)}'")
-      pageMustContain(text)
+      eventually(pageMustContain(text))
     }
 
     def the_page_content_should_contain(text: String): Unit = {
@@ -181,17 +187,39 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       pageMustContain(text)
     }
 
-    def i_am_student(): Unit = {
+    def i_am_a_student(): Unit = {
       Given("I am a student")
       setUser(Fixtures.users.student1)
     }
 
     def i_have_an_online_exam_to_sit(student: User): Unit = {
       Given("I have an Online Exam to sit")
-      val assessment = assessments.storedAssessment(platformOption = Some(OnlineExams))
-      val sa1 = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
-      execWithCommit(assessmentDao.insert(assessment))
-      execWithCommit(studentAssessmentDao.insert(sa1))
+
+      val assessmentId: UUID = UUID.randomUUID()
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId, startTime = Some(OffsetDateTime.now))
+      val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
+
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.Assessment))
+      execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, url = None, fileIds = Seq(examPaper.id)))))
+      execWithCommit(studentAssessmentDao.insert(studentAssessment))
+
+      assessmentPage = new AssessmentPage(assessment.id)
+    }
+
+    def i_have_an_assessment_in_progress(student: User): Unit = {
+      Given("I have an assessment in progress")
+
+      val assessmentId: UUID = UUID.randomUUID()
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId)
+      val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get).copy(
+        startTime = Some(OffsetDateTime.now().minusMinutes(5))
+      )
+
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.Assessment))
+      execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, url = None, fileIds = Seq(examPaper.id)))))
+      execWithCommit(studentAssessmentDao.insert(studentAssessment))
+
+      assessmentPage = new AssessmentPage(assessment.id)
     }
 
     def i_click_through_to_my_first_exam_from_assessments_list(): Unit = {
@@ -199,6 +227,52 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       visit(assessmentsListPage)
       val assessmentList = assessmentsListPage.assessmentsList
       assessmentList.head.viewLink.click()
+    }
+
+    def i_start_the_assessment(): Unit = {
+      When("I start the assessment")
+      assessmentPage.startButton.click()
+    }
+
+    def i_upload(filename: String): Unit = {
+      When(s"I upload '$filename'")
+      val file = new File(s"test/resources/$filename")
+      assessmentPage.fileInput.sendKeys(file.getAbsolutePath)
+      assessmentPage.uploadFilesButton.click()
+    }
+
+    def i_delete(filename: String): Unit = {
+      val file = assessmentPage.uploadedFiles.find(_.name == filename)
+      assert(file.nonEmpty, s"There was no uploaded file named $filename")
+      file.get.deleteButton.click()
+    }
+
+    def i_should_see_uploaded_file(filename: String): Unit = {
+      Then(s"I should see an uploaded file named '$filename'")
+      eventually(assert(assessmentPage.uploadedFiles.map(_.name).contains(filename), s"There was no uploaded file named $filename"))
+    }
+
+    def i_should_see_assessment_file(filename: String): Unit = {
+      Then(s"I should see an assessment file named '$filename'")
+      eventually(assert(assessmentPage.assessmentFiles.map(_.name).contains(filename), s"There was no assessment file named $filename"))
+    }
+
+    def i_download_assessment_file(filename: String): Unit = {
+      val file = assessmentPage.assessmentFiles.find(_.name == filename)
+      assert(file.nonEmpty, s"There was no assessment file named $filename")
+      file.get.link.click()
+    }
+
+    def a_file_should_be_displayed(): Unit = {
+      assert(webDriver.getWindowHandles.size() == 2, s"Expected file download to open in a second tab, but ${webDriver.getWindowHandles.size} tab(s) were open")
+      val fileTabHandle = webDriver.getWindowHandles.asScala.diff(Set(webDriver.getWindowHandle)).head
+      webDriver.switchTo().window(fileTabHandle)
+      assert(webDriver.getTitle.take(36).matches(".{8}-.{4}-.{4}-.{4}-.{12}"), s"Expected the page title to look like a file UUID but was '${webDriver.getTitle}'")
+    }
+
+    def i_finish_the_assessment(): Unit = {
+      assessmentPage.finishExamCheckbox.click()
+      assessmentPage.finishExamButton.submit()
     }
 
     def i_should_be_redirected_to_exam_page(): Unit = {

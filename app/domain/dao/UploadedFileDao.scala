@@ -23,6 +23,7 @@ object UploadedFilesTables {
     contentLength: Long,
     contentType: String,
     uploadedBy: Usercode,
+    uploadStarted: OffsetDateTime,
     ownerId: Option[UUID],
     ownerType: Option[UploadedFileOwner],
     created: OffsetDateTime,
@@ -34,6 +35,7 @@ object UploadedFilesTables {
       contentLength,
       contentType,
       uploadedBy,
+      uploadStarted,
       created,
       version
     )
@@ -47,6 +49,7 @@ object UploadedFilesTables {
         contentLength,
         contentType,
         uploadedBy,
+        uploadStarted,
         ownerId,
         ownerType,
         created,
@@ -70,6 +73,7 @@ object UploadedFilesTables {
     contentLength: Long,
     contentType: String,
     uploadedBy: Usercode,
+    uploadStarted: OffsetDateTime,
     ownerId: Option[UUID],
     ownerType: Option[UploadedFileOwner],
     created: OffsetDateTime,
