@@ -1,16 +1,17 @@
-@import play.api.libs.json.Json
 @import tags._
 @import org.apache.commons.lang3.time.DurationFormatUtils
 @import domain.Assessment
-@import warwick.core.helpers.JavaTime
+@import domain.StudentAssessment
 @import system.routes.Types.Usercode
-@import system.routes.Types.UniversityID
-@import domain.DepartmentCode
 @import domain.tabula
+@import domain.StudentAssessmentMetadata
+@import warwick.sso.UniversityID
+@import warwick.sso.User
 @(
         assessment: Assessment,
+        studentAssessments: Seq[StudentAssessmentMetadata],
         invigilators: Map[Usercode, String],
-        students: Map[Usercode, String],
+        students: Map[UniversityID, User],
         department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout(assessment.title) {
@@ -96,20 +97,8 @@
                 </div>
             </div>
 
-            <div class="panel panel-default">
-                <div class="panel-body">
-                    <dt>Students</dt>
-                    <dd>
-                        <ul>
-                        @students.map { case (usercode, name) =>
-                            <li>
-                                <span>@name</span>
-                                <span class="text-muted">(@usercode.string)</span>
-                            </li>
-                        }
-                        </ul>
-                    </dd>
-                </div>
+            <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="expected">
+                @studentAssessmentInfo(studentAssessments, students)
             </div>
         </dl>
     </div>
