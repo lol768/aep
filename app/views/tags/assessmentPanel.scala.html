@@ -17,10 +17,15 @@
     }
     <div class="panel-body">
         @if(!isAssessmentPage) {
-            <h4>@assessment.assessment.title</h4>
+            <h4>
+                @if(assessment.finalised) {
+                    <i class="fad themed-duotone fa-check fa-fw"></i>
+                }
+                @assessment.assessment.title
+            </h4>
         }
 
-        @assessmentMetadata(assessment.assessment)
+        @assessmentMetadataForStudent(assessment)
 
         @assessment.assessment.platform match {
             case Platform.OnlineExams => {
@@ -42,12 +47,12 @@
             }
             case Platform.Moodle => {
                 <a href="/service/stub" target="_blank">
-                    Exam on Moodle<i class="fa fa-fw fa-external-link"></i>
+                    Assessment on Moodle<i class="fa fa-fw fa-external-link"></i>
                   </a>
             }
             case Platform.QuestionmarkPerception => {
                 <a href="/service/stub" target="_blank">
-                    Exam on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
+                    Assessment on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
                   </a>
             }
         }

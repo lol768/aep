@@ -36,8 +36,9 @@ object TabulaAssessmentService {
   case class GetAssessmentsOptions(
     deptCode: String,
     withExamPapersOnly: Boolean = false,
+    examProfileCode: Option[String],
   ) {
-    def cacheKey = s"d:$deptCode;e:$withExamPapersOnly"
+    def cacheKey = s"d:$deptCode;e:$withExamPapersOnly;p:$examProfileCode"
   }
 
   case class GetAssessmentGroupMembersOptions(
@@ -83,9 +84,10 @@ class TabulaAssessmentServiceImpl @Inject() (
   override def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn] = {
     val url = config.getAssessmentsUrl(options.deptCode)
     val req = ws.url(url)
-      .withQueryStringParameters(
-        "withExamPapersOnly" -> options.withExamPapersOnly.toString
-      )
+      .withQueryStringParameters(Seq(
+        Some("withExamPapersOnly" -> options.withExamPapersOnly.toString),
+        options.examProfileCode.map("examProfileCode" -> _),
+      ).flatten: _*)
     implicit def l: Logger = logger
 
     doGet(url, req, description = "getAssessments").successFlatMapTo { jsValue =>

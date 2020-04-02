@@ -7,7 +7,7 @@ import domain.DepartmentCode
 import domain.tabula._
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
-import org.quartz.Scheduler
+import org.quartz.{Scheduler, TriggerBuilder}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
@@ -91,6 +91,7 @@ class SysadminTestController @Inject()(
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   tabulaAssessments: TabulaAssessmentService,
   tabulaDepartments: TabulaDepartmentService,
+  tabulaAssessmentImportService: TabulaAssessmentImportService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
 
   import SysadminTestController._
@@ -142,14 +143,19 @@ class SysadminTestController @Inject()(
     uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile)
   }
 
-  def assessmentComponents(deptCode: DepartmentCode): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def importAssessments(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    tabulaAssessmentImportService.importAssessments().successMap(_ => Ok("Done"))
+  }
+
+  def assessmentComponents(deptCode: DepartmentCode, examProfileCode: String): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    implicit val writeExamSchedule = Json.writes[ExamPaperSchedule]
     implicit val writeExam = Json.writes[ExamPaper]
     implicit val writesDepartmentIdentity = Json.writes[DepartmentIdentity]
     implicit val writesModule = Json.writes[Module]
 
     implicit val writes = Json.writes[AssessmentComponent]
 
-    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true)).successMap { r =>
+    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true, examProfileCode = Some(examProfileCode))).successMap { r =>
       Ok(Json.toJson(r)(Writes.seq(writes)))
     }
   }

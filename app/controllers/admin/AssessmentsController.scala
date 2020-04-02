@@ -105,7 +105,7 @@ object AssessmentsController {
       .transform[Option[Set[Usercode]]](Option.apply, _.get),
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
-    "durationMinutes" -> longNumber(min = 1, max = 24 * 60),
+    "durationMinutes" -> longNumber.verifying(Seq(120, 180).contains(_)),
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText),
@@ -134,7 +134,7 @@ class AssessmentsController @Inject()(
     assessmentService.get(id).successMap { assessment =>
       Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
         moduleCode = assessment.moduleCode,
-        paperCode = assessment.code,
+        paperCode = assessment.paperCode,
         departmentCode = assessment.departmentCode,
         sequence = assessment.sequence,
         title = assessment.title,
@@ -159,7 +159,7 @@ class AssessmentsController @Inject()(
         import helpers.DateConversion._
         assessmentService.insert(
           Assessment(
-            code = data.paperCode,
+            paperCode = data.paperCode,
             title = data.title,
             startTime = data.startTime.map(_.asOffsetDateTime),
             duration = Duration.ofMinutes(data.durationMinutes),
@@ -173,6 +173,7 @@ class AssessmentsController @Inject()(
             invigilators = data.invigilators.get,
             state = data.operation,
             tabulaAssessmentId = None,
+            examProfileCode = "EXAPR20",
             moduleCode = data.moduleCode,
             departmentCode = data.departmentCode,
             sequence = data.sequence,

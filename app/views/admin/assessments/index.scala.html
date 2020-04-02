@@ -1,7 +1,6 @@
 @import domain.Assessment
 @import warwick.core.helpers.JavaTime
 @import org.apache.commons.lang3.time.DurationFormatUtils
-@import domain.Assessment.AssessmentType
 
 @(assessments: Seq[Assessment])(implicit context: RequestContext)
 
@@ -19,10 +18,10 @@
   <table class="table table-striped">
     <thead>
       <tr>
-        <th>Module module</th>
-        <th>Paper module</th>
+        <th>Module code</th>
+        <th>Paper code</th>
         <th>Title</th>
-        <th>Date</th>
+        <th>Date/time</th>
         <th>Duration</th>
         <th>Type</th>
         <th>State</th>
@@ -33,10 +32,10 @@
       @assessments.map { assessment =>
         <tr>
           <td>@assessment.moduleCode</td>
-          <td>@assessment.code</td>
+          <td>@assessment.paperCode</td>
           <td>@assessment.title</td>
           <td>
-            @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)
+          @assessment.startTime.map(JavaTime.Relative(_))
           </td>
           <td>
             @DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)

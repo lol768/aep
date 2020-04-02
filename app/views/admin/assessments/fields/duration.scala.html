@@ -3,7 +3,12 @@
 
 @()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
-@b3.select(form("durationMinutes"), Seq("" -> "", "30" -> "30 minutes", "60" -> "1 hour", "90" -> "1 hour and 30 minutes", "120" -> "2 hours", "180" -> "3 hours"), Symbol("_label") -> "Duration")
+@b3.select(
+    form("durationMinutes"),
+    Seq("" -> "", "120" -> "2 hours", "180" -> "3 hours"),
+    Symbol("_label") -> "Duration",
+    Symbol("_help") -> "You do not have to include additional time for students downloading and uploading materials; extra time will automatically be added to whatever duration you select.",
+)
 @*    @b3.inputWrapped("number", form("durationMinutes"), Symbol("_label") -> "Duration", Symbol("min") -> 1, Symbol("max") -> 24 * 12) { input =>*@
 @*      <div class="input-group">*@
 @*        @input*@

@@ -16,12 +16,12 @@ class SchedulerConfiguration @Inject()(
   evolutions: ApplicationEvolutions,
   configuration: Configuration,
 )(implicit scheduler: Scheduler) extends Logging {
-
-  //Import tabula assessments job
-  configureScheduledJob("ImportAssessment",
+  configureScheduledJob(
+    "ImportAssessment",
     JobBuilder.newJob(classOf[ImportTabulaAssessmentsJob]),
-    CronScheduleBuilder.cronSchedule("0 0 7 * * ?") // 7 am morning
+    CronScheduleBuilder.cronSchedule("0 30 * * * ?") // Every hour, xx:30
   )
+
   logger.info("Starting the scheduler")
   scheduler.start()
 
