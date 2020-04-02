@@ -4,7 +4,7 @@
 @(assessment: Option[Assessment] = None)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
 @b3.freeFormGroup(Seq(Symbol("_label") -> "Files", Symbol("id") -> "files")) { _ =>
-    <p class="help-block file-help-block">
+    <p class="help-block">
         Files should include a question paper and an answer booklet (or a combined question and answer booklet) and any materials that would normally be provided in printed form, eg statutes, periodic table, etc.
     </p>
 
