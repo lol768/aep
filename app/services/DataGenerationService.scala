@@ -118,6 +118,7 @@ object DataGenerationService {
     StoredAssessment(
       id = uuid,
       paperCode = paperCode,
+      section = None,
       title = DataGeneration.fakeTitle,
       startTime = Some(startTime),
       duration = Duration.ofHours(3),

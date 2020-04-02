@@ -45,7 +45,7 @@ const updateTimingInfo = (node, data) => {
     text = `${msToHumanReadable(data.timeUntilEndOfWindow)} left to start.`;
     setWarning(node);
   } else {
-    text = 'The exam window has now passed.';
+    text = 'The assessment window has now passed.';
     setWarning(node);
   }
   const textNode = document.createTextNode(text);

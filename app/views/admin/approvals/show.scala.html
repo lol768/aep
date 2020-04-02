@@ -5,7 +5,7 @@
 
 @(assessment: Assessment, form: Form[ApprovalFormData])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
-@adminLayout(s"Review assessment for ${assessment.paperCode}") {
+@adminLayout(s"Review assessment for ${assessment.paperCode} ${assessment.section.map(s => s"(Section $s)").getOrElse("")}") {
   <dl>
     <dt>Title</dt>
     <dd>@assessment.title</dd>
@@ -26,7 +26,7 @@
 
     @if(assessment.platform != Platform.OnlineExams) {
       @assessment.brief.url.map { url =>
-        <dt>URL to exam</dt>
+        <dt>URL to assessment</dt>
         <dd>@url</dd>
       }
     }
