@@ -115,7 +115,7 @@
                 </p>
 
               @b3.free(Symbol("_class") -> "spaced-buttons") {
-                <button type="submit" class="btn btn-primary">Upload files</button>
+                <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
               }
             }
           </div>
@@ -134,7 +134,7 @@
             <li>Downloaded your final submission and checked to ensure it was uploaded in its entirety</li>
             <li>Checked through your answers to the assessment questions</li>
           </ul>
-          @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id)) { implicit fc =>
+          @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id), Symbol("class") -> "quash-beforeunload") { implicit fc =>
             @b3.checkbox(
               finishExamForm("agreeDisclaimer"),
               Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.",

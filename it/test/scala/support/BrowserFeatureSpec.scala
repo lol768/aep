@@ -3,14 +3,13 @@ package support
 import java.io.File
 import java.time.OffsetDateTime
 import java.util.UUID
+import scala.jdk.CollectionConverters._
 
-import com.google.common.io.ByteSource
-import domain.Assessment.Brief
 import domain.Assessment.Platform.OnlineExams
-import domain.{Fixtures, UploadedFileOwner}
 import domain.Fixtures.{assessments, studentAssessments}
 import domain.dao.AssessmentsTables.StoredBrief
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunning, StudentAssessmentDao, UploadedFileDao, UploadedFilesTables}
+import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunning, StudentAssessmentDao}
+import domain.{Fixtures, UploadedFileOwner}
 import helpers.{FutureServiceMixins, HasApplicationGet}
 import org.apache.commons.text.StringEscapeUtils
 import org.scalatest.concurrent.ScalaFutures
@@ -26,7 +25,6 @@ import play.api.mvc.{Call, Result}
 import services._
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import warwick.fileuploads.{UploadedFile, UploadedFileSave}
 import warwick.functional._
 import warwick.html._
 import warwick.sso._
@@ -198,7 +196,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       Given("I have an Online Exam to sit")
 
       val assessmentId: UUID = UUID.randomUUID()
-      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId)
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId, startTime = Some(OffsetDateTime.now))
       val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
 
       val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.Assessment))
@@ -266,7 +264,10 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
     }
 
     def a_file_should_be_displayed(): Unit = {
-      assert(webDriver.getTitle.matches("^.{8}-.{4}-.{4}-.{4}-.{12}"), s"Expected the page title to look like a file UUID but was '${webDriver.getTitle}'")
+      assert(webDriver.getWindowHandles.size() == 2, s"Expected file download to open in a second tab, but ${webDriver.getWindowHandles.size} tab(s) were open")
+      val fileTabHandle = webDriver.getWindowHandles.asScala.diff(Set(webDriver.getWindowHandle)).head
+      webDriver.switchTo().window(fileTabHandle)
+      assert(webDriver.getTitle.take(36).matches(".{8}-.{4}-.{4}-.{4}-.{12}"), s"Expected the page title to look like a file UUID but was '${webDriver.getTitle}'")
     }
 
     def i_finish_the_assessment(): Unit = {

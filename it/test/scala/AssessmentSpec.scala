@@ -21,7 +21,7 @@ class AssessmentSpec extends BrowserFeatureSpec {
       screenshot("Assessment started")
 
       Then i_should_see_the_text "The assessment has begun."
-      And i_should_see_the_text "Started a moment ago. 2 hours and 59 minutes remaining"
+      And i_should_see_the_text "Started a moment ago"
     }
 
     "be able to download files for an in-progress assessment" in {
