@@ -66,8 +66,8 @@ case class Assessment(
 
   override def compare(that: Assessment): Int = {
     Ordering.Tuple3[OffsetDateTime, String, String].compare(
-      (this.startTime.getOrElse(OffsetDateTime.MAX), this.paperCode, this.section),
-      (that.startTime.getOrElse(OffsetDateTime.MAX), that.paperCode, that.section)
+      (this.startTime.getOrElse(OffsetDateTime.MAX), this.paperCode, this.section.getOrElse("")),
+      (that.startTime.getOrElse(OffsetDateTime.MAX), that.paperCode, that.section.getOrElse(""))
     )
   }
 }

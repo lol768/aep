@@ -8,6 +8,7 @@
             <tr>
                 <th>Date/time</th>
                 <th>Paper code</th>
+                <th>Section</th>
                 <th>Title</th>
                 <th>Duration</th>
                 <th>Type</th>
@@ -21,6 +22,7 @@
                     @assessment.startTime.map(JavaTime.Relative(_))
                 </td>
                 <td>@assessment.paperCode</td>
+                <td>@assessment.section.getOrElse("")</td>
                 <td>@assessment.title</td>
                 <td>
                     @DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
