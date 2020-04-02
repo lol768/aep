@@ -1,10 +1,14 @@
 package services
 
-import javax.inject.Singleton
+import javax.inject.{Inject, Singleton}
 import com.google.inject.ImplementedBy
 import play.api.mvc.Call
 import system.Roles.{Admin, Sysadmin}
+import warwick.core.timing.TimingContext
 import warwick.sso.LoginContext
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
+import scala.util.Try
 
 sealed trait Navigation {
   def label: String
@@ -47,7 +51,9 @@ trait NavigationService {
 }
 
 @Singleton
-class NavigationServiceImpl extends NavigationService {
+class NavigationServiceImpl @Inject()(
+  assessmentService: AssessmentService
+)(implicit executionContext: ExecutionContext) extends NavigationService {
 
   private lazy val masquerade = NavigationPage("Masquerade", controllers.sysadmin.routes.MasqueradeController.masquerade())
   private lazy val emailQueue = NavigationPage("Email queue", controllers.sysadmin.routes.EmailQueueController.queued())
@@ -86,7 +92,19 @@ class NavigationServiceImpl extends NavigationService {
     else
       Nil
 
+  private lazy val invigilator =
+    NavigationPage("Invigilation", controllers.invigilation.routes.InvigilatorListController.list())
+
+  private def invigilatorMenu(loginContext: LoginContext): Seq[Navigation] =
+    if (loginContext.user.exists(u =>
+      Try(Await.result(assessmentService.isInvigilator(u.usercode)(TimingContext.none), 5.seconds)).toOption.exists(_.contains(true))
+    ))
+      Seq(invigilator)
+    else
+      Nil
+
   override def getNavigation(loginContext: LoginContext): Seq[Navigation] =
+    invigilatorMenu(loginContext) ++
     adminMenu(loginContext) ++
     sysadminMenu(loginContext)
 }
