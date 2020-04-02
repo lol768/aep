@@ -110,7 +110,7 @@ object AssessmentsTables {
   object StoredAssessment {
     def tupled = (apply _).tupled
 
-    implicit val dateOrdering: Ordering[StoredAssessment] = Ordering.by { a => (a.startTime.map(_.toEpochSecond), a.paperCode, a.section) }
+    implicit val dateOrdering: Ordering[StoredAssessment] = Ordering.by { a => (a.startTime.map(_.toEpochSecond).getOrElse(Long.MaxValue), a.paperCode, a.section) }
   }
 
   case class StoredAssessmentVersion(
