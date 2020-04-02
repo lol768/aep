@@ -13,7 +13,7 @@ class AssessmentsController @Inject()(
 )(implicit ec: ExecutionContext) extends BaseController {
   import security._
 
-  def index: Action[AnyContent] = SigninAwareAction.async { implicit request =>
+  def index: Action[AnyContent] = SigninRequiredAction.async { implicit request =>
     request.user.flatMap(_.universityId).map { universityId =>
       studentAssessmentService.byUniversityId(universityId).successMap { assessments =>
         Ok(views.html.exams.index(assessments))
