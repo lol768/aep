@@ -1,4 +1,9 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
 @import controllers.admin.AssessmentsController.AbstractAssessmentFormData
 @()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
-@b3.text(form("departmentCode"), Symbol("_label") -> "Department")
+
+@if(form("departmentCode").value.isDefined) {
+  @b3.text(form("departmentCode"), Symbol("_label") -> "Department code", Symbol("readonly") -> true )
+} else {
+  @b3.text(form("departmentCode"), Symbol("_label") -> "Department code")
+}

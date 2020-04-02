@@ -1,16 +1,25 @@
 @import controllers.admin.AssessmentsController.{AbstractAssessmentFormData, AssessmentFormData}
 @import domain.Assessment
 @import views.html.admin.assessments.fields
+@import warwick.core.helpers.JavaTime
 @(assessment: Assessment, form: Form[AssessmentFormData])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
   @adminLayout(s"Assessment for ${assessment.title} (${assessment.moduleCode})") {
     @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.update(assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
-      @fields.module()
-      @fields.paper()
-      @fields.department()
+      <div class="row">
+        <div class="col-sm-6">
+          @fields.department()
+          @fields.module()
+          @fields.sequence()
+        </div>
+        <div class="col-sm-6">
+          @fields.paper()
+          @b3.text(form("startTime"), Symbol("value") -> assessment.startTime.map(JavaTime.Relative(_, printToday = false)).getOrElse(""), Symbol("_label") -> "Start time", Symbol("readonly") -> true )
+        </div>
+      </div>
+
       @fields.title()
       @fields.assessmentType()
-      @fields.sequence()
       @fields.duration()
       @fields.description()
       @fields.url()

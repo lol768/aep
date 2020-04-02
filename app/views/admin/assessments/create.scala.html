@@ -4,9 +4,17 @@
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
     @adminLayout(s"Create assessment") {
         @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.save(), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
-            @fields.module()
-            @fields.paper()
-            @fields.department()
+            <div class="row">
+                <div class="col-sm-6">
+                    @fields.department()
+                    @fields.module()
+                </div>
+                <div class="col-sm-6">
+                    @fields.paper()
+                </div>
+            </div>
+            @fields.sequence()
+
             @fields.title()
             <label class="control-label" for="invigilators">Invigilators</label>
             <div class="flexi-picker-collection" data-automatic="true">
@@ -22,7 +30,6 @@
             )
             </div>
             @fields.assessmentType()
-            @fields.sequence()
             @b3.datetimePicker(form("startTime"), Symbol("value") -> None, Symbol("_label") -> "Date")
             @fields.duration()
             @fields.description()
