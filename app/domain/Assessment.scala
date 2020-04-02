@@ -46,7 +46,7 @@ case class Assessment(
   moduleCode: String,
   departmentCode: DepartmentCode,
   sequence: String
-) extends BaseAssessment {
+) extends BaseAssessment with Ordered[Assessment] {
   def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
     id,
     paperCode,
@@ -63,6 +63,13 @@ case class Assessment(
     departmentCode,
     sequence,
   )
+
+  override def compare(that: Assessment): Int = {
+    Ordering.Tuple3[OffsetDateTime, String, String].compare(
+      (this.startTime.getOrElse(OffsetDateTime.MAX), this.paperCode, this.title),
+      (that.startTime.getOrElse(OffsetDateTime.MAX), that.paperCode, that.title)
+    )
+  }
 }
 
 case class AssessmentMetadata(

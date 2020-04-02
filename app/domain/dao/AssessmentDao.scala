@@ -191,7 +191,9 @@ trait AssessmentDao {
 
   def getToday: DBIO[Seq[StoredAssessment]]
 
-  def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]]
+  def isInvigilator(usercode: Usercode): DBIO[Boolean]
+
+  def getByInvigilator(usercodes: Set[Usercode]): DBIO[Seq[StoredAssessment]]
 
   def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]]
 }
@@ -274,8 +276,11 @@ class AssessmentDaoImpl @Inject()(
     assessments.table.filter(a => a.startTime >= today && a.startTime < today.plusDays(1)).result
   }
 
-  override def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]] =
-    assessments.table.filter(_.invigilators @> usercodes.map(_.string)).result
+  override def isInvigilator(usercode: Usercode): DBIO[Boolean] =
+    assessments.table.filter(_.invigilators @> List(usercode.string)).exists.result
+
+  override def getByInvigilator(usercodes: Set[Usercode]): DBIO[Seq[StoredAssessment]] =
+    assessments.table.filter(_.invigilators @> usercodes.toList.map(_.string)).result
 
   override def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]] =
     assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes.map(_.string)).result.headOption
