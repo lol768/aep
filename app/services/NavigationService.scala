@@ -54,7 +54,6 @@ class NavigationServiceImpl extends NavigationService {
   private lazy val sentEmails = NavigationPage("View sent emails", controllers.sysadmin.routes.ViewEmailsController.listAll())
   private lazy val myWarwickQueue = NavigationPage("My Warwick queue", controllers.sysadmin.routes.MyWarwickQueueController.queued())
   private lazy val assessments = NavigationPage("Assessments", controllers.admin.routes.AssessmentsController.index())
-  private lazy val spreadsheetImport = NavigationPage("Spreadsheet import", controllers.admin.routes.AssessmentImportController.index())
   private lazy val approvals = NavigationPage("Approvals", controllers.admin.routes.ApprovalsController.index())
   private lazy val reporting = NavigationPage("Reporting", controllers.admin.routes.ReportingController.index())
   private lazy val dataGeneration = NavigationPage("Data generation", controllers.sysadmin.routes.DummyDataGenerationController.showForm())
@@ -77,7 +76,6 @@ class NavigationServiceImpl extends NavigationService {
   private lazy val admin =
     NavigationDropdown("Administration", Call("GET", "/admin"), Seq(
       assessments,
-      spreadsheetImport,
       approvals,
       reporting,
     ))

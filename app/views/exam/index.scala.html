@@ -14,7 +14,7 @@
   @frontend(assessment.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className)) {
     @assessmentPanel(assessment, isAssessmentPage = true)
     @if(assessment.started) {
-      <h2>Exam brief</h2>
+      <h2>Assessment brief</h2>
       <p>Your department has provided the following information:</p>
       @if(assessment.assessment.brief.text.isDefined) {
         <blockquote>@assessment.assessment.brief.text</blockquote>
@@ -126,8 +126,8 @@
       <div class="panel panel-default finish-exam-panel">
         <div class="brand-stripe"></div>
         <div class="panel-body">
-          <h2>Finish exam</h2>
-          <p class="lead">Once you're ready, you can finish the exam below. We'll record the time at which you do this.</p>
+          <h2>Finish assessment</h2>
+          <p class="lead">Once you're ready, you can finish the assessment below. We'll record the time at which you do this.</p>
           <p>Have you completed all of the following tasks?</p>
           <ul>
             <li>Uploaded your final submission above</li>
@@ -141,7 +141,7 @@
               Symbol("data-undisable-selector") -> ".finish-exam-btn",
               Symbol("class") -> "undisable-with-checkbox",
             )
-            @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish exam }
+            @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish assessment }
           }
         </div>
       </div>}
