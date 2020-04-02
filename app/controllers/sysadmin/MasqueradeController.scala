@@ -42,6 +42,7 @@ class MasqueradeController @Inject()(
           .sortBy { case (dept, _) => dept.code }
 
       Ok(views.html.sysadmin.masquerade(testUsers))
+      Redirect()
     }
   }
 }
