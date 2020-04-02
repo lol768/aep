@@ -69,7 +69,7 @@ object AssessmentsController {
     "sequence" -> nonEmptyText,
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
-    "durationMinutes" -> longNumber(min = 1, max = 24 * 60),
+    "durationMinutes" -> longNumber.verifying(Seq(120, 180).contains(_)),
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText),
@@ -125,7 +125,7 @@ class AssessmentsController @Inject()(
   import security._
 
   def index: Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
-    assessmentService.findByStates(Seq(State.Draft, State.Imported, State.Submitted)).successMap { assessments =>
+    assessmentService.findByStates(Seq(State.Draft, State.Imported)).successMap { assessments =>
       Ok(views.html.admin.assessments.index(assessments))
     }
   }
