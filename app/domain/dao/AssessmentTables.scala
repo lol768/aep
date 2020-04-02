@@ -135,6 +135,7 @@ class AssessmentTables @Inject()(
     def contentLength = column[Long]("content_length")
     def contentType = column[String]("content_type")
     def uploadedBy = column[Usercode]("uploaded_by")
+    def uploadStarted = column[OffsetDateTime]("upload_started")
     def ownerId = column[Option[UUID]]("owner_id")
     def ownerType = column[Option[UploadedFileOwner]]("owner_type")
     def created = column[OffsetDateTime]("created_utc")
@@ -148,7 +149,7 @@ class AssessmentTables @Inject()(
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredUploadedFile] =
-      (id, fileName, contentLength, contentType, uploadedBy, ownerId, ownerType, created, version).mapTo[StoredUploadedFile]
+      (id, fileName, contentLength, contentType, uploadedBy, uploadStarted, ownerId, ownerType, created, version).mapTo[StoredUploadedFile]
   }
 
   class UploadedFileVersions(tag: Tag) extends Table[StoredUploadedFileVersion](tag, "uploaded_file_version")
@@ -160,7 +161,7 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredUploadedFileVersion] =
-      (id, fileName, contentLength, contentType, uploadedBy, ownerId, ownerType, created, version, operation, timestamp, auditUser).mapTo[StoredUploadedFileVersion]
+      (id, fileName, contentLength, contentType, uploadedBy, uploadStarted, ownerId, ownerType, created, version, operation, timestamp, auditUser).mapTo[StoredUploadedFileVersion]
     def pk = primaryKey("pk_uploaded_file_version", (id, timestamp))
     def idx = index("idx_uploaded_file_version", (id, version))
   }
