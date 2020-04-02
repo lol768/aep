@@ -9,6 +9,7 @@
     <thead>
       <tr>
         <th>Paper code</th>
+        <th>Section</th>
         <th>Title</th>
         <th>Date</th>
         <th>Duration</th>
@@ -20,6 +21,7 @@
       @assessments.map { assessment =>
         <tr>
           <td>@assessment.paperCode</td>
+          <td>@assessment.section.getOrElse("")</td>
           <td>@assessment.title</td>
           <td>
             @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)

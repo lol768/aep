@@ -23,6 +23,7 @@ object AssessmentsTables {
   case class StoredAssessment(
     id: UUID = UUID.randomUUID(),
     paperCode: String,
+    section: Option[String],
     title: String,
     startTime: Option[OffsetDateTime],
     duration: Duration,
@@ -44,6 +45,7 @@ object AssessmentsTables {
       Assessment(
         id,
         paperCode,
+        section,
         title,
         startTime,
         duration,
@@ -63,6 +65,7 @@ object AssessmentsTables {
       AssessmentMetadata(
         id,
         paperCode,
+        section,
         title,
         startTime,
         duration,
@@ -82,6 +85,7 @@ object AssessmentsTables {
       StoredAssessmentVersion(
         id,
         paperCode,
+        section,
         title,
         startTime,
         duration,
@@ -106,12 +110,13 @@ object AssessmentsTables {
   object StoredAssessment {
     def tupled = (apply _).tupled
 
-    implicit val dateOrdering: Ordering[StoredAssessment] = Ordering.by { a => (a.startTime.map(_.toEpochSecond), a.paperCode) }
+    implicit val dateOrdering: Ordering[StoredAssessment] = Ordering.by { a => (a.startTime.map(_.toEpochSecond), a.paperCode, a.section) }
   }
 
   case class StoredAssessmentVersion(
     id: UUID = UUID.randomUUID(),
     paperCode: String,
+    section: Option[String],
     title: String,
     startTime: Option[OffsetDateTime],
     duration: Duration,
@@ -182,7 +187,7 @@ trait AssessmentDao {
 
   def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
 
-  def getByCode(code: String): DBIO[Option[StoredAssessment]]
+  def getByPaper(paperCode: String, section: Option[String], examProfileCode: String): DBIO[Option[StoredAssessment]]
 
   def getToday: DBIO[Seq[StoredAssessment]]
 
@@ -254,8 +259,15 @@ class AssessmentDaoImpl @Inject()(
   override def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
     getByIdsQuery(ids).withUploadedFiles.result.map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
 
-  override def getByCode(code: String): DBIO[Option[StoredAssessment]] =
-    assessments.table.filter(_.paperCode === code).result.headOption
+  override def getByPaper(paperCode: String, section: Option[String], examProfileCode: String): DBIO[Option[StoredAssessment]] =
+    assessments.table
+      .filter(_.paperCode === paperCode)
+      .filter { a =>
+        if (section.isEmpty) a.section.isEmpty
+        else a.section.nonEmpty && a.section.get === section.get
+      }
+      .filter(_.examProfileCode === examProfileCode)
+      .result.headOption
 
   override def getToday: DBIO[Seq[StoredAssessment]] = {
     val today = JavaTime.localDate.atStartOfDay(JavaTime.timeZone).toOffsetDateTime
