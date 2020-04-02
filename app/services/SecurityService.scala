@@ -42,7 +42,7 @@ trait SecurityService {
   def StudentAssessmentIsStartedAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
   def StudentAssessmentInProgressAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
 
-  def InvigilatorAsseessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
+  def InvigilatorAssessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
 
   def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A]
 
@@ -134,8 +134,8 @@ class SecurityServiceImpl @Inject()(
   override def StudentAssessmentInProgressAction(assessmentId: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
     StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted andThen IsStudentAssessmentNotFinished
 
-  override def InvigilatorAsseessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
-    SigninRequiredAction andThen WithAssessment(id) andThen IsInvigilator
+  override def InvigilatorAssessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
+    SigninRequiredAction andThen WithAssessment(id) andThen IsInvigilatorOrAdmin
 
   override def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A] =
     sso.withUser(request)(block)

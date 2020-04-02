@@ -10,7 +10,7 @@ import services.refiners.ActionRefiners
 import services.tabula.TabulaDepartmentService
 import services.{AssessmentService, ReportingService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.ServiceResults
-import warwick.sso.{Name, User, UserLookupService, Usercode}
+import warwick.sso.{Name, UniversityID, User, UserLookupService, Usercode}
 
 import scala.concurrent.ExecutionContext
 
@@ -26,7 +26,7 @@ class InvigilatorAssessmentController @Inject()(
 
   import security._
 
-  def view(assessmentId: UUID): Action[AnyContent] = InvigilatorAsseessmentAction(assessmentId).async { implicit req =>
+  def view(assessmentId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit req =>
 
     val assessment = req.assessment
 
@@ -36,11 +36,12 @@ class InvigilatorAssessmentController @Inject()(
 
     ServiceResults.zip(
       tabulaDepartmentService.getDepartments,
-      studentAssessmentService.byAssessmentId(assessmentId),
+      reportingService.expectedSittings(assessmentId)
     ).successMap {
       case (departments, studentAssessments) =>
         Ok(views.html.invigilation.assessment(
           assessment = assessment,
+          studentAssessments = studentAssessments,
           invigilators = userLookup
             .getUsers(assessment.invigilators.toSeq)
             .getOrElse(Nil)
@@ -51,11 +52,7 @@ class InvigilatorAssessmentController @Inject()(
             .toMap,
           students = userLookup
             .getUsers(studentAssessments.map(_.studentId))
-            .getOrElse(Nil)
-            .map {
-              case (_, user) => user
-            }.map(makeUserNameMap)
-            .toMap,
+            .getOrElse(Map.empty[UniversityID, User]),
           department = departments.find(_.code == assessment.departmentCode.string),
         ))
     }
