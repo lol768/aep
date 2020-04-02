@@ -27,7 +27,7 @@
         }
         @assessment.assessment.brief.files.map { file =>
           <li>
-            <a href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
+            <a target="_blank" href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
           </li>
         }
         <li>
@@ -44,7 +44,7 @@
     }
     @if(assessment.studentAssessment.uploadedFiles.nonEmpty) {
       @if(assessment.inProgress) {
-        @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
+        @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress quash-beforeunload") { implicit vfc =>
           @b3.free(Symbol("_label") -> "Attach file") {
             <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
           }
@@ -58,7 +58,7 @@
           </p>
 
           @b3.free(Symbol("_class") -> "spaced-buttons") {
-            <button type="submit" class="btn btn-primary">Upload files</button>
+            <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
           }
         }
       }
@@ -73,7 +73,7 @@
                 </a>
               </div>
               <div class="media-body">
-                <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)">@file.fileName</a></h4>
+                <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" target="_blank">@file.fileName</a></h4>
                 <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@JavaTime.Relative(file.created)</small></p>
                 @if(assessment.inProgress) {
                   @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(assessment.assessment.id, file.id)) { implicit ifc =>
