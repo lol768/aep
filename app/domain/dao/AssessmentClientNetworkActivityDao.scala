@@ -43,7 +43,7 @@ trait AssessmentClientNetworkActivityDao {
   import profile.api._
 
   def insert(activity: AssessmentClientNetworkActivity): DBIO[AssessmentClientNetworkActivity]
-  //def findByStudentAssessmentId(studentAssessmentId: UUID): Query[AssessmentClientNetworkActivities, AssessmentClientNetworkActivity, Seq]
+  def findByStudentAssessmentId(studentAssessmentId: UUID): DBIO[Seq[AssessmentClientNetworkActivity]]
 }
 
 
@@ -53,13 +53,10 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
   val jdbcTypes: PostgresCustomJdbcTypes
 )(implicit ec: ExecutionContext) extends AssessmentClientNetworkActivityDao with AssessmentClientNetworkActivityTable with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
-  import jdbcTypes._
 
   override def insert(activity: AssessmentClientNetworkActivity): DBIO[AssessmentClientNetworkActivity] =
     (assessmentClientNetworkActivities += activity).map(_ => activity)
 
-/* override def findByStudentAssessmentId(studentAssessmentId: UUID): Query[AssessmentClientNetworkActivities, AssessmentClientNetworkActivity, Seq] =
-    assessmentClientNetworkActivities.filter { a => a.studentAssessmentId }
-
- */
+  override def findByStudentAssessmentId(studentAssessmentId: UUID): DBIO[Seq[AssessmentClientNetworkActivity]] =
+    assessmentClientNetworkActivities.filter { a => a.studentAssessmentId === studentAssessmentId }.result
 }
