@@ -1,6 +1,5 @@
 package services.refiners
 
-import domain.StudentAssessmentWithAssessment
 import domain.tabula.Department
 import warwick.sso.AuthenticatedRequest
 

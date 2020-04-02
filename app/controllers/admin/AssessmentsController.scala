@@ -11,6 +11,7 @@ import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData}
+import services.refiners.DepartmentAdminSpecificRequest
 import services.{AssessmentService, SecurityService, UploadedFileService}
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
@@ -98,30 +99,29 @@ class AssessmentsController @Inject()(
   import AssessmentsController._
   import security._
 
-  def index: Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
+  def index: Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     assessmentService.findByStates(Seq(State.Draft, State.Imported)).successMap { assessments =>
-      Ok(views.html.admin.assessments.index(assessments))
+      Ok(views.html.admin.assessments.index(filterForDeptAdmin(assessments)))
     }
   }
 
-  def show(id: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
-    assessmentService.get(id).successMap { assessment =>
-      Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
-        title = assessment.title,
-        description = assessment.brief.text,
-        durationMinutes = assessment.duration.toMinutes,
-        platform = assessment.platform,
-        assessmentType = assessment.assessmentType,
-        url = assessment.brief.url
-      ))))
+  def show(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id) { implicit request =>
+        val assessment = request.assessment
+        Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
+          title = assessment.title,
+          description = assessment.brief.text,
+          durationMinutes = assessment.duration.toMinutes,
+          platform = assessment.platform,
+          assessmentType = assessment.assessmentType,
+          url = assessment.brief.url
+        ))))
     }
-  }
 
-  def create(): Action[AnyContent] = RequireDepartmentAssessmentManager { implicit request =>
+  def create(): Action[AnyContent] = GeneralDepartmentAdminAction { implicit request =>
     Ok(views.html.admin.assessments.create(adHocAssessmentForm))
   }
 
-  def save(): Action[MultipartFormData[TemporaryUploadedFile]] = RequireDepartmentAssessmentManager(uploadedFileControllerHelper.bodyParser).async { implicit request =>
+  def save(): Action[MultipartFormData[TemporaryUploadedFile]] = GeneralDepartmentAdminAction(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     adHocAssessmentForm.bindFromRequest().fold(
       formWithErrors => Future.successful(Ok(views.html.admin.assessments.create(formWithErrors))),
       data => {
@@ -155,27 +155,26 @@ class AssessmentsController @Inject()(
       })
   }
 
-  def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = RequireDepartmentAssessmentManager(uploadedFileControllerHelper.bodyParser).async { implicit request =>
-    assessmentService.get(id).successFlatMap { assessment =>
-      form.bindFromRequest().fold(
-        formWithErrors => Future.successful(Ok(views.html.admin.assessments.show(assessment, formWithErrors))),
-        data => {
-          val files = request.body.files.map(_.ref)
-          assessmentService.update(assessment.copy(
-            title = data.title,
-            duration = Duration.ofMinutes(data.durationMinutes),
-            platform = data.platform,
-            assessmentType = data.assessmentType,
-            brief = assessment.brief.copy(
-              text = data.description,
-              url = data.url
-            ),
-            state = State.Submitted
-          ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
-            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
-          }
-        })
-    }
+  def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
+    val assessment = request.assessment
+    form.bindFromRequest().fold(
+      formWithErrors => Future.successful(Ok(views.html.admin.assessments.show(assessment, formWithErrors))),
+      data => {
+        val files = request.body.files.map(_.ref)
+        assessmentService.update(assessment.copy(
+          title = data.title,
+          duration = Duration.ofMinutes(data.durationMinutes),
+          platform = data.platform,
+          assessmentType = data.assessmentType,
+          brief = assessment.brief.copy(
+            text = data.description,
+            url = data.url
+          ),
+          state = State.Submitted
+        ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
+          Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
+        }
+      })
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
@@ -185,4 +184,16 @@ class AssessmentsController @Inject()(
         .getOrElse(Future.successful(NotFound("File not found")))
     }
   }
+
+  private def deptAdminCanView(assessment: Assessment)(
+    implicit request: DepartmentAdminSpecificRequest[AnyContent]
+  ): Boolean =
+    request.departmentCodesUserIsAdminFor
+      .exists(_.code.toLowerCase == assessment.departmentCode.lowerCase)
+
+  private def filterForDeptAdmin(assessments: Seq[Assessment])(
+    implicit request: DepartmentAdminSpecificRequest[AnyContent]
+  ): Seq[Assessment] =
+    assessments.filter(deptAdminCanView)
+
 }

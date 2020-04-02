@@ -7,6 +7,7 @@ import play.api.Configuration
 import play.api.mvc.{ActionFilter, ActionRefiner, Result}
 import services.tabula.TabulaDepartmentService
 import services.{AssessmentService, StudentAssessmentService}
+import system.Roles
 import system.routes.Types.UUID
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.sso.{AuthenticatedRequest, GroupName, GroupService, UniversityID, User, Usercode}
@@ -71,11 +72,13 @@ class ActionRefiners @Inject() (
           deptService.getDepartments.successMapTo[Either[Result, DepartmentAdminSpecificRequest[A]]] { allDepts =>
             val anyDeptGroupName = configuration.get[String]("app.anyDepartmentAdminGroup")
 
-            val userAdminDepartments = if (userInGroup(user, anyDeptGroupName)) {
-              allDepts
-            } else {
-              allDepts.filter(dept => recursiveAdminGroupCheck(user, dept, allDepts))
-            }
+            val userAdminDepartments =
+              if (userInGroup(user, anyDeptGroupName) || request.context.userHasRole(Roles.Sysadmin)) {
+                // If the user is in the app admin usergroup, or is a sysadmin they're an admin for all departments
+                allDepts
+              } else {
+                allDepts.filter(dept => recursiveAdminGroupCheck(user, dept, allDepts))
+              }
 
             if (userAdminDepartments.isEmpty) { // User is not an admin for any department
               Left(Forbidden(views.html.errors.forbidden(user.name.first)))
@@ -87,6 +90,18 @@ class ActionRefiners @Inject() (
       }.getOrElse { // No user attached to request
         Future.successful(Left(Forbidden(views.html.errors.forbidden(None))))
       }
+    }
+
+  def WithAssessmentToAdminister(assessmentId: UUID): Refiner[DepartmentAdminSpecificRequest, DepartmentAdminAssessmentSpecificRequest] =
+    new Refiner[DepartmentAdminSpecificRequest, DepartmentAdminAssessmentSpecificRequest] {
+      override protected def apply[A](implicit request: DepartmentAdminSpecificRequest[A]): Refinement[DepartmentAdminAssessmentSpecificRequest[A]] =
+        assessmentService.get(assessmentId).successMapTo[Either[Result, DepartmentAdminAssessmentSpecificRequest[A]]] { assessment =>
+          if (request.departmentCodesUserIsAdminFor.exists(_.code.toLowerCase == assessment.departmentCode.lowerCase)) {
+            Right(new DepartmentAdminAssessmentSpecificRequest[A](assessment, request.departmentCodesUserIsAdminFor, request))
+          } else {
+            Left(Forbidden(views.html.errors.forbidden(request.user.flatMap(_.name.first))))
+          }
+        }.map(_.fold(err => Left(showErrors(err)), identity))
     }
 
   val IsStudentAssessmentStarted: Filter[StudentAssessmentSpecificRequest] =
