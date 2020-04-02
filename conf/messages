@@ -24,4 +24,5 @@ flash.messages.sentToInvigilator=Message sent to invigilator
 
 error.required=This field is required.
 error.approval.must-check-box=You must check the checkbox to approve the assessment.
+error.permissions.notDepartmentAdminForSelected=You are not an administrator for the department selected.
 

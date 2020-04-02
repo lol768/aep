@@ -13,6 +13,7 @@ import warwick.sso.Usercode
 sealed trait BaseAssessment {
   def id: UUID
   def paperCode: String
+  def section: Option[String]
   def title: String
   def startTime: Option[OffsetDateTime]
   def duration: Duration
@@ -31,6 +32,7 @@ sealed trait BaseAssessment {
 case class Assessment(
   id: UUID,
   paperCode: String,
+  section: Option[String],
   title: String,
   startTime: Option[OffsetDateTime],
   duration: Duration,
@@ -48,6 +50,7 @@ case class Assessment(
   def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
     id,
     paperCode,
+    section,
     title,
     startTime,
     duration,
@@ -65,6 +68,7 @@ case class Assessment(
 case class AssessmentMetadata(
   id: UUID = UUID.randomUUID(),
   paperCode: String,
+  section: Option[String],
   title: String,
   startTime: Option[OffsetDateTime],
   duration: Duration,
@@ -96,6 +100,10 @@ object Assessment {
       val label = "Questionmark Perception"
     }
 
+    case object TabulaAssignment extends Platform {
+      val label = "Tabula Assignment Management"
+    }
+
     val values: IndexedSeq[Platform] = findValues
   }
 
@@ -112,6 +120,7 @@ object Assessment {
     case object MultipleChoice extends AssessmentType {
       val label = "Multiple choice"
     }
+
     case object Spoken extends AssessmentType {
       val label = "Spoken"
     }

@@ -171,6 +171,7 @@ class AssessmentServiceImpl @Inject()(
       _ <- dao.update(StoredAssessment(
         id = assessment.id,
         paperCode = assessment.paperCode,
+        section = assessment.section,
         title = assessment.title,
         startTime = assessment.startTime,
         duration = assessment.duration,
@@ -211,6 +212,7 @@ class AssessmentServiceImpl @Inject()(
       assessment <- dao.insert(StoredAssessment(
         id = assessment.id,
         paperCode = assessment.paperCode,
+        section = assessment.section,
         title = assessment.title,
         startTime = assessment.startTime,
         duration = assessment.duration,
@@ -244,6 +246,7 @@ class AssessmentServiceImpl @Inject()(
       storedAssessmentOption.map { existingAssessment =>
         daoRunner.run(dao.update(existingAssessment.copy(
           paperCode = assessment.paperCode,
+          section = assessment.section,
           title = assessment.title,
           startTime = assessment.startTime,
           duration = assessment.duration,
@@ -256,6 +259,7 @@ class AssessmentServiceImpl @Inject()(
         daoRunner.run(dao.insert(StoredAssessment(
           id = assessment.id,
           paperCode = assessment.paperCode,
+          section = assessment.section,
           title = assessment.title,
           startTime = assessment.startTime,
           duration = assessment.duration,

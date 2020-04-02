@@ -10,7 +10,7 @@
   } else {
     <ul>
     @startedAndSubmittable.map { assessment =>
-      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.paperCode</b>: @assessment.title</a></li>
+      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.paperCode</b>@assessment.section.map(s => s" (Section $s)").getOrElse(""): @assessment.title</a></li>
     }
     </ul>
   }
@@ -22,7 +22,7 @@
   } else {
     <ul>
     @notLive.map { assessment =>
-      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.paperCode</b>: @assessment.title</a></li>
+      <li><a href="/admin/reporting/@assessment.id"><b>@assessment.paperCode</b>@assessment.section.map(s => s" (Section $s)").getOrElse(""): @assessment.title</a></li>
     }
     </ul>
   }
