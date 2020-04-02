@@ -82,6 +82,7 @@ class UploadedFileServiceImpl @Inject()(
         metadata.contentLength,
         metadata.contentType,
         uploader,
+        metadata.uploadStarted,
         ownerId,
         ownerType,
         JavaTime.offsetDateTime,
