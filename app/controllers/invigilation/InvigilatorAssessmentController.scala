@@ -55,10 +55,7 @@ class InvigilatorAssessmentController @Inject()(
             }.map { user =>
             user.usercode -> user.name.full.getOrElse(user.usercode.string)
           }.toMap,
-          department = departments.find { dept =>
-            dept.code == assessment.departmentCode.string ||
-              dept.parentDepartment.exists(_.code == assessment.departmentCode.string)
-          },
+          department = departments.find(_.code == assessment.departmentCode.string),
         ))
     }
   }
