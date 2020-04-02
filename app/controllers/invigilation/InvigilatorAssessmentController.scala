@@ -10,7 +10,7 @@ import services.refiners.ActionRefiners
 import services.tabula.TabulaDepartmentService
 import services.{AssessmentService, ReportingService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.ServiceResults
-import warwick.sso.{Name, UserLookupService, Usercode}
+import warwick.sso.{Name, User, UserLookupService, Usercode}
 
 import scala.concurrent.ExecutionContext
 
@@ -30,6 +30,10 @@ class InvigilatorAssessmentController @Inject()(
 
     val assessment = req.assessment
 
+    def makeUserNameMap(user: User): (Usercode, String) = {
+      user.usercode -> user.name.full.getOrElse(user.usercode.string)
+    }
+
     ServiceResults.zip(
       tabulaDepartmentService.getDepartments,
       studentAssessmentService.byAssessmentId(assessmentId),
@@ -43,18 +47,15 @@ class InvigilatorAssessmentController @Inject()(
             .map {
               case (_, user) => user
             }
-            .map { user =>
-              user.usercode -> user.name.full.getOrElse(user.usercode.string)
-            }
+            .map(makeUserNameMap)
             .toMap,
           students = userLookup
             .getUsers(studentAssessments.map(_.studentId))
             .getOrElse(Nil)
             .map {
               case (_, user) => user
-            }.map { user =>
-            user.usercode -> user.name.full.getOrElse(user.usercode.string)
-          }.toMap,
+            }.map(makeUserNameMap)
+            .toMap,
           department = departments.find(_.code == assessment.departmentCode.string),
         ))
     }
