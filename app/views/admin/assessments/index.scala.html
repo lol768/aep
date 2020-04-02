@@ -1,28 +1,38 @@
 @import domain.Assessment
 @import warwick.core.helpers.JavaTime
 @import org.apache.commons.lang3.time.DurationFormatUtils
-@import domain.Assessment.AssessmentType
 
 @(assessments: Seq[Assessment])(implicit context: RequestContext)
 
 @adminLayout("Assessments") {
   <h2>Assessments for setup</h2>
-
+  <div class="row">
+    <div class="col-sm-4">
+      <a
+      href="@controllers.admin.routes.AssessmentsController.create()"
+      class="btn btn-block btn-brand">
+        Create assessment
+      </a>
+    </div>
+  </div>
   <table class="table table-striped">
     <thead>
       <tr>
+        <th>Module code</th>
         <th>Paper code</th>
         <th>Section</th>
         <th>Title</th>
         <th>Date/time</th>
         <th>Duration</th>
         <th>Type</th>
+        <th>State</th>
         <th></th>
       </tr>
     </thead>
     <tbody>
       @assessments.map { assessment =>
         <tr>
+          <td>@assessment.moduleCode</td>
           <td>@assessment.paperCode</td>
           <td>@assessment.section.getOrElse("")</td>
           <td>@assessment.title</td>
@@ -35,6 +45,9 @@
           <td>
             @assessment.assessmentType.label
           </td>
+          <td>
+            @assessment.state
+          </td>
           <td class="text-right">
             <a href="@controllers.admin.routes.AssessmentsController.show(assessment.id)" class="btn btn-default btn-sm">View</a>
           </td>
@@ -42,13 +55,4 @@
       }
     </tbody>
   </table>
-  <div class="row">
-    <div class="col-sm-4">
-      <a
-        href="@controllers.admin.routes.AssessmentsController.create()"
-        class="btn btn-block btn-brand">
-        Create assessment
-      </a>
-    </div>
-  </div>
 }
