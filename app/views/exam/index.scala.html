@@ -16,7 +16,6 @@
   @assessmentPanel(assessment, isAssessmentPage = true)
   @if(assessment.inProgress) {
     <h2>Exam brief</h2>
-    <span class="in-progress-assessment-data" data-id="@assessment.studentAssessment.id" />
     <p>Your department has provided the following information:</p>
     @if(assessment.assessment.brief.text.isDefined) {
       <blockquote>@assessment.assessment.brief.text</blockquote>
