@@ -1,0 +1,11 @@
+@import views.html.b3.vertical.VerticalFieldConstructor
+@import controllers.admin.AssessmentsController.AbstractAssessmentFormData
+@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+
+
+@if(form("paperCode").value.isDefined) {
+    @b3.text(form("paperCode"), Symbol("_label") -> "Paper code", Symbol("disabled") -> true )
+    @b3.hidden(form("paperCode"))
+} else {
+    @b3.text(form("paperCode"), Symbol("_label") -> "Paper code")
+}

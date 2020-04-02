@@ -21,7 +21,13 @@ import scala.concurrent.{ExecutionContext, Future}
 object AssessmentsController {
 
   trait AbstractAssessmentFormData {
-    val moduleCode: Option[String] = None
+    val moduleCode: String
+
+    val paperCode: String
+
+    val departmentCode: DepartmentCode
+
+    val sequence: String
 
     val startTime: Option[LocalDateTime] = None
 
@@ -38,28 +44,43 @@ object AssessmentsController {
     val assessmentType: AssessmentType
 
     val url: Option[String]
+
+    val operation: State
   }
 
   case class AssessmentFormData(
+    moduleCode: String,
+    paperCode: String,
+    departmentCode: DepartmentCode,
+    sequence: String,
     title: String,
     description: Option[String],
     durationMinutes: Long,
     platform: Platform,
     assessmentType: AssessmentType,
-    url: Option[String]
+    url: Option[String],
+    operation: State
   ) extends AbstractAssessmentFormData
 
   val form: Form[AssessmentFormData] = Form(mapping(
+    "moduleCode" -> nonEmptyText,
+    "paperCode" -> nonEmptyText,
+    "departmentCode" -> nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string),
+    "sequence" -> nonEmptyText,
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
     "durationMinutes" -> longNumber(min = 1, max = 24 * 60),
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
-    "url" -> optional(nonEmptyText)
+    "url" -> optional(nonEmptyText),
+    "operation" -> State.formField
   )(AssessmentFormData.apply)(AssessmentFormData.unapply))
 
   case class AdHocAssessmentFormData(
-    override val moduleCode: Option[String],
+    moduleCode: String,
+    paperCode: String,
+    departmentCode: DepartmentCode,
+    sequence: String,
     override val startTime: Option[LocalDateTime],
     override val invigilators: Option[Set[Usercode]],
     title: String,
@@ -67,11 +88,15 @@ object AssessmentsController {
     durationMinutes: Long,
     platform: Platform,
     assessmentType: AssessmentType,
-    url: Option[String]
+    url: Option[String],
+    operation: State
   ) extends AbstractAssessmentFormData
 
   val adHocAssessmentForm: Form[AdHocAssessmentFormData] = Form(mapping(
-    "moduleCode" -> nonEmptyText.transform[Option[String]](Some(_), _.get),
+    "moduleCode" -> nonEmptyText,
+    "paperCode" -> nonEmptyText,
+    "departmentCode" -> nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string),
+    "sequence" -> nonEmptyText,
     "startTime" -> nonEmptyText
       .transform[LocalDateTime](LocalDateTime.parse(_), _.toString)
       .transform[Option[LocalDateTime]](Option.apply, _.get),
@@ -83,7 +108,8 @@ object AssessmentsController {
     "durationMinutes" -> longNumber(min = 1, max = 24 * 60),
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
-    "url" -> optional(nonEmptyText)
+    "url" -> optional(nonEmptyText),
+    "operation" -> State.formField
   )(AdHocAssessmentFormData.apply)(AdHocAssessmentFormData.unapply))
 }
 
@@ -99,7 +125,7 @@ class AssessmentsController @Inject()(
   import security._
 
   def index: Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
-    assessmentService.findByStates(Seq(State.Draft)).successMap { assessments =>
+    assessmentService.findByStates(Seq(State.Draft, State.Imported, State.Submitted)).successMap { assessments =>
       Ok(views.html.admin.assessments.index(assessments))
     }
   }
@@ -107,12 +133,17 @@ class AssessmentsController @Inject()(
   def show(id: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
     assessmentService.get(id).successMap { assessment =>
       Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
+        moduleCode = assessment.moduleCode,
+        paperCode = assessment.code,
+        departmentCode = assessment.departmentCode,
+        sequence = assessment.sequence,
         title = assessment.title,
         description = assessment.brief.text,
         durationMinutes = assessment.duration.toMinutes,
         platform = assessment.platform,
         assessmentType = assessment.assessmentType,
-        url = assessment.brief.url
+        url = assessment.brief.url,
+        operation = assessment.state
       ))))
     }
   }
@@ -128,7 +159,7 @@ class AssessmentsController @Inject()(
         import helpers.DateConversion._
         assessmentService.insert(
           Assessment(
-            code = data.moduleCode.get,
+            code = data.paperCode,
             title = data.title,
             startTime = data.startTime.map(_.asOffsetDateTime),
             duration = Duration.ofMinutes(data.durationMinutes),
@@ -140,12 +171,12 @@ class AssessmentsController @Inject()(
               files = Nil,
             ),
             invigilators = data.invigilators.get,
-            state = State.Submitted,
-            tabulaAssessmentId = None, //TODO CHECK THESE, added temperoray values
-            moduleCode = "MA-101", //TODO CHECK THESE
-            departmentCode = DepartmentCode("MA"), //TODO CHECK THESE
-            sequence = "EO1", //TODO CHECK THESE
-            id = UUID.randomUUID() //TODO CHECK THESE
+            state = data.operation,
+            tabulaAssessmentId = None,
+            moduleCode = data.moduleCode,
+            departmentCode = data.departmentCode,
+            sequence = data.sequence,
+            id = UUID.randomUUID()
           ),
           files = request.body.files.map(_.ref).map(f => (f.in, f.metadata)),
         ).successMap { _ =>
@@ -154,25 +185,31 @@ class AssessmentsController @Inject()(
       })
   }
 
+
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = RequireDepartmentAssessmentManager(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     assessmentService.get(id).successFlatMap { assessment =>
       form.bindFromRequest().fold(
         formWithErrors => Future.successful(Ok(views.html.admin.assessments.show(assessment, formWithErrors))),
         data => {
-          val files = request.body.files.map(_.ref)
-          assessmentService.update(assessment.copy(
-            title = data.title,
-            duration = Duration.ofMinutes(data.durationMinutes),
-            platform = data.platform,
-            assessmentType = data.assessmentType,
-            brief = assessment.brief.copy(
-              text = data.description,
-              url = data.url
-            ),
-            state = State.Submitted
-          ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
-            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
+          if (assessment.state != State.Approved) {
+            val files = request.body.files.map(_.ref)
+            assessmentService.update(assessment.copy(
+              title = data.title,
+              duration = Duration.ofMinutes(data.durationMinutes),
+              platform = data.platform,
+              assessmentType = data.assessmentType,
+              brief = assessment.brief.copy(
+                text = data.description,
+                url = data.url
+              ),
+              state = data.operation
+            ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
+              Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
+            }
+          } else {
+            Future.successful(MethodNotAllowed(views.html.errors.approvedAssessment()))
           }
+
         })
     }
   }
