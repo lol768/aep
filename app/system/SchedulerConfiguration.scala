@@ -8,6 +8,7 @@ import org.quartz.TriggerBuilder._
 import org.quartz._
 import play.api.Configuration
 import play.api.db.evolutions.ApplicationEvolutions
+import services.job.ImportTabulaAssessmentsJob
 import warwick.core.Logging
 
 @Singleton
@@ -15,6 +16,12 @@ class SchedulerConfiguration @Inject()(
   evolutions: ApplicationEvolutions,
   configuration: Configuration,
 )(implicit scheduler: Scheduler) extends Logging {
+  configureScheduledJob(
+    "ImportAssessment",
+    JobBuilder.newJob(classOf[ImportTabulaAssessmentsJob]),
+    CronScheduleBuilder.cronSchedule("0 30 * * * ?") // Every hour, xx:30
+  )
+
   logger.info("Starting the scheduler")
   scheduler.start()
 

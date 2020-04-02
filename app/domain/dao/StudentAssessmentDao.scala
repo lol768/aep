@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
@@ -22,6 +22,7 @@ object StudentAssessmentsTables {
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
+    extraTimeAdjustment: Option[Duration],
     finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
     created: OffsetDateTime,
@@ -34,6 +35,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
+        extraTimeAdjustment,
         finaliseTime,
         uploadedFiles.map(fileMap)
       )
@@ -44,6 +46,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
+        extraTimeAdjustment,
         finaliseTime,
         uploadedFiles.length
       )
@@ -57,6 +60,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
+        extraTimeAdjustment,
         finaliseTime,
         uploadedFiles,
         created,
@@ -73,6 +77,7 @@ object StudentAssessmentsTables {
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
+    extraTimeAdjustment: Option[Duration],
     finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
     created: OffsetDateTime,
@@ -95,6 +100,7 @@ trait StudentAssessmentDao {
   def insert(assessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def update(studentAssessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]]
+  def getByAssessmentIds(assessmentIds: Seq[UUID]): DBIO[Seq[StoredStudentAssessment]]
   def loadByAssessmentIdWithUploadedFiles(assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]]
   def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
@@ -141,6 +147,9 @@ class StudentAssessmentDaoImpl @Inject()(
 
   override def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]] =
     getByAssessmentIdQuery(assessmentId).result
+
+  override def getByAssessmentIds(assessmentIds: Seq[UUID]): profile.api.DBIO[Seq[StoredStudentAssessment]] =
+    studentAssessments.table.filter(_.assessmentId inSetBind assessmentIds).result
 
   override def loadByAssessmentIdWithUploadedFiles(assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]] =
     getByAssessmentIdQuery(assessmentId).withUploadedFiles.result.map(OneToMany.leftJoinUnordered)

@@ -7,7 +7,7 @@ import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
 import domain.dao.StudentAssessmentsTables.{StoredStudentAssessment, StoredStudentAssessmentVersion}
 import domain.dao.UploadedFilesTables.{StoredUploadedFile, StoredUploadedFileVersion}
-import domain.{DatabaseOperation, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
+import domain.{DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json.JsValue
@@ -19,11 +19,13 @@ class AssessmentTables @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
   val jdbcTypes: PostgresCustomJdbcTypes,
 ) extends HasDatabaseConfigProvider[ExtendedPostgresProfile] with VersionedTables {
+
   import profile.api._
   import jdbcTypes._
 
-  trait AssessmentCommonProperties { self: Table[_] =>
-    def code = column[String]("code")
+  trait AssessmentCommonProperties {
+    self: Table[_] =>
+    def paperCode = column[String]("paper_code")
     def title = column[String]("title")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
     def duration = column[Duration]("duration")
@@ -32,9 +34,15 @@ class AssessmentTables @Inject()(
     def storedBrief = column[StoredBrief]("brief")
     def invigilators = column[List[String]]("invigilators")
     def state = column[State]("state")
+    def tabulaAssessmentId = column[Option[UUID]]("tabula_assessment_id")
+    def examProfileCode = column[String]("exam_profile_code")
+    def moduleCode = column[String]("module_code")
+    def departmentCode = column[DepartmentCode]("department_code")
+    def sequence = column[String]("sequence")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
   }
+
   class Assessments(tag: Tag) extends Table[StoredAssessment](tag, "assessment")
     with VersionedTable[StoredAssessment]
     with AssessmentCommonProperties {
@@ -42,9 +50,10 @@ class AssessmentTables @Inject()(
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, created, version).mapTo[StoredAssessment]
+      (id, paperCode, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version).mapTo[StoredAssessment]
 
-    def idx = index("id_assessment_code", code)
+    def paperCodeIndex = index("idx_assessment_papercode", (paperCode, examProfileCode))
+    def tabulaAssessmentIndex = index("idx_assessment_tabula", (tabulaAssessmentId, examProfileCode), unique = true)
   }
 
   class AssessmentVersions(tag: Tag) extends Table[StoredAssessmentVersion](tag, "assessment_version")
@@ -56,7 +65,8 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, code, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, paperCode, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }
 
@@ -76,6 +86,7 @@ class AssessmentTables @Inject()(
     def studentId = column[UniversityID]("student_id")
     def inSeat = column[Boolean]("in_seat")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
+    def extraTimeAdjustment = column[Option[Duration]]("extra_time_adjustment")
     def finaliseTime = column[Option[OffsetDateTime]]("finalise_time_utc")
     def uploadedFiles = column[List[UUID]]("uploaded_file_ids")
     def created = column[OffsetDateTime]("created_utc")
@@ -91,7 +102,7 @@ class AssessmentTables @Inject()(
     def ck = index("ck_student_assessment", (assessmentId, studentId), unique = true)
 
     override def * : ProvenShape[StoredStudentAssessment] =
-      (id, assessmentId, studentId, inSeat, startTime, finaliseTime, uploadedFiles, created, version).mapTo[StoredStudentAssessment]
+      (id, assessmentId, studentId, inSeat, startTime, extraTimeAdjustment, finaliseTime, uploadedFiles, created, version).mapTo[StoredStudentAssessment]
   }
 
   class StudentAssessmentVersions(tag: Tag) extends Table[StoredStudentAssessmentVersion](tag, "student_assessment_version")
@@ -103,7 +114,7 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredStudentAssessmentVersion] =
-      (id, assessmentId, studentId, inSeat, startTime, finaliseTime, uploadedFiles, created, version, operation, timestamp, auditUser).mapTo[StoredStudentAssessmentVersion]
+      (id, assessmentId, studentId, inSeat, startTime, extraTimeAdjustment, finaliseTime, uploadedFiles, created, version, operation, timestamp, auditUser).mapTo[StoredStudentAssessmentVersion]
     def pk = primaryKey("pk_student_assessment_version", (assessmentId, studentId, timestamp))
   }
 

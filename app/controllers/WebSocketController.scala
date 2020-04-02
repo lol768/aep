@@ -125,6 +125,7 @@ class WebSocketController @Inject()(
         )
         Redirect(controllers.routes.WebSocketController.sendBroadcast())
           .flashing("success" -> Messages("flash.websocket.published"))
+
       }
     )
   }

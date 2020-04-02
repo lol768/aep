@@ -27,7 +27,7 @@ export default function initAnnouncements(websocket) {
         messageList.appendChild(el);
 
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Exam announcement', { // eslint-disable-line no-new
+          new Notification('Assessment announcement', { // eslint-disable-line no-new
             body: d.message,
             requireInteraction: true,
           });
@@ -60,7 +60,7 @@ export default function initAnnouncements(websocket) {
             testButton.disabled = false;
 
             new Notification('Notifications enabled', { // eslint-disable-line no-new
-              body: 'Notifications are enabled. Any announcements made during your exam will appear here.',
+              body: 'Notifications are enabled. Any announcements made during your assessment will appear here.',
               requireInteraction: true,
             });
           } else {

@@ -3,19 +3,20 @@ package controllers.sysadmin
 import java.util.UUID
 
 import controllers.BaseController
-import domain.tabula.{AssessmentComponent, Department, ExamMembership, ExamPaper, DepartmentIdentity}
+import domain.DepartmentCode
+import domain.tabula._
+import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
+import org.quartz.{Scheduler, TriggerBuilder}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
+import play.api.libs.json.{JsString, Json, Writes}
 import play.api.libs.mailer.{Attachment, Email}
 import play.api.mvc.{Action, AnyContent, MultipartFormData}
 import services._
-import helpers.StringUtils._
-import org.quartz.Scheduler
-import play.api.libs.json.{JsString, Json, Reads, Writes}
-import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
 import services.tabula.TabulaAssessmentService.{GetAssessmentGroupMembersOptions, GetAssessmentsOptions}
+import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
 import uk.ac.warwick.util.mywarwick.MyWarwickService
 import uk.ac.warwick.util.mywarwick.model.request.Activity
 import uk.ac.warwick.util.termdates.AcademicYear
@@ -24,10 +25,11 @@ import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.sso.{GroupName, UniversityID, UserLookupService, Usercode}
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 
 object SysadminTestController {
+
   case class EmailFormData(to: Usercode, email: Email)
 
   val emailForm: Form[EmailFormData] = Form(mapping(
@@ -89,6 +91,7 @@ class SysadminTestController @Inject()(
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   tabulaAssessments: TabulaAssessmentService,
   tabulaDepartments: TabulaDepartmentService,
+  tabulaAssessmentImportService: TabulaAssessmentImportService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
 
   import SysadminTestController._
@@ -140,10 +143,19 @@ class SysadminTestController @Inject()(
     uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile)
   }
 
-  def assessmentComponents(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def importAssessments(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    tabulaAssessmentImportService.importAssessments().successMap(_ => Ok("Done"))
+  }
+
+  def assessmentComponents(deptCode: DepartmentCode, examProfileCode: String): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    implicit val writeExamSchedule = Json.writes[ExamPaperSchedule]
     implicit val writeExam = Json.writes[ExamPaper]
+    implicit val writesDepartmentIdentity = Json.writes[DepartmentIdentity]
+    implicit val writesModule = Json.writes[Module]
+
     implicit val writes = Json.writes[AssessmentComponent]
-    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = "CH", withExamPapersOnly = true)).successMap { r =>
+
+    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true, examProfileCode = Some(examProfileCode))).successMap { r =>
       Ok(Json.toJson(r)(Writes.seq(writes)))
     }
   }

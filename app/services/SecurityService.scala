@@ -8,7 +8,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc._
-import services.refiners.{ActionRefiners, AssessmentSpecificRequest}
+import services.refiners.{ActionRefiners, AssessmentSpecificRequest, StudentAssessmentSpecificRequest}
 import system.{ImplicitRequestContext, Roles}
 import warwick.sso._
 
@@ -38,9 +38,11 @@ trait SecurityService {
     */
   type TryAccept[A] = Future[Either[Result, A]]
 
-  def StudentAssessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
-  def StudentAssessmentIsStartedAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
-  def StudentAssessmentInProgressAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
+  def StudentAssessmentAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
+  def StudentAssessmentIsStartedAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
+  def StudentAssessmentInProgressAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
+
+  def InvigilatorAsseessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
 
   def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A]
 
@@ -123,14 +125,17 @@ class SecurityServiceImpl @Inject()(
   private val unauthorizedResponse =
     Unauthorized(Json.toJson(JsonClientError(status = "unauthorized", errors = Seq("You are not signed in.  You may authenticate through Web Sign-On."))))
 
-  override def StudentAssessmentAction(assessmentId: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
+  override def StudentAssessmentAction(assessmentId: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
     SigninRequiredAction andThen WithStudentAssessmentWithAssessment(assessmentId)
 
-  override def StudentAssessmentIsStartedAction(assessmentId: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
+  override def StudentAssessmentIsStartedAction(assessmentId: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
     StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted
 
-  override def StudentAssessmentInProgressAction(assessmentId: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
+  override def StudentAssessmentInProgressAction(assessmentId: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
     StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted andThen IsStudentAssessmentNotFinished
+
+  override def InvigilatorAsseessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
+    SigninRequiredAction andThen WithAssessment(id) andThen IsInvigilator
 
   override def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A] =
     sso.withUser(request)(block)

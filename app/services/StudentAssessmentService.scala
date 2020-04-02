@@ -1,5 +1,6 @@
 package services
 
+import java.time.Duration
 import java.util.UUID
 
 import com.google.common.io.ByteSource
@@ -128,6 +129,9 @@ class StudentAssessmentServiceImpl @Inject()(
 
   private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
     require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot start assessment, too early")
+    require(storedAssessment.startTime.exists(_.plus(storedAssessment.duration)
+      .plus(storedStudentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
+      .isAfter(JavaTime.offsetDateTime)), "Cannot start assessment, too late for this student")
   }
 
   private def startedNotFinalised(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
@@ -264,6 +268,7 @@ class StudentAssessmentServiceImpl @Inject()(
           studentId = studentAssessment.studentId,
           inSeat = studentAssessment.inSeat,
           startTime = studentAssessment.startTime,
+          extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
           finaliseTime = studentAssessment.finaliseTime,
           uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
           created = timestamp,
