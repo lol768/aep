@@ -35,7 +35,7 @@
           <td>@assessment.paperCode</td>
           <td>@assessment.title</td>
           <td>
-          @assessment.startTime.map(JavaTime.Relative(_))
+            @assessment.startTime.map(JavaTime.Relative(_))
           </td>
           <td>
             @DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
