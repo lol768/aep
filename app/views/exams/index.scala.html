@@ -4,7 +4,7 @@
 @import views.html.exams.rows
 @(assessments: Seq[StudentAssessmentWithAssessment])(implicit requestHeader: RequestHeader, context: RequestContext)
 
-@frontend("My exams", extraClasses = Seq("grey-nopad", "connect-ws")) {
+@frontend("My assessments", extraClasses = Seq("grey-nopad", "connect-ws")) {
 
   <div class="media">
     <div class="media-left">
@@ -17,9 +17,9 @@
 
   <hr>
 
-  @rows("Current exams", assessments.filter(a => a.inProgress || a.isCurrentForStudent))
+  @rows("Current assessments", assessments.filter(a => a.inProgress || a.isCurrentForStudent))
 
-  @rows("Upcoming exams", assessments.filter(_.assessment.isInFuture))
+  @rows("Upcoming assessments", assessments.filter(_.assessment.isInFuture))
 
-  @rows("Past exams", assessments.filter(a => !a.inProgress && !a.isCurrentForStudent && !a.assessment.isInFuture))
+  @rows("Past assessments", assessments.filter(a => !a.inProgress && !a.isCurrentForStudent && !a.assessment.isInFuture))
 }
