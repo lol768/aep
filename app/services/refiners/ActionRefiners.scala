@@ -1,12 +1,15 @@
 package services.refiners
 
 import controllers.{ControllerHelper, ServiceResultErrorRendering}
+import domain.tabula.Department
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import play.api.mvc.{ActionFilter, ActionRefiner, Result}
+import services.tabula.TabulaDepartmentService
 import services.{AssessmentService, StudentAssessmentService}
 import system.routes.Types.UUID
 import warwick.core.helpers.ServiceResults.Implicits._
-import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
+import warwick.sso.{AuthenticatedRequest, GroupName, GroupService, UniversityID, User, Usercode}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -14,6 +17,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class ActionRefiners @Inject() (
   studentAssessmentService: StudentAssessmentService,
   assessmentService: AssessmentService,
+  groupService: GroupService,
+  deptService: TabulaDepartmentService,
+  configuration: Configuration,
 )(implicit ec: ExecutionContext) extends ServiceResultErrorRendering {
 
   // Type aliases to shorten some long lines
@@ -58,6 +64,31 @@ class ActionRefiners @Inject() (
       }.map(_.fold(err => Left(showErrors(err)), identity))
     }
 
+  def WithDepartmentsUserIsAdminFor: Refiner[AuthenticatedRequest, DepartmentAdminSpecificRequest] =
+    new Refiner[AuthenticatedRequest, DepartmentAdminSpecificRequest] {
+      override protected def apply[A](implicit request: AuthenticatedRequest[A]): Refinement[DepartmentAdminSpecificRequest[A]] = {
+        request.user.map { user =>
+          deptService.getDepartments.successMapTo[Either[Result, DepartmentAdminSpecificRequest[A]]] { allDepts =>
+            val anyDeptGroupName = configuration.get[String]("app.anyDepartmentAdminGroup")
+
+            val userAdminDepartments = if (userInGroup(user, anyDeptGroupName)) {
+              allDepts
+            } else {
+              allDepts.filter(dept => recursiveAdminGroupCheck(user, dept, allDepts))
+            }
+
+            if (userAdminDepartments.isEmpty) { // User is not an admin for any department
+              Left(Forbidden(views.html.errors.forbidden(user.name.first)))
+            } else {
+              Right(new DepartmentAdminSpecificRequest[A](userAdminDepartments, request))
+            }
+          }.map(_.fold(err => Left(showErrors(err)), identity))
+        }
+      }.getOrElse { // No user attached to request
+        Future.successful(Left(Forbidden(views.html.errors.forbidden(None))))
+      }
+    }
+
   val IsStudentAssessmentStarted: Filter[StudentAssessmentSpecificRequest] =
     new Filter[StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
@@ -89,4 +120,45 @@ class ActionRefiners @Inject() (
           Some(Forbidden(views.html.errors.forbidden(None)))
       }
     }
+
+  def IsAdminForDepartment(deptCode: String): Filter[DepartmentAdminSpecificRequest] =
+    new Filter[DepartmentAdminSpecificRequest] {
+      override protected  def apply[A](implicit request: DepartmentAdminSpecificRequest[A]): Future[Option[Result]] = Future.successful {
+        if (request.departmentCodesUserIsAdminFor.exists(_.code == deptCode)) {
+          None
+        } else {
+          Some(Forbidden(views.html.errors.forbidden(request.user.flatMap(_.name.first))))
+        }
+      }
+    }
+
+  private def userInGroup(user: User, groupName: String): Boolean =
+    groupService.isUserInGroup(user.usercode, GroupName(groupName)).getOrElse(false)
+
+  private def userInDeptAdminGroup(user: User, deptCode: String): Boolean = {
+    val deptGroupPostfix = configuration.get[String]("app.assessmentManagerGroup")
+    userInGroup(
+      user,
+      groupName = s"${deptCode.toLowerCase()}-$deptGroupPostfix"
+    )
+  }
+
+  // A user has admin permissions for a department if they're in the admin webgroup for that deprtment
+  // or the admin webgroup for a parent department of that department.
+  // Capped at a depth of 4 parent departments to avoid explosions if there's a circular reference somwhere
+  private def recursiveAdminGroupCheck(user: User, department: Department, allDepartments: Seq[Department], depth: Int = 0): Boolean = {
+    if (userInDeptAdminGroup(user, department.code)) {
+      true
+    } else {
+      if (depth <= 4) {
+        department.parentDepartment.exists { pdIdentity =>
+          allDepartments.find(_.code == pdIdentity.code).exists { pd =>
+            recursiveAdminGroupCheck(user, pd, allDepartments, depth + 1)
+          }
+        }
+      } else {
+        false
+      }
+    }
+  }
 }

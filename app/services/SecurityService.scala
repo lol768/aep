@@ -8,7 +8,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc._
-import services.refiners.{ActionRefiners, AssessmentSpecificRequest, StudentAssessmentSpecificRequest}
+import services.refiners.{ActionRefiners, AssessmentSpecificRequest, DepartmentAdminSpecificRequest, StudentAssessmentSpecificRequest}
 import system.{ImplicitRequestContext, Roles}
 import warwick.sso._
 
@@ -41,6 +41,9 @@ trait SecurityService {
   def StudentAssessmentAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
   def StudentAssessmentIsStartedAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
   def StudentAssessmentInProgressAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
+
+  def GeneralDepartmentAdminAction: ActionBuilder[DepartmentAdminSpecificRequest, AnyContent]
+  def SpecificDepartmentAdminAction(deptCode: String): ActionBuilder[DepartmentAdminSpecificRequest, AnyContent]
 
   def InvigilatorAsseessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
 
@@ -136,6 +139,14 @@ class SecurityServiceImpl @Inject()(
 
   override def InvigilatorAsseessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
     SigninRequiredAction andThen WithAssessment(id) andThen IsInvigilator
+
+  // User needs to be a departmental admin for at least one department
+  override def GeneralDepartmentAdminAction: ActionBuilder[DepartmentAdminSpecificRequest, AnyContent] =
+    SigninRequiredAction andThen WithDepartmentsUserIsAdminFor
+
+  // User needs to be a departmental admin for the specific department supplied
+  override def SpecificDepartmentAdminAction(deptCode: String): ActionBuilder[DepartmentAdminSpecificRequest, AnyContent] =
+    SigninRequiredAction andThen WithDepartmentsUserIsAdminFor andThen IsAdminForDepartment(deptCode)
 
   override def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A] =
     sso.withUser(request)(block)
