@@ -7,11 +7,12 @@ import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Subscr
 import com.google.inject.assistedinject.Assisted
 import javax.inject.Inject
 import play.api.libs.json._
-import services.{StudentAssessmentService, AssessmentClientNetworkActivityService}
+import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
-import domain.ClientNetworkInformation
+import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation}
+import warwick.core.helpers.JavaTime
 
 import scala.concurrent.ExecutionContext
 
@@ -98,10 +99,18 @@ class WebSocketActor @Inject() (
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
-          networkInformation.studentAssessmentId.map(assessmentId =>
-            assessmentClientNetworkActivityService.record(networkInformation, assessmentId)(TimingContext.none)
-          )
-
+          networkInformation.studentAssessmentId.map(assessmentId => {
+            val assessmentClientNetworkActivity =
+              AssessmentClientNetworkActivity(
+                downlink = networkInformation.downlink,
+                downlinkMax = networkInformation.downlinkMax,
+                effectiveType = networkInformation.effectiveType,
+                rtt = networkInformation.rtt,
+                `type` = networkInformation.`type`,
+                studentAssessmentId = assessmentId,
+                JavaTime.offsetDateTime)
+            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
+          })
 
         case m if m.`type` == "RequestAssessmentTiming" && m.data.exists(_.validate[RequestAssessmentTiming](readsRequestAssessmentTiming).isSuccess) =>
           val assessmentId = m.data.get.as[RequestAssessmentTiming](readsRequestAssessmentTiming).assessmentId
