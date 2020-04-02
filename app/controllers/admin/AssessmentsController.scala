@@ -100,6 +100,7 @@ object AssessmentsController {
   val adHocAssessmentForm: Form[AdHocAssessmentFormData] = Form(mapping(
     "moduleCode" -> nonEmptyText,
     "paperCode" -> nonEmptyText,
+    "section" -> optional(text),
     "departmentCode" -> nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string),
     "sequence" -> nonEmptyText,
     "startTime" -> nonEmptyText
@@ -140,6 +141,7 @@ class AssessmentsController @Inject()(
       Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
         moduleCode = assessment.moduleCode,
         paperCode = assessment.paperCode,
+        section = assessment.section,
         departmentCode = assessment.departmentCode,
         sequence = assessment.sequence,
         title = assessment.title,
