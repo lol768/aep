@@ -126,7 +126,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       val noIdResult = execWithCommit(dao.getById(UUID.randomUUID()))
       noIdResult.isEmpty mustBe true
 
-      val noCodeResult = execWithCommit(dao.getByPaper("nonexistent-code"))
+      val noCodeResult = execWithCommit(dao.getByPaper("nonexistent-code", None, "EXSUM20"))
       noCodeResult.isEmpty mustBe true
     }
 

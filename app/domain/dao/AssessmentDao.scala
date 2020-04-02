@@ -262,7 +262,10 @@ class AssessmentDaoImpl @Inject()(
   override def getByPaper(paperCode: String, section: Option[String], examProfileCode: String): DBIO[Option[StoredAssessment]] =
     assessments.table
       .filter(_.paperCode === paperCode)
-      .filter(_.section === section)
+      .filter { a =>
+        if (section.isEmpty) a.section.isEmpty
+        else a.section.nonEmpty && a.section.get === section.get
+      }
       .filter(_.examProfileCode === examProfileCode)
       .result.headOption
 
