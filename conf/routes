@@ -65,6 +65,12 @@ GET         /admin/reporting/:id/notstarted                       @controllers.a
 GET         /admin/reporting/:id/submitted                        @controllers.admin.ReportingController.submitted(id: UUID)
 GET         /admin/reporting/:id/finalised                        @controllers.admin.ReportingController.finalised(id: UUID)
 
+GET         /ajax/reporting/:id/expected                          @controllers.admin.ReportingController.expectedTable(id: UUID)
+GET         /ajax/reporting/:id/started                           @controllers.admin.ReportingController.startedTable(id: UUID)
+GET         /ajax/reporting/:id/notstarted                        @controllers.admin.ReportingController.notStartedTable(id: UUID)
+GET         /ajax/reporting/:id/submitted                         @controllers.admin.ReportingController.submittedTable(id: UUID)
+GET         /ajax/reporting/:id/finalised                         @controllers.admin.ReportingController.finalisedTable(id: UUID)
+
 ## Invigilation ##
 
 GET         /invigilation/assessments/:id                         @controllers.invigilation.InvigilatorAssessmentController.view(id: UUID)

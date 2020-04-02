@@ -144,10 +144,11 @@ object Fixtures {
         contentLength = homeOfficeStatementPDF.uploadedFileSave.contentLength,
         contentType = homeOfficeStatementPDF.uploadedFileSave.contentType,
         uploadedBy = users.staff1.usercode,
+        uploadStarted = createTime.asOffsetDateTime.minusSeconds(7L),
         ownerId = None,
         ownerType = Some(UploadedFileOwner.Assessment),
         created = createTime.asOffsetDateTime,
-        version = createTime.asOffsetDateTime
+        version = createTime.asOffsetDateTime,
       )
     }
 
@@ -160,6 +161,7 @@ object Fixtures {
         contentLength = specialJPG.uploadedFileSave.contentLength,
         contentType = specialJPG.uploadedFileSave.contentType,
         uploadedBy = users.student1.usercode,
+        uploadStarted = createTime.asOffsetDateTime.minusSeconds(7L),
         ownerId = Some(studentAssessmentId),
         ownerType = Some(UploadedFileOwner.StudentAssessment),
         created = createTime.asOffsetDateTime,

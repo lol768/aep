@@ -20,6 +20,7 @@
       <tr>
         <th>Module code</th>
         <th>Paper code</th>
+        <th>Section</th>
         <th>Title</th>
         <th>Date/time</th>
         <th>Duration</th>
@@ -33,6 +34,7 @@
         <tr>
           <td>@assessment.moduleCode</td>
           <td>@assessment.paperCode</td>
+          <td>@assessment.section.getOrElse("")</td>
           <td>@assessment.title</td>
           <td>
             @assessment.startTime.map(JavaTime.Relative(_))

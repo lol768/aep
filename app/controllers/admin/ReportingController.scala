@@ -48,38 +48,69 @@ class ReportingController @Inject()(
     }
   }
 
-  def showExpandedList(id: UUID, title: String, getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]])(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
+  def showExpandedList(id: UUID, title: String, route: String, getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]])(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
     ServiceResults.zip(
       assessmentService.get(id),
       getSittings,
     ).successMap { case (assessment, sittings) =>
       userLookupService.getUsers(sittings.map(_.studentId)).map { userMap =>
         val sorted = sittings.sortBy(md => userMap.get(md.studentId).flatMap(_.name.last).getOrElse(""))
-        Ok(views.html.admin.reporting.expandedList(assessment, sorted, userMap, title))
+        Ok(views.html.admin.reporting.expandedList(assessment, sorted, userMap, title, route))
       }.getOrElse {
-        Ok(views.html.admin.reporting.expandedList(assessment, sittings, Map.empty[UniversityID, User], title))
+        Ok(views.html.admin.reporting.expandedList(assessment, sittings, Map.empty[UniversityID, User], title, route))
+      }
+    }
+  }
+
+  def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]])(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
+    getSittings.successMap { sittings =>
+      userLookupService.getUsers(sittings.map(_.studentId)).map { userMap =>
+        val sorted = sittings.sortBy(md => userMap.get(md.studentId).flatMap(_.name.last).getOrElse(""))
+        Ok(views.html.tags.studentAssessmentInfo(sorted, userMap))
+      }.getOrElse {
+        Ok(views.html.tags.studentAssessmentInfo(sittings, Map.empty[UniversityID, User]))
       }
     }
   }
 
   def expected(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
-    showExpandedList(id, "Students expected to take this assessment", reportingService.expectedSittings(id))
+    showExpandedList(id, "Students expected to take this assessment", "expected", reportingService.expectedSittings(id))
+  }
+
+  def expectedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
+    showStudentAssessmentInfoTable(reportingService.expectedSittings(id))
   }
 
   def started(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
-    showExpandedList(id, "Students that have started this assessment", reportingService.startedSittings(id))
+    showExpandedList(id, "Students that have started this assessment", "started", reportingService.startedSittings(id))
+  }
+
+  def startedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
+    showStudentAssessmentInfoTable(reportingService.startedSittings(id))
   }
 
   def notStarted(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
-    showExpandedList(id, "Students that have not started this assessment", reportingService.notStartedSittings(id))
+    showExpandedList(id, "Students that have not started this assessment", "notstarted", reportingService.notStartedSittings(id))
+  }
+
+  def notStartedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
+    showStudentAssessmentInfoTable(reportingService.notStartedSittings(id))
   }
 
   def submitted(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
-    showExpandedList(id, "Students that have submitted this assessment", reportingService.submittedSittings(id))
+    showExpandedList(id, "Students that have submitted this assessment", "submitted", reportingService.submittedSittings(id))
+  }
+
+  def submittedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
+    showStudentAssessmentInfoTable(reportingService.submittedSittings(id))
   }
 
   def finalised(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
-    showExpandedList(id, "Students that have finalised this assessment", reportingService.finalisedSittings(id))
+    showExpandedList(id, "Students that have finalised this assessment", "finalised", reportingService.finalisedSittings(id))
+  }
+
+  def finalisedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
+    showStudentAssessmentInfoTable(reportingService.finalisedSittings(id))
   }
 }
 

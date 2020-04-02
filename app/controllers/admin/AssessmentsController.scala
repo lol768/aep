@@ -25,6 +25,8 @@ object AssessmentsController {
 
     val paperCode: String
 
+    val section: Option[String]
+
     val departmentCode: DepartmentCode
 
     val sequence: String
@@ -51,6 +53,7 @@ object AssessmentsController {
   case class AssessmentFormData(
     moduleCode: String,
     paperCode: String,
+    section: Option[String],
     departmentCode: DepartmentCode,
     sequence: String,
     title: String,
@@ -65,6 +68,7 @@ object AssessmentsController {
   val form: Form[AssessmentFormData] = Form(mapping(
     "moduleCode" -> nonEmptyText,
     "paperCode" -> nonEmptyText,
+    "section" -> optional(text),
     "departmentCode" -> nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string),
     "sequence" -> nonEmptyText,
     "title" -> nonEmptyText,
@@ -79,6 +83,7 @@ object AssessmentsController {
   case class AdHocAssessmentFormData(
     moduleCode: String,
     paperCode: String,
+    section: Option[String],
     departmentCode: DepartmentCode,
     sequence: String,
     override val startTime: Option[LocalDateTime],
@@ -95,6 +100,7 @@ object AssessmentsController {
   val adHocAssessmentForm: Form[AdHocAssessmentFormData] = Form(mapping(
     "moduleCode" -> nonEmptyText,
     "paperCode" -> nonEmptyText,
+    "section" -> optional(text),
     "departmentCode" -> nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string),
     "sequence" -> nonEmptyText,
     "startTime" -> nonEmptyText
@@ -135,6 +141,7 @@ class AssessmentsController @Inject()(
       Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
         moduleCode = assessment.moduleCode,
         paperCode = assessment.paperCode,
+        section = assessment.section,
         departmentCode = assessment.departmentCode,
         sequence = assessment.sequence,
         title = assessment.title,
@@ -160,6 +167,7 @@ class AssessmentsController @Inject()(
         assessmentService.insert(
           Assessment(
             paperCode = data.paperCode,
+            section = data.section,
             title = data.title,
             startTime = data.startTime.map(_.asOffsetDateTime),
             duration = Duration.ofMinutes(data.durationMinutes),
