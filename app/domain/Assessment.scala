@@ -96,7 +96,7 @@ object Assessment {
 
   object Platform extends PlayEnum[Platform] {
     case object OnlineExams extends Platform {
-      val label = "Online Exams"
+      val label = "Alternative Exams Portal"
     }
 
     case object Moodle extends Platform {
@@ -121,7 +121,7 @@ object Assessment {
   object AssessmentType extends PlayEnum[AssessmentType] {
 
     case object OpenBook extends AssessmentType {
-      val label = "Open book"
+      val label = "Open book (including file based)"
     }
 
     case object MultipleChoice extends AssessmentType {
