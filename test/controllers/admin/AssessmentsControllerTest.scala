@@ -1,5 +1,7 @@
 package controllers.admin
 
+import java.io.File
+
 import controllers.admin.AssessmentsController.{AdHocAssessmentFormData, AssessmentFormData}
 import domain.Assessment.{AssessmentType, Platform}
 import domain.{Assessment, DepartmentCode, Fixtures}
@@ -14,6 +16,7 @@ import warwick.core.helpers.JavaTime
 
 import scala.concurrent.Future
 
+
 class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTest {
 
   private val appAdminUser = Fixtures.users.admin1
@@ -22,6 +25,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
   private val someGuy = Fixtures.users.staff1
 
   private val assessmentService = get[AssessmentService]
+  private val file: File = new File(getClass.getResource(Fixtures.uploadedFiles.homeOfficeStatementPDF.path).getFile)
 
   "AssessmentsController" should {
     "Display the index page to an app admin or departmental admin" in {
@@ -157,10 +161,16 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
     req(controllerRoute.create().url).forUser(user).get()
 
   def reqSave(user: User, data: AdHocAssessmentFormData): Future[Result] =
-    req(controllerRoute.save().url).forUser(user).postMultiPartForm(tuplesFromAdHocData(data))
+    req(controllerRoute.save().url)
+      .forUser(user)
+      .withFile(file)
+      .postMultiPartForm(tuplesFromAdHocData(data))
 
   def reqUpdate(user: User, assessmentId: UUID, data: AssessmentFormData): Future[Result] =
-    req(controllerRoute.update(assessmentId).url).forUser(user).postMultiPartForm(tuplesFromFormData(data))
+    req(controllerRoute.update(assessmentId).url)
+      .forUser(user)
+      .withFile(file)
+      .postMultiPartForm(tuplesFromFormData(data))
 
   def tuplesFromFormData(data:AssessmentFormData): Seq[(String, String)] =
     Seq(
