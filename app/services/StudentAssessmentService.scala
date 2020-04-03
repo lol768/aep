@@ -1,6 +1,5 @@
 package services
 
-import java.time.Duration
 import java.util.UUID
 
 import com.google.common.io.ByteSource
@@ -32,6 +31,7 @@ trait StudentAssessmentService {
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]]
   def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessmentWithAssessment]]]
+  def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]]
   def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]]
   def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
@@ -105,6 +105,9 @@ class StudentAssessmentServiceImpl @Inject()(
     }.map(ServiceResults.success)
   }
 
+  override def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]] =
+    daoRunner.run(dao.get(universityId, assessmentId)).map(_.getOrElse(noStudentAssessmentFound(assessmentId, universityId)).asStudentAssessmentMetadata).map(ServiceResults.success)
+
   override def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]] =
     daoRunner.run(
       for {
@@ -131,9 +134,6 @@ class StudentAssessmentServiceImpl @Inject()(
 
   private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
     require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot start assessment, too early")
-    require(storedAssessment.startTime.exists(_.plus(storedAssessment.duration)
-      .plus(storedStudentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
-      .isAfter(JavaTime.offsetDateTime)), "Cannot start assessment, too late for this student")
   }
 
   private def startedNotFinalised(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {

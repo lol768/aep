@@ -1,6 +1,6 @@
 package domain
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.Duration
 
 import actors.WebSocketActor.AssessmentTimingInformation
 import warwick.core.helpers.JavaTime
@@ -8,33 +8,39 @@ import warwick.core.helpers.JavaTime
 sealed trait BaseStudentAssessmentWithAssessment {
   def studentAssessment: BaseStudentAssessment
   def assessment: BaseAssessment
-  def started: Boolean = studentAssessment.startTime.nonEmpty
-  def finalised: Boolean = studentAssessment.hasFinalised
+
   def inProgress: Boolean = started && !finalised
 
-  val onTimeEndForStudent: Option[OffsetDateTime] = assessment.startTime.map { st =>
-    st
-      .plus(assessment.duration)
-      .plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
-  }
+  def started: Boolean = studentAssessment.startTime.nonEmpty
+  def finalised: Boolean = studentAssessment.hasFinalised
 
-  val lateEndForStudent: Option[OffsetDateTime] =
-    onTimeEndForStudent.map(_.plus(Assessment.lateSubmissionPeriod))
+  def isCurrentForStudent: Boolean = !finalised &&
+    assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
+    assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
 
-  def isCurrentForStudent: Boolean = !finalised && assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) && lateEndForStudent.exists(_.isAfter(JavaTime.offsetDateTime))
+  // How long the student has to submit without being counted late
+  lazy val duration = assessment.duration
+    .plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
+
+  // Hard limit for student submitting, though they may be counted late.
+  lazy val durationIncludingLate = duration.plus(Assessment.lateSubmissionPeriod)
 
   def getTimingInfo: AssessmentTimingInformation = {
     val now = JavaTime.offsetDateTime
 
-    val extraTimeAdjustment = studentAssessment.extraTimeAdjustment.map(_.toMillis)
+    val timeRemaining = studentAssessment.startTime match {
+      case Some(studentStart) if inProgress =>
+        Some(duration.minus(Duration.between(studentStart, now)).toMillis)
+      case _ => None
+    }
 
     AssessmentTimingInformation(
       id = assessment.id,
-      extraTimeAdjustment = extraTimeAdjustment,
-      timeSinceStart = if (inProgress) Some(Duration.between(assessment.startTime.get, now).toMillis) else None,
-      timeUntilStart = assessment.startTime.map(st => Duration.between(now, st).toMillis),
-      timeUntilOnTimeEndForStudent = if (!studentAssessment.hasFinalised) onTimeEndForStudent.map(Duration.between(now, _).toMillis) else None,
-      timeUntilLateEndForStudent = if (!studentAssessment.hasFinalised) lateEndForStudent.map(Duration.between(now, _).toMillis) else None,
+      timeRemaining = timeRemaining,
+      extraTimeAdjustment = studentAssessment.extraTimeAdjustment.map(_.toMillis),
+      timeSinceStart = if (inProgress) Some(Duration.between(studentAssessment.startTime.get, now).toMillis) else None,
+      timeUntilStart = if (studentAssessment.startTime.isEmpty && !assessment.hasLastAllowedStartTimePassed) Some(Duration.between(now, assessment.startTime.get).toMillis) else None,
+      timeUntilEndOfWindow = if (!studentAssessment.hasFinalised) assessment.lastAllowedStartTime.map(Duration.between(now, _).toMillis) else None,
       hasStarted = studentAssessment.startTime.nonEmpty,
       hasFinalised = studentAssessment.hasFinalised
     )

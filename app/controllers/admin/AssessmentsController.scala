@@ -12,8 +12,8 @@ import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData}
 import services.tabula.TabulaDepartmentService
+import services.refiners.DepartmentAdminRequest
 import services.{AssessmentService, SecurityService, UploadedFileService}
-import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileControllerHelper
@@ -139,17 +139,15 @@ class AssessmentsController @Inject()(
   import AssessmentsController._
   import security._
 
-  def index: Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
-    assessmentService.findByStates(Seq(State.Draft, State.Imported)).successMap { assessments =>
-      Ok(views.html.admin.assessments.index(assessments))
+  def index: Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
+    assessmentService.findByStates(Seq(State.Draft, State.Imported, State.Approved)).successMap { assessments =>
+      Ok(views.html.admin.assessments.index(filterForDeptAdmin(filterForDeptAdmin(assessments))))
     }
   }
 
-  def show(id: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
-    ServiceResults.zip(
-      departments(),
-      assessmentService.get(id)
-    ).successMap { case (departments, assessment) =>
+  def show(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
+    val assessment = request.assessment
+    departments().successMap { departments =>
       Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
         moduleCode = assessment.moduleCode,
         paperCode = assessment.paperCode,
@@ -167,13 +165,13 @@ class AssessmentsController @Inject()(
     }
   }
 
-  def create(): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
+  def create(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     departments().successMap { departments =>
       Ok(views.html.admin.assessments.create(adHocAssessmentForm, departments))
     }
   }
 
-  def save(): Action[MultipartFormData[TemporaryUploadedFile]] = RequireDepartmentAssessmentManager(uploadedFileControllerHelper.bodyParser).async { implicit request =>
+  def save(): Action[MultipartFormData[TemporaryUploadedFile]] = GeneralDepartmentAdminAction(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     adHocAssessmentForm.bindFromRequest().fold(
       formWithErrors => {
         departments().successMap { departments =>
@@ -182,80 +180,84 @@ class AssessmentsController @Inject()(
       },
       data => {
         val files = request.body.files.map(_.ref).map(f => (f.in, f.metadata))
-        if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
-          departments().successMap { departments =>
-            Ok(views.html.admin.assessments.create(adHocAssessmentForm.fill(data).withGlobalError("error.assessment.files-not-provided"), departments))
-          }
-        } else {
-          import helpers.DateConversion._
-          assessmentService.insert(
-            Assessment(
-              paperCode = data.paperCode,
-              section = data.section,
-              title = data.title,
-              startTime = data.startTime.map(_.asOffsetDateTime),
-              duration = Duration.ofMinutes(data.durationMinutes),
-              platform = data.platform,
-              assessmentType = data.assessmentType,
-              brief = Brief(
-                text = data.description,
-                url = data.url,
-                files = Nil,
+        if (request.departments.exists(_.code.toLowerCase == data.departmentCode.lowerCase)) {
+          if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
+            departments().successMap { departments =>
+              Ok(views.html.admin.assessments.create(adHocAssessmentForm.fill(data).withGlobalError("error.assessment.files-not-provided"), departments))
+            }
+          } else {
+            import helpers.DateConversion._
+            assessmentService.insert(
+              Assessment(
+                paperCode = data.paperCode,
+                section = data.section,
+                title = data.title,
+                startTime = data.startTime.map(_.asOffsetDateTime),
+                duration = Duration.ofMinutes(data.durationMinutes),
+                platform = data.platform,
+                assessmentType = data.assessmentType,
+                brief = Brief(
+                  text = data.description,
+                  url = data.url,
+                  files = Nil,
+                ),
+                invigilators = data.invigilators.get,
+                state = data.operation,
+                tabulaAssessmentId = None,
+                examProfileCode = "EXAPR20",
+                moduleCode = data.moduleCode,
+                departmentCode = data.departmentCode,
+                sequence = data.sequence,
+                id = UUID.randomUUID()
               ),
-              invigilators = data.invigilators.get,
-              state = data.operation,
-              tabulaAssessmentId = None,
-              examProfileCode = "EXAPR20",
-              moduleCode = data.moduleCode,
-              departmentCode = data.departmentCode,
-              sequence = data.sequence,
-              id = UUID.randomUUID()
-            ),
-            files
-          ).successMap { _ =>
-            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessment.created", data.title))
+              files = request.body.files.map(_.ref).map(f => (f.in, f.metadata)),
+            ).successMap { _ =>
+              Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessment.created", data.title))
+            }
           }
+        } else { // User is not an admin for the supplied department
+          Future.successful(Redirect(
+            controllers.admin.routes.AssessmentsController.create()
+          ).flashing("error" -> Messages("error.permissions.notDepartmentAdminForSelected", data.departmentCode)))
         }
       })
   }
 
-
-  def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = RequireDepartmentAssessmentManager(uploadedFileControllerHelper.bodyParser).async { implicit request =>
-    assessmentService.get(id).successFlatMap { assessment =>
-      form.bindFromRequest().fold(
-        formWithErrors => {
-          departments().successMap { departments =>
-            Ok(views.html.admin.assessments.show(assessment, formWithErrors, departments))
-          }
-        },
-        data => {
-          if (assessment.state != State.Approved) {
-            val files = request.body.files.map(_.ref)
-            if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
-              departments().successMap { departments =>
-                Ok(views.html.admin.assessments.show(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"), departments))
-              }
-            } else {
-              assessmentService.update(assessment.copy(
-                title = data.title,
-                duration = Duration.ofMinutes(data.durationMinutes),
-                platform = data.platform,
-                assessmentType = data.assessmentType,
-                brief = assessment.brief.copy(
-                  text = data.description,
-                  url = data.url
-                ),
-                state = data.operation
-              ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
-                Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
-              }
+  def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
+    val assessment = request.assessment
+    form.bindFromRequest().fold(
+      formWithErrors => {
+        departments().successMap { departments =>
+          Ok(views.html.admin.assessments.show(assessment, formWithErrors, departments))
+        }
+      },
+      data => {
+        if (assessment.state != State.Approved) {
+          val files = request.body.files.map(_.ref)
+          if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
+            departments().successMap { departments =>
+              Ok(views.html.admin.assessments.show(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"), departments))
             }
           } else {
-            Future.successful(MethodNotAllowed(views.html.errors.approvedAssessment()))
+            assessmentService.update(assessment.copy(
+              title = data.title,
+              duration = Duration.ofMinutes(data.durationMinutes),
+              platform = data.platform,
+              assessmentType = data.assessmentType,
+              brief = assessment.brief.copy(
+                text = data.description,
+                url = data.url
+              ),
+              state = data.operation
+            ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
+              Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
+            }
           }
+        } else {
+          Future.successful(MethodNotAllowed(views.html.errors.approvedAssessment()))
+        }
 
-        })
-    }
+      })
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
@@ -266,6 +268,17 @@ class AssessmentsController @Inject()(
     }
   }
 
+  private def deptAdminCanView(assessment: Assessment)(
+    implicit request: DepartmentAdminRequest[AnyContent]
+  ): Boolean =
+    request.departments
+      .exists(_.code.toLowerCase == assessment.departmentCode.lowerCase)
+
+  private def filterForDeptAdmin(assessments: Seq[Assessment])(
+    implicit request: DepartmentAdminRequest[AnyContent]
+  ): Seq[Assessment] =
+    assessments.filter(deptAdminCanView)
+
   private def departments()(implicit timingContext: TimingContext): Future[ServiceResult[Seq[Department]]] = {
     departmentService.getDepartments().successMapTo { departments =>
       departments.map { tabulaDepartment =>
@@ -273,4 +286,5 @@ class AssessmentsController @Inject()(
       }
     }
   }
+
 }
