@@ -131,7 +131,7 @@ class AssessmentsController @Inject()(
   import security._
 
   def index: Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
-    assessmentService.findByStates(Seq(State.Draft, State.Imported)).successMap { assessments =>
+    assessmentService.findByStates(Seq(State.Draft, State.Imported, State.Approved)).successMap { assessments =>
       Ok(views.html.admin.assessments.index(assessments))
     }
   }
