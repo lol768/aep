@@ -1,0 +1,33 @@
+@import domain.Assessment
+
+@(
+    assessment: Assessment,
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+<dl class="panel panel-default">
+    <div class="panel-body">
+        <dt>Brief</dt>
+        @assessment.brief.text.map { text =>
+            <dd>@text</dd>
+        }
+
+        @assessment.brief.url.map { url =>
+            <dt>Url</dt>
+            <dd>@url</dd>
+        }
+
+        @if(assessment.brief.files.nonEmpty) {
+            <dt>Attached files</dt>
+            <dd>
+                <ul>
+                @assessment.brief.files.map { file =>
+                    <li>
+                        <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
+                            <i class="fad fa-file fa-fw"></i>@file.fileName
+                        </a>
+                    </li>
+                }
+                </ul>
+            </dd>
+        }
+    </div>
+</dl>
