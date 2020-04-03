@@ -27,6 +27,10 @@ sealed trait BaseAssessment {
   def sequence: String //MAB sequence
 
   def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
+
+  def lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
+
+  def hasLastAllowedStartTimePassed: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
@@ -156,6 +160,8 @@ object Assessment {
   // marked as LATE though.
   // Updated in OE-148
   val lateSubmissionPeriod: Duration = Duration.ofHours(2)
+
+  private[domain] val window: Duration = Duration.ofHours(24)
 
   sealed trait State extends EnumEntry {
     val label: String = entryName
