@@ -238,6 +238,7 @@ class AssessmentsController @Inject()(
               duration = Duration.ofMinutes(data.durationMinutes),
               platform = data.platform,
               assessmentType = data.assessmentType,
+              invigilators = data.invigilators.get,
               brief = assessment.brief.copy(
                 text = data.description,
                 url = data.url
