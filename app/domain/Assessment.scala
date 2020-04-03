@@ -30,7 +30,7 @@ sealed trait BaseAssessment {
 
   def lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
-  def hasWindowPassed: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime))
+  def hasLastAllowedStartTimePassed: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(

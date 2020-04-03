@@ -39,7 +39,7 @@ sealed trait BaseStudentAssessmentWithAssessment {
       timeRemaining = timeRemaining,
       extraTimeAdjustment = studentAssessment.extraTimeAdjustment.map(_.toMillis),
       timeSinceStart = if (inProgress) Some(Duration.between(studentAssessment.startTime.get, now).toMillis) else None,
-      timeUntilStart = if (studentAssessment.startTime.isEmpty && !assessment.hasWindowPassed) Some(Duration.between(now, assessment.startTime.get).toMillis) else None,
+      timeUntilStart = if (studentAssessment.startTime.isEmpty && !assessment.hasLastAllowedStartTimePassed) Some(Duration.between(now, assessment.startTime.get).toMillis) else None,
       timeUntilEndOfWindow = if (!studentAssessment.hasFinalised) assessment.lastAllowedStartTime.map(Duration.between(now, _).toMillis) else None,
       hasStarted = studentAssessment.startTime.nonEmpty,
       hasFinalised = studentAssessment.hasFinalised
