@@ -27,7 +27,7 @@
         @b3.datetimePicker(form("endDate"), Symbol("value") -> None, Symbol("placeholder") -> "To (optional)")
 
         @b3.submit(Symbol("class") -> "btn btn-default") {
-            <i class="fad fa-search fa-fw"></i> find
+            <i class="fad fa-search fa-fw"></i> Find
         }
         @b3.free() {
             <a class="btn btn-default" href="@controllers.admin.routes.ViewStudentActivityController.index" title="Clear search results">Clear</a>
