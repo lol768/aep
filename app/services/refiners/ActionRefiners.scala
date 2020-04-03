@@ -65,25 +65,27 @@ class ActionRefiners @Inject() (
       }.map(_.fold(err => Left(showErrors(err)), identity))
     }
 
-  def WithDepartmentsUserIsAdminFor: Refiner[AuthenticatedRequest, DepartmentAdminSpecificRequest] =
-    new Refiner[AuthenticatedRequest, DepartmentAdminSpecificRequest] {
-      override protected def apply[A](implicit request: AuthenticatedRequest[A]): Refinement[DepartmentAdminSpecificRequest[A]] = {
+  def WithDepartmentsUserIsAdminFor: Refiner[AuthenticatedRequest, DepartmentAdminRequest] =
+    new Refiner[AuthenticatedRequest, DepartmentAdminRequest] {
+      override protected def apply[A](implicit request: AuthenticatedRequest[A]): Refinement[DepartmentAdminRequest[A]] = {
         request.user.map { user =>
-          deptService.getDepartments.successMapTo[Either[Result, DepartmentAdminSpecificRequest[A]]] { allDepts =>
-            val anyDeptGroupName = configuration.get[String]("app.anyDepartmentAdminGroup")
+          deptService.getDepartments.successMapTo[Either[Result, DepartmentAdminRequest[A]]] { allDepts =>
 
             val userAdminDepartments =
-              if (userInGroup(user, anyDeptGroupName) || request.context.userHasRole(Roles.Sysadmin)) {
-                // If the user is in the app admin usergroup, or is a sysadmin they're an admin for all departments
+              if (request.context.userHasRole(Roles.Admin) || request.context.userHasRole(Roles.Sysadmin)) {
+                // If the user is an admin or sysadmin they're an admin for all departments
                 allDepts
               } else {
-                allDepts.filter(dept => recursiveAdminGroupCheck(user, dept, allDepts))
+                val groupsForUser = groupService.getGroupsForUser(user.usercode).toOption.getOrElse {
+                  throw new Exception("No response from groups service")
+                }
+                allDepts.filter(dept => recursiveAdminGroupCheck(dept, allDepts, groupsForUser.map(_.name)))
               }
 
             if (userAdminDepartments.isEmpty) { // User is not an admin for any department
               Left(Forbidden(views.html.errors.forbidden(user.name.first)))
             } else {
-              Right(new DepartmentAdminSpecificRequest[A](userAdminDepartments, request))
+              Right(new DepartmentAdminRequest[A](userAdminDepartments, request))
             }
           }.map(_.fold(err => Left(showErrors(err)), identity))
         }
@@ -92,12 +94,12 @@ class ActionRefiners @Inject() (
       }
     }
 
-  def WithAssessmentToAdminister(assessmentId: UUID): Refiner[DepartmentAdminSpecificRequest, DepartmentAdminAssessmentSpecificRequest] =
-    new Refiner[DepartmentAdminSpecificRequest, DepartmentAdminAssessmentSpecificRequest] {
-      override protected def apply[A](implicit request: DepartmentAdminSpecificRequest[A]): Refinement[DepartmentAdminAssessmentSpecificRequest[A]] =
-        assessmentService.get(assessmentId).successMapTo[Either[Result, DepartmentAdminAssessmentSpecificRequest[A]]] { assessment =>
-          if (request.departmentCodesUserIsAdminFor.exists(_.code.toLowerCase == assessment.departmentCode.lowerCase)) {
-            Right(new DepartmentAdminAssessmentSpecificRequest[A](assessment, request.departmentCodesUserIsAdminFor, request))
+  def WithAssessmentToAdminister(assessmentId: UUID): Refiner[DepartmentAdminRequest, DepartmentAdminAssessmentRequest] =
+    new Refiner[DepartmentAdminRequest, DepartmentAdminAssessmentRequest] {
+      override protected def apply[A](implicit request: DepartmentAdminRequest[A]): Refinement[DepartmentAdminAssessmentRequest[A]] =
+        assessmentService.get(assessmentId).successMapTo[Either[Result, DepartmentAdminAssessmentRequest[A]]] { assessment =>
+          if (request.departments.exists(_.code.toLowerCase == assessment.departmentCode.lowerCase)) {
+            Right(new DepartmentAdminAssessmentRequest[A](assessment, request.departments, request))
           } else {
             Left(Forbidden(views.html.errors.forbidden(request.user.flatMap(_.name.first))))
           }
@@ -136,10 +138,10 @@ class ActionRefiners @Inject() (
       }
     }
 
-  def IsAdminForDepartment(deptCode: String): Filter[DepartmentAdminSpecificRequest] =
-    new Filter[DepartmentAdminSpecificRequest] {
-      override protected  def apply[A](implicit request: DepartmentAdminSpecificRequest[A]): Future[Option[Result]] = Future.successful {
-        if (request.departmentCodesUserIsAdminFor.exists(_.code == deptCode)) {
+  def IsAdminForDepartment(deptCode: String): Filter[DepartmentAdminRequest] =
+    new Filter[DepartmentAdminRequest] {
+      override protected  def apply[A](implicit request: DepartmentAdminRequest[A]): Future[Option[Result]] = Future.successful {
+        if (request.departments.exists(_.code == deptCode)) {
           None
         } else {
           Some(Forbidden(views.html.errors.forbidden(request.user.flatMap(_.name.first))))
@@ -147,28 +149,28 @@ class ActionRefiners @Inject() (
       }
     }
 
-  private def userInGroup(user: User, groupName: String): Boolean =
-    groupService.isUserInGroup(user.usercode, GroupName(groupName)).getOrElse(false)
-
-  private def userInDeptAdminGroup(user: User, deptCode: String): Boolean = {
-    val deptGroupPostfix = configuration.get[String]("app.assessmentManagerGroup")
-    userInGroup(
-      user,
-      groupName = s"${deptCode.toLowerCase()}-$deptGroupPostfix"
-    )
-  }
-
   // A user has admin permissions for a department if they're in the admin webgroup for that deprtment
   // or the admin webgroup for a parent department of that department.
   // Capped at a depth of 4 parent departments to avoid explosions if there's a circular reference somwhere
-  private def recursiveAdminGroupCheck(user: User, department: Department, allDepartments: Seq[Department], depth: Int = 0): Boolean = {
-    if (userInDeptAdminGroup(user, department.code)) {
+  private def recursiveAdminGroupCheck(
+    department: Department,
+    allDepartments: Seq[Department],
+    groupNamesForUser: Seq[GroupName],
+    depth: Int = 0
+  ): Boolean = {
+    val deptGroupPostfix = configuration.get[String]("app.assessmentManagerGroup")
+
+    def userInDeptAdminGroup(dept: Department): Boolean = {
+      groupNamesForUser.exists(_.string == s"${dept.code.toLowerCase()}-$deptGroupPostfix")
+    }
+
+    if (userInDeptAdminGroup(department)) {
       true
     } else {
       if (depth <= 4) {
         department.parentDepartment.exists { pdIdentity =>
           allDepartments.find(_.code == pdIdentity.code).exists { pd =>
-            recursiveAdminGroupCheck(user, pd, allDepartments, depth + 1)
+            recursiveAdminGroupCheck(pd, allDepartments, groupNamesForUser, depth + 1)
           }
         }
       } else {

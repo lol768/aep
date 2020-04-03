@@ -8,7 +8,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc._
-import services.refiners.{ActionRefiners, AssessmentSpecificRequest, DepartmentAdminAssessmentSpecificRequest, DepartmentAdminSpecificRequest, StudentAssessmentSpecificRequest}
+import services.refiners.{ActionRefiners, AssessmentSpecificRequest, DepartmentAdminAssessmentRequest, DepartmentAdminRequest, StudentAssessmentSpecificRequest}
 import system.{ImplicitRequestContext, Roles}
 import warwick.sso._
 
@@ -42,9 +42,9 @@ trait SecurityService {
   def StudentAssessmentIsStartedAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
   def StudentAssessmentInProgressAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
 
-  def GeneralDepartmentAdminAction: ActionBuilder[DepartmentAdminSpecificRequest, AnyContent]
-  def SpecificDepartmentAdminAction(deptCode: String): ActionBuilder[DepartmentAdminSpecificRequest, AnyContent]
-  def AssessmentDepartmentAdminAction(assessmentId: UUID): ActionBuilder[DepartmentAdminAssessmentSpecificRequest, AnyContent]
+  def GeneralDepartmentAdminAction: ActionBuilder[DepartmentAdminRequest, AnyContent]
+  def SpecificDepartmentAdminAction(deptCode: String): ActionBuilder[DepartmentAdminRequest, AnyContent]
+  def AssessmentDepartmentAdminAction(assessmentId: UUID): ActionBuilder[DepartmentAdminAssessmentRequest, AnyContent]
 
   def InvigilatorAssessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent]
 
@@ -142,15 +142,15 @@ class SecurityServiceImpl @Inject()(
     SigninRequiredAction andThen WithAssessment(id) andThen IsInvigilatorOrAdmin
 
   // User needs to be a departmental admin for at least one department
-  override def GeneralDepartmentAdminAction: ActionBuilder[DepartmentAdminSpecificRequest, AnyContent] =
+  override def GeneralDepartmentAdminAction: ActionBuilder[DepartmentAdminRequest, AnyContent] =
     SigninRequiredAction andThen WithDepartmentsUserIsAdminFor
 
   // User needs to be a departmental admin for the specific department supplied
-  override def SpecificDepartmentAdminAction(deptCode: String): ActionBuilder[DepartmentAdminSpecificRequest, AnyContent] =
+  override def SpecificDepartmentAdminAction(deptCode: String): ActionBuilder[DepartmentAdminRequest, AnyContent] =
     SigninRequiredAction andThen WithDepartmentsUserIsAdminFor andThen IsAdminForDepartment(deptCode)
 
   // User needs to be a departmental admin for the department associated with the assessment supplied
-  override def AssessmentDepartmentAdminAction(assessmentId: UUID): ActionBuilder[DepartmentAdminAssessmentSpecificRequest, AnyContent] =
+  override def AssessmentDepartmentAdminAction(assessmentId: UUID): ActionBuilder[DepartmentAdminAssessmentRequest, AnyContent] =
     SigninRequiredAction andThen WithDepartmentsUserIsAdminFor andThen WithAssessmentToAdminister(assessmentId)
 
   override def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A] =

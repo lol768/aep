@@ -11,7 +11,7 @@ import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData}
-import services.refiners.DepartmentAdminSpecificRequest
+import services.refiners.DepartmentAdminRequest
 import services.{AssessmentService, SecurityService, UploadedFileService}
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
@@ -163,7 +163,7 @@ class AssessmentsController @Inject()(
     adHocAssessmentForm.bindFromRequest().fold(
       formWithErrors => Future.successful(Ok(views.html.admin.assessments.create(formWithErrors))),
       data => {
-        if (request.departmentCodesUserIsAdminFor.exists(_.code.toLowerCase == data.departmentCode.lowerCase)) {
+        if (request.departments.exists(_.code.toLowerCase == data.departmentCode.lowerCase)) {
           import helpers.DateConversion._
           assessmentService.insert(
             Assessment(
@@ -195,7 +195,7 @@ class AssessmentsController @Inject()(
         } else { // User is not an admin for the supplied department
           Future.successful(Redirect(
             controllers.admin.routes.AssessmentsController.create()
-          ).flashing("error" -> Messages("error.permissions.notDepartmentAdminForSelected")))
+          ).flashing("error" -> Messages("error.permissions.notDepartmentAdminForSelected", data.departmentCode)))
         }
       })
   }
@@ -236,13 +236,13 @@ class AssessmentsController @Inject()(
   }
 
   private def deptAdminCanView(assessment: Assessment)(
-    implicit request: DepartmentAdminSpecificRequest[AnyContent]
+    implicit request: DepartmentAdminRequest[AnyContent]
   ): Boolean =
-    request.departmentCodesUserIsAdminFor
+    request.departments
       .exists(_.code.toLowerCase == assessment.departmentCode.lowerCase)
 
   private def filterForDeptAdmin(assessments: Seq[Assessment])(
-    implicit request: DepartmentAdminSpecificRequest[AnyContent]
+    implicit request: DepartmentAdminRequest[AnyContent]
   ): Seq[Assessment] =
     assessments.filter(deptAdminCanView)
 
