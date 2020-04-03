@@ -7,7 +7,7 @@ import controllers.BaseController
 import domain.{Assessment, DepartmentCode}
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import javax.inject.{Inject, Singleton}
-import play.api.data.Form
+import play.api.data.{Form, Mapping}
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData}
@@ -19,6 +19,7 @@ import warwick.sso.Usercode
 import scala.concurrent.{ExecutionContext, Future}
 
 object AssessmentsController {
+  import controllers.admin.AssessmentsController.AbstractAssessmentFormData._
 
   trait AbstractAssessmentFormData {
     val moduleCode: String
@@ -33,7 +34,7 @@ object AssessmentsController {
 
     val startTime: Option[LocalDateTime] = None
 
-    val invigilators: Option[Set[Usercode]] = None
+    val invigilators: Option[Set[Usercode]]
 
     val title: String
 
@@ -50,12 +51,24 @@ object AssessmentsController {
     val operation: State
   }
 
+  object AbstractAssessmentFormData {
+    val invigilatorsFieldMapping: Mapping[Option[Set[Usercode]]] = set(text)
+      .transform[Set[Usercode]](codes => codes.filter(_.nonEmpty).map(Usercode), _.map(_.string))
+      .transform[Option[Set[Usercode]]](Option.apply, _.get)
+
+    val durationFieldMapping: Mapping[Long] = longNumber.verifying(Seq(120, 180).contains(_))
+
+    val departmentCodeFieldMapping: Mapping[DepartmentCode] = nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string)
+  }
+
+
   case class AssessmentFormData(
     moduleCode: String,
     paperCode: String,
     section: Option[String],
     departmentCode: DepartmentCode,
     sequence: String,
+    invigilators: Option[Set[Usercode]],
     title: String,
     description: Option[String],
     durationMinutes: Long,
@@ -69,11 +82,12 @@ object AssessmentsController {
     "moduleCode" -> nonEmptyText,
     "paperCode" -> nonEmptyText,
     "section" -> optional(text),
-    "departmentCode" -> nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string),
+    "departmentCode" -> departmentCodeFieldMapping,
     "sequence" -> nonEmptyText,
+    "invigilators" -> invigilatorsFieldMapping,
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
-    "durationMinutes" -> longNumber.verifying(Seq(120, 180).contains(_)),
+    "durationMinutes" -> durationFieldMapping,
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText),
@@ -89,7 +103,7 @@ object AssessmentsController {
     departmentCode: DepartmentCode,
     sequence: String,
     override val startTime: Option[LocalDateTime],
-    override val invigilators: Option[Set[Usercode]],
+    invigilators: Option[Set[Usercode]],
     title: String,
     description: Option[String],
     durationMinutes: Long,
@@ -103,17 +117,15 @@ object AssessmentsController {
     "moduleCode" -> nonEmptyText,
     "paperCode" -> nonEmptyText,
     "section" -> optional(text),
-    "departmentCode" -> nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string),
+    "departmentCode" -> departmentCodeFieldMapping,
     "sequence" -> nonEmptyText,
     "startTime" -> nonEmptyText
       .transform[LocalDateTime](LocalDateTime.parse(_), _.toString)
       .transform[Option[LocalDateTime]](Option.apply, _.get),
-    "invigilators" -> set(text)
-      .transform[Set[Usercode]](codes => codes.filter(_.nonEmpty).map(Usercode), _.map(_.string))
-      .transform[Option[Set[Usercode]]](Option.apply, _.get),
+    "invigilators" -> invigilatorsFieldMapping,
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
-    "durationMinutes" -> longNumber.verifying(Seq(120, 180).contains(_)),
+    "durationMinutes" -> durationFieldMapping,
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText),
@@ -148,6 +160,7 @@ class AssessmentsController @Inject()(
         section = assessment.section,
         departmentCode = assessment.departmentCode,
         sequence = assessment.sequence,
+        invigilators = Option(assessment.invigilators),
         title = assessment.title,
         description = assessment.brief.text,
         durationMinutes = assessment.duration.toMinutes,
