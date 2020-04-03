@@ -2,7 +2,7 @@ package domain
 
 import java.time.Duration
 
-import actors.WebSocketActor.AssessmentTimingInformation
+import views.assessment.AssessmentTimingInformation
 import warwick.core.helpers.JavaTime
 
 sealed trait BaseStudentAssessmentWithAssessment {

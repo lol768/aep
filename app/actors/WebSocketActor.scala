@@ -42,18 +42,6 @@ object WebSocketActor {
     assessmentId: UUID
   )
   val readsRequestAssessmentTiming: Reads[RequestAssessmentTiming] = Json.reads[RequestAssessmentTiming]
-
-  case class AssessmentTimingInformation(
-    id: UUID,
-    timeRemaining: Option[Long],
-    extraTimeAdjustment: Option[Long],
-    timeUntilStart: Option[Long],
-    timeSinceStart: Option[Long],
-    timeUntilEndOfWindow: Option[Long],
-    hasStarted: Boolean,
-    hasFinalised: Boolean,
-  )
-  implicit val writesAssessmentTimingInformation: Writes[AssessmentTimingInformation] = Json.writes[AssessmentTimingInformation]
 }
 
 /**
@@ -116,22 +104,11 @@ class WebSocketActor @Inject() (
               }
           })
 
-        case m if m.`type` == "RequestAssessmentTiming" && m.data.exists(_.validate[RequestAssessmentTiming](readsRequestAssessmentTiming).isSuccess) =>
-          val assessmentId = m.data.get.as[RequestAssessmentTiming](readsRequestAssessmentTiming).assessmentId
-          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get, assessmentId)(TimingContext.none).successMapTo { assessment =>
-            out ! Json.obj(
-              "type"-> "AssessmentTimingInformation",
-              "assessments"-> Json.arr(Json.toJson(assessment.getTimingInfo))
-            )
-          }
-
         case m if m.`type` == "RequestAssessmentTiming" =>
-          studentAssessmentService.getMetadataWithAssessment(loginContext.user.flatMap(u => u.universityId).get)(TimingContext.none).successMapTo { assessments =>
-            out ! Json.obj(
-              "type"-> "AssessmentTimingInformation",
-              "assessments"-> JsArray(assessments.map(a => Json.toJson(a.getTimingInfo)))
-            )
-          }
+          out ! Json.obj(
+            "type"-> "AssessmentTimingInformation",
+            "now"-> JavaTime.instant.toEpochMilli
+          )
 
         case m => log.error(s"Ignoring unrecognised client message: $m")
       }
