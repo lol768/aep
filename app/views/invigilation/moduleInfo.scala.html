@@ -14,12 +14,7 @@
 
         <dt>Department code</dt>
         <dd>
-        @department.map { dept =>
-            @dept.fullName
-            <span class="text-muted">(@dept.code)</span>
-        }.getOrElse {
-            @assessment.departmentCode.string
-        }
+            @departmentName(department, assessment.departmentCode)
         </dd>
 
         <dt>State</dt>
