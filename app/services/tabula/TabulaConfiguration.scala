@@ -16,10 +16,13 @@ class TabulaConfiguration @Inject() (c: Configuration) {
   def getAssessmentComponentMembersUrl(deptCode: String, academicYear: AcademicYear): String =
     s"$rootUrl/api/v1/department/$deptCode/${academicYear.getStartYear}/assessmentComponentMembers"
 
-  def getDepartmentUrl(): String =
+  def getDepartmentsUrl: String =
     s"$rootUrl/api/v1/department"
 
   def getStudentInformationUrl(universityID: UniversityID): String =
     s"$rootUrl/api/v1/member/${universityID.string}"
+
+  def getProfileUrl(universityID: UniversityID): String =
+    s"$rootUrl/profiles/view/${universityID.string}"
 
 }

@@ -3,7 +3,7 @@
 @import org.apache.commons.lang3.time.DurationFormatUtils
 @(assessments: Seq[Assessment])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout("View assessments") {
-    <table class="table table-striped">
+    <table class="table table-striped table-sortable">
         <thead>
             <tr>
                 <th>Date/time</th>

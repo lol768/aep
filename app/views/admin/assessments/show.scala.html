@@ -1,9 +1,18 @@
 @import controllers.admin.AssessmentsController.{AbstractAssessmentFormData, AssessmentFormData}
-@import domain.Assessment
-@import views.html.admin.assessments.fields
+@import domain.{Assessment, Department, StudentAssessment}
+@import domain.tabula.SitsProfile
 @import warwick.core.helpers.JavaTime
-@import domain.Department
-@(assessment: Assessment, form: Form[AssessmentFormData], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
+@import warwick.sso.UniversityID
+@import views.html.admin.assessments.fields
+
+@(
+  assessment: Assessment,
+  studentAssessments: Seq[StudentAssessment],
+  studentInformation: Map[UniversityID, SitsProfile],
+  form: Form[AssessmentFormData],
+  departments: Seq[Department],
+)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
+
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
   @adminLayout(s"Assessment for ${assessment.title} (${assessment.moduleCode})") {
     @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.update(assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
@@ -21,6 +30,8 @@
           @b3.text(form("startTime"), Symbol("value") -> assessment.startTime.map(JavaTime.Relative(_, printToday = false)).getOrElse(""), Symbol("_label") -> "Start time", Symbol("readonly") -> true )
         </div>
       </div>
+
+      @fields.students(studentAssessments, studentInformation)
 
       @fields.title()
       @fields.assessmentType()
