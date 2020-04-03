@@ -100,7 +100,11 @@ const offlineRefresh = (node) => {
   updateTimingInfo(node, data);
 };
 
-const nodes = [...document.getElementsByClassName('timing-information')];
+const nodesIter = document.getElementsByClassName('timing-information');
+const nodes = [];
+for (let i = 0, len = nodesIter.length; i < len; i += 1) {
+  nodes.push(nodesIter[i]);
+}
 
 const refreshAll = () => {
   nodes.forEach((node) => {
