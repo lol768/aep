@@ -154,7 +154,7 @@ object Assessment {
   // Students are allowed an extra hour after the official finish time of the exam
   // for them to make submissions. Anything submitted during this period should be
   // marked as LATE though.
-  val lateSubmissionPeriod: Duration = Duration.ofHours(1)
+  val lateSubmissionPeriod: Duration = Duration.ofHours(2)
 
   sealed trait State extends EnumEntry {
     val label: String = entryName
