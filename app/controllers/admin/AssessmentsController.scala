@@ -167,14 +167,14 @@ class AssessmentsController @Inject()(
         departmentCode = assessment.departmentCode,
         sequence = assessment.sequence,
         invigilators = Option(assessment.invigilators),
-      title = assessment.title,
-      description = assessment.brief.text,
-      durationMinutes = assessment.duration.toMinutes,
-      platform = assessment.platform,
-      assessmentType = assessment.assessmentType,
-      url = assessment.brief.url,
-      operation = assessment.state
-    )), departments))
+        title = assessment.title,
+        description = assessment.brief.text,
+        durationMinutes = assessment.duration.toMinutes,
+        platform = assessment.platform,
+        assessmentType = assessment.assessmentType,
+        url = assessment.brief.url,
+        operation = assessment.state
+      )), departments))
     }
   }
 
