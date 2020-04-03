@@ -1,0 +1,10 @@
+@import domain.tabula
+@import domain.DepartmentCode
+
+@(department: Option[tabula.Department], deptCode: DepartmentCode)
+@department.map { dept =>
+  @dept.fullName
+  <span class="text-muted">(@dept.code)</span>
+}.getOrElse {
+  @deptCode.string
+}

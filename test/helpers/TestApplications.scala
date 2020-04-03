@@ -8,6 +8,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.routing.Router
 import play.api.{Application, Configuration, Environment}
 import routes.EmptyRouter
+import services.tabula.TabulaDepartmentService
 import uk.ac.warwick.sso.client.SSOClientHandler
 import uk.ac.warwick.util.virusscan.VirusScanService
 import warwick.accesslog.LogbackAccessModule
@@ -68,6 +69,9 @@ object TestApplications extends MockitoSugar {
 
         // Because we don't need to check our lovely files for viruses
         bind[VirusScanService].to[ThisIsFineVirusScanService],
+
+        // Because departments lookup via tabula is trustedapps nonsesense
+        bind[TabulaDepartmentService].to[FakeTabulaDepartmentService]
       )
 
   def full(defaultUser: Option[User] = None, additionalConfiguration: Map[String, Any] = Map.empty): Application =

@@ -45,11 +45,11 @@ object WebSocketActor {
 
   case class AssessmentTimingInformation(
     id: UUID,
+    timeRemaining: Option[Long],
     extraTimeAdjustment: Option[Long],
     timeUntilStart: Option[Long],
     timeSinceStart: Option[Long],
-    timeUntilOnTimeEndForStudent: Option[Long],
-    timeUntilLateEndForStudent: Option[Long],
+    timeUntilEndOfWindow: Option[Long],
     hasStarted: Boolean,
     hasFinalised: Boolean,
   )
@@ -110,6 +110,10 @@ class WebSocketActor @Inject() (
                 studentAssessmentId = assessmentId,
                 JavaTime.offsetDateTime)
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
+              .recover {
+                case e: Exception =>
+                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment $assessmentId")
+              }
           })
 
         case m if m.`type` == "RequestAssessmentTiming" && m.data.exists(_.validate[RequestAssessmentTiming](readsRequestAssessmentTiming).isSuccess) =>
