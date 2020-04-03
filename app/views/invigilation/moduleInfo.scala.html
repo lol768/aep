@@ -1,0 +1,45 @@
+@import tags._
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@import domain.Assessment
+@import domain.tabula
+
+@(
+    assessment: Assessment,
+    department: Option[tabula.Department],
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+<dl class="panel panel-default">
+    <div class="panel-body">
+        <dt>Module code</dt>
+        <dd>@assessment.moduleCode</dd>
+
+        <dt>Department code</dt>
+        <dd>
+        @department.map { dept =>
+            @dept.fullName
+            <span class="text-muted">(@dept.code)</span>
+        }.getOrElse {
+            @assessment.departmentCode.string
+        }
+        </dd>
+
+        <dt>State</dt>
+        <dd>@assessment.state.label</dd>
+
+        @assessment.tabulaAssessmentId.map { tabulaId =>
+            <dt>TabulaAssessment id</dt>
+            <dd>@tabulaId</dd>
+        }
+
+        <dt>Platform</dt>
+        <dd>@assessment.platform.label</dd>
+
+        <dt>Type</dt>
+        <dd>@assessment.assessmentType.label</dd>
+
+        <dt>Starts at</dt>
+        <dd>@assessment.startTime.map { t => @localisedDatetime(t) }</dd>
+
+        <dt>Duration</dt>
+        <dd>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)</dd>
+    </div>
+</dl>
