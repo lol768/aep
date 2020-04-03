@@ -1,6 +1,6 @@
 package services
 
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import com.google.common.io.ByteSource
@@ -31,6 +31,10 @@ trait AssessmentService {
 
   def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
+  def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
+  def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]]
 
   def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
@@ -51,6 +55,7 @@ class AssessmentServiceImpl @Inject()(
   auditService: AuditService,
   daoRunner: DaoRunner,
   dao: AssessmentDao,
+  studentAssessmentDao: StudentAssessmentDao,
   uploadedFileService: UploadedFileService,
 )(implicit ec: ExecutionContext) extends AssessmentService {
 
@@ -99,6 +104,38 @@ class AssessmentServiceImpl @Inject()(
       s"Could not find Assessment with ID ${id} with invigilators ${usercodes.map(_.string).mkString(",")}"
     )
   }
+
+  override def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.getToday).flatMap(inflate)
+
+  // Returns all assessments where the start time has passed, and the latest possible finish time for any student is yet to come
+  override def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    getTodaysAssessments.flatMap { result =>
+      result.toOption.map { todaysAssessments =>
+        daoRunner.run(studentAssessmentDao.getByAssessmentIds(todaysAssessments.map(_.id))).map { todaysStudentAssessments =>
+          val longestAdjustments = todaysAssessments.map { assessment =>
+            assessment.id -> todaysStudentAssessments
+              .filter(sa => sa.assessmentId == assessment.id)
+              .maxBy(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
+              .extraTimeAdjustment.getOrElse(Duration.ZERO)
+          }.toMap
+          val now = JavaTime.offsetDateTime
+          ServiceResults.success {
+            todaysAssessments.filter { a => longestAdjustments.get(a.id).exists { adjustment =>
+              a.startTime.exists {
+                st => st
+                  .plus(a.duration)
+                  .plus(Assessment.lateSubmissionPeriod)
+                  .plus(adjustment)
+                  .isAfter(now)
+              }
+            }}
+          }
+        }
+      }.getOrElse {
+        Future.successful(ServiceResults.error("Error getting today's assessments"))
+      }
+    }
 
   override def getByIds(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
     daoRunner.run(dao.loadByIdsWithUploadedFiles(ids))

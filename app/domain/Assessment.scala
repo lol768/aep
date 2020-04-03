@@ -28,9 +28,9 @@ sealed trait BaseAssessment {
 
   def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
 
-  def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
+  def lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
-  def hasWindowPassed: Boolean = endTime.exists(_.isBefore(JavaTime.offsetDateTime))
+  def hasWindowPassed: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
@@ -161,7 +161,7 @@ object Assessment {
   // Updated in OE-148
   val lateSubmissionPeriod: Duration = Duration.ofHours(2)
 
-  val window: Duration = Duration.ofHours(8)
+  private[domain] val window: Duration = Duration.ofHours(24)
 
   sealed trait State extends EnumEntry {
     val label: String = entryName

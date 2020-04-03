@@ -16,30 +16,31 @@ sealed trait BaseStudentAssessmentWithAssessment {
 
   def isCurrentForStudent: Boolean = !finalised &&
     assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
-    assessment.endTime.exists(_.isAfter(JavaTime.offsetDateTime))
+    assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
+
+  // How long the student has to submit without being counted late
+  lazy val duration = assessment.duration
+    .plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
+
+  // Hard limit for student submitting, though they may be counted late.
+  lazy val durationIncludingLate = duration.plus(Assessment.lateSubmissionPeriod)
 
   def getTimingInfo: AssessmentTimingInformation = {
     val now = JavaTime.offsetDateTime
-    val baseDuration = assessment.duration
-    val (timeRemaining, extraTimeAdjustment) = studentAssessment.startTime match {
-      case _ if !inProgress =>
-        (None, None)
-      case Some(studentStart) =>
-        studentAssessment.extraTimeAdjustment.map { et => (
-          Some(baseDuration.plus(et).minus(Duration.between(studentStart, now)).toMillis),
-          Some(et.toMillis)
-        )}.getOrElse(
-          (Some(baseDuration.minus(Duration.between(studentStart, now)).toMillis), None)
-        )
+
+    val timeRemaining = studentAssessment.startTime match {
+      case Some(studentStart) if inProgress =>
+        Some(duration.minus(Duration.between(studentStart, now)).toMillis)
+      case _ => None
     }
 
     AssessmentTimingInformation(
       id = assessment.id,
       timeRemaining = timeRemaining,
-      extraTimeAdjustment = extraTimeAdjustment,
+      extraTimeAdjustment = studentAssessment.extraTimeAdjustment.map(_.toMillis),
       timeSinceStart = if (inProgress) Some(Duration.between(studentAssessment.startTime.get, now).toMillis) else None,
       timeUntilStart = if (studentAssessment.startTime.isEmpty && !assessment.hasWindowPassed) Some(Duration.between(now, assessment.startTime.get).toMillis) else None,
-      timeUntilEndOfWindow = if (!studentAssessment.hasFinalised) assessment.endTime.map(Duration.between(now, _).toMillis) else None,
+      timeUntilEndOfWindow = if (!studentAssessment.hasFinalised) assessment.lastAllowedStartTime.map(Duration.between(now, _).toMillis) else None,
       hasStarted = studentAssessment.startTime.nonEmpty,
       hasFinalised = studentAssessment.hasFinalised
     )

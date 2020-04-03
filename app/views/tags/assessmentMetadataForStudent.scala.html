@@ -19,7 +19,7 @@
         <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@DurationFormatUtils.formatDurationWords(assessmentWithData.assessment.duration.toMillis, true, true)
     </dd>
     @assessmentWithData.assessment.startTime.map { startTime =>
-        @assessmentWithData.assessment.endTime.map { end =>
+        @assessmentWithData.assessment.lastAllowedStartTime.map { end =>
             <dt>Can start</dt>
             <dd>
                 @localisedDatetimeRange(startTime, end, hideLatter = true)

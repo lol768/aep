@@ -6,11 +6,9 @@
     @assessmentMetadataInternal(assessment)
 
     @assessment.startTime.map { startTime =>
-        <dt>Can start</dt>
+        <dt>Start time</dt>
         <dd>
-            @defining(startTime.plus(Assessment.window)) { endTime =>
-                @localisedDatetimeRange(startTime, endTime, true)
-            }
+            @localisedDatetime(startTime)
         </dd>
     }
 </dl>

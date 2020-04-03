@@ -15,9 +15,9 @@
         data-rendering="@{
             Json.stringify(Json.toJson(Map(
                 "windowStart" -> JsNumber(startTime.toInstant.toEpochMilli),
-                "windowEnd" -> JsNumber(studentAssessmentWithAssessment.assessment.endTime.get.toInstant.toEpochMilli),
+                "windowEnd" -> JsNumber(studentAssessmentWithAssessment.assessment.lastAllowedStartTime.get.toInstant.toEpochMilli),
                 "start" -> studentAssessmentWithAssessment.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli)).getOrElse(JsNull),
-                "end" -> studentAssessmentWithAssessment.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli + studentAssessmentWithAssessment.assessment.duration.toMillis)).getOrElse(JsNull),
+                "end" -> studentAssessmentWithAssessment.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli + studentAssessmentWithAssessment.duration.toMillis)).getOrElse(JsNull),
                 "hasStarted" -> JsBoolean(studentAssessmentWithAssessment.studentAssessment.startTime.nonEmpty),
                 "hasFinalised" -> JsBoolean(studentAssessmentWithAssessment.studentAssessment.finaliseTime.nonEmpty),
                 "extraTimeAdjustment" -> studentAssessmentWithAssessment.studentAssessment.extraTimeAdjustment.map(et => JsNumber(et.toMillis)).getOrElse(JsNull)

@@ -14,12 +14,12 @@
         <dd>@tags.localisedDatetime(assessment.studentAssessment.finaliseTime.get)</dd>
     } else {
         @assessment.assessment.startTime.map { startTime =>
-            <dt>Can start</dt>
-            <dd>
-                @defining(startTime.plus(Assessment.window)) { endTime =>
-                    @localisedDatetimeRange(startTime, endTime)
-                }
-            </dd>
+            @assessment.assessment.lastAllowedStartTime.map { end =>
+                <dt>Can start</dt>
+                <dd>
+                    @localisedDatetimeRange(startTime, end)
+                </dd>
+            }
         }
     }
 </dl>
