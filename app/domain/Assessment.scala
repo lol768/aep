@@ -46,7 +46,7 @@ case class Assessment(
   moduleCode: String,
   departmentCode: DepartmentCode,
   sequence: String
-) extends BaseAssessment {
+) extends BaseAssessment with Ordered[Assessment] {
   def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
     id,
     paperCode,
@@ -63,6 +63,13 @@ case class Assessment(
     departmentCode,
     sequence,
   )
+
+  override def compare(that: Assessment): Int = {
+    Ordering.Tuple3[OffsetDateTime, String, String].compare(
+      (this.startTime.getOrElse(OffsetDateTime.MAX), this.paperCode, this.section.getOrElse("")),
+      (that.startTime.getOrElse(OffsetDateTime.MAX), that.paperCode, that.section.getOrElse(""))
+    )
+  }
 }
 
 case class AssessmentMetadata(
@@ -154,14 +161,10 @@ object Assessment {
   }
 
   object State extends PlayEnum[State] {
-
-    case object Draft extends State
-
+    case object Imported extends State { override val label: String = "Needs setup" }
+    case object Draft extends State { override val label: String = "Needs setup" }
     case object Submitted extends State
-
-    case object Approved extends State
-
-    case object Imported extends State
+    case object Approved extends State { override val label: String = "Ready" }
 
     val values: IndexedSeq[State] = findValues
   }

@@ -32,7 +32,7 @@
                 @if(isAssessmentPage) {
                     @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessment.assessment.id)) { implicit fc =>
                         @if(assessment.studentAssessment.startTime.isEmpty) {
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="startAssessment">
                                 Start
                             </button>
                         }

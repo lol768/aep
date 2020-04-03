@@ -3,15 +3,9 @@
 @()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
 @if(form("paperCode").value.isDefined) {
-    @b3.text(form("paperCode"), Symbol("_label") -> "Paper code", Symbol("disabled") -> true )
-    @b3.hidden(form("paperCode"))
+    @b3.text(form("paperCode"), Symbol("_label") -> "Paper code", Symbol("readonly") -> true )
 } else {
     @b3.text(form("paperCode"), Symbol("_label") -> "Paper code")
 }
 
-@if(form("section").value.isDefined) {
-    @b3.text(form("section"), Symbol("_label") -> "Section", Symbol("disabled") -> true )
-    @b3.hidden(form("section"))
-} else {
-    @b3.text(form("section"), Symbol("_label") -> "Section")
-}
+@b3.text(form("section"), Symbol("_label") -> "Section", Symbol("readonly") -> true )

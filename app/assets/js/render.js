@@ -58,4 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelectorAll('.undisable-with-checkbox[data-undisable-selector]').length > 0) {
     import('./undisable-with-checkbox');
   }
+
+  if (document.querySelectorAll('.studentAssessmentInfo').length > 0) {
+    import('./studentAssessmentInfo');
+  }
 });

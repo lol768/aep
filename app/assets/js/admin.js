@@ -68,4 +68,8 @@ $(() => {
         $('.popover').each((i, popover) => closePopover($(popover)));
       }
     });
+
+  if (document.querySelectorAll('.studentAssessmentInfo').length > 0) {
+    import('./studentAssessmentInfo');
+  }
 });

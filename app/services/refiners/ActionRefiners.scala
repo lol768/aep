@@ -126,10 +126,10 @@ class ActionRefiners @Inject() (
         }
     }
 
-  val IsInvigilator: Filter[AssessmentSpecificRequest] =
+  val IsInvigilatorOrAdmin: Filter[AssessmentSpecificRequest] =
     new Filter[AssessmentSpecificRequest] {
       override protected def apply[A](implicit request: AssessmentSpecificRequest[A]): Future[Option[Result]] = Future.successful {
-        if (request.context.user.exists(u => request.assessment.invigilators.contains(u.usercode)))
+        if (request.context.user.exists(u => request.assessment.invigilators.contains(u.usercode)) || request.context.userHasRole(Roles.Admin))
           None
         else
           Some(Forbidden(views.html.errors.forbidden(None)))

@@ -106,6 +106,8 @@ trait StudentAssessmentDao {
   def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def get(studentId: UniversityID, assessmentId: UUID): DBIO[Option[StoredStudentAssessment]]
   def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Option[(StoredStudentAssessment, Set[StoredUploadedFile])]]
+
+  def delete(studentId: UniversityID, assessmentId: UUID): DBIO[Int]
 }
 
 @Singleton
@@ -165,4 +167,7 @@ class StudentAssessmentDaoImpl @Inject()(
   override def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Option[(StoredStudentAssessment, Set[StoredUploadedFile])]] =
     getQuery(studentId, assessmentId).withUploadedFiles.result
       .map(OneToMany.leftJoinUnordered(_).headOption)
+
+  override def delete(studentId: UniversityID, assessmentId: UUID): DBIO[Int] =
+    getQuery(studentId, assessmentId).delete
 }

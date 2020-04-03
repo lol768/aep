@@ -31,6 +31,7 @@ class UploadedFileDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachT
             result.contentType mustBe file.contentType
             result.contentLength mustBe file.contentLength
             result.uploadedBy mustBe file.uploadedBy
+            result.uploadStarted.toInstant mustBe file.uploadStarted.toInstant
             result.ownerId mustBe file.ownerId
             result.ownerType mustBe file.ownerType
 
