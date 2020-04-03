@@ -1,9 +1,10 @@
 package services
 
+import java.time.OffsetDateTime
 import scala.concurrent.{ExecutionContext, Future}
 import akka.Done
 import com.google.inject.ImplementedBy
-import domain.AssessmentClientNetworkActivity
+import domain.{AssessmentClientNetworkActivity, Page, StudentAssessment}
 import domain.dao.{AssessmentClientNetworkActivityDao, DaoRunner}
 import javax.inject.{Inject, Singleton}
 import warwick.core.helpers.ServiceResults
@@ -13,6 +14,7 @@ import warwick.core.timing.TimingContext
 @ImplementedBy(classOf[AssessmentClientNetworkActivityServiceImpl])
 trait AssessmentClientNetworkActivityService {
   def record(assessmentClientNetworkActivity: AssessmentClientNetworkActivity)(implicit t: TimingContext): Future[ServiceResult[Done]]
+  def getClientActivityFor(assessments: Seq[StudentAssessment], startDate:Option[OffsetDateTime], endDate: Option[OffsetDateTime], page: Page)(implicit t: TimingContext): Future[ServiceResult[(Int,Seq[AssessmentClientNetworkActivity])]]
 }
 
 @Singleton
@@ -23,5 +25,24 @@ class AssessmentClientNetworkActivityServiceImpl @Inject()(
 
   override def record(assessmentClientNetworkActivity: AssessmentClientNetworkActivity)(implicit t: TimingContext): Future[ServiceResult[Done]] = {
     daoRunner.run(dao.insert(assessmentClientNetworkActivity)).map(_ => ServiceResults.success(Done))
+  }
+
+  override  def getClientActivityFor(assessments: Seq[StudentAssessment], startDate:Option[OffsetDateTime], endDate: Option[OffsetDateTime], page: Page)(implicit t: TimingContext): Future[ServiceResult[(Int,Seq[AssessmentClientNetworkActivity])]] = {
+    def hasData = startDate.nonEmpty || endDate.nonEmpty
+
+    def activitiesWithFiler = for {
+      emails <- dao.getClientActivityFor(assessments, startDate, endDate, page.offset, page.maxResults)
+      total <- dao.countClientActivityFor(assessments, startDate, endDate)
+    } yield (total,emails)
+
+//    def allActivities = for {
+//      emails <- dao.getClientActivities(page.offset, page.maxResults)
+//      total <- dao.countClientActivities()
+//    } yield (total, emails)
+
+    daoRunner.run(activitiesWithFiler.map(ServiceResults.success))
+
+//    if(hasData) daoRunner.run(activitiesWithFiler.map(ServiceResults.success))
+//    else daoRunner.run(allActivities).map(ServiceResults.success)
   }
 }

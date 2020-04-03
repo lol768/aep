@@ -2,16 +2,19 @@ package controllers.admin
 
 import java.time.OffsetDateTime
 
-import controllers.BaseController
-import controllers.admin.ViewStudentActivityController.{StudentActivityData, sudentActivityForm}
+import controllers.{BaseController, FormMappings}
+import controllers.admin.ViewStudentActivityController.{StudentActivityData, studentActivityForm}
+import domain.{AssessmentClientNetworkActivity, Pagination}
 import javax.inject.{Inject, Singleton}
-import services.SecurityService
+import services.{AssessmentClientNetworkActivityService, SecurityService, StudentAssessmentService}
 
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.data.Form
 import play.api.data.Forms.{mapping, _}
-import play.api.mvc.{Action, AnyContent}
+import play.api.i18n.Messages
+import play.api.mvc.{Action, AnyContent, Result}
 import warwick.core.helpers.JavaTime
+import warwick.sso.{AuthenticatedRequest, UserLookupService, Usercode}
 
 object ViewStudentActivityController {
 
@@ -21,28 +24,60 @@ object ViewStudentActivityController {
     endDate: Option[OffsetDateTime] = None,
   )
 
-  val sudentActivityForm = Form(mapping(
+  val studentActivityForm = Form(mapping(
     "usercode" -> nonEmptyText,
-    "startDate" -> optional(JavaTime.offsetDateTimeFormField),
-    "endDate" -> optional(JavaTime.offsetDateTimeFormField)
+    "startDate" -> optional(FormMappings.offsetDateTime),
+    "endDate" -> optional(FormMappings.offsetDateTime)
   )(StudentActivityData.apply)(StudentActivityData.unapply))
 }
 
 @Singleton
 class ViewStudentActivityController  @Inject()(
   security: SecurityService,
-
+  studentAssessmentService: StudentAssessmentService,
+  userLookupService: UserLookupService,
+  assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
 )(implicit ec: ExecutionContext) extends BaseController {
   import security._
 
+  def activityPerPage: Int = 120
+
   def index: Action[AnyContent] = RequireSysadmin.async { implicit request =>
-    Future.successful(Ok(views.html.admin.studentActivity.activityForm(sudentActivityForm)))
+    renderForm(studentActivityForm)
   }
 
-  def filter: Action[AnyContent] = RequireSysadmin.async { implicit request =>
-    val form = sudentActivityForm.bindFromRequest()
-    val studentActivityData = form.value.getOrElse(StudentActivityData)
+  def filter(page: Int = 0): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    studentActivityForm.bindFromRequest.fold(
+      errors => renderForm(errors),
+      data => {
+        userLookupService.getUser(Usercode(data.usercode)).map{ user =>
+          user.universityId.map{ universityId =>
+            studentAssessmentService.byUniversityId(universityId).successFlatMap{ assessments =>
+              assessmentClientNetworkActivityService.getClientActivityFor(assessments.map(_.studentAssessment), data.startDate, data.endDate, Pagination.asPage(page, activityPerPage)).successFlatMap{ case (total, activities) =>
+                renderForm(studentActivityForm.bindFromRequest, activities, total, page, true)
+              }
+            }
+          }.getOrElse(
+            renderForm(form=studentActivityForm, flash=Map("error" -> Messages("flash.missing.universityId")))
+          )
+        }.getOrElse(
+          renderForm(form=studentActivityForm, flash=Map("error" -> Messages("flash.invalid.usercode", data.usercode)))
+        )
+      }
+    )
+  }
 
-    Future.successful(Ok(views.html.admin.studentActivity.activityForm(form)))
+  private def renderForm(
+    form: Form[StudentActivityData],
+    results: Seq[AssessmentClientNetworkActivity] = Seq.empty,
+    total: Int = 0,
+    page: Int = 0,
+    showResults: Boolean = false,
+    flash: Map[String,String] = Map.empty
+  )(implicit req: AuthenticatedRequest[_]): Future[Result] = {
+    val pagination = Pagination(total, page, controllers.admin.routes.ViewStudentActivityController.filter(), activityPerPage)
+    val activityForm = Ok(views.html.admin.studentActivity.activityForm(form, pagination, results, showResults))
+    val result = if(flash.nonEmpty) activityForm.flashing(flash.head) else activityForm
+    Future.successful(result)
   }
 }

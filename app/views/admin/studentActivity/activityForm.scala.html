@@ -1,27 +1,70 @@
 @import controllers.admin.ViewStudentActivityController.StudentActivityData
+@import domain.Pagination
+@import domain.AssessmentClientNetworkActivity
+@import views.tags.formatDate
 @(
-    form: Form[StudentActivityData]
+    form: Form[StudentActivityData],
+    pagination: Pagination,
+    activities: Seq[AssessmentClientNetworkActivity],
+    showResults: Boolean,
 )(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
 
 @adminLayout("Student activity") {
 
+    @b3.inline.formCSRF(controllers.admin.routes.ViewStudentActivityController.filter(), Symbol("class") -> "text-center") { implicit fc =>
+        @views.html.tags.globalErrors(form)
 
-        @b3.inline.formCSRF(controllers.admin.routes.ViewStudentActivityController.filter, Symbol("class") -> "text-center") { implicit fc =>
-            @views.html.tags.globalErrors(form)
+        @b3.text(form("usercode"),
+            Symbol("_label") -> "Student",
+            Symbol("class") -> "flexi-picker",
+            Symbol("data-include-groups") -> "false",
+            Symbol("placeholder") -> "Name or usercode",
+            Symbol("autofocus") -> true,
+            Symbol("autocomplete") -> "off"
+        )
 
-            @b3.text(form("usercode"),
-                Symbol("_label") -> "Student",
-                Symbol("class") -> "flexi-picker",
-                Symbol("data-include-groups") -> "false",
-                Symbol("placeholder") -> "Name or usercode",
-                Symbol("autofocus") -> true,
-                Symbol("autocomplete") -> "off"
-            )
+        @b3.datetimePicker(form("startDate"), Symbol("value") -> None, Symbol("placeholder") -> "From (optional)")
+        @b3.datetimePicker(form("endDate"), Symbol("value") -> None, Symbol("placeholder") -> "To (optional)")
 
-            @b3.datetimePicker(form("startDate"), Symbol("value") -> None, Symbol("placeholder") -> "From (optional)")
-            @b3.datetimePicker(form("endDate"), Symbol("value") -> None, Symbol("placeholder") -> "To (optional)")
+        @b3.submit(Symbol("class") -> "btn btn-default") {
+            <i class="fad fa-search fa-fw"></i> find }
+    }
 
-            @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fad fa-search fa-fw"></i> find }
+    @if(showResults) {
+        @if(activities.isEmpty) {
+            <p>There is no student activity for the specified student and date range</p>
+        } else {
+            @tags.pageNumberPagination(pagination, Seq(form))
+
+            <table class="table table-hover table-striped table-paginated">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Downlink</th>
+                        <th>Downlink Max</th>
+                        <th>Connection</th>
+                        <th>RTT</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @activities.map{ activity =>
+                    <tr>
+                        <td>@formatDate.compactDateTime(activity.timestamp)</td>
+                        <td>@activity.downlink.getOrElse("-")</td>
+                        <td>@activity.downlinkMax.getOrElse("-")</td>
+                        <td>@activity.effectiveType.getOrElse("-")</td>
+                        <td>@activity.rtt.getOrElse("-")</td>
+                        <td>@{activity.`type`.getOrElse("-")}</td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+
+            @tags.pageNumberPagination(pagination, Seq(form))
         }
-
+    }
 }
+
+
+

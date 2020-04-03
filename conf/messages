@@ -19,6 +19,8 @@ flash.dataGeneration.randomAssessments=Added {0} randomly generated assessments 
 flash.dataGeneration.randomAssessmentsWithStudentAssessments=Added {0} randomly generated assessments with associated student assessments to the database.
 flash.assessment.announcement.created=Assessment announcement created
 flash.messages.sentToInvigilator=Message sent to invigilator
+flash.missing.universityId=The user has a missing university ID
+flash.invalid.usercode=There was no user found with usercode {0}
 
 # Overrides of keys in messages.default
 
