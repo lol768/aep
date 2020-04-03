@@ -1,0 +1,7 @@
+@(form: Form[_])(implicit messagesProvider: MessagesProvider)
+
+@if(form.hasErrors) {
+  <div class="alert alert-danger">
+    There were errors in the form, and they are shown below.
+  </div>
+}

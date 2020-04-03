@@ -78,7 +78,9 @@ object AssessmentsController {
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText),
     "operation" -> State.formField
-  )(AssessmentFormData.apply)(AssessmentFormData.unapply))
+  )(AssessmentFormData.apply)(AssessmentFormData.unapply)
+    .verifying("error.assessment.url-not-specified", data => data.operation == State.Draft || data.platform == Platform.OnlineExams || data.url.exists(_.nonEmpty))
+  )
 
   case class AdHocAssessmentFormData(
     moduleCode: String,
@@ -116,7 +118,9 @@ object AssessmentsController {
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText),
     "operation" -> State.formField
-  )(AdHocAssessmentFormData.apply)(AdHocAssessmentFormData.unapply))
+  )(AdHocAssessmentFormData.apply)(AdHocAssessmentFormData.unapply)
+    .verifying("error.assessment.url-not-specified", data => data.operation == State.Draft || data.platform == Platform.OnlineExams || data.url.exists(_.nonEmpty))
+  )
 }
 
 @Singleton
@@ -163,33 +167,38 @@ class AssessmentsController @Inject()(
     adHocAssessmentForm.bindFromRequest().fold(
       formWithErrors => Future.successful(Ok(views.html.admin.assessments.create(formWithErrors))),
       data => {
-        import helpers.DateConversion._
-        assessmentService.insert(
-          Assessment(
-            paperCode = data.paperCode,
-            section = data.section,
-            title = data.title,
-            startTime = data.startTime.map(_.asOffsetDateTime),
-            duration = Duration.ofMinutes(data.durationMinutes),
-            platform = data.platform,
-            assessmentType = data.assessmentType,
-            brief = Brief(
-              text = data.description,
-              url = data.url,
-              files = Nil,
+        val files = request.body.files.map(_.ref).map(f => (f.in, f.metadata))
+        if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
+          Future.successful(Ok(views.html.admin.assessments.create(adHocAssessmentForm.fill(data).withGlobalError("error.assessment.files-not-provided"))))
+        } else {
+          import helpers.DateConversion._
+          assessmentService.insert(
+            Assessment(
+              paperCode = data.paperCode,
+              section = data.section,
+              title = data.title,
+              startTime = data.startTime.map(_.asOffsetDateTime),
+              duration = Duration.ofMinutes(data.durationMinutes),
+              platform = data.platform,
+              assessmentType = data.assessmentType,
+              brief = Brief(
+                text = data.description,
+                url = data.url,
+                files = Nil,
+              ),
+              invigilators = data.invigilators.get,
+              state = data.operation,
+              tabulaAssessmentId = None,
+              examProfileCode = "EXAPR20",
+              moduleCode = data.moduleCode,
+              departmentCode = data.departmentCode,
+              sequence = data.sequence,
+              id = UUID.randomUUID()
             ),
-            invigilators = data.invigilators.get,
-            state = data.operation,
-            tabulaAssessmentId = None,
-            examProfileCode = "EXAPR20",
-            moduleCode = data.moduleCode,
-            departmentCode = data.departmentCode,
-            sequence = data.sequence,
-            id = UUID.randomUUID()
-          ),
-          files = request.body.files.map(_.ref).map(f => (f.in, f.metadata)),
-        ).successMap { _ =>
-          Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessment.created", data.title))
+            files
+          ).successMap { _ =>
+            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessment.created", data.title))
+          }
         }
       })
   }
@@ -202,18 +211,22 @@ class AssessmentsController @Inject()(
         data => {
           if (assessment.state != State.Approved) {
             val files = request.body.files.map(_.ref)
-            assessmentService.update(assessment.copy(
-              title = data.title,
-              duration = Duration.ofMinutes(data.durationMinutes),
-              platform = data.platform,
-              assessmentType = data.assessmentType,
-              brief = assessment.brief.copy(
-                text = data.description,
-                url = data.url
-              ),
-              state = data.operation
-            ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
-              Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
+            if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
+              Future.successful(Ok(views.html.admin.assessments.show(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"))))
+            } else {
+              assessmentService.update(assessment.copy(
+                title = data.title,
+                duration = Duration.ofMinutes(data.durationMinutes),
+                platform = data.platform,
+                assessmentType = data.assessmentType,
+                brief = assessment.brief.copy(
+                  text = data.description,
+                  url = data.url
+                ),
+                state = data.operation
+              ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
+                Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
+              }
             }
           } else {
             Future.successful(MethodNotAllowed(views.html.errors.approvedAssessment()))
