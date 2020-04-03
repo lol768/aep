@@ -1,13 +1,14 @@
 @import controllers.admin.AssessmentsController.{AbstractAssessmentFormData, AssessmentFormData}
 @import domain.Assessment
 @import views.html.admin.assessments.fields
-@(assessment: Assessment, form: Form[AssessmentFormData])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
+@import domain.Department
+@(assessment: Assessment, form: Form[AssessmentFormData], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
   @adminLayout(s"Assessment for ${assessment.title} (${assessment.moduleCode})") {
     @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.update(assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
       @fields.module()
       @fields.paper()
-      @fields.department()
+      @fields.department(departments)
       @fields.title()
       @fields.assessmentType()
       @fields.sequence()

@@ -1,12 +1,14 @@
 @import controllers.admin.AssessmentsController.{AbstractAssessmentFormData, AdHocAssessmentFormData}
 @import views.html.admin.assessments.fields
-@(form: Form[AdHocAssessmentFormData])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
+@import domain.DepartmentCode
+@import domain.Department
+@(form: Form[AdHocAssessmentFormData], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
     @adminLayout(s"Create assessment") {
         @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.save(), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
             @fields.module()
             @fields.paper()
-            @fields.department()
+            @fields.department(departments: Seq[Department])
             @fields.title()
             <label class="control-label" for="invigilators">Invigilators</label>
             <div class="flexi-picker-collection" data-automatic="true">
