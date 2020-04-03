@@ -23,13 +23,7 @@ class ImportTabulaAssessmentsJob @Inject()(
         throw new JobExecutionException(throwable.orNull)
       },
       data => data
-    )).map { assessmentImportResult =>
-      if (assessmentImportResult.error) {
-        throw new JobExecutionException("Error processing departmental import")
-      } else {
-        JobResult.success("completed")
-      }
-    }
+    )).map(_ => JobResult.success("completed"))
   }
 
 }

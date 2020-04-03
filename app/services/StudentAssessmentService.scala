@@ -8,6 +8,7 @@ import com.google.inject.ImplementedBy
 import domain.AuditEvent._
 import domain._
 import StudentAssessmentService._
+import akka.Done
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao._
@@ -38,6 +39,7 @@ trait StudentAssessmentService {
   def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
+  def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]]
 }
 
 @Singleton
@@ -278,6 +280,10 @@ class StudentAssessmentServiceImpl @Inject()(
         .map(ServiceResults.success)
     }
   }
+
+  override def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] =
+    daoRunner.run(dao.delete(studentAssessment.studentId, studentAssessment.assessmentId))
+      .map(_ => ServiceResults.success(Done))
 
   private def noAssessmentFound(id: UUID) =
     throw new NoSuchElementException(s"Could not find an assessment with id ${id.toString}")

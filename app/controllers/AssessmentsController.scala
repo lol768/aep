@@ -1,5 +1,6 @@
 package controllers
 
+import domain.Assessment
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
 import services.{SecurityService, StudentAssessmentService}
