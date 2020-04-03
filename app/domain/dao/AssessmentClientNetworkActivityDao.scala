@@ -17,7 +17,6 @@ trait AssessmentClientNetworkActivityDao {
   def insert(activity: AssessmentClientNetworkActivity): DBIO[AssessmentClientNetworkActivity]
   def findByStudentAssessmentId(studentAssessmentId: UUID): DBIO[Seq[AssessmentClientNetworkActivity]]
   def getClientActivities(offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
-  def countClientActivities(): DBIO[Int]
   def getClientActivityFor(assessments: Seq[StudentAssessment], startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime], offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
   def countClientActivityFor(assessments: Seq[StudentAssessment],startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime]): DBIO[Int]
 }
@@ -43,11 +42,6 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
       .take(numberToReturn)
       .result
   }
-
-  override def countClientActivities(): DBIO[Int] =
-    assessmentClientNetworkActivities
-      .length
-      .result
 
   override def getClientActivityFor(assessments: Seq[StudentAssessment], startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime], offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]] = {
     clientActivityForQuery(assessments, startDateOpt, endDateOpt)
