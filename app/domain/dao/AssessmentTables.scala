@@ -7,7 +7,7 @@ import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
 import domain.dao.StudentAssessmentsTables.{StoredStudentAssessment, StoredStudentAssessmentVersion}
 import domain.dao.UploadedFilesTables.{StoredUploadedFile, StoredUploadedFileVersion}
-import domain.{DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
+import domain.{AssessmentClientNetworkActivity, DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json.JsValue
@@ -168,4 +168,22 @@ class AssessmentTables @Inject()(
 
   val uploadedFiles: VersionedTableQuery[StoredUploadedFile, StoredUploadedFileVersion, UploadedFiles, UploadedFileVersions] =
     VersionedTableQuery(TableQuery[UploadedFiles], TableQuery[UploadedFileVersions])
+
+  class AssessmentClientNetworkActivities(tag: Tag) extends Table[AssessmentClientNetworkActivity](tag, "assessment_client_network_activity") {
+    def downlink = column[Option[Double]]("downlink")
+    def downlinkMax = column[Option[Double]]("downlink_max")
+    def effectiveType = column[Option[String]]("effective_type")
+    def rtt = column[Option[Int]]("rtt")
+    def `type` = column[Option[String]]("type")
+    def studentAssessmentId = column[UUID]("student_assessment_id")
+    def timestamp = column[OffsetDateTime]("timestamp_utc")
+
+    def * = {
+      (downlink, downlinkMax, effectiveType, rtt, `type`, studentAssessmentId, timestamp).mapTo[AssessmentClientNetworkActivity]
+    }
+  }
+
+  val assessmentClientNetworkActivities = TableQuery[AssessmentClientNetworkActivities]
+
+
 }

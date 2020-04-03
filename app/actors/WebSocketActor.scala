@@ -7,10 +7,12 @@ import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Subscr
 import com.google.inject.assistedinject.Assisted
 import javax.inject.Inject
 import play.api.libs.json._
-import services.StudentAssessmentService
+import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
+import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation}
+import warwick.core.helpers.JavaTime
 
 import scala.concurrent.ExecutionContext
 
@@ -21,9 +23,10 @@ object WebSocketActor {
     pubsub: ActorRef,
     out: ActorRef,
     studentAssessmentService: StudentAssessmentService,
+    assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
     additionalTopics: Seq[String],
   )(implicit ec: ExecutionContext, t: TimingContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, additionalTopics))
+    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, additionalTopics))
 
   case class AssessmentAnnouncement(message: String)
 
@@ -33,13 +36,6 @@ object WebSocketActor {
   )
   val readsClientMessage: Reads[ClientMessage] = Json.reads[ClientMessage]
 
-  case class ClientNetworkInformation(
-    downlink: Option[Double], // mbps
-    downlinkMax: Option[Double], // mbps
-    effectiveType: Option[String], // 'slow-2g', '2g', '3g', or '4g',
-    rtt: Option[Int], // rounded to nearest 25ms
-    `type`: Option[String], // bluetooth, cellular, ethernet, none, wifi, wimax, other, unknown
-  )
   val readsClientNetworkInformation: Reads[ClientNetworkInformation] = Json.reads[ClientNetworkInformation]
 
   case class RequestAssessmentTiming(
@@ -73,6 +69,7 @@ class WebSocketActor @Inject() (
   pubsub: ActorRef,
   loginContext: LoginContext,
   @Assisted studentAssessmentService: StudentAssessmentService,
+  @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   additionalTopics: Seq[String],
 )(implicit
   ec: ExecutionContext
@@ -102,7 +99,22 @@ class WebSocketActor @Inject() (
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
-          // TODO handle client network information
+          networkInformation.studentAssessmentId.map(assessmentId => {
+            val assessmentClientNetworkActivity =
+              AssessmentClientNetworkActivity(
+                downlink = networkInformation.downlink,
+                downlinkMax = networkInformation.downlinkMax,
+                effectiveType = networkInformation.effectiveType,
+                rtt = networkInformation.rtt,
+                `type` = networkInformation.`type`,
+                studentAssessmentId = assessmentId,
+                JavaTime.offsetDateTime)
+            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
+              .recover {
+                case e: Exception =>
+                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment $assessmentId")
+              }
+          })
 
         case m if m.`type` == "RequestAssessmentTiming" && m.data.exists(_.validate[RequestAssessmentTiming](readsRequestAssessmentTiming).isSuccess) =>
           val assessmentId = m.data.get.as[RequestAssessmentTiming](readsRequestAssessmentTiming).assessmentId

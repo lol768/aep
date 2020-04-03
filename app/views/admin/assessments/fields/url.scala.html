@@ -2,5 +2,5 @@
 @import controllers.admin.AssessmentsController.AbstractAssessmentFormData
 @()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
-@b3.text(form("url"), Symbol("_label") -> "URL to exam")
+@b3.text(form("url"), Symbol("_label") -> "URL to assessment")
 

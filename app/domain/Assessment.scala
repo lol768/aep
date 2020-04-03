@@ -46,7 +46,7 @@ case class Assessment(
   moduleCode: String,
   departmentCode: DepartmentCode,
   sequence: String
-) extends BaseAssessment {
+) extends BaseAssessment with Ordered[Assessment] {
   def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
     id,
     paperCode,
@@ -63,6 +63,13 @@ case class Assessment(
     departmentCode,
     sequence,
   )
+
+  override def compare(that: Assessment): Int = {
+    Ordering.Tuple3[OffsetDateTime, String, String].compare(
+      (this.startTime.getOrElse(OffsetDateTime.MAX), this.paperCode, this.section.getOrElse("")),
+      (that.startTime.getOrElse(OffsetDateTime.MAX), that.paperCode, that.section.getOrElse(""))
+    )
+  }
 }
 
 case class AssessmentMetadata(
@@ -89,7 +96,7 @@ object Assessment {
 
   object Platform extends PlayEnum[Platform] {
     case object OnlineExams extends Platform {
-      val label = "Online Exams"
+      val label = "Alternative Exams Portal"
     }
 
     case object Moodle extends Platform {
@@ -114,7 +121,7 @@ object Assessment {
   object AssessmentType extends PlayEnum[AssessmentType] {
 
     case object OpenBook extends AssessmentType {
-      val label = "Open book"
+      val label = "Open book (including file based)"
     }
 
     case object MultipleChoice extends AssessmentType {
@@ -144,24 +151,21 @@ object Assessment {
     def empty: Brief = Brief(None, Seq.empty, None)
   }
 
-  // Students are allowed an extra hour after the official finish time of the exam
+  // Students are allowed 2 extra hours after the official finish time of the exam
   // for them to make submissions. Anything submitted during this period should be
   // marked as LATE though.
-  val lateSubmissionPeriod: Duration = Duration.ofHours(1)
+  // Updated in OE-148
+  val lateSubmissionPeriod: Duration = Duration.ofHours(2)
 
   sealed trait State extends EnumEntry {
     val label: String = entryName
   }
 
   object State extends PlayEnum[State] {
-
-    case object Draft extends State
-
+    case object Imported extends State { override val label: String = "Needs setup" }
+    case object Draft extends State { override val label: String = "Needs setup" }
     case object Submitted extends State
-
-    case object Approved extends State
-
-    case object Imported extends State
+    case object Approved extends State { override val label: String = "Ready" }
 
     val values: IndexedSeq[State] = findValues
   }

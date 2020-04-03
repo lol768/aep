@@ -11,6 +11,12 @@ const defaultHeartbeat = (ws) => {
     downlink, downlinkMax, effectiveType, rtt, type,
   } = networkInformation;
 
+  const inProgressAssessmentElement = document.querySelector('.in-progress-assessment-data');
+  let studentAssessmentId = null;
+  if (inProgressAssessmentElement) {
+    studentAssessmentId = inProgressAssessmentElement.getAttribute('data-id');
+  }
+
   const message = {
     type: 'NetworkInformation',
     data: {
@@ -19,6 +25,7 @@ const defaultHeartbeat = (ws) => {
       effectiveType,
       rtt,
       type,
+      studentAssessmentId,
     },
   };
 
