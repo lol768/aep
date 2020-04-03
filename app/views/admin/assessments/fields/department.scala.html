@@ -1,10 +1,12 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
 @import controllers.admin.AssessmentsController.AbstractAssessmentFormData
 @import domain.Assessment
-@(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+@import domain.Department
+@(existing: Option[Assessment], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
 @if(existing.nonEmpty) {
-  @b3.text(form("departmentCode"), Symbol("_label") -> "Department code", Symbol("readonly") -> true )
+  @b3.select(form("departmentCode"), options = ("", "") +: departments.map(d => d.code.string -> d.name), Symbol("_label") -> "Department", Symbol("readonly") -> true)
 } else {
-  @b3.text(form("departmentCode"), Symbol("_label") -> "Department code")
+  @b3.select(form("departmentCode"), options = ("", "") +: departments.map(d => d.code.string -> d.name), Symbol("_label") -> "Department")
 }
+
