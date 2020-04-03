@@ -4,8 +4,9 @@ import java.time.{Duration, LocalDateTime}
 import java.util.UUID
 
 import controllers.BaseController
-import domain.{Assessment, DepartmentCode}
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
+import domain.tabula.SitsProfile
+import domain.{Assessment, DepartmentCode}
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -13,12 +14,10 @@ import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.tabula.TabulaStudentInformationService
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
-import services.{AssessmentService, SecurityService, StudentAssessmentService, UploadedFileService}
-import warwick.core.helpers.ServiceResults
-import warwick.core.helpers.ServiceResults.ServiceResult
+import services.{AssessmentService, SecurityService, StudentAssessmentService}
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
-import warwick.sso.{AuthenticatedRequest, Usercode}
+import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -130,7 +129,6 @@ class AssessmentsController @Inject()(
   studentAssessmentService: StudentAssessmentService,
   studentInformationService: TabulaStudentInformationService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
-  uploadedFileService: UploadedFileService
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import AssessmentsController._
@@ -144,9 +142,11 @@ class AssessmentsController @Inject()(
 
   private def showForm(assessment: Assessment, assessmentForm: Form[AssessmentFormData])(implicit request: AuthenticatedRequest[_]): Future[Result] =
     studentAssessmentService.byAssessmentId(assessment.id).successFlatMap { studentAssessments =>
-      studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId))).successMap { studentInformation =>
-        Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm))
-      }
+      studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
+        .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
+        .map { studentInformation =>
+          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm))
+        }
     }
 
   def show(id: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
