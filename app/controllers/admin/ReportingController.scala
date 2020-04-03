@@ -27,10 +27,10 @@ class ReportingController @Inject()(
   def index: Action[AnyContent] = RequireAdmin.async { implicit request =>
     ServiceResults.zip(
       reportingService.todayAssessments,
-      reportingService.startedAndSubmittableAssessments,
-    ).successMap { case (today, startedAndSubmittable) =>
-      val notLive = today diff startedAndSubmittable
-      Ok(views.html.admin.reporting.index(startedAndSubmittable, notLive))
+      reportingService.liveAssessments
+    ).successMap { case (today, live) =>
+      val notLive = today diff live
+      Ok(views.html.admin.reporting.index(live, notLive))
     }
   }
 

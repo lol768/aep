@@ -45,11 +45,11 @@ object WebSocketActor {
 
   case class AssessmentTimingInformation(
     id: UUID,
+    timeRemaining: Option[Long],
     extraTimeAdjustment: Option[Long],
     timeUntilStart: Option[Long],
     timeSinceStart: Option[Long],
-    timeUntilOnTimeEndForStudent: Option[Long],
-    timeUntilLateEndForStudent: Option[Long],
+    timeUntilEndOfWindow: Option[Long],
     hasStarted: Boolean,
     hasFinalised: Boolean,
   )

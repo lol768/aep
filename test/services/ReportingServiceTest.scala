@@ -72,10 +72,9 @@ class ReportingServiceTest
           val todayResults = service.todayAssessments.serviceValue
           todayResults.length mustBe 24
 
-          // Not sure what makes sense in this section following new approach to timings (OE-116)
-          //val startedAndSubmittableResults = service.startedAndSubmittableAssessments.serviceValue
-          //startedAndSubmittableResults.length mustBe 8
-          //startedAndSubmittableResults.map(_.startTime.get.getHour) mustEqual (3 to 10)
+          val liveResults = service.liveAssessments.serviceValue
+          liveResults.length mustBe 8
+          liveResults.map(_.startTime.get.getHour) mustEqual (3 to 10)
 
           val expectedResults = service.expectedSittings(sampleAssessment).serviceValue
           expectedResults.length mustBe 20

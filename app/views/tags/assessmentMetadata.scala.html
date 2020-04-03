@@ -1,7 +1,4 @@
 @import domain.Assessment
-@import org.apache.commons.lang3.time.DurationFormatUtils
-@import views.html.tags.localisedDatetimeRange
-@import views.html.tags.localisedDatetime
 @import views.html.tags._
 @(assessment: Assessment)(implicit context: RequestContext)
 
@@ -9,9 +6,11 @@
     @assessmentMetadataInternal(assessment)
 
     @assessment.startTime.map { startTime =>
-        <dt>Start time</dt>
+        <dt>Can start</dt>
         <dd>
-            @localisedDatetime(startTime)
+            @defining(startTime.plus(Assessment.window)) { endTime =>
+                @localisedDatetimeRange(startTime, endTime, true)
+            }
         </dd>
     }
 </dl>

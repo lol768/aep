@@ -100,7 +100,6 @@ trait StudentAssessmentDao {
   def insert(assessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def update(studentAssessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]]
-  def getByAssessmentIds(assessmentIds: Seq[UUID]): DBIO[Seq[StoredStudentAssessment]]
   def loadByAssessmentIdWithUploadedFiles(assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]]
   def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
@@ -149,9 +148,6 @@ class StudentAssessmentDaoImpl @Inject()(
 
   override def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]] =
     getByAssessmentIdQuery(assessmentId).result
-
-  override def getByAssessmentIds(assessmentIds: Seq[UUID]): profile.api.DBIO[Seq[StoredStudentAssessment]] =
-    studentAssessments.table.filter(_.assessmentId inSetBind assessmentIds).result
 
   override def loadByAssessmentIdWithUploadedFiles(assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]] =
     getByAssessmentIdQuery(assessmentId).withUploadedFiles.result.map(OneToMany.leftJoinUnordered)
