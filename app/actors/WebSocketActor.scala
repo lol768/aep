@@ -110,6 +110,10 @@ class WebSocketActor @Inject() (
                 studentAssessmentId = assessmentId,
                 JavaTime.offsetDateTime)
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
+              .recover {
+                case e: Exception =>
+                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment $assessmentId")
+              }
           })
 
         case m if m.`type` == "RequestAssessmentTiming" && m.data.exists(_.validate[RequestAssessmentTiming](readsRequestAssessmentTiming).isSuccess) =>
