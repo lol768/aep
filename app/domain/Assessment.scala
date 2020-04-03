@@ -159,19 +159,13 @@ object Assessment {
 
   sealed trait State extends EnumEntry {
     val label: String = entryName
-    val cssClass: String
+    val cssClass: String = "label label-danger"
   }
 
   object State extends PlayEnum[State] {
-    case object Imported extends State { override val label: String = "Needs setup"
-      override val cssClass: String = "label label-danger"
-    }
-    case object Draft extends State { override val label: String = "Needs setup"
-      override val cssClass: String = "label label-danger"
-    }
-    case object Submitted extends State {
-      override val cssClass: String = "label label-danger"
-    }
+    case object Imported extends State { override val label: String = "Needs setup" }
+    case object Draft extends State { override val label: String = "Needs setup" }
+    case object Submitted extends State
     case object Approved extends State { override val label: String = "Ready"
       override val cssClass: String = "label label-success"
     }
