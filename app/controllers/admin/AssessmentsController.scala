@@ -162,15 +162,14 @@ class AssessmentsController @Inject()(
       departmentCode = assessment.departmentCode,
       sequence = assessment.sequence,
       invigilators = Option(assessment.invigilators),
-        title = assessment.title,
-        description = assessment.brief.text,
-        durationMinutes = assessment.duration.toMinutes,
-        platform = assessment.platform,
-        assessmentType = assessment.assessmentType,
-        url = assessment.brief.url,
-        operation = assessment.state
-      ))))
-
+      title = assessment.title,
+      description = assessment.brief.text,
+      durationMinutes = assessment.duration.toMinutes,
+      platform = assessment.platform,
+      assessmentType = assessment.assessmentType,
+      url = assessment.brief.url,
+      operation = assessment.state
+    ))))
   }
 
   def create(): Action[AnyContent] = GeneralDepartmentAdminAction { implicit request =>
@@ -251,7 +250,6 @@ class AssessmentsController @Inject()(
         } else {
           Future.successful(MethodNotAllowed(views.html.errors.approvedAssessment()))
         }
-
       })
   }
 
