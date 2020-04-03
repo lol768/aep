@@ -35,7 +35,8 @@ package object tabula {
     seatNumber: Option[Int],
     universityID: UniversityID,
     sprCode: String,
-    occurrence: String
+    occurrence: String,
+    extraTimePerHour: Option[Duration],
   )
 
   case class Module(
@@ -53,48 +54,31 @@ package object tabula {
     fullModuleCode: String,
     sequence: String
   ) {
-    def asAssessment(existingAssessment: Option[Assessment], examProfileCode: String): Option[Assessment] =
-      examPaper.flatMap { paper =>
-        paper.schedule.groupBy(_.examProfileCode).get(examProfileCode).map(_.sortBy(_.locationSequence)).map { schedules =>
-          val schedule: ExamPaperSchedule =
-            if (schedules.size == 1) schedules.head
-            else {
-              // Some information _must_ match, otherwise we need to change our approach
-              require(schedules.forall(_.slotId == schedules.head.slotId))
-              require(schedules.forall(_.sequence == schedules.head.sequence))
-              require(schedules.forall(_.startTime == schedules.head.startTime))
+    def asAssessment(existingAssessment: Option[Assessment], schedule: ExamPaperSchedule): Assessment = {
+      val paper = examPaper.get
 
-              // We allow locationSequence and location to differ, but we treat them as one assessment
-              schedules.head.copy(
-                locationSequence = "", // Not to be used
-                locationName = schedules.flatMap(_.locationName).headOption, // Just pick the first by locationSequence
-                students = schedules.flatMap(_.students)
-              )
-            }
-
-          Assessment(
-            id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
-            paperCode = paper.code,
-            section = paper.section.filterNot(_ == "n/a"),
-            title = paper.title.getOrElse(name),
-            startTime = Some(schedule.startTime),
-            duration = paper.duration.get,
-            platform = existingAssessment.map(_.platform).getOrElse {
-              if (schedule.locationName.contains("Assignment")) Platform.TabulaAssignment
-              else Platform.OnlineExams
-            },
-            assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
-            brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
-            invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
-            state = existingAssessment.map(_.state).getOrElse(Imported),
-            tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(id)),
-            examProfileCode = examProfileCode,
-            moduleCode = fullModuleCode,
-            departmentCode = DepartmentCode(module.adminDepartment.code),
-            sequence = sequence
-          )
-        }
-      }
+      Assessment(
+        id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
+        paperCode = paper.code,
+        section = paper.section.filterNot(_ == "n/a"),
+        title = paper.title.getOrElse(name),
+        startTime = Some(schedule.startTime),
+        duration = paper.duration.get,
+        platform = existingAssessment.map(_.platform).getOrElse {
+          if (schedule.locationName.contains("Assignment")) Platform.TabulaAssignment
+          else Platform.OnlineExams
+        },
+        assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
+        brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
+        invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
+        state = existingAssessment.map(_.state).getOrElse(Imported),
+        tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(id)),
+        examProfileCode = schedule.examProfileCode,
+        moduleCode = fullModuleCode,
+        departmentCode = DepartmentCode(module.adminDepartment.code),
+        sequence = sequence
+      )
+    }
   }
 
   case class ExamMembership(
