@@ -167,7 +167,7 @@ class AssessmentsController @Inject()(
     }
   }
 
-  def create(): Action[AnyContent] = RequireDepartmentAssessmentManager.async{ implicit request =>
+  def create(): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
     departments().successMap { departments =>
       Ok(views.html.admin.assessments.create(adHocAssessmentForm, departments))
     }
@@ -183,7 +183,9 @@ class AssessmentsController @Inject()(
       data => {
         val files = request.body.files.map(_.ref).map(f => (f.in, f.metadata))
         if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
-          Future.successful(Ok(views.html.admin.assessments.create(adHocAssessmentForm.fill(data).withGlobalError("error.assessment.files-not-provided"))))
+          departments().successMap { departments =>
+            Ok(views.html.admin.assessments.create(adHocAssessmentForm.fill(data).withGlobalError("error.assessment.files-not-provided"), departments))
+          }
         } else {
           import helpers.DateConversion._
           assessmentService.insert(
@@ -221,16 +223,18 @@ class AssessmentsController @Inject()(
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = RequireDepartmentAssessmentManager(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     assessmentService.get(id).successFlatMap { assessment =>
       form.bindFromRequest().fold(
-        formWithErrors =>  {
+        formWithErrors => {
           departments().successMap { departments =>
-              Ok(views.html.admin.assessments.show(assessment, formWithErrors, departments))
-            }
+            Ok(views.html.admin.assessments.show(assessment, formWithErrors, departments))
+          }
         },
         data => {
           if (assessment.state != State.Approved) {
             val files = request.body.files.map(_.ref)
             if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
-              Future.successful(Ok(views.html.admin.assessments.show(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"))))
+              departments().successMap { departments =>
+                Ok(views.html.admin.assessments.show(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"), departments))
+              }
             } else {
               assessmentService.update(assessment.copy(
                 title = data.title,
@@ -265,7 +269,7 @@ class AssessmentsController @Inject()(
   private def departments()(implicit timingContext: TimingContext): Future[ServiceResult[Seq[Department]]] = {
     departmentService.getDepartments().successMapTo { departments =>
       departments.map { tabulaDepartment =>
-          Department(code = DepartmentCode(tabulaDepartment.code), name = tabulaDepartment.name)
+        Department(code = DepartmentCode(tabulaDepartment.code), name = tabulaDepartment.name)
       }
     }
   }
