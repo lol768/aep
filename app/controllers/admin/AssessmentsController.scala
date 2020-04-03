@@ -230,7 +230,7 @@ class AssessmentsController @Inject()(
         if (assessment.state != State.Approved) {
           val files = request.body.files.map(_.ref)
           if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
-            Future.successful(Ok(views.html.admin.assessments.show(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"))))
+            showForm(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"))
           } else {
             assessmentService.update(assessment.copy(
               title = data.title,
