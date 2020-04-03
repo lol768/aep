@@ -1,5 +1,6 @@
 package domain.dao
 
+import java.time.OffsetDateTime
 import java.util.UUID
 import com.google.inject.ImplementedBy
 import domain.{AssessmentClientNetworkActivity, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StudentAssessment}
@@ -20,7 +21,6 @@ trait AssessmentClientNetworkActivityDao {
   def getClientActivityFor(assessments: Seq[StudentAssessment], startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime], offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
   def countClientActivityFor(assessments: Seq[StudentAssessment],startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime]): DBIO[Int]
 }
-
 
 @Singleton
 class AssessmentClientNetworkActivityDaoImpl @Inject()(

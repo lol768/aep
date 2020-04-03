@@ -35,21 +35,12 @@ class AssessmentClientNetworkActivityServiceImpl @Inject()(
   }
 
   override  def getClientActivityFor(assessments: Seq[StudentAssessment], startDate:Option[OffsetDateTime], endDate: Option[OffsetDateTime], page: Page)(implicit t: TimingContext): Future[ServiceResult[(Int,Seq[AssessmentClientNetworkActivity])]] = {
-    def hasData = startDate.nonEmpty || endDate.nonEmpty
 
     def activitiesWithFiler = for {
-      emails <- dao.getClientActivityFor(assessments, startDate, endDate, page.offset, page.maxResults)
+      activities <- dao.getClientActivityFor(assessments, startDate, endDate, page.offset, page.maxResults)
       total <- dao.countClientActivityFor(assessments, startDate, endDate)
-    } yield (total,emails)
-
-//    def allActivities = for {
-//      emails <- dao.getClientActivities(page.offset, page.maxResults)
-//      total <- dao.countClientActivities()
-//    } yield (total, emails)
+    } yield (total,activities)
 
     daoRunner.run(activitiesWithFiler.map(ServiceResults.success))
-
-//    if(hasData) daoRunner.run(activitiesWithFiler.map(ServiceResults.success))
-//    else daoRunner.run(allActivities).map(ServiceResults.success)
   }
 }

@@ -7,13 +7,11 @@ import controllers.admin.ViewStudentActivityController.{StudentActivityData, stu
 import domain.{AssessmentClientNetworkActivity, Pagination}
 import javax.inject.{Inject, Singleton}
 import services.{AssessmentClientNetworkActivityService, SecurityService, StudentAssessmentService}
-
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.data.Form
-import play.api.data.Forms.{mapping, _}
+import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, Result}
-import warwick.core.helpers.JavaTime
 import warwick.sso.{AuthenticatedRequest, UserLookupService, Usercode}
 
 object ViewStudentActivityController {
