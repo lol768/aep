@@ -51,7 +51,8 @@ class WebSocketController @Inject()(
   securityService: SecurityService,
   system: ActorSystem,
   pubSub: PubSubService,
-  studentAssessmentService: StudentAssessmentService
+  studentAssessmentService: StudentAssessmentService,
+  assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
 )(implicit
   mat: Materializer,
   actorSystem: ActorSystem,
@@ -81,6 +82,7 @@ class WebSocketController @Inject()(
                   pubsub = pubSubActor,
                   out = out,
                   studentAssessmentService = studentAssessmentService,
+                  assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
                   additionalTopics = relatedAssessmentIds,
                 ))
               }

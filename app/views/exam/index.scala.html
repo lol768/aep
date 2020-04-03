@@ -15,6 +15,7 @@
     @assessmentPanel(assessment, isAssessmentPage = true)
     @if(assessment.started) {
       <h2>Assessment brief</h2>
+      <span class="in-progress-assessment-data" data-id="@assessment.studentAssessment.id" />
       <p>Your department has provided the following information:</p>
       @if(assessment.assessment.brief.text.isDefined) {
         <blockquote>@assessment.assessment.brief.text</blockquote>
@@ -39,7 +40,7 @@
     <h2>Uploaded answer files</h2>
     @if(assessment.inProgress) {
       <p class="text-muted"><i class="fad themed-duotone fa-info-circle" aria-hidden="true"></i>
-        We accept all common file formats: PDF, Word/Excel/Powerpoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
+        We accept all common file formats: PDF, Word/Excel/Powerpoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, m4a, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
       </p>
     }
     @if(assessment.studentAssessment.uploadedFiles.nonEmpty) {

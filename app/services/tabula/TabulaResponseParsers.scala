@@ -206,7 +206,8 @@ object TabulaResponseParsers {
     (__ \ "seatNumber").readNullable[Int] and
     (__ \ "universityId").read[String].map(UniversityID.apply) and
     (__ \ "sprCode").read[String] and
-    (__ \ "occurrence").read[String]
+    (__ \ "occurrence").read[String] and
+    (__ \ "specialExamArrangementsExtraTime").readNullable[Duration]
   ) (ExamPaperScheduleStudent.apply _)
 
   val examPaperScheduleReads: Reads[ExamPaperSchedule] = (
