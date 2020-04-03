@@ -1,0 +1,40 @@
+@import domain.Assessment
+@import warwick.core.helpers.JavaTime
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@(assessments: Seq[Assessment])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+@adminLayout("View assessments") {
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date/time</th>
+                <th>Paper code</th>
+                <th>Section</th>
+                <th>Title</th>
+                <th>Duration</th>
+                <th>Type</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @assessments.sorted.map { assessment =>
+            <tr>
+                <td>
+                    @assessment.startTime.map(JavaTime.Relative(_))
+                </td>
+                <td>@assessment.paperCode</td>
+                <td>@assessment.section.getOrElse("")</td>
+                <td>@assessment.title</td>
+                <td>
+                    @DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
+                </td>
+                <td>
+                    @assessment.assessmentType.label
+                </td>
+                <td class="text-right">
+                    <a href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)" class="btn btn-default btn-sm">View</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

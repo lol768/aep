@@ -166,7 +166,7 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
       deployment(PROJECT, "ONLINE", "Online Exams")
         .autoPlayEnvironment("Development", "onlineexams-dev.warwick.ac.uk", "onlineexams", "dev", SLACK_CHANNEL)
         .autoPlayEnvironment("Test", "onlineexams-test.warwick.ac.uk", "onlineexams", "test", SLACK_CHANNEL)
-        .autoPlayEnvironment("Sandbox", "onlineexams-sandbox.warwick.ac.uk", "onlineexams", "sandbox", SLACK_CHANNEL, "master")
+        .autoPlayEnvironment("Sandbox", "onlineexams-sandbox.warwick.ac.uk", "onlineexams", "sandbox", SLACK_CHANNEL/*, "master"*/)
         .playEnvironment("Production", "onlineexams.warwick.ac.uk", "onlineexams", "prod",
           env -> env.notifications(
             new Notification()

@@ -73,6 +73,7 @@ GET         /ajax/reporting/:id/finalised                         @controllers.a
 
 ## Invigilation ##
 
+GET         /invigilation                                         @controllers.invigilation.InvigilatorListController.list()
 GET         /invigilation/assessments/:id                         @controllers.invigilation.InvigilatorAssessmentController.view(id: UUID)
 
 ## Sysadmins ##
