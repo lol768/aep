@@ -2,44 +2,44 @@
 @import views.html.admin.assessments.fields
 @import domain.Department
 @(form: Form[AdHocAssessmentFormData], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
-  @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
+@defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
     @adminLayout(s"Create assessment") {
-      @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.save(), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
-        @views.html.tags.formHasErrors(form)
-        @views.html.tags.globalErrors(form)
+        @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.save(), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
+            @views.html.tags.formHasErrors(form)
+            @views.html.tags.globalErrors(form)
 
-        <div class="row">
-          <div class="col-sm-6">
-            @fields.department(None, departments)
-            @fields.module(None)
-          </div>
-          <div class="col-sm-6">
-          @fields.paper(None)
-          </div>
-        </div>
-        @fields.sequence(None)
+            <div class="row">
+                <div class="col-sm-6">
+                    @fields.department(None, departments)
+                    @fields.module(None)
+                </div>
+                <div class="col-sm-6">
+                    @fields.paper(None)
+                </div>
+            </div>
+            @fields.sequence(None)
 
-        @fields.title()
-        <label class="control-label" for="invigilators">Invigilators</label>
-        <div class="flexi-picker-collection" data-automatic="true">
-        @b3.text(
-          form("invigilators[]"),
-          Symbol("class") -> "flexi-picker",
-          Symbol("_class") -> "flexi-picker-container",
-          Symbol("data-automatic") -> true,
-          Symbol("data-include-groups") -> "false",
-          Symbol("placeholder") -> "Type a usercode",
-          Symbol("autofocus") -> true,
-          Symbol("autocomplete") -> "off"
-        )
-        </div>
-        @fields.assessmentType()
-        @b3.datetimePicker(form("startTime"), Symbol("value") -> None, Symbol("_label") -> "Date")
-        @fields.duration()
-        @fields.description()
-        @fields.url()
-        @fields.upload(None)
-        @fields.submit(None)
-      }
+            @fields.title()
+            <label class="control-label" for="invigilators">Invigilators</label>
+            <div class="flexi-picker-collection" data-automatic="true">
+            @b3.text(
+                form("invigilators[]"),
+                Symbol("class") -> "flexi-picker",
+                Symbol("_class") -> "flexi-picker-container",
+                Symbol("data-automatic") -> true,
+                Symbol("data-include-groups") -> "false",
+                Symbol("placeholder") -> "Type a usercode",
+                Symbol("autofocus") -> true,
+                Symbol("autocomplete") -> "off"
+            )
+            </div>
+            @fields.assessmentType()
+            @b3.datetimePicker(form("startTime"), Symbol("value") -> None, Symbol("_label") -> "Date")
+            @fields.duration()
+            @fields.description()
+            @fields.url()
+            @fields.upload(None)
+            @fields.submit(None)
+        }
     }
-  }
+}

@@ -1,12 +1,13 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
 @import controllers.admin.AssessmentsController.AbstractAssessmentFormData
 @import domain.Assessment.State
-@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+@import domain.Assessment
+@(existing: Option[Assessment] = None)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor)
 
 @b3.free() {
-    @if(form("operation").value.exists(state => state == State.Imported || state == State.Draft)) {
-        <button type="submit" class="btn btn-primary" name="operation" value="Draft">Save draft</button>
-        <button type="submit" class="btn btn-default" name="operation" value="Submitted">Submit for review</button>
+    @if(existing.isEmpty || Seq(State.Draft, State.Imported).contains(existing.get.state)) {
+        <button type="submit" class="btn btn-primary" name="operation" value="@State.Draft.entryName">Save draft</button>
+        <button type="submit" class="btn btn-default" name="operation" value="@State.Submitted.entryName">Submit for review</button>
     }
     <a href="@controllers.admin.routes.AssessmentsController.index()" class="btn btn-default">Cancel</a>
 }
