@@ -151,9 +151,10 @@ object Assessment {
     def empty: Brief = Brief(None, Seq.empty, None)
   }
 
-  // Students are allowed an extra hour after the official finish time of the exam
+  // Students are allowed 2 extra hours after the official finish time of the exam
   // for them to make submissions. Anything submitted during this period should be
   // marked as LATE though.
+  // Updated in OE-148
   val lateSubmissionPeriod: Duration = Duration.ofHours(2)
 
   sealed trait State extends EnumEntry {
