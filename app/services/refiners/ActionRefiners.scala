@@ -68,7 +68,7 @@ class ActionRefiners @Inject() (
   def WithDepartmentsUserIsAdminFor: Refiner[AuthenticatedRequest, DepartmentAdminRequest] =
     new Refiner[AuthenticatedRequest, DepartmentAdminRequest] {
       override protected def apply[A](implicit request: AuthenticatedRequest[A]): Refinement[DepartmentAdminRequest[A]] = {
-        request.user.map { user =>
+        request.context.user.map { user =>
           deptService.getDepartments.successMapTo[Either[Result, DepartmentAdminRequest[A]]] { allDepts =>
 
             val userAdminDepartments =
