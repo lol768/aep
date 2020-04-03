@@ -14,13 +14,14 @@
     @b3.inline.formCSRF(controllers.admin.routes.ViewStudentActivityController.filter(), Symbol("class") -> "text-center") { implicit fc =>
         @views.html.tags.globalErrors(form)
 
-        @b3.text(form("usercode"),
+        @b3.text(form("universityId"),
             Symbol("_label") -> "Student",
             Symbol("class") -> "flexi-picker",
             Symbol("data-include-groups") -> "false",
             Symbol("placeholder") -> "Name or usercode",
             Symbol("autofocus") -> true,
-            Symbol("autocomplete") -> "off"
+            Symbol("autocomplete") -> "off",
+            Symbol("data-universityid") -> "true"
         )
 
         @b3.datetimePicker(form("startDate"), Symbol("value") -> None, Symbol("placeholder") -> "From (optional)")

@@ -10,20 +10,19 @@ import services.{AssessmentClientNetworkActivityService, SecurityService, Studen
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, Result}
-import warwick.sso.{AuthenticatedRequest, UserLookupService, Usercode}
+import warwick.sso.{AuthenticatedRequest, UniversityID}
 
 object ViewStudentActivityController {
 
   case class StudentActivityData(
-    usercode: String,
+    universityId: String,
     startDate: Option[OffsetDateTime] = None,
     endDate: Option[OffsetDateTime] = None,
   )
 
   val studentActivityForm = Form(mapping(
-    "usercode" -> nonEmptyText,
+    "universityId" -> nonEmptyText,
     "startDate" -> optional(FormMappings.offsetDateTime),
     "endDate" -> optional(FormMappings.offsetDateTime)
   )(StudentActivityData.apply)(StudentActivityData.unapply))
@@ -33,7 +32,6 @@ object ViewStudentActivityController {
 class ViewStudentActivityController  @Inject()(
   security: SecurityService,
   studentAssessmentService: StudentAssessmentService,
-  userLookupService: UserLookupService,
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
 )(implicit ec: ExecutionContext) extends BaseController {
   import security._
@@ -48,19 +46,11 @@ class ViewStudentActivityController  @Inject()(
     studentActivityForm.bindFromRequest.fold(
       errors => renderForm(errors),
       data => {
-        userLookupService.getUser(Usercode(data.usercode)).map{ user =>
-          user.universityId.map{ universityId =>
-            studentAssessmentService.byUniversityId(universityId).successFlatMap{ assessments =>
-              assessmentClientNetworkActivityService.getClientActivityFor(assessments.map(_.studentAssessment), data.startDate, data.endDate, Pagination.asPage(page, activityPerPage)).successFlatMap{ case (total, activities) =>
-                renderForm(studentActivityForm.bindFromRequest, activities, total, page, true)
-              }
-            }
-          }.getOrElse(
-            renderForm(form=studentActivityForm, flash=Map("error" -> Messages("flash.missing.universityId")))
-          )
-        }.getOrElse(
-          renderForm(form=studentActivityForm, flash=Map("error" -> Messages("flash.invalid.usercode", data.usercode)))
-        )
+        studentAssessmentService.byUniversityId(UniversityID(data.universityId)).successFlatMap { assessments =>
+          assessmentClientNetworkActivityService.getClientActivityFor(assessments.map(_.studentAssessment), data.startDate, data.endDate, Pagination.asPage(page, activityPerPage)).successFlatMap { case (total, activities) =>
+            renderForm(studentActivityForm.bindFromRequest, activities, total, page, true)
+          }
+        }
       }
     )
   }
@@ -70,12 +60,9 @@ class ViewStudentActivityController  @Inject()(
     results: Seq[AssessmentClientNetworkActivity] = Seq.empty,
     total: Int = 0,
     page: Int = 0,
-    showResults: Boolean = false,
-    flash: Map[String,String] = Map.empty
+    showResults: Boolean = false
   )(implicit req: AuthenticatedRequest[_]): Future[Result] = {
     val pagination = Pagination(total, page, controllers.admin.routes.ViewStudentActivityController.filter(), activityPerPage)
-    val activityForm = Ok(views.html.admin.studentActivity.activityForm(form, pagination, results, showResults))
-    val result = if(flash.nonEmpty) activityForm.flashing(flash.head) else activityForm
-    Future.successful(result)
+    Future.successful(Ok(views.html.admin.studentActivity.activityForm(form, pagination, results, showResults)))
   }
 }
