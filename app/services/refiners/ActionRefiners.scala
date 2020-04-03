@@ -76,9 +76,7 @@ class ActionRefiners @Inject() (
                 // If the user is an admin or sysadmin they're an admin for all departments
                 allDepts
               } else {
-                val groupsForUser = groupService.getGroupsForUser(user.usercode).toOption.getOrElse {
-                  throw new Exception("No response from groups service")
-                }
+                val groupsForUser = groupService.getGroupsForUser(user.usercode).get
                 allDepts.filter(dept => recursiveAdminGroupCheck(dept, allDepts, groupsForUser.map(_.name)))
               }
 

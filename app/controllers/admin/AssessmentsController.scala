@@ -138,7 +138,7 @@ class AssessmentsController @Inject()(
   }
 
   def show(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id) { implicit request =>
-    val assessment = request.assessment;
+    val assessment = request.assessment
     Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
       moduleCode = assessment.moduleCode,
       paperCode = assessment.paperCode,

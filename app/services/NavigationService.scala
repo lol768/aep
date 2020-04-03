@@ -2,10 +2,12 @@ package services
 
 import javax.inject.{Inject, Singleton}
 import com.google.inject.ImplementedBy
+import play.api.Configuration
 import play.api.mvc.Call
 import system.Roles.{Admin, Sysadmin}
 import warwick.core.timing.TimingContext
-import warwick.sso.LoginContext
+import warwick.sso.{GroupService, LoginContext, User}
+
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
@@ -52,7 +54,9 @@ trait NavigationService {
 
 @Singleton
 class NavigationServiceImpl @Inject()(
-  assessmentService: AssessmentService
+  assessmentService: AssessmentService,
+  groupService: GroupService,
+  config: Configuration,
 )(implicit executionContext: ExecutionContext) extends NavigationService {
 
   private lazy val masquerade = NavigationPage("Masquerade", controllers.sysadmin.routes.MasqueradeController.masquerade())
@@ -87,7 +91,7 @@ class NavigationServiceImpl @Inject()(
     ))
 
   private def adminMenu(loginContext: LoginContext): Seq[Navigation] =
-    if (loginContext.actualUserHasRole(Admin))
+    if (isAdmin(loginContext))
       Seq(admin)
     else
       Nil
@@ -107,4 +111,15 @@ class NavigationServiceImpl @Inject()(
     invigilatorMenu(loginContext) ++
     adminMenu(loginContext) ++
     sysadminMenu(loginContext)
+
+  private def isAdmin(ctx: LoginContext): Boolean =
+    ctx.user.exists { user =>
+      if (ctx.userHasRole(Admin) || ctx.userHasRole(Sysadmin)) {
+        true
+      } else {
+        groupService.getGroupsForUser(user.usercode).map { groups =>
+          groups.exists(_.name.string.contains(config.get[String]("app.assessmentManagerGroup")))
+        }.getOrElse(false)
+      }
+    }
 }
