@@ -1,6 +1,8 @@
 package services
 
 import java.time.OffsetDateTime
+import java.util.UUID
+
 import scala.concurrent.{ExecutionContext, Future}
 import akka.Done
 import com.google.inject.ImplementedBy
@@ -14,6 +16,7 @@ import warwick.core.timing.TimingContext
 @ImplementedBy(classOf[AssessmentClientNetworkActivityServiceImpl])
 trait AssessmentClientNetworkActivityService {
   def record(assessmentClientNetworkActivity: AssessmentClientNetworkActivity)(implicit t: TimingContext): Future[ServiceResult[Done]]
+  def findByStudentAssessmentId(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentClientNetworkActivity]]]
   def getClientActivityFor(assessments: Seq[StudentAssessment], startDate:Option[OffsetDateTime], endDate: Option[OffsetDateTime], page: Page)(implicit t: TimingContext): Future[ServiceResult[(Int,Seq[AssessmentClientNetworkActivity])]]
 }
 
@@ -25,6 +28,10 @@ class AssessmentClientNetworkActivityServiceImpl @Inject()(
 
   override def record(assessmentClientNetworkActivity: AssessmentClientNetworkActivity)(implicit t: TimingContext): Future[ServiceResult[Done]] = {
     daoRunner.run(dao.insert(assessmentClientNetworkActivity)).map(_ => ServiceResults.success(Done))
+  }
+
+  override def findByStudentAssessmentId(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentClientNetworkActivity]]] = {
+    daoRunner.run(dao.findByStudentAssessmentId(studentAssessmentId)).map(Right.apply)
   }
 
   override  def getClientActivityFor(assessments: Seq[StudentAssessment], startDate:Option[OffsetDateTime], endDate: Option[OffsetDateTime], page: Page)(implicit t: TimingContext): Future[ServiceResult[(Int,Seq[AssessmentClientNetworkActivity])]] = {

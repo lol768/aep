@@ -202,11 +202,22 @@ object TabulaResponseParsers {
 
   private val errorMessageReads = Json.reads[ErrorMessage]
 
+  val examPaperScheduleStudentReads: Reads[ExamPaperScheduleStudent] = (
+    (__ \ "seatNumber").readNullable[Int] and
+    (__ \ "universityId").read[String].map(UniversityID.apply) and
+    (__ \ "sprCode").read[String] and
+    (__ \ "occurrence").read[String] and
+    (__ \ "specialExamArrangementsExtraTime").readNullable[Duration]
+  ) (ExamPaperScheduleStudent.apply _)
+
   val examPaperScheduleReads: Reads[ExamPaperSchedule] = (
     (__ \ "examProfileCode").read[String] and
     (__ \ "slotId").read[String] and
     (__ \ "sequence").read[String] and
-    (__ \ "startTime").read[OffsetDateTime]
+    (__ \ "locationSequence").read[String] and
+    (__ \ "startTime").read[OffsetDateTime] and
+    (__ \ "location" \ "name").readNullable[String] and
+    (__ \ "students").read[Seq[ExamPaperScheduleStudent]](Reads.seq(examPaperScheduleStudentReads))
   ) (ExamPaperSchedule.apply _)
 
   val examPaperReads: Reads[ExamPaper] = (

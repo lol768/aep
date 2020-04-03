@@ -28,7 +28,7 @@
         }
         @assessment.assessment.brief.files.map { file =>
           <li>
-            <a target="_blank" href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
+            <a class="assessment-brief-file" target="_blank" href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
           </li>
         }
         <li>
@@ -80,7 +80,7 @@
                   @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(assessment.assessment.id, file.id), Symbol("class") -> "quash-beforeunload") { implicit ifc =>
                     <p>
                       <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
-                        Download</a> <button type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i>
+                        Download</a> <button delete type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i>
                       Delete</button>
                     </p>
                   }
@@ -116,7 +116,7 @@
                 </p>
 
               @b3.free(Symbol("_class") -> "spaced-buttons") {
-                <button type="submit" class="btn btn-primary">Upload files</button>
+                <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
               }
             }
           </div>
@@ -135,7 +135,7 @@
             <li>Downloaded your final submission and checked to ensure it was uploaded in its entirety</li>
             <li>Checked through your answers to the assessment questions</li>
           </ul>
-          @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id)) { implicit fc =>
+          @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id), Symbol("class") -> "quash-beforeunload") { implicit fc =>
             @b3.checkbox(
               finishExamForm("agreeDisclaimer"),
               Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.",

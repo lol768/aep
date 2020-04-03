@@ -7,7 +7,7 @@ import domain.DepartmentCode
 import domain.tabula._
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
-import org.quartz.{Scheduler, TriggerBuilder}
+import org.quartz.Scheduler
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
@@ -148,12 +148,14 @@ class SysadminTestController @Inject()(
   }
 
   def assessmentComponents(deptCode: DepartmentCode, examProfileCode: String): Action[AnyContent] = RequireSysadmin.async { implicit request =>
-    implicit val writeExamSchedule = Json.writes[ExamPaperSchedule]
-    implicit val writeExam = Json.writes[ExamPaper]
-    implicit val writesDepartmentIdentity = Json.writes[DepartmentIdentity]
-    implicit val writesModule = Json.writes[Module]
+    implicit val writeUniversityID: Writes[UniversityID] = o => JsString(o.string)
+    implicit val writeExamScheduleStudent: Writes[ExamPaperScheduleStudent] = Json.writes[ExamPaperScheduleStudent]
+    implicit val writeExamSchedule: Writes[ExamPaperSchedule] = Json.writes[ExamPaperSchedule]
+    implicit val writeExam: Writes[ExamPaper] = Json.writes[ExamPaper]
+    implicit val writesDepartmentIdentity: Writes[DepartmentIdentity] = Json.writes[DepartmentIdentity]
+    implicit val writesModule: Writes[Module] = Json.writes[Module]
 
-    implicit val writes = Json.writes[AssessmentComponent]
+    implicit val writes: Writes[AssessmentComponent] = Json.writes[AssessmentComponent]
 
     tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true, examProfileCode = Some(examProfileCode))).successMap { r =>
       Ok(Json.toJson(r)(Writes.seq(writes)))

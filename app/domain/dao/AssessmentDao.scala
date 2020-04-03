@@ -23,6 +23,7 @@ object AssessmentsTables {
   case class StoredAssessment(
     id: UUID = UUID.randomUUID(),
     paperCode: String,
+    section: Option[String],
     title: String,
     startTime: Option[OffsetDateTime],
     duration: Duration,
@@ -44,6 +45,7 @@ object AssessmentsTables {
       Assessment(
         id,
         paperCode,
+        section,
         title,
         startTime,
         duration,
@@ -63,6 +65,7 @@ object AssessmentsTables {
       AssessmentMetadata(
         id,
         paperCode,
+        section,
         title,
         startTime,
         duration,
@@ -82,6 +85,7 @@ object AssessmentsTables {
       StoredAssessmentVersion(
         id,
         paperCode,
+        section,
         title,
         startTime,
         duration,
@@ -106,12 +110,13 @@ object AssessmentsTables {
   object StoredAssessment {
     def tupled = (apply _).tupled
 
-    implicit val dateOrdering: Ordering[StoredAssessment] = Ordering.by { a => (a.startTime.map(_.toEpochSecond), a.paperCode) }
+    implicit val dateOrdering: Ordering[StoredAssessment] = Ordering.by { a => (a.startTime.map(_.toEpochSecond).getOrElse(Long.MaxValue), a.paperCode, a.section) }
   }
 
   case class StoredAssessmentVersion(
     id: UUID = UUID.randomUUID(),
     paperCode: String,
+    section: Option[String],
     title: String,
     startTime: Option[OffsetDateTime],
     duration: Duration,
@@ -182,11 +187,13 @@ trait AssessmentDao {
 
   def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
 
-  def getByCode(code: String): DBIO[Option[StoredAssessment]]
+  def getByPaper(paperCode: String, section: Option[String], examProfileCode: String): DBIO[Option[StoredAssessment]]
 
   def getToday: DBIO[Seq[StoredAssessment]]
 
-  def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]]
+  def isInvigilator(usercode: Usercode): DBIO[Boolean]
+
+  def getByInvigilator(usercodes: Set[Usercode]): DBIO[Seq[StoredAssessment]]
 
   def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]]
 }
@@ -254,16 +261,26 @@ class AssessmentDaoImpl @Inject()(
   override def loadByIdsWithUploadedFiles(ids: Seq[UUID]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
     getByIdsQuery(ids).withUploadedFiles.result.map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
 
-  override def getByCode(code: String): DBIO[Option[StoredAssessment]] =
-    assessments.table.filter(_.paperCode === code).result.headOption
+  override def getByPaper(paperCode: String, section: Option[String], examProfileCode: String): DBIO[Option[StoredAssessment]] =
+    assessments.table
+      .filter(_.paperCode === paperCode)
+      .filter { a =>
+        if (section.isEmpty) a.section.isEmpty
+        else a.section.nonEmpty && a.section.get === section.get
+      }
+      .filter(_.examProfileCode === examProfileCode)
+      .result.headOption
 
   override def getToday: DBIO[Seq[StoredAssessment]] = {
     val today = JavaTime.localDate.atStartOfDay(JavaTime.timeZone).toOffsetDateTime
     assessments.table.filter(a => a.startTime >= today && a.startTime < today.plusDays(1)).result
   }
 
-  override def getByInvigilator(usercodes: List[Usercode]): DBIO[Seq[StoredAssessment]] =
-    assessments.table.filter(_.invigilators @> usercodes.map(_.string)).result
+  override def isInvigilator(usercode: Usercode): DBIO[Boolean] =
+    assessments.table.filter(_.invigilators @> List(usercode.string)).exists.result
+
+  override def getByInvigilator(usercodes: Set[Usercode]): DBIO[Seq[StoredAssessment]] =
+    assessments.table.filter(_.invigilators @> usercodes.toList.map(_.string)).result
 
   override def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]] =
     assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes.map(_.string)).result.headOption

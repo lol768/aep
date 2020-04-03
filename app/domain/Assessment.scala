@@ -13,6 +13,7 @@ import warwick.sso.Usercode
 sealed trait BaseAssessment {
   def id: UUID
   def paperCode: String
+  def section: Option[String]
   def title: String
   def startTime: Option[OffsetDateTime]
   def duration: Duration
@@ -31,6 +32,7 @@ sealed trait BaseAssessment {
 case class Assessment(
   id: UUID,
   paperCode: String,
+  section: Option[String],
   title: String,
   startTime: Option[OffsetDateTime],
   duration: Duration,
@@ -44,10 +46,11 @@ case class Assessment(
   moduleCode: String,
   departmentCode: DepartmentCode,
   sequence: String
-) extends BaseAssessment {
+) extends BaseAssessment with Ordered[Assessment] {
   def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
     id,
     paperCode,
+    section,
     title,
     startTime,
     duration,
@@ -60,11 +63,19 @@ case class Assessment(
     departmentCode,
     sequence,
   )
+
+  override def compare(that: Assessment): Int = {
+    Ordering.Tuple3[OffsetDateTime, String, String].compare(
+      (this.startTime.getOrElse(OffsetDateTime.MAX), this.paperCode, this.section.getOrElse("")),
+      (that.startTime.getOrElse(OffsetDateTime.MAX), that.paperCode, that.section.getOrElse(""))
+    )
+  }
 }
 
 case class AssessmentMetadata(
   id: UUID = UUID.randomUUID(),
   paperCode: String,
+  section: Option[String],
   title: String,
   startTime: Option[OffsetDateTime],
   duration: Duration,
@@ -85,7 +96,7 @@ object Assessment {
 
   object Platform extends PlayEnum[Platform] {
     case object OnlineExams extends Platform {
-      val label = "Online Exams"
+      val label = "Alternative Exams Portal"
     }
 
     case object Moodle extends Platform {
@@ -94,6 +105,10 @@ object Assessment {
 
     case object QuestionmarkPerception extends Platform {
       val label = "Questionmark Perception"
+    }
+
+    case object TabulaAssignment extends Platform {
+      val label = "Tabula Assignment Management"
     }
 
     val values: IndexedSeq[Platform] = findValues
@@ -106,12 +121,13 @@ object Assessment {
   object AssessmentType extends PlayEnum[AssessmentType] {
 
     case object OpenBook extends AssessmentType {
-      val label = "Open book"
+      val label = "Open book (including file based)"
     }
 
     case object MultipleChoice extends AssessmentType {
       val label = "Multiple choice"
     }
+
     case object Spoken extends AssessmentType {
       val label = "Spoken"
     }
@@ -145,14 +161,10 @@ object Assessment {
   }
 
   object State extends PlayEnum[State] {
-
-    case object Draft extends State
-
+    case object Imported extends State { override val label: String = "Needs setup" }
+    case object Draft extends State { override val label: String = "Needs setup" }
     case object Submitted extends State
-
-    case object Approved extends State
-
-    case object Imported extends State
+    case object Approved extends State { override val label: String = "Ready" }
 
     val values: IndexedSeq[State] = findValues
   }

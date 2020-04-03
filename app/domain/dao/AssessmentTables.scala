@@ -7,7 +7,7 @@ import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
 import domain.dao.StudentAssessmentsTables.{StoredStudentAssessment, StoredStudentAssessmentVersion}
 import domain.dao.UploadedFilesTables.{StoredUploadedFile, StoredUploadedFileVersion}
-import domain.{DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
+import domain.{AssessmentClientNetworkActivity, DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json.JsValue
@@ -26,6 +26,7 @@ class AssessmentTables @Inject()(
   trait AssessmentCommonProperties {
     self: Table[_] =>
     def paperCode = column[String]("paper_code")
+    def section = column[Option[String]]("section")
     def title = column[String]("title")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
     def duration = column[Duration]("duration")
@@ -50,9 +51,9 @@ class AssessmentTables @Inject()(
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, paperCode, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version).mapTo[StoredAssessment]
+      (id, paperCode, section, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version).mapTo[StoredAssessment]
 
-    def paperCodeIndex = index("idx_assessment_papercode", (paperCode, examProfileCode))
+    def paperCodeIndex = index("idx_assessment_papercode", (paperCode, section, examProfileCode))
     def tabulaAssessmentIndex = index("idx_assessment_tabula", (tabulaAssessmentId, examProfileCode), unique = true)
   }
 
@@ -65,7 +66,7 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, paperCode, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, paperCode, section, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
 
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }
@@ -134,6 +135,7 @@ class AssessmentTables @Inject()(
     def contentLength = column[Long]("content_length")
     def contentType = column[String]("content_type")
     def uploadedBy = column[Usercode]("uploaded_by")
+    def uploadStarted = column[OffsetDateTime]("upload_started_utc")
     def ownerId = column[Option[UUID]]("owner_id")
     def ownerType = column[Option[UploadedFileOwner]]("owner_type")
     def created = column[OffsetDateTime]("created_utc")
@@ -147,7 +149,7 @@ class AssessmentTables @Inject()(
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredUploadedFile] =
-      (id, fileName, contentLength, contentType, uploadedBy, ownerId, ownerType, created, version).mapTo[StoredUploadedFile]
+      (id, fileName, contentLength, contentType, uploadedBy, uploadStarted, ownerId, ownerType, created, version).mapTo[StoredUploadedFile]
   }
 
   class UploadedFileVersions(tag: Tag) extends Table[StoredUploadedFileVersion](tag, "uploaded_file_version")
@@ -159,11 +161,29 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredUploadedFileVersion] =
-      (id, fileName, contentLength, contentType, uploadedBy, ownerId, ownerType, created, version, operation, timestamp, auditUser).mapTo[StoredUploadedFileVersion]
+      (id, fileName, contentLength, contentType, uploadedBy, uploadStarted, ownerId, ownerType, created, version, operation, timestamp, auditUser).mapTo[StoredUploadedFileVersion]
     def pk = primaryKey("pk_uploaded_file_version", (id, timestamp))
     def idx = index("idx_uploaded_file_version", (id, version))
   }
 
   val uploadedFiles: VersionedTableQuery[StoredUploadedFile, StoredUploadedFileVersion, UploadedFiles, UploadedFileVersions] =
     VersionedTableQuery(TableQuery[UploadedFiles], TableQuery[UploadedFileVersions])
+
+  class AssessmentClientNetworkActivities(tag: Tag) extends Table[AssessmentClientNetworkActivity](tag, "assessment_client_network_activity") {
+    def downlink = column[Option[Double]]("downlink")
+    def downlinkMax = column[Option[Double]]("downlink_max")
+    def effectiveType = column[Option[String]]("effective_type")
+    def rtt = column[Option[Int]]("rtt")
+    def `type` = column[Option[String]]("type")
+    def studentAssessmentId = column[UUID]("student_assessment_id")
+    def timestamp = column[OffsetDateTime]("timestamp_utc")
+
+    def * = {
+      (downlink, downlinkMax, effectiveType, rtt, `type`, studentAssessmentId, timestamp).mapTo[AssessmentClientNetworkActivity]
+    }
+  }
+
+  val assessmentClientNetworkActivities = TableQuery[AssessmentClientNetworkActivities]
+
+
 }

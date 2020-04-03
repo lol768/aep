@@ -1,16 +1,13 @@
 # --- !Ups
+alter table assessment add column section varchar;
+alter table assessment_version add column section varchar;
 
-create table assessment_client_network_activity (
-  downlink numeric(12,4),
-  downlink_max numeric(12,4),
-  effective_type varchar,
-  rtt int,
-  type varchar,
-  student_assessment_id uuid not null,
-  timestamp_utc timestamp(3) not null
-);
-
+drop index idx_assessment_papercode;
+create index idx_assessment_papercode on assessment (paper_code, section, exam_profile_code);
 
 # --- !Downs
+alter table assessment drop column section;
+alter table assessment_version drop column section;
 
-drop table assessment_client_network_activity;
+drop index idx_assessment_papercode;
+create index idx_assessment_papercode on assessment (paper_code, exam_profile_code);

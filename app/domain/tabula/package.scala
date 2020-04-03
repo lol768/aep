@@ -25,7 +25,18 @@ package object tabula {
     examProfileCode: String,
     slotId: String,
     sequence: String,
-    startTime: OffsetDateTime
+    locationSequence: String,
+    startTime: OffsetDateTime,
+    locationName: Option[String],
+    students: Seq[ExamPaperScheduleStudent],
+  )
+
+  case class ExamPaperScheduleStudent(
+    seatNumber: Option[Int],
+    universityID: UniversityID,
+    sprCode: String,
+    occurrence: String,
+    extraTimePerHour: Option[Duration],
   )
 
   case class Module(
@@ -43,28 +54,31 @@ package object tabula {
     fullModuleCode: String,
     sequence: String
   ) {
-    def asAssessment(existingAssessment: Option[Assessment], examProfileCode: String): Option[Assessment] =
-      examPaper.flatMap { paper =>
-        paper.schedule.find(_.examProfileCode == examProfileCode).map { schedule =>
-          Assessment(
-            id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
-            paperCode = paper.code,
-            title = paper.title.getOrElse(name),
-            startTime = Some(schedule.startTime),
-            duration = paper.duration.get,
-            platform = existingAssessment.map(_.platform).getOrElse(Platform.OnlineExams),
-            assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
-            brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
-            invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
-            state = existingAssessment.map(_.state).getOrElse(Imported),
-            tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(id)),
-            examProfileCode = examProfileCode,
-            moduleCode = fullModuleCode,
-            departmentCode = DepartmentCode(module.adminDepartment.code),
-            sequence = sequence
-          )
-        }
-      }
+    def asAssessment(existingAssessment: Option[Assessment], schedule: ExamPaperSchedule): Assessment = {
+      val paper = examPaper.get
+
+      Assessment(
+        id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
+        paperCode = paper.code,
+        section = paper.section.filterNot(_ == "n/a"),
+        title = paper.title.getOrElse(name),
+        startTime = Some(schedule.startTime),
+        duration = paper.duration.get,
+        platform = existingAssessment.map(_.platform).getOrElse {
+          if (schedule.locationName.contains("Assignment")) Platform.TabulaAssignment
+          else Platform.OnlineExams
+        },
+        assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
+        brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
+        invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
+        state = existingAssessment.map(_.state).getOrElse(Imported),
+        tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(id)),
+        examProfileCode = schedule.examProfileCode,
+        moduleCode = fullModuleCode,
+        departmentCode = DepartmentCode(module.adminDepartment.code),
+        sequence = sequence
+      )
+    }
   }
 
   case class ExamMembership(

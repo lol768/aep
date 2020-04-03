@@ -6,15 +6,8 @@ import java.util.UUID
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
 import domain.Assessment.State
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, StudentAssessmentDao, UploadedFilesTables}
-import domain.UploadedFileOwner
-import domain.Assessment
-import domain.Assessment.Brief
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
-import domain.Assessment
-import domain.dao.AssessmentsTables.StoredAssessment
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner}
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunner, UploadedFilesTables}
+import domain.dao._
 import domain.{Assessment, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
 import services.AssessmentService._
@@ -34,7 +27,9 @@ trait AssessmentService {
 
   def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
-  def listForInvigilator(usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+  def isInvigilator(usercode: Usercode)(implicit t: TimingContext): Future[ServiceResult[Boolean]]
+
+  def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
   def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
@@ -95,7 +90,11 @@ class AssessmentServiceImpl @Inject()(
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
 
-  override def listForInvigilator(usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
+  override def isInvigilator(usercode: Usercode)(implicit t: TimingContext): Future[ServiceResult[Boolean]] = {
+    daoRunner.run(dao.isInvigilator(usercode)).map(ServiceResults.success)
+  }
+
+  override def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
     daoRunner.run(dao.getByInvigilator(usercodes)).flatMap(inflate)
   }
 
@@ -171,6 +170,7 @@ class AssessmentServiceImpl @Inject()(
       _ <- dao.update(StoredAssessment(
         id = assessment.id,
         paperCode = assessment.paperCode,
+        section = assessment.section,
         title = assessment.title,
         startTime = assessment.startTime,
         duration = assessment.duration,
@@ -211,6 +211,7 @@ class AssessmentServiceImpl @Inject()(
       assessment <- dao.insert(StoredAssessment(
         id = assessment.id,
         paperCode = assessment.paperCode,
+        section = assessment.section,
         title = assessment.title,
         startTime = assessment.startTime,
         duration = assessment.duration,
@@ -244,6 +245,7 @@ class AssessmentServiceImpl @Inject()(
       storedAssessmentOption.map { existingAssessment =>
         daoRunner.run(dao.update(existingAssessment.copy(
           paperCode = assessment.paperCode,
+          section = assessment.section,
           title = assessment.title,
           startTime = assessment.startTime,
           duration = assessment.duration,
@@ -256,6 +258,7 @@ class AssessmentServiceImpl @Inject()(
         daoRunner.run(dao.insert(StoredAssessment(
           id = assessment.id,
           paperCode = assessment.paperCode,
+          section = assessment.section,
           title = assessment.title,
           startTime = assessment.startTime,
           duration = assessment.duration,
