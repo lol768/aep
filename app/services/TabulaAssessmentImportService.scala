@@ -42,11 +42,20 @@ class TabulaAssessmentImportServiceImpl @Inject()(
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
 
+  private def traverseSerial[A, B](in: Seq[A])(fn: A => Future[ServiceResult[B]]): Future[ServiceResult[Seq[B]]] =
+    in.foldLeft(Future.successful(Seq.empty[ServiceResult[B]])) { (future, item) =>
+      future.flatMap(seq =>
+        fn(item).map { result =>
+          seq :+ result
+        }
+      )
+    }.map(ServiceResults.sequence)
+
   def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
     tabulaDepartmentService.getDepartments().successFlatMapTo { departments =>
       logger.info(s"Import started. Total departments to process: ${departments.size}")
 
-      ServiceResults.futureSequence(departments.map(d => process(d.code)))
+      traverseSerial(departments)(d => process(d.code))
         .successMapTo { departmentWithAssessments =>
           logger.info(s"Processed total departments: ${departmentWithAssessments.size}")
           departmentWithAssessments
@@ -56,14 +65,12 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   private def process(departmentCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[DepartmentWithAssessments]] = {
     logger.info(s"Processing department $departmentCode")
 
-    ServiceResults.futureSequence(
-      examProfileCodes.map { examProfileCode =>
-        tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, Some(examProfileCode)))
-          .successFlatMapTo { assessmentComponents =>
-            ServiceResults.futureSequence(assessmentComponents.map(generateAssessment(_, examProfileCode)))
-          }
-      }
-    ).successMapTo(components => DepartmentWithAssessments(departmentCode, components.flatten.flatten))
+    traverseSerial(examProfileCodes) { examProfileCode =>
+      tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, Some(examProfileCode)))
+        .successFlatMapTo { assessmentComponents =>
+          traverseSerial(assessmentComponents)(generateAssessment(_, examProfileCode))
+        }
+    }.successMapTo(components => DepartmentWithAssessments(departmentCode, components.flatten.flatten))
   }
 
   private def generateAssessment(ac: AssessmentComponent, examProfileCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[Option[Assessment]]] = {
