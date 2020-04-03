@@ -24,4 +24,6 @@ flash.messages.sentToInvigilator=Message sent to invigilator
 
 error.required=This field is required.
 error.approval.must-check-box=You must check the checkbox to approve the assessment.
+error.assessment.url-not-specified=You must specify the URL to assessment for the selected platform
+error.assessment.files-not-provided=You must upload some files for an Alternative Exams Portal assessment
 
