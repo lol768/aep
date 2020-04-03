@@ -100,6 +100,8 @@ package object tabula {
   case class SitsProfile(
     universityID: UniversityID,
     usercode: Usercode,
+    firstName: String,
+    lastName: String,
     fullName: String,
     department: DepartmentIdentity,
     course: Option[Course],

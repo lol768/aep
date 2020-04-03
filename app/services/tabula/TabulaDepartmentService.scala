@@ -59,7 +59,7 @@ class TabulaDepartmentServiceImpl @Inject()(
   import tabulaHttp._
 
   override def getDepartments()(implicit t: TimingContext): Future[DepartmentsReturn] = {
-    val url = config.getDepartmentUrl()
+    val url = config.getDepartmentsUrl
     val req = ws.url(url)
 
     implicit def l: Logger = logger

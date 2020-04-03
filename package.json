@@ -30,6 +30,7 @@
     "loglevel": "1.6.7",
     "mockdate": "2.0.5",
     "moment-timezone": "0.5.28",
+    "tablesort": "5.2.0",
     "whatwg-fetch": "3.0.0"
   },
   "scripts": {

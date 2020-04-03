@@ -5,6 +5,7 @@ import javax.inject.Inject
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 import services.NavigationService
+import services.tabula.TabulaConfiguration
 import warwick.core.system.AuditLogContext
 import warwick.sso.{AuthenticatedRequest, SSOClient}
 
@@ -22,16 +23,19 @@ trait ImplicitRequestContext extends LowPriorityRequestContextImplicits {
   @Inject
   private[this] var configuration: Configuration = _
 
+  @Inject
+  private[this] var tabulaConfiguration: TabulaConfiguration = _
+
   implicit def requestContext(implicit request: RequestHeader): RequestContext =
     request match {
       case req: AuthenticatedRequest[_] =>
-        RequestContext.authenticated(ssoClient, req, navigationService.getNavigation(req.context), csrfPageHelperFactory, configuration)
+        RequestContext.authenticated(ssoClient, req, navigationService.getNavigation(req.context), csrfPageHelperFactory, configuration, tabulaConfiguration)
 
       case req: WrappedAuthenticatedRequest[_] =>
-        RequestContext.authenticated(ssoClient, req.authRequest, navigationService.getNavigation(req.authRequest.context), csrfPageHelperFactory, configuration)
+        RequestContext.authenticated(ssoClient, req.authRequest, navigationService.getNavigation(req.authRequest.context), csrfPageHelperFactory, configuration, tabulaConfiguration)
 
       case _ =>
-        RequestContext.authenticated(ssoClient, request, loginContext => navigationService.getNavigation(loginContext), csrfPageHelperFactory, configuration)
+        RequestContext.authenticated(ssoClient, request, loginContext => navigationService.getNavigation(loginContext), csrfPageHelperFactory, configuration, tabulaConfiguration)
     }
 
   implicit val requestContextBuilder: RequestHeader => RequestContext =
