@@ -16,7 +16,7 @@ class IndexController @Inject()(
 
   import security._
 
-  def home: Action[AnyContent] = RequireAdmin { implicit request =>
+  def home: Action[AnyContent] = GeneralDepartmentAdminAction { implicit request =>
     Ok(views.html.admin.home())
   }
 }
