@@ -36,7 +36,6 @@ node_modules
 !/.idea/codeStyles
 !/.idea/codeStyleSettings.xml
 !/.idea/fileTemplates
-!/.idea/play2*.xml
 *.code-workspace/
 .bloop
 .metals

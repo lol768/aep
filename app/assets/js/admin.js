@@ -6,6 +6,7 @@
 import './polyfills';
 
 import $ from 'jquery';
+import Tablesort from 'tablesort';
 import * as flexiPicker from './flexi-picker';
 import * as dateTimePicker from './date-time-picker';
 
@@ -27,6 +28,10 @@ function bindTo($scope) {
 
   $('.datetimepicker', $scope).each((i, container) => {
     dateTimePicker.DateTimePicker(container);
+  });
+
+  $('table.table-sortable', $scope).each((i, table) => {
+    Tablesort(table);
   });
 }
 

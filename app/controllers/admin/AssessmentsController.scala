@@ -5,20 +5,23 @@ import java.util.UUID
 
 import controllers.BaseController
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
+import domain.tabula.SitsProfile
 import domain.{Assessment, Department, DepartmentCode}
 import javax.inject.{Inject, Singleton}
 import play.api.data.{Form, Mapping}
 import play.api.data.Forms._
 import play.api.i18n.Messages
-import play.api.mvc.{Action, AnyContent, MultipartFormData}
-import services.tabula.TabulaDepartmentService
+import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
-import services.{AssessmentService, SecurityService, UploadedFileService}
+import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
+import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
+import services.{AssessmentService, SecurityService, StudentAssessmentService}
+import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
-import warwick.sso.Usercode
+import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -143,9 +146,10 @@ object AssessmentsController {
 class AssessmentsController @Inject()(
   security: SecurityService,
   assessmentService: AssessmentService,
+  studentAssessmentService: StudentAssessmentService,
+  studentInformationService: TabulaStudentInformationService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
-  uploadedFileService: UploadedFileService,
-  departmentService: TabulaDepartmentService
+  departmentService: TabulaDepartmentService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import AssessmentsController._
@@ -157,16 +161,27 @@ class AssessmentsController @Inject()(
     }
   }
 
+  private def showForm(assessment: Assessment, assessmentForm: Form[AssessmentFormData])(implicit request: AuthenticatedRequest[_]): Future[Result] =
+    ServiceResults.zip(
+      studentAssessmentService.byAssessmentId(assessment.id),
+      departments()
+    ).successFlatMap { case (studentAssessments, departments) =>
+      studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
+        .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
+        .map { studentInformation =>
+          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments))
+        }
+    }
+
   def show(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
     val assessment = request.assessment
-    departments().successMap { departments =>
-      Ok(views.html.admin.assessments.show(assessment, form.fill(AssessmentFormData(
-        moduleCode = assessment.moduleCode,
-        paperCode = assessment.paperCode,
-        section = assessment.section,
-        departmentCode = assessment.departmentCode,
-        sequence = assessment.sequence,
-        invigilators = Option(assessment.invigilators),
+    showForm(assessment, form.fill(AssessmentFormData(
+      moduleCode = assessment.moduleCode,
+      paperCode = assessment.paperCode,
+      section = assessment.section,
+      departmentCode = assessment.departmentCode,
+      sequence = assessment.sequence,
+      invigilators = Option(assessment.invigilators),
         title = assessment.title,
         description = assessment.brief.text,
         durationMinutes = assessment.duration.toMinutes,
@@ -174,8 +189,7 @@ class AssessmentsController @Inject()(
         assessmentType = assessment.assessmentType,
         url = assessment.brief.url,
         operation = assessment.state
-      )), departments))
-    }
+      )))
   }
 
   def create(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
@@ -239,18 +253,12 @@ class AssessmentsController @Inject()(
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val assessment = request.assessment
     form.bindFromRequest().fold(
-      formWithErrors => {
-        departments().successMap { departments =>
-          Ok(views.html.admin.assessments.show(assessment, formWithErrors, departments))
-        }
-      },
+      formWithErrors => showForm(assessment, formWithErrors),
       data => {
         if (assessment.state != State.Approved) {
           val files = request.body.files.map(_.ref)
           if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
-            departments().successMap { departments =>
-              Ok(views.html.admin.assessments.show(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"), departments))
-            }
+            showForm(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"))
           } else {
             assessmentService.update(assessment.copy(
               title = data.title,

@@ -1,0 +1,45 @@
+@import domain.StudentAssessment
+@import domain.tabula.SitsProfile
+@import warwick.core.views.utils._
+@import warwick.sso.UniversityID
+
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@(
+  students: Seq[StudentAssessment],
+  studentInformation: Map[UniversityID, SitsProfile],
+)(implicit context: RequestContext)
+
+<details class="panel panel-default">
+  <summary class="panel-heading">@students.size @pl(students.size, "student")()</summary>
+  <table class="table table-striped table-sortable">
+    <thead>
+      <tr>
+        <th>University ID</th>
+        <th>First name</th>
+        <th>Last name</th>
+        <th>Department</th>
+        <th>User type</th>
+        <th>Extra time (per hr)</th>
+      </tr>
+    </thead>
+    <tbody>
+      @students.map { student =>
+        <tr>
+          <td><a href="@context.tabulaConfiguration.getProfileUrl(student.studentId)" target="_blank">@student.studentId.string</a></td>
+          @studentInformation.get(student.studentId) match {
+            case Some(p) => {
+              <td>@p.firstName</td>
+              <td>@p.lastName</td>
+              <td>@p.department.name</td>
+              <td>@views.tags.profiles.typeAndAttendance(p)</td>
+            }
+            case _ => {
+              <td colspan="4"><em>Unknown</em></td>
+            }
+          }
+          <td>@student.extraTimeAdjustment.map(d => DurationFormatUtils.formatDurationWords(d.toMillis, true, true))</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</details>

@@ -3,3 +3,15 @@
 @import "flexi-picker";
 @import "queries";
 @import "eonasdan-bootstrap-datetimepicker/src/less/_bootstrap-datetimepicker.less";
+@import (inline) "tablesort/tablesort.css";
+
+// Apply a pointer cursor upon hover to indicate it's clickable; prevent Chrome outlining
+// These styles can be applied regardless of whether the fallback is needed
+summary {
+  display: list-item;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+  }
+}

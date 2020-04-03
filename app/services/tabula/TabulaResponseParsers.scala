@@ -52,6 +52,8 @@ object TabulaResponseParsers {
     case class Member(
       universityId: String,
       userId: String,
+      firstName: String,
+      lastName: String,
       fullName: String,
       homeDepartment: DepartmentIdentity,
       disability: Option[SitsDisability],
@@ -66,6 +68,8 @@ object TabulaResponseParsers {
         SitsProfile(
           universityID = UniversityID(universityId),
           usercode = Usercode(userId),
+          firstName = firstName,
+          lastName = lastName,
           fullName = fullName,
           department = DepartmentIdentity(department.code, department.name),
           course = latestScd.map(_.course),
@@ -82,6 +86,8 @@ object TabulaResponseParsers {
     val memberReads: Reads[Member] = (
       (__ \ "member" \ "universityId").read[String] and
       (__ \ "member" \ "userId").read[String] and
+      (__ \ "member" \ "firstName").read[String] and
+      (__ \ "member" \ "lastName").read[String] and
       (__ \ "member" \ "fullName").read[String] and
       (__ \ "member" \ "homeDepartment").read[DepartmentIdentity](departmentIdentity) and
       (__ \ "member" \ "disability").readNullable[SitsDisability](disabilityReads) and
@@ -90,7 +96,7 @@ object TabulaResponseParsers {
     ) (Member.apply _)
     val memberFields: Seq[String] =
       Seq(
-        "universityId", "userId", "fullName", "homeDepartment", "userType"
+        "universityId", "userId", "firstName", "lastName", "fullName", "homeDepartment", "userType"
       ).map(f => s"member.$f") ++
         disabilityFields.map(f => s"member.disability.$f") ++
         studentCourseDetailsFields.map(f => s"member.studentCourseDetails.$f")
