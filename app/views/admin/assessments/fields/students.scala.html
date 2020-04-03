@@ -37,7 +37,9 @@
               <td colspan="4"><em>Unknown</em></td>
             }
           }
-          <td>@student.extraTimeAdjustment.map(d => DurationFormatUtils.formatDurationWords(d.toMillis, true, true))</td>
+          <td data-sort="@student.extraTimeAdjustment.map(_.toMillis)">
+            @student.extraTimeAdjustment.map(d => DurationFormatUtils.formatDurationWords(d.toMillis, true, true))
+          </td>
         </tr>
       }
     </tbody>

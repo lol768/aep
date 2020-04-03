@@ -24,7 +24,7 @@
                 <td>@assessment.paperCode</td>
                 <td>@assessment.section.getOrElse("")</td>
                 <td>@assessment.title</td>
-                <td>
+                <td data-sort="@assessment.duration.toMillis">
                     @DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
                 </td>
                 <td>
