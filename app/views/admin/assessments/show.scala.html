@@ -1,15 +1,16 @@
 @import controllers.admin.AssessmentsController.{AbstractAssessmentFormData, AssessmentFormData}
-@import domain.{Assessment, StudentAssessment}
-@import views.html.admin.assessments.fields
-@import warwick.core.helpers.JavaTime
+@import domain.{Assessment, Department, StudentAssessment}
 @import domain.tabula.SitsProfile
+@import warwick.core.helpers.JavaTime
 @import warwick.sso.UniversityID
+@import views.html.admin.assessments.fields
 
 @(
   assessment: Assessment,
   studentAssessments: Seq[StudentAssessment],
   studentInformation: Map[UniversityID, SitsProfile],
-  form: Form[AssessmentFormData]
+  form: Form[AssessmentFormData],
+  departments: Seq[Department],
 )(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
@@ -20,7 +21,7 @@
 
       <div class="row">
         <div class="col-sm-6">
-          @fields.department(Some(assessment))
+          @fields.department(Some(assessment), departments)
           @fields.module(Some(assessment))
           @fields.sequence(Some(assessment))
         </div>

@@ -6,16 +6,19 @@ import java.util.UUID
 import controllers.BaseController
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import domain.tabula.SitsProfile
-import domain.{Assessment, DepartmentCode}
+import domain.{Assessment, Department, DepartmentCode}
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
-import services.tabula.TabulaStudentInformationService
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
+import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentService, SecurityService, StudentAssessmentService}
+import warwick.core.helpers.ServiceResults
+import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
@@ -134,6 +137,7 @@ class AssessmentsController @Inject()(
   studentAssessmentService: StudentAssessmentService,
   studentInformationService: TabulaStudentInformationService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
+  departmentService: TabulaDepartmentService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import AssessmentsController._
@@ -146,11 +150,14 @@ class AssessmentsController @Inject()(
   }
 
   private def showForm(assessment: Assessment, assessmentForm: Form[AssessmentFormData])(implicit request: AuthenticatedRequest[_]): Future[Result] =
-    studentAssessmentService.byAssessmentId(assessment.id).successFlatMap { studentAssessments =>
+    ServiceResults.zip(
+      studentAssessmentService.byAssessmentId(assessment.id),
+      departments()
+    ).successFlatMap { case (studentAssessments, departments) =>
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
-          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm))
+          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments))
         }
     }
 
@@ -172,18 +179,26 @@ class AssessmentsController @Inject()(
     )))
   }
 
-  def create(): Action[AnyContent] = GeneralDepartmentAdminAction { implicit request =>
-    Ok(views.html.admin.assessments.create(adHocAssessmentForm))
+  def create(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
+    departments().successMap { departments =>
+      Ok(views.html.admin.assessments.create(adHocAssessmentForm, departments))
+    }
   }
 
   def save(): Action[MultipartFormData[TemporaryUploadedFile]] = GeneralDepartmentAdminAction(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     adHocAssessmentForm.bindFromRequest().fold(
-      formWithErrors => Future.successful(Ok(views.html.admin.assessments.create(formWithErrors))),
+      formWithErrors => {
+        departments().successMap { departments =>
+          Ok(views.html.admin.assessments.create(formWithErrors, departments))
+        }
+      },
       data => {
         val files = request.body.files.map(_.ref).map(f => (f.in, f.metadata))
         if (request.departments.exists(_.code.toLowerCase == data.departmentCode.lowerCase)) {
           if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
-            Future.successful(Ok(views.html.admin.assessments.create(adHocAssessmentForm.fill(data).withGlobalError("error.assessment.files-not-provided"))))
+            departments().successMap { departments =>
+              Ok(views.html.admin.assessments.create(adHocAssessmentForm.fill(data).withGlobalError("error.assessment.files-not-provided"), departments))
+            }
           } else {
             import helpers.DateConversion._
             assessmentService.insert(
@@ -270,5 +285,13 @@ class AssessmentsController @Inject()(
     implicit request: DepartmentAdminRequest[AnyContent]
   ): Seq[Assessment] =
     assessments.filter(deptAdminCanView)
+
+  private def departments()(implicit timingContext: TimingContext): Future[ServiceResult[Seq[Department]]] = {
+    departmentService.getDepartments().successMapTo { departments =>
+      departments.map { tabulaDepartment =>
+        Department(code = DepartmentCode(tabulaDepartment.code), name = tabulaDepartment.name)
+      }
+    }
+  }
 
 }
