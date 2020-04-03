@@ -25,7 +25,7 @@ class MasqueradeSetCookieFilter @Inject()(
 
   override def apply(next: EssentialAction): EssentialAction = EssentialAction { req =>
     if (req.queryString.contains(cookieName)
-      && req.cookies.get(cookieName).isEmpty
+      && !req.cookies.get(cookieName).exists(_.value == req.queryString(cookieName).head)
       && configuration.get[Boolean]("app.allowMasqUrls")) {
       Accumulator.done(Results.TemporaryRedirect(req.uri).withCookies(Cookie(
         name = cookieName,
