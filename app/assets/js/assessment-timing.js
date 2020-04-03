@@ -10,13 +10,29 @@ const setWarning = ({ parentElement }) => {
   parentElement.classList.remove('text-info');
 };
 
+const markParentForm = (node, data) => {
+  const form = node.closest('form');
+  if (!form) return;
+  const submitBtn = form.querySelector('.btn[type=submit]');
+  if (!submitBtn) return;
+  if (data.timeUntilStart > 0) {
+    submitBtn.classList.add('hide');
+  } else if (data.timeUntilEndOfWindow > 0) {
+    submitBtn.classList.remove('hide');
+  }
+};
+
 const updateTimingInfo = (node, data) => {
   let text;
-
+  markParentForm(node, data);
   if (data.hasStarted && !data.hasFinalised) {
     text = `Started ${msToHumanReadable(data.timeSinceStart)} ago.`;
     if (data.timeRemaining > 0) {
-      text += ` ${msToHumanReadable(data.timeRemaining)} remaining.`;
+      text += ` ${msToHumanReadable(data.timeRemaining)} remaining`;
+      if (data.extraTimeAdjustment) {
+        text += ` (including ${msToHumanReadable(data.extraTimeAdjustment)} additional time)`;
+      }
+      text += '.';
       clearWarning(node);
     } else {
       text += `\nExceeded deadline by ${msToHumanReadable(-data.timeRemaining)}.`;
@@ -25,11 +41,11 @@ const updateTimingInfo = (node, data) => {
   } else if (data.timeUntilStart > 0) {
     text = `You can start in ${msToHumanReadable(data.timeUntilStart)}.`;
     setWarning(node);
-  } else if (!data.hasWindowPassed) {
-    text = `${msToHumanReadable(-data.timeUntilStart)} left to start.`;
+  } else if (data.timeUntilEndOfWindow > 0) {
+    text = `${msToHumanReadable(data.timeUntilEndOfWindow)} left to start.`;
     setWarning(node);
   } else {
-    text = 'The exam window has now passed.';
+    text = 'The assessment window has now passed.';
     setWarning(node);
   }
   const textNode = document.createTextNode(text);
@@ -55,6 +71,7 @@ const offlineRefresh = (node) => {
     end,
     hasStarted,
     hasFinalised,
+    extraTimeAdjustment,
   } = JSON.parse(rendering);
 
   const now = Number(new Date());
@@ -62,17 +79,20 @@ const offlineRefresh = (node) => {
   const hasWindowPassed = now > windowEnd;
   const inProgress = hasStarted && !hasFinalised;
   const notYetStarted = !hasStarted && !hasWindowPassed;
-  const timeRemaining = inProgress ? end - now : null;
+  const extraTime = extraTimeAdjustment || 0;
+  const timeRemaining = inProgress ? end - now + extraTime : null;
   const timeSinceStart = inProgress ? now - new Date(start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
+  const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
 
   const data = {
     timeRemaining,
+    extraTimeAdjustment,
     timeSinceStart,
     timeUntilStart,
     hasStarted,
     hasFinalised,
-    hasWindowPassed,
+    timeUntilEndOfWindow,
   };
 
   if (Number.isNaN(windowStart) || Number.isNaN(windowEnd)) return;
@@ -80,7 +100,11 @@ const offlineRefresh = (node) => {
   updateTimingInfo(node, data);
 };
 
-const nodes = [...document.getElementsByClassName('timing-information')];
+const nodesIter = document.getElementsByClassName('timing-information');
+const nodes = [];
+for (let i = 0, len = nodesIter.length; i < len; i += 1) {
+  nodes.push(nodesIter[i]);
+}
 
 const refreshAll = () => {
   nodes.forEach((node) => {

@@ -9,6 +9,7 @@ import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
+import domain.Assessment.{AssessmentType, Platform}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import services.sandbox.DataGeneration
 import slick.basic.{BasicProfile, DatabaseConfig}
@@ -16,6 +17,7 @@ import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.fileuploads.UploadedFileSave
 import warwick.sso.{Department => _, _}
 import services.DataGenerationService
+import warwick.core.helpers.JavaTime
 
 import scala.util.Random
 
@@ -39,10 +41,25 @@ object Fixtures {
       email = Some("no-reply@warwick.ac.uk")
     )
 
+    // Set up as an app admin in fake-userlookup.conf
     val admin1: User = baseStaff.copy(
       usercode = Usercode("admin1"),
       universityId = Some(UniversityID("1200001")),
       name = Name(Some("Admin"), Some("User1"))
+    )
+
+    // Set up as a departmental admin for Philosophy (PH) in fake-userlookup.conf
+    val phAdmin: User = baseStaff.copy(
+      usercode = Usercode("phadmin"),
+      universityId = Some(UniversityID("1700101")),
+      name = Name(Some("Philosophy"), Some("Admin"))
+    )
+
+    // Set up as a departmental admin for Life Sciences (LF) in fake-userlookup.conf
+    val lfAdmin: User = baseStaff.copy(
+      usercode = Usercode("lfadmin"),
+      universityId = Some(UniversityID("1700102")),
+      name = Name(Some("LifeSci"), Some("Admin"))
     )
 
     // Staff users here correspond with webgroup members defined in test.conf
@@ -90,8 +107,15 @@ object Fixtures {
 
     def storedBrief: StoredBrief = DataGenerationService.makeStoredBrief
 
-    def storedAssessment(uuid: UUID = UUID.randomUUID): StoredAssessment =
-      DataGenerationService.makeStoredAssessment(uuid)
+    def storedAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None): StoredAssessment =
+      DataGenerationService.makeStoredAssessment(uuid, platformOption)
+
+    // If you just need any old assessment that's assigned to philosophy to test with...
+    lazy val philosophyAssessment: Assessment = Assessment(
+      UUID.randomUUID, "ph-assessment", None, "Philosophy Assessment", Some(JavaTime.offsetDateTime), Duration.ofHours(3), Platform.OnlineExams,
+      AssessmentType.OpenBook, Assessment.Brief.empty, Set.empty, Assessment.State.Submitted, None, "meh", "ph101", DepartmentCode("ph"),
+      "sequence"
+    )
   }
 
   object studentAssessments {
@@ -143,10 +167,11 @@ object Fixtures {
         contentLength = homeOfficeStatementPDF.uploadedFileSave.contentLength,
         contentType = homeOfficeStatementPDF.uploadedFileSave.contentType,
         uploadedBy = users.staff1.usercode,
+        uploadStarted = createTime.asOffsetDateTime.minusSeconds(7L),
         ownerId = None,
         ownerType = Some(UploadedFileOwner.Assessment),
         created = createTime.asOffsetDateTime,
-        version = createTime.asOffsetDateTime
+        version = createTime.asOffsetDateTime,
       )
     }
 
@@ -159,6 +184,7 @@ object Fixtures {
         contentLength = specialJPG.uploadedFileSave.contentLength,
         contentType = specialJPG.uploadedFileSave.contentType,
         uploadedBy = users.student1.usercode,
+        uploadStarted = createTime.asOffsetDateTime.minusSeconds(7L),
         ownerId = Some(studentAssessmentId),
         ownerType = Some(UploadedFileOwner.StudentAssessment),
         created = createTime.asOffsetDateTime,
@@ -184,7 +210,7 @@ object Fixtures {
 
     def truncateAndReset =
       auditEvents.delete andThen
-      outgoingEmails.table.delete andThen
-      outgoingEmails.versionsTable.delete
+        outgoingEmails.table.delete andThen
+        outgoingEmails.versionsTable.delete
   }
 }

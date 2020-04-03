@@ -6,9 +6,13 @@
 import './polyfills';
 
 import $ from 'jquery';
+import Tablesort from 'tablesort';
 import * as flexiPicker from './flexi-picker';
+import * as dateTimePicker from './date-time-picker';
+
 import '@universityofwarwick/statuspage-widget/dist/main';
 import './admin/assessment-setup';
+import './date-time-picker';
 
 /**
  * Attach handlers to all elements inside $scope. All jQuery selects
@@ -21,6 +25,14 @@ function bindTo($scope) {
   $('[data-toggle="popover"]', $scope).popover();
 
   flexiPicker.bindTo($scope);
+
+  $('.datetimepicker', $scope).each((i, container) => {
+    dateTimePicker.DateTimePicker(container);
+  });
+
+  $('table.table-sortable', $scope).each((i, table) => {
+    Tablesort(table);
+  });
 }
 
 $(() => {
@@ -61,4 +73,8 @@ $(() => {
         $('.popover').each((i, popover) => closePopover($(popover)));
       }
     });
+
+  if (document.querySelectorAll('.studentAssessmentInfo').length > 0) {
+    import('./studentAssessmentInfo');
+  }
 });

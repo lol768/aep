@@ -1,6 +1,6 @@
 package domain
 
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import warwick.fileuploads.UploadedFile
@@ -11,7 +11,10 @@ sealed trait BaseStudentAssessment {
   def studentId: UniversityID
   def inSeat: Boolean
   def startTime: Option[OffsetDateTime]
+  def extraTimeAdjustment: Option[Duration]
   def finaliseTime: Option[OffsetDateTime]
+
+  def hasFinalised: Boolean = finaliseTime.nonEmpty
 }
 
 case class StudentAssessment(
@@ -20,6 +23,7 @@ case class StudentAssessment(
   studentId: UniversityID,
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],
+  extraTimeAdjustment: Option[Duration],
   finaliseTime: Option[OffsetDateTime],
   uploadedFiles: Seq[UploadedFile]
 ) extends BaseStudentAssessment
@@ -29,6 +33,7 @@ case class StudentAssessmentMetadata(
   studentId: UniversityID,
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],
+  extraTimeAdjustment: Option[Duration],
   finaliseTime: Option[OffsetDateTime],
   uploadedFileCount: Int
 ) extends BaseStudentAssessment

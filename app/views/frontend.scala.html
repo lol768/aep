@@ -1,3 +1,4 @@
+@import views.html.tags.connectivityInfo
 @(
   title: String = "",
   extraClasses: Seq[String] = Seq()
@@ -17,7 +18,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="@routes.Assets.versioned("images/favicon-32x32.png")">
     <link rel="icon" type="image/png" sizes="16x16" href="@routes.Assets.versioned("images/favicon-16x16.png")">
     <link rel="manifest" href="@routes.Assets.versioned("images/site.webmanifest")">
-    <link rel="mask-icon" href="@routes.Assets.versioned("images/safari-pinned-tab.svg")" color="#a14418">
+    <link rel="mask-icon" href="@routes.Assets.versioned("images/safari-pinned-tab.svg")" color="#5B3069">
     <link rel="shortcut icon" href="@routes.Assets.versioned("images/favicon.ico")">
     <meta name="msapplication-TileColor" content="#a14418">
     <meta name="msapplication-config" content="@routes.Assets.versioned("images/browserconfig.xml")">
@@ -103,6 +104,7 @@
           @if(!title.isEmpty) {
             <div class="id7-page-title">
               <h1>@title</h1>
+              @connectivityInfo()
             </div>
           }
         </header>

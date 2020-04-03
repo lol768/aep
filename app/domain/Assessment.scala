@@ -12,21 +12,31 @@ import warwick.sso.Usercode
 
 sealed trait BaseAssessment {
   def id: UUID
-  def code: String
+  def paperCode: String
+  def section: Option[String]
   def title: String
   def startTime: Option[OffsetDateTime]
   def duration: Duration
   def platform: Platform
   def assessmentType: AssessmentType
   def state: State
+  def tabulaAssessmentId: Option[UUID]
+  def examProfileCode: String
+  def moduleCode: String
+  def departmentCode: DepartmentCode
+  def sequence: String //MAB sequence
 
-  def endTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
-  def hasWindowPassed: Boolean = endTime.exists(_.isAfter(JavaTime.offsetDateTime))
+  def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
+
+  def lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
+
+  def hasLastAllowedStartTimePassed: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
-  id: UUID = UUID.randomUUID(),
-  code: String,
+  id: UUID,
+  paperCode: String,
+  section: Option[String],
   title: String,
   startTime: Option[OffsetDateTime],
   duration: Duration,
@@ -35,17 +45,52 @@ case class Assessment(
   brief: Brief,
   invigilators: Set[Usercode],
   state: State,
-) extends BaseAssessment
+  tabulaAssessmentId: Option[UUID], //for assessments created within app directly this will be blank.
+  examProfileCode: String,
+  moduleCode: String,
+  departmentCode: DepartmentCode,
+  sequence: String
+) extends BaseAssessment with Ordered[Assessment] {
+  def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
+    id,
+    paperCode,
+    section,
+    title,
+    startTime,
+    duration,
+    platform,
+    assessmentType,
+    state,
+    tabulaAssessmentId,
+    examProfileCode,
+    moduleCode,
+    departmentCode,
+    sequence,
+  )
+
+  override def compare(that: Assessment): Int = {
+    Ordering.Tuple3[OffsetDateTime, String, String].compare(
+      (this.startTime.getOrElse(OffsetDateTime.MAX), this.paperCode, this.section.getOrElse("")),
+      (that.startTime.getOrElse(OffsetDateTime.MAX), that.paperCode, that.section.getOrElse(""))
+    )
+  }
+}
 
 case class AssessmentMetadata(
   id: UUID = UUID.randomUUID(),
-  code: String,
+  paperCode: String,
+  section: Option[String],
   title: String,
   startTime: Option[OffsetDateTime],
   duration: Duration,
   platform: Platform,
   assessmentType: AssessmentType,
   state: State,
+  tabulaAssessmentId: Option[UUID],
+  examProfileCode: String,
+  moduleCode: String,
+  departmentCode: DepartmentCode,
+  sequence: String,
 ) extends BaseAssessment
 
 object Assessment {
@@ -55,13 +100,19 @@ object Assessment {
 
   object Platform extends PlayEnum[Platform] {
     case object OnlineExams extends Platform {
-      val label = "Online Exams"
+      val label = "Alternative Exams Portal"
     }
+
     case object Moodle extends Platform {
       val label = "Moodle"
     }
+
     case object QuestionmarkPerception extends Platform {
       val label = "Questionmark Perception"
+    }
+
+    case object TabulaAssignment extends Platform {
+      val label = "Tabula Assignment Management"
     }
 
     val values: IndexedSeq[Platform] = findValues
@@ -72,12 +123,15 @@ object Assessment {
   }
 
   object AssessmentType extends PlayEnum[AssessmentType] {
+
     case object OpenBook extends AssessmentType {
-      val label = "Open book"
+      val label = "Open book (including file based)"
     }
+
     case object MultipleChoice extends AssessmentType {
       val label = "Multiple choice"
     }
+
     case object Spoken extends AssessmentType {
       val label = "Spoken"
     }
@@ -101,18 +155,29 @@ object Assessment {
     def empty: Brief = Brief(None, Seq.empty, None)
   }
 
-  val window: Duration = Duration.ofHours(8)
+  // Students are allowed 2 extra hours after the official finish time of the exam
+  // for them to make submissions. Anything submitted during this period should be
+  // marked as LATE though.
+  // Updated in OE-148
+  val lateSubmissionPeriod: Duration = Duration.ofHours(2)
+
+  private[domain] val window: Duration = Duration.ofHours(24)
 
   sealed trait State extends EnumEntry {
     val label: String = entryName
+    val cssClass: String = "label label-danger"
   }
 
   object State extends PlayEnum[State] {
-    case object Draft extends State
+    case object Imported extends State { override val label: String = "Needs setup" }
+    case object Draft extends State { override val label: String = "Needs setup" }
     case object Submitted extends State
-    case object Approved extends State
+    case object Approved extends State { override val label: String = "Ready"
+      override val cssClass: String = "label label-success"
+    }
 
     val values: IndexedSeq[State] = findValues
   }
+
 }
 

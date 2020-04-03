@@ -22,11 +22,12 @@ POST        /assessment/:id                         @controllers.AssessmentContr
 POST        /assessment/:id/done                    @controllers.AssessmentController.finish(id: UUID)
 POST        /assessment/:id/upload                  @controllers.AssessmentController.uploadFiles(id: UUID)
 
+GET         /assessment/:id/messages                @controllers.MessageController.showForm(id: UUID)
+POST        /assessment/:id/messages                @controllers.MessageController.submitForm(id: UUID)
+
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /assessment/:id/file/:fileID            @controllers.AssessmentController.downloadFile(id: UUID, fileID: UUID)
-GET         /admin/assessment/announcement/add      @controllers.admins.CreateAnnouncementController.index
-POST        /admin/assessment/announcement/add      @controllers.admins.CreateAnnouncementController.add
 
 POST        /assessment/:id/file/:fileID/delete     @controllers.AssessmentController.deleteFile(id: UUID, fileID: UUID)
 
@@ -44,15 +45,37 @@ GET         /admin                                                @controllers.a
 GET         /admin/approvals                                      @controllers.admin.ApprovalsController.index
 GET         /admin/approvals/:id                                  @controllers.admin.ApprovalsController.show(id: UUID)
 POST        /admin/approvals/:id                                  @controllers.admin.ApprovalsController.update(id: UUID)
-GET         /admin/approvals/:assessmentId/files/:fileId            @controllers.admin.ApprovalsController.getFile(assessmentId: UUID, fileId: UUID)
+GET         /admin/approvals/:assessmentId/files/:fileId          @controllers.admin.ApprovalsController.getFile(assessmentId: UUID, fileId: UUID)
+
+GET         /admin/assessment/announcement/add                    @controllers.admin.CreateAnnouncementController.index
+POST        /admin/assessment/announcement/add                    @controllers.admin.CreateAnnouncementController.add
 
 GET         /admin/assessments                                    @controllers.admin.AssessmentsController.index
+GET         /admin/assessments/create                             @controllers.admin.AssessmentsController.create
+POST        /admin/assessments/create                             @controllers.admin.AssessmentsController.save
 GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.show(id: UUID)
 POST        /admin/assessments/:id                                @controllers.admin.AssessmentsController.update(id: UUID)
-GET         /admin/assessments/:assessmentId/files/:fileId          @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
+GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
 
 GET         /admin/reporting                                      @controllers.admin.ReportingController.index
 GET         /admin/reporting/:id                                  @controllers.admin.ReportingController.assessment(id: UUID)
+GET         /admin/reporting/:id/expected                         @controllers.admin.ReportingController.expected(id: UUID)
+GET         /admin/reporting/:id/started                          @controllers.admin.ReportingController.started(id: UUID)
+GET         /admin/reporting/:id/notstarted                       @controllers.admin.ReportingController.notStarted(id: UUID)
+GET         /admin/reporting/:id/submitted                        @controllers.admin.ReportingController.submitted(id: UUID)
+GET         /admin/reporting/:id/finalised                        @controllers.admin.ReportingController.finalised(id: UUID)
+
+GET         /ajax/reporting/:id/expected                          @controllers.admin.ReportingController.expectedTable(id: UUID)
+GET         /ajax/reporting/:id/started                           @controllers.admin.ReportingController.startedTable(id: UUID)
+GET         /ajax/reporting/:id/notstarted                        @controllers.admin.ReportingController.notStartedTable(id: UUID)
+GET         /ajax/reporting/:id/submitted                         @controllers.admin.ReportingController.submittedTable(id: UUID)
+GET         /ajax/reporting/:id/finalised                         @controllers.admin.ReportingController.finalisedTable(id: UUID)
+
+## Invigilation ##
+
+GET         /invigilation                                         @controllers.invigilation.InvigilatorListController.list()
+GET         /invigilation/assessment/:id                          @controllers.invigilation.InvigilatorAssessmentController.view(id: UUID)
+GET         /invigilation/assessment/:id/student/:uniid/queries   @controllers.invigilation.InvigilatorQueriesController.view(id: UUID, uniid: UniversityID)
 
 ## Sysadmins ##
 
@@ -70,7 +93,8 @@ GET         /sysadmin/emails                        @controllers.sysadmin.EmailQ
 POST        /sysadmin/emails/:id                    @controllers.sysadmin.EmailQueueController.enqueue(id: UUID)
 GET         /sysadmin/mywarwick                     @controllers.sysadmin.MyWarwickQueueController.queued()
 POST        /sysadmin/mywarwick/reschedule          @controllers.sysadmin.MyWarwickQueueController.reschedule(triggerName: String, triggerGroup: String)
-GET         /sysadmin/assessments-test              @controllers.sysadmin.SysadminTestController.assessmentComponents()
+GET         /sysadmin/assessments-test/import       @controllers.sysadmin.SysadminTestController.importAssessments()
+GET         /sysadmin/assessments-test/:deptCode    @controllers.sysadmin.SysadminTestController.assessmentComponents(deptCode: domain.DepartmentCode, examProfileCode: String)
 GET         /sysadmin/assessment-members-test       @controllers.sysadmin.SysadminTestController.assessmentComponentMembers()
 GET         /sysadmin/departments-test              @controllers.sysadmin.SysadminTestController.departments()
 GET         /sysadmin/dummy-data-generation         @controllers.sysadmin.DummyDataGenerationController.showForm()

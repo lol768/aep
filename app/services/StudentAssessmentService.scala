@@ -7,6 +7,7 @@ import com.google.inject.ImplementedBy
 import domain.AuditEvent._
 import domain._
 import StudentAssessmentService._
+import akka.Done
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao._
@@ -30,6 +31,7 @@ trait StudentAssessmentService {
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]]
   def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessmentWithAssessment]]]
+  def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]]
   def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]]
   def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
@@ -37,6 +39,7 @@ trait StudentAssessmentService {
   def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
+  def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]]
 }
 
 @Singleton
@@ -101,6 +104,9 @@ class StudentAssessmentServiceImpl @Inject()(
       case _ => None
     }.map(ServiceResults.success)
   }
+
+  override def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]] =
+    daoRunner.run(dao.get(universityId, assessmentId)).map(_.getOrElse(noStudentAssessmentFound(assessmentId, universityId)).asStudentAssessmentMetadata).map(ServiceResults.success)
 
   override def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]] =
     daoRunner.run(
@@ -264,6 +270,7 @@ class StudentAssessmentServiceImpl @Inject()(
           studentId = studentAssessment.studentId,
           inSeat = studentAssessment.inSeat,
           startTime = studentAssessment.startTime,
+          extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
           finaliseTime = studentAssessment.finaliseTime,
           uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
           created = timestamp,
@@ -273,6 +280,10 @@ class StudentAssessmentServiceImpl @Inject()(
         .map(ServiceResults.success)
     }
   }
+
+  override def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] =
+    daoRunner.run(dao.delete(studentAssessment.studentId, studentAssessment.assessmentId))
+      .map(_ => ServiceResults.success(Done))
 
   private def noAssessmentFound(id: UUID) =
     throw new NoSuchElementException(s"Could not find an assessment with id ${id.toString}")

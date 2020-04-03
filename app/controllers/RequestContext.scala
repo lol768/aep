@@ -3,6 +3,7 @@ package controllers
 import play.api.Configuration
 import play.api.mvc.{Flash, RequestHeader}
 import services.Navigation
+import services.tabula.TabulaConfiguration
 import system.{CSRFPageHelper, CSRFPageHelperFactory}
 import warwick.core.timing.{ServerTimingFilter, TimingContext}
 import warwick.sso.{AuthenticatedRequest, LoginContext, SSOClient, User}
@@ -24,30 +25,32 @@ case class RequestContext(
   userAgent: Option[String],
   ipAddress: String,
   timingData: TimingContext.Data,
-  appFullName: String
+  appFullName: String,
+  appContactEmail: String,
+  tabulaConfiguration: TabulaConfiguration,
 ) extends TimingContext {
   def isMasquerading: Boolean = user != actualUser
 }
 
 object RequestContext {
 
-  def authenticated(sso: SSOClient, request: AuthenticatedRequest[_], navigation: Seq[Navigation], csrfHelperFactory: CSRFPageHelperFactory, configuration: Configuration): RequestContext =
-    RequestContext(sso, request, request.context.user, request.context.actualUser, navigation, csrfHelperFactory, configuration)
+  def authenticated(sso: SSOClient, request: AuthenticatedRequest[_], navigation: Seq[Navigation], csrfHelperFactory: CSRFPageHelperFactory, configuration: Configuration, tabulaConfiguration: TabulaConfiguration): RequestContext =
+    RequestContext(sso, request, request.context.user, request.context.actualUser, navigation, csrfHelperFactory, configuration, tabulaConfiguration)
 
-  def authenticated(sso: SSOClient, request: RequestHeader, navigation: LoginContext => Seq[Navigation], csrfHelperFactory: CSRFPageHelperFactory, configuration: Configuration): RequestContext = {
+  def authenticated(sso: SSOClient, request: RequestHeader, navigation: LoginContext => Seq[Navigation], csrfHelperFactory: CSRFPageHelperFactory, configuration: Configuration, tabulaConfiguration: TabulaConfiguration): RequestContext = {
     import ExecutionContext.Implicits.global
 
     val eventualRequestContext = sso.withUser(request) { loginContext =>
-      Future.successful(Right(RequestContext(sso, request, loginContext.user, loginContext.actualUser, navigation(loginContext), csrfHelperFactory, configuration)))
+      Future.successful(Right(RequestContext(sso, request, loginContext.user, loginContext.actualUser, navigation(loginContext), csrfHelperFactory, configuration, tabulaConfiguration)))
     }.map(_.getOrElse(throw new IllegalStateException))
 
     Await.result(eventualRequestContext, Duration.Inf)
   }
 
-  def anonymous(sso: SSOClient, request: RequestHeader, navigation: Seq[Navigation], csrfHelperFactory: CSRFPageHelperFactory, configuration: Configuration): RequestContext =
-    RequestContext(sso, request, None, None, navigation, csrfHelperFactory, configuration)
+  def anonymous(sso: SSOClient, request: RequestHeader, navigation: Seq[Navigation], csrfHelperFactory: CSRFPageHelperFactory, configuration: Configuration, tabulaConfiguration: TabulaConfiguration): RequestContext =
+    RequestContext(sso, request, None, None, navigation, csrfHelperFactory, configuration, tabulaConfiguration)
 
-  def apply(sso: SSOClient, request: RequestHeader, user: Option[User], actualUser: Option[User], navigation: Seq[Navigation], csrfHelperFactory: CSRFPageHelperFactory, configuration: Configuration): RequestContext = {
+  def apply(sso: SSOClient, request: RequestHeader, user: Option[User], actualUser: Option[User], navigation: Seq[Navigation], csrfHelperFactory: CSRFPageHelperFactory, configuration: Configuration, tabulaConfiguration: TabulaConfiguration): RequestContext = {
     val target = (if (request.secure) "https://" else "http://") + request.host + request.path
     val linkGenerator = sso.linkGenerator(request)
     linkGenerator.setTarget(target)
@@ -65,7 +68,9 @@ object RequestContext {
       userAgent = request.headers.get("User-Agent"),
       ipAddress = request.remoteAddress,
       timingData = request.attrs.get(ServerTimingFilter.TimingData).getOrElse(new TimingContext.Data),
-      appFullName = configuration.get[String]("app.name.full")
+      appFullName = configuration.get[String]("app.name.full"),
+      appContactEmail = configuration.get[String]("app.contactEmail"),
+      tabulaConfiguration = tabulaConfiguration
     )
   }
 

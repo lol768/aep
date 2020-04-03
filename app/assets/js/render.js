@@ -40,6 +40,9 @@ JDDT.initialise(document);
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.body.classList.contains('connect-ws')) {
+    if (document.body.classList.contains('beforeunload')) {
+      import('./are-you-sure');
+    }
     let websocket;
     import('./web-sockets').then(() => {
       websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`);
@@ -54,5 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (document.querySelectorAll('.undisable-with-checkbox[data-undisable-selector]').length > 0) {
     import('./undisable-with-checkbox');
+  }
+
+  if (document.querySelectorAll('.studentAssessmentInfo').length > 0) {
+    import('./studentAssessmentInfo');
   }
 });

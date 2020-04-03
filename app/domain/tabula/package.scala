@@ -1,29 +1,85 @@
 package domain
 
+import java.time.{Duration, OffsetDateTime}
+import java.util.UUID
+
+import domain.Assessment.State.Imported
+import domain.Assessment.{AssessmentType, Brief, Platform}
 import services.tabula.TabulaResponseParsers.SitsAssessmentType
 
 package object tabula {
 
-  import java.time.LocalDate
-
   import enumeratum.EnumEntry.CapitalWords
   import enumeratum.{Enum, EnumEntry}
-  import helpers.StringUtils._
-  import warwick.core.helpers.JavaTime
   import warwick.sso._
-
-  import scala.collection.immutable
 
   case class ExamPaper(
     code: String,
-    title: String,
+    duration: Option[Duration],
+    title: Option[String],
+    section: Option[String],
+    schedule: Seq[ExamPaperSchedule],
+  )
+
+  case class ExamPaperSchedule(
+    examProfileCode: String,
+    slotId: String,
+    sequence: String,
+    locationSequence: String,
+    startTime: OffsetDateTime,
+    locationName: Option[String],
+    students: Seq[ExamPaperScheduleStudent],
+  )
+
+  case class ExamPaperScheduleStudent(
+    seatNumber: Option[Int],
+    universityID: UniversityID,
+    sprCode: String,
+    occurrence: String,
+    extraTimePerHour: Option[Duration],
+  )
+
+  case class Module(
+    adminDepartment: DepartmentIdentity,
+    code: String,
+    name: String
   )
 
   case class AssessmentComponent(
-    id: String,
+    id: UUID,
     assessmentType: SitsAssessmentType,
+    name: String,
     examPaper: Option[ExamPaper],
-  )
+    module: Module,
+    fullModuleCode: String,
+    sequence: String
+  ) {
+    def asAssessment(existingAssessment: Option[Assessment], schedule: ExamPaperSchedule): Assessment = {
+      val paper = examPaper.get
+
+      Assessment(
+        id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
+        paperCode = paper.code,
+        section = paper.section.filterNot(_ == "n/a"),
+        title = paper.title.getOrElse(name),
+        startTime = Some(schedule.startTime),
+        duration = paper.duration.get,
+        platform = existingAssessment.map(_.platform).getOrElse {
+          if (schedule.locationName.contains("Assignment")) Platform.TabulaAssignment
+          else Platform.OnlineExams
+        },
+        assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
+        brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
+        invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
+        state = existingAssessment.map(_.state).getOrElse(Imported),
+        tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(id)),
+        examProfileCode = schedule.examProfileCode,
+        moduleCode = fullModuleCode,
+        departmentCode = DepartmentCode(module.adminDepartment.code),
+        sequence = sequence
+      )
+    }
+  }
 
   case class ExamMembership(
     moduleCode: String,
@@ -44,54 +100,24 @@ package object tabula {
   case class SitsProfile(
     universityID: UniversityID,
     usercode: Usercode,
+    firstName: String,
+    lastName: String,
     fullName: String,
-    dateOfBirth: LocalDate,
-    phoneNumber: Option[String],
-    warwickEmail: Option[String], // Only used for notification sending, not displayed on profile
-    address: Option[Address],
     department: DepartmentIdentity,
     course: Option[Course],
     attendance: Option[Attendance],
     group: Option[StudentGroup],
     yearOfStudy: Option[YearOfStudy],
-    startDate: Option[LocalDate],
-    endDate: Option[LocalDate],
-    nationality: Option[String],
-    dualNationality: Option[String],
-    tier4VisaRequired: Option[Boolean],
     disability: Option[SitsDisability],
-    disabilityFundingStatus: Option[SitsDisabilityFundingStatus],
-    jobTitle: Option[String],
-    photo: Option[String],
+    specialExamArrangementsExtraTime: Option[Duration],
     userType: UserType
-  ) {
-    def asUser: User = User(
-      usercode = usercode,
-      universityId = Some(universityID),
-      name = Name(fullName.split(' ').headOption, fullName.split(' ').lastOption),
-      email = warwickEmail,
-      department = Some(warwick.sso.Department(None, Some(department.name), Some(department.code.toUpperCase))),
-      userSource = Some("Tabula"),
-      isStaffOrPGR = group.isEmpty || group.contains(StudentGroup.PGR),
-      isStaffNotPGR = group.isEmpty,
-      isStudent = userType == UserType.Student,
-      isAlumni = false,
-      isApplicant = userType == UserType.Applicant,
-      isUndergraduate = group.contains(StudentGroup.Undergraduate) || group.contains(StudentGroup.Foundation),
-      isPGT = group.contains(StudentGroup.PGT),
-      isPGR = group.contains(StudentGroup.PGR),
-      isFound = true,
-      isVerified = true,
-      isLoginDisabled = endDate.exists(_.isAfter(JavaTime.localDate)),
-      rawProperties = Map()
-    )
-  }
+  )
 
   object SitsProfile {
     def universityId(e: Either[UniversityID, SitsProfile]): UniversityID = e.fold(identity, _.universityID)
   }
 
-  case class Course (
+  case class Course(
     code: String,
     name: String
   )
@@ -104,12 +130,16 @@ package object tabula {
   sealed abstract class UserType extends EnumEntry with CapitalWords
 
   object UserType extends Enum[UserType] {
-    val values: immutable.IndexedSeq[UserType] = findValues
+    val values: IndexedSeq[UserType] = findValues
 
     case object Other extends UserType
+
     case object Student extends UserType
+
     case object Staff extends UserType
+
     case object EmeritusAcademic extends UserType
+
     case object Applicant extends UserType
 
     def apply(user: User): UserType =
@@ -125,10 +155,12 @@ package object tabula {
   }
 
   object Attendance extends Enum[Attendance] {
-    val values: immutable.IndexedSeq[Attendance] = findValues
+    val values: IndexedSeq[Attendance] = findValues
 
     case object FullTime extends Attendance("F", "Full-time")
+
     case object PartTime extends Attendance("P", "Part-time")
+
   }
 
   sealed abstract class StudentGroup(override val entryName: String, val description: String) extends EnumEntry {
@@ -138,12 +170,16 @@ package object tabula {
 
   object StudentGroup extends Enum[StudentGroup] {
 
-    val values: immutable.IndexedSeq[StudentGroup] = findValues
+    val values: IndexedSeq[StudentGroup] = findValues
 
     case object Foundation extends StudentGroup("F", "Foundation course")
+
     case object Undergraduate extends StudentGroup("UG", "Undergraduate")
+
     case object PGT extends StudentGroup("PG(T)", "Postgraduate (taught)")
+
     case object PGR extends StudentGroup("PG(R)", "Postgraduate (research)")
+
   }
 
   case class YearOfStudy(
@@ -156,27 +192,4 @@ package object tabula {
     description: String,
     sitsDefinition: String,
   )
-
-  case class SitsDisabilityFundingStatus(
-    code: String,
-    description: String,
-  )
-
-  case class Address (
-    line1: Option[String],
-    line2: Option[String],
-    line3: Option[String],
-    line4: Option[String],
-    line5: Option[String],
-    postcode: Option[String],
-  ) {
-    override def toString: String = Seq(line1, line2, line3, line4, line5, postcode)
-      .flatten.filter(_.hasText).mkString(", ")
-  }
-
-  case class VisaStatus (
-    tier4: Boolean,
-    requiresClearance: Boolean
-  )
-
 }

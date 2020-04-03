@@ -17,23 +17,27 @@
     }
     <div class="panel-body">
         @if(!isAssessmentPage) {
-            <h4>@assessment.assessment.title</h4>
+            <h4>
+                @if(assessment.finalised) {
+                    <i class="fad themed-duotone fa-check fa-fw"></i>
+                }
+                @assessment.assessment.title
+            </h4>
         }
 
-        @assessmentMetadata(assessment.assessment)
+        @studentAssessmentMetadata(assessment)
 
         @assessment.assessment.platform match {
             case Platform.OnlineExams => {
                 @if(isAssessmentPage) {
                     @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessment.assessment.id)) { implicit fc =>
                         @if(assessment.studentAssessment.startTime.isEmpty) {
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="startAssessment">
                                 Start
                             </button>
                         }
                         @assessmentTiming(assessment)
                     }
-                    @connectivityInfo()
                 } else {
                     <a href="@routes.AssessmentController.view(assessment.assessment.id)" class="btn btn-primary">
                         View
@@ -43,13 +47,18 @@
             }
             case Platform.Moodle => {
                 <a href="/service/stub" target="_blank">
-                    Exam on Moodle<i class="fa fa-fw fa-external-link"></i>
-                  </a>
+                  Assessment on Moodle<i class="fa fa-fw fa-external-link"></i>
+                </a>
             }
             case Platform.QuestionmarkPerception => {
                 <a href="/service/stub" target="_blank">
-                    Exam on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
-                  </a>
+                  Assessment on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
+                </a>
+            }
+            case Platform.TabulaAssignment => {
+                <a href="/service/stub" target="_blank">
+                  Assessment on Tabula<i class="fa fa-fw fa-external-link"></i>
+                </a>
             }
         }
     </div>

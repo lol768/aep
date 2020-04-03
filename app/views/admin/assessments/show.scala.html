@@ -1,62 +1,45 @@
-@import domain.Assessment
-@import domain.Assessment.Platform
-@import domain.Assessment.AssessmentType
-@import controllers.admin.AssessmentsController.AssessmentFormData
+@import controllers.admin.AssessmentsController.{AbstractAssessmentFormData, AssessmentFormData}
+@import domain.{Assessment, Department, StudentAssessment}
+@import domain.tabula.SitsProfile
+@import warwick.core.helpers.JavaTime
+@import warwick.sso.UniversityID
+@import views.html.admin.assessments.fields
 
-@(assessment: Assessment, form: Form[AssessmentFormData])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
+@(
+  assessment: Assessment,
+  studentAssessments: Seq[StudentAssessment],
+  studentInformation: Map[UniversityID, SitsProfile],
+  form: Form[AssessmentFormData],
+  departments: Seq[Department],
+)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
-@adminLayout(s"Assessment for ${assessment.code}") {
-  @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.update(assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
-    @b3.text(form("title"), Symbol("_label") -> "Title")
+@defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
+  @adminLayout(s"Assessment for ${assessment.title} (${assessment.moduleCode})") {
+    @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.update(assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
+      @views.html.tags.formHasErrors(form)
+      @views.html.tags.globalErrors(form)
 
-    <div class="row">
-      <div class="col-sm-6">
-      @b3.radio(form("assessmentType"), AssessmentType.values.map(p => (p.entryName, p.label)), Symbol("_label") -> "Type")
-      </div>
-      <div class="col-sm-6">
-      @b3.radio(form("platform"), Platform.values.map(p => (p.entryName, p.label)), Symbol("_label") -> "Platform")
-      </div>
-    </div>
-
-    @b3.select(form("durationMinutes"), Seq("" -> "", "30" -> "30 minutes", "60" -> "1 hour", "90" -> "1 hour and 30 minutes", "120" -> "2 hours", "180" -> "3 hours"), Symbol("_label") -> "Duration")
-@*    @b3.inputWrapped("number", form("durationMinutes"), Symbol("_label") -> "Duration", Symbol("min") -> 1, Symbol("max") -> 24 * 12) { input =>*@
-@*      <div class="input-group">*@
-@*        @input*@
-@*        <div class="input-group-addon">minutes</div>*@
-@*      </div>*@
-@*    }*@
-
-    @b3.textarea(form("description"), Symbol("_label") -> "Description", Symbol("rows") -> 5)
-
-    @b3.text(form("url"), Symbol("_label") -> "URL to exam")
-
-    @b3.freeFormGroup(Seq(Symbol("_label") -> "Files", Symbol("id") -> "files")) { _ =>
-      <div class="well">
-        @if(assessment.brief.files.isEmpty) {
-          <p>
-            No files attached.
-          </p>
-        } else {
-          <p>Attached files:</p>
-          <ul>
-          @assessment.brief.files.map { file =>
-            <li>
-              <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
-                <i class="fad fa-file fa-fw"></i>@file.fileName
-              </a>
-            </li>
-          }
-          </ul>
-          <p>Uploading new files replaces all existing files.</p>
-        }
+      <div class="row">
+        <div class="col-sm-6">
+          @fields.department(Some(assessment), departments)
+          @fields.module(Some(assessment))
+          @fields.sequence(Some(assessment))
+        </div>
+        <div class="col-sm-6">
+          @fields.paper(Some(assessment))
+          @b3.text(form("startTime"), Symbol("value") -> assessment.startTime.map(JavaTime.Relative(_, printToday = false)).getOrElse(""), Symbol("_label") -> "Start time", Symbol("readonly") -> true )
+        </div>
       </div>
 
-      <input type="file" name="file" id="file" multiple>
-    }
+      @fields.students(studentAssessments, studentInformation)
 
-    @b3.free() {
-      <button type="submit" class="btn btn-primary">Save for approval</button>
-      <a href="@controllers.admin.routes.AssessmentsController.index()" class="btn btn-default">Cancel</a>
+      @fields.title()
+      @fields.assessmentType()
+      @fields.duration()
+      @fields.description()
+      @fields.url()
+      @fields.upload(Some(assessment))
+      @fields.submit(Some(assessment))
     }
   }
 }

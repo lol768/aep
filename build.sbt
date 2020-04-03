@@ -62,7 +62,7 @@ lazy val integration = (project in file("it"))
 val enumeratumVersion = "1.5.15"
 val enumeratumPlayVersion = "1.5.17"
 val enumeratumSlickVersion = "1.5.16"
-val playUtilsVersion = "1.47"
+val playUtilsVersion = "1.49"
 val akkaVersion = "2.6.3"
 val ssoClientVersion = "2.81"
 val warwickUtilsVersion = "20200323"
@@ -120,6 +120,8 @@ val appDeps = Seq(
   "com.beachape" %% "enumeratum-play" % enumeratumPlayVersion,
   "com.beachape" %% "enumeratum-play-json" % enumeratumPlayVersion,
   "com.beachape" %% "enumeratum-slick" % enumeratumSlickVersion,
+
+  "org.apache.jclouds.api" % "filesystem" % "2.2.0",
 
   "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1"
 )

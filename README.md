@@ -1,4 +1,4 @@
-# Tabula Assessment Portal
+# Alternative Exams Portal
 
 A system for managing alternative assessments to be taken online.
 
