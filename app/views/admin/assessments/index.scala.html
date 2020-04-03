@@ -46,7 +46,9 @@
             @assessment.assessmentType.label
           </td>
           <td>
-            @assessment.state.label
+            <label class="@assessment.state.cssClass">
+                @assessment.state.label
+            </label>
           </td>
           <td class="text-right">
             <a href="@controllers.admin.routes.AssessmentsController.show(assessment.id)" class="btn btn-default btn-sm">View</a>
