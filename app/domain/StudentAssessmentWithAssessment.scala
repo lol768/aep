@@ -2,7 +2,7 @@ package domain
 
 import java.time.Duration
 
-import views.assessment.AssessmentTimingInformation
+import views.assessment.AssessmentTimingUpdate
 import warwick.core.helpers.JavaTime
 
 sealed trait BaseStudentAssessmentWithAssessment {
@@ -25,22 +25,10 @@ sealed trait BaseStudentAssessmentWithAssessment {
   // Hard limit for student submitting, though they may be counted late.
   lazy val durationIncludingLate = duration.plus(Assessment.lateSubmissionPeriod)
 
-  def getTimingInfo: AssessmentTimingInformation = {
-    val now = JavaTime.offsetDateTime
-
-    val timeRemaining = studentAssessment.startTime match {
-      case Some(studentStart) if inProgress =>
-        Some(duration.minus(Duration.between(studentStart, now)).toMillis)
-      case _ => None
-    }
-
-    AssessmentTimingInformation(
+  def getTimingInfo: AssessmentTimingUpdate = {
+    AssessmentTimingUpdate(
       id = assessment.id,
-      timeRemaining = timeRemaining,
-      extraTimeAdjustment = studentAssessment.extraTimeAdjustment.map(_.toMillis),
-      timeSinceStart = if (inProgress) Some(Duration.between(studentAssessment.startTime.get, now).toMillis) else None,
-      timeUntilStart = if (studentAssessment.startTime.isEmpty && !assessment.hasLastAllowedStartTimePassed) Some(Duration.between(now, assessment.startTime.get).toMillis) else None,
-      timeUntilEndOfWindow = if (!studentAssessment.hasFinalised) assessment.lastAllowedStartTime.map(Duration.between(now, _).toMillis) else None,
+      startTime = studentAssessment.startTime.map(_.toInstant.toEpochMilli),
       hasStarted = studentAssessment.startTime.nonEmpty,
       hasFinalised = studentAssessment.hasFinalised
     )

@@ -11,10 +11,11 @@ import services.{AssessmentClientNetworkActivityService, StudentAssessmentServic
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
-import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation}
+import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, StudentAssessmentWithAssessmentMetadata}
 import warwick.core.helpers.JavaTime
+import warwick.core.helpers.ServiceResults.ServiceResult
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 object WebSocketActor {
 
@@ -41,7 +42,9 @@ object WebSocketActor {
   case class RequestAssessmentTiming(
     assessmentId: UUID
   )
-  val readsRequestAssessmentTiming: Reads[RequestAssessmentTiming] = Json.reads[RequestAssessmentTiming]
+  object RequestAssessmentTiming {
+    implicit val reads: Reads[RequestAssessmentTiming] = Json.reads[RequestAssessmentTiming]
+  }
 }
 
 /**
@@ -105,10 +108,24 @@ class WebSocketActor @Inject() (
           })
 
         case m if m.`type` == "RequestAssessmentTiming" =>
-          out ! Json.obj(
-            "type"-> "AssessmentTimingInformation",
-            "now"-> JavaTime.instant.toEpochMilli
-          )
+          val universityID: UniversityID = loginContext.user.flatMap(u => u.universityId).get
+          val request: Option[RequestAssessmentTiming] = m.data.flatMap(_.validate[RequestAssessmentTiming].asOpt)
+          val requestedAssessmentId: Option[UUID] = request.map(_.assessmentId)
+
+          // Get single assessment or all user's assessments, depending on what was requested
+          val getAssessments: Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]] = requestedAssessmentId.map { id =>
+            studentAssessmentService.getMetadataWithAssessment(universityID, id)(TimingContext.none).successMapTo(a => Seq(a))
+          }.getOrElse {
+            studentAssessmentService.getMetadataWithAssessment(universityID)(TimingContext.none)
+          }
+
+          getAssessments.successMapTo { assessments =>
+            out ! Json.obj(
+              "type"-> "AssessmentTimingInformation",
+              "now"-> JavaTime.instant.toEpochMilli,
+              "assessments"-> assessments.map(a => Json.toJson(a.getTimingInfo))
+            )
+          }
 
         case m => log.error(s"Ignoring unrecognised client message: $m")
       }

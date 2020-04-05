@@ -24,15 +24,11 @@ import msToHumanReadable from './time-helper';
 * @property {boolean} warning
 */
 
-
-const nodes = document.querySelectorAll('.timing-information');
-
+/** @type {NodeListOf<Element>} */
+let nodes;
 // Pre-parse data-rendering JSON so it can be easily re-used (or even modified over time)
-const nodeData = {};
-nodes.forEach((node) => {
-  const { dataset: { id, rendering } } = node;
-  nodeData[id] = JSON.parse(rendering);
-});
+let nodeData = {};
+
 
 /** */
 function clearWarning({ parentElement }) {
@@ -44,6 +40,19 @@ function clearWarning({ parentElement }) {
 function setWarning({ parentElement }) {
   parentElement.classList.add('text-danger');
   parentElement.classList.remove('text-info');
+}
+
+/** Set the list of nodes containing timing information. Generally set by the side-effects
+ * at the end of this module but can be reset for testing.
+ * @param {NodeListOf<Element>} nodesIn
+ */
+function setNodes(nodesIn) {
+  nodes = nodesIn;
+  nodeData = {};
+  nodes.forEach((node) => {
+    const { dataset: { id, rendering } } = node;
+    nodeData[id] = JSON.parse(rendering);
+  });
 }
 
 /**
@@ -171,26 +180,33 @@ function localRefreshAll() {
   });
 }
 
-localRefreshAll();
+export function receiveSocketData(d) {
+  if (d.type === 'AssessmentTimingInformation') {
+    const { now, assessments } = d;
+    assessments.forEach((assessment) => {
+      const { id } = assessment;
+      const node = document.querySelector(`.timing-information[data-id="${id}"]`);
+      if (node) {
+        const data = nodeData[id];
+        // partial update of properties
+        nodeData[id] = {
+          ...data,
+          ...assessment,
+        };
+        domRefresh(node, now);
+      }
+    });
+  }
+}
 
 export default function initTiming(websocket) {
   websocket.add({
     onError: () => {
       localRefreshAll();
     },
-    onData: (d) => {
-      if (d.type === 'AssessmentTimingInformation') {
-        // Just sending timestamp, using what we have in dataset for the rest.
-        // TODO might want to send over start, end, and hasStarted
-        // so it can update assessments that start themselves at a specific time.
-        const { now } = d;
-        nodes.forEach((node) => {
-          domRefresh(node, now);
-        });
-      }
-    },
+    onData: receiveSocketData,
     onHeartbeat: (ws) => {
-      const data = nodes.length === 1 ? { assessmentId: nodes[0].getAttribute('data-id') } : null;
+      const data = nodes.length === 1 ? { assessmentId: nodes[0].getAttribute('data-id') } : undefined;
       const message = {
         type: 'RequestAssessmentTiming',
         data,
@@ -201,3 +217,7 @@ export default function initTiming(websocket) {
   });
   websocket.connect();
 }
+
+// side-effects
+setNodes(document.querySelectorAll('.timing-information'));
+localRefreshAll();
