@@ -68,14 +68,20 @@ class NavigationServiceImpl @Inject()(
   private lazy val reporting = NavigationPage("Reporting", controllers.admin.routes.ReportingController.index())
   private lazy val dataGeneration = NavigationPage("Data generation", controllers.sysadmin.routes.DummyDataGenerationController.showForm())
 
-  private lazy val sysadmin =
-    NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), Seq(
+  private lazy val production = config.get[Boolean]("environment.production")
+
+  private lazy val navigationItems = {
+    val baseItems = Seq(
       emailQueue,
       sentEmails,
       myWarwickQueue,
       masquerade,
-      dataGeneration,
-    ))
+    )
+    if (production) baseItems else baseItems :+ dataGeneration
+  }
+
+  private lazy val sysadmin =
+    NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), navigationItems)
 
   private def sysadminMenu(loginContext: LoginContext): Seq[Navigation] =
     if (loginContext.actualUserHasRole(Sysadmin))

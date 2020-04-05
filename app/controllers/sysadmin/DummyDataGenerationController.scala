@@ -2,6 +2,7 @@ package controllers.sysadmin
 
 import controllers.BaseController
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
@@ -14,6 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class DummyDataGenerationController @Inject()(
   securityService: SecurityService,
   dataGenerationService: DataGenerationService,
+  configuration: Configuration,
 ) (implicit ec: ExecutionContext) extends BaseController {
 
   import securityService._
@@ -34,7 +36,12 @@ class DummyDataGenerationController @Inject()(
 
   def submitForm: Action[AnyContent] = RequireSysadmin.async { implicit request =>
     def success(data: DataGenerationFormData) = {
-      if (data.withStudentAssessments) {
+      val production = configuration.get[Boolean]("environment.production")
+      if (production) {
+        Future.successful(Redirect(
+          controllers.admin.routes.AssessmentsController.create()
+        ).flashing("error" -> Messages("error.dataGeneration.production")))
+      } else if (data.withStudentAssessments) {
         dataGenerationService.putRandomAssessmentsWithStudentAssessmentsInDatabase(data.howMany).successMap { _ =>
           Redirect(controllers.sysadmin.routes.DummyDataGenerationController.showForm())
             .flashing("success" -> Messages("flash.dataGeneration.randomAssessmentsWithStudentAssessments", data.howMany))
