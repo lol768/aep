@@ -3,7 +3,7 @@
 @import domain.Department
 @(form: Form[AdHocAssessmentFormData], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
-    @adminLayout(s"Create assessment") {
+    @adminLayout(s"Create mock (non-SITS) assessment") {
         @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.save(), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
             @views.html.tags.formHasErrors(form)
             @views.html.tags.globalErrors(form)
