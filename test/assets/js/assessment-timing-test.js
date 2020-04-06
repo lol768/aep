@@ -35,7 +35,7 @@ describe('calculateTimingInfo', () => {
     })
   });
 
-  it('still shows start button after end of last start time', () => {
+  it('prevents start after end of last start time', () => {
     const result = calculateTimingInfo({
       windowStart: BASE_TIME - 300*MINUTE,
       windowEnd: BASE_TIME - 10*MINUTE,
