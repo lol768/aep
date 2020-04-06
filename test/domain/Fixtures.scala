@@ -6,7 +6,7 @@ import java.util.UUID
 import com.typesafe.config.Config
 import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
-import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
+import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
 import domain.Assessment.{AssessmentType, Platform}
@@ -119,9 +119,23 @@ object Fixtures {
   }
 
   object studentAssessments {
+    import helpers.DateConversion._
 
     def storedStudentAssessment(assId: UUID, studentId: UniversityID = users.student1.universityId.get): StoredStudentAssessment = {
       DataGenerationService.makeStoredStudentAssessment(assId, studentId)
+    }
+
+    def storedDeclarations(id: UUID): StoredDeclarations = {
+      val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
+
+      StoredDeclarations(
+        id = id,
+        acceptsAuthorship = true,
+        selfDeclaredRA = false,
+        completedRA = true,
+        created = createTime.asOffsetDateTime,
+        version = createTime.asOffsetDateTime
+      )
     }
   }
 

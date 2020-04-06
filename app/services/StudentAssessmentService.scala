@@ -9,7 +9,7 @@ import domain._
 import StudentAssessmentService._
 import akka.Done
 import domain.dao.AssessmentsTables.StoredAssessment
-import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
+import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
@@ -40,6 +40,9 @@ trait StudentAssessmentService {
   def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]]
+
+  def getDeclarations(studentAssessmentId: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[Option[Declarations]]]
+  def upsert(declarations: Declarations)(implicit ctx: AuditLogContext): Future[ServiceResult[Declarations]]
 }
 
 @Singleton
@@ -132,9 +135,13 @@ class StudentAssessmentServiceImpl @Inject()(
     ).map(ServiceResults.success)
   }
 
-  private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
-    require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot start assessment, too early")
-    require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot start assessment, too late")
+  private def isTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
+    require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot do assessment, too early")
+    require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot do assessment, too late")
+  }
+
+  private def hasAcceptedDeclarations(storedDeclarations: Option[StoredDeclarations]): Future[Unit] = Future.successful {
+    require(storedDeclarations.exists(_.asDeclarations.acceptable), "Cannot start assessment, declarations not made")
   }
 
   private def startedNotFinalised(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
@@ -148,10 +155,12 @@ class StudentAssessmentServiceImpl @Inject()(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessmentOption <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(canStart(
+          storedDeclarationsOption <- dao.getDeclarations(studentAssessment.assessmentId)
+          _ <- DBIO.from(isTimeInRange(
             storedAssessmentOption.getOrElse(noAssessmentFound(studentAssessment.assessmentId)),
             storedStudentAssessmentOption.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId))
           ))
+          _ <- DBIO.from(hasAcceptedDeclarations(storedDeclarationsOption))
           _ <- {
             storedStudentAssessmentOption.map { storedStudentAssessment =>
               if (storedStudentAssessment.startTime.isEmpty) {
@@ -175,7 +184,7 @@ class StudentAssessmentServiceImpl @Inject()(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessmentOption <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(canStart(
+          _ <- DBIO.from(isTimeInRange(
             storedAssessmentOption.getOrElse {
               noAssessmentFound(studentAssessment.assessmentId)
             },
@@ -285,6 +294,36 @@ class StudentAssessmentServiceImpl @Inject()(
   override def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] =
     daoRunner.run(dao.delete(studentAssessment.studentId, studentAssessment.assessmentId))
       .map(_ => ServiceResults.success(Done))
+
+  override def getDeclarations(studentAssessmentId: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[Option[Declarations]]] =
+    daoRunner.run(dao.getDeclarations(studentAssessmentId))
+      .map(_.map(_.asDeclarations))
+      .map(ServiceResults.success)
+
+  override def upsert(decs: Declarations)(implicit ctx: AuditLogContext): Future[ServiceResult[Declarations]] = {
+    daoRunner.run(dao.getDeclarations(decs.id)).flatMap { result =>
+      result.map { existingDeclaration =>
+        daoRunner.run(dao.update(existingDeclaration.copy(
+          acceptsAuthorship = decs.acceptsAuthorship,
+          selfDeclaredRA = decs.selfDeclaredRA,
+          completedRA = decs.completedRA
+        )))
+      }.getOrElse {
+        val timestamp = JavaTime.offsetDateTime
+        daoRunner.run(dao.insert(StoredDeclarations(
+          id = decs.id,
+          acceptsAuthorship = decs.acceptsAuthorship,
+          selfDeclaredRA = decs.selfDeclaredRA,
+          completedRA = decs.completedRA,
+          created = timestamp,
+          version = timestamp
+        )))
+      }
+      .map(_.asDeclarations)
+      .map(ServiceResults.success)
+    }
+  }
+
 
   private def noAssessmentFound(id: UUID) =
     throw new NoSuchElementException(s"Could not find an assessment with id ${id.toString}")

@@ -66,7 +66,7 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
         .getOrElse(throw new Exception("Problem getting student assessment from DB"))
         .finaliseTime mustBe Some(finaliseTime)
     }
-
+    
     "prevent starting before earliest allowed start time" in new Fixture {
       // startTime is set to 1 hour before current time
       val early = JavaTime.instant.minus(Duration.ofHours(7))
@@ -97,6 +97,26 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
         }
         caught.getMessage must include("too late")
       })
+
+    "get, insert and update declarations" in new Fixture {
+      val newStudentAssessment = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("HONK"))
+      val newDeclarations = Fixtures.studentAssessments.storedDeclarations(newStudentAssessment.id)
+
+      service.upsert(newDeclarations.asDeclarations).serviceValue
+
+      val declarationsFromDB = service.getDeclarations(newDeclarations.id).serviceValue
+        .getOrElse(throw new Exception("Problem getting declarations from DB"))
+
+      val finaliseTime = JavaTime.offsetDateTime
+      val updatedDeclarations = declarationsFromDB.copy(
+        selfDeclaredRA = true
+      )
+
+      service.upsert(updatedDeclarations).serviceValue
+
+      service.getDeclarations(newDeclarations.id).serviceValue
+        .getOrElse(throw new Exception("Problem getting declarations from DB"))
+        .selfDeclaredRA mustBe true
     }
   }
 
