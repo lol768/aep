@@ -41,7 +41,7 @@ object AssessmentsController {
 
     val startTime: Option[LocalDateTime] = None
 
-    val invigilators: Option[Set[Usercode]]
+    val invigilators: Set[Usercode]
 
     val title: String
 
@@ -59,9 +59,8 @@ object AssessmentsController {
   }
 
   object AbstractAssessmentFormData {
-    val invigilatorsFieldMapping: Mapping[Option[Set[Usercode]]] = set(text)
+    val invigilatorsFieldMapping: Mapping[Set[Usercode]] = set(text)
       .transform[Set[Usercode]](codes => codes.filter(_.nonEmpty).map(Usercode), _.map(_.string))
-      .transform[Option[Set[Usercode]]](Option.apply, _.get)
 
     val durationFieldMapping: Mapping[Long] = longNumber.verifying(Seq(120, 180).contains(_))
 
@@ -75,7 +74,7 @@ object AssessmentsController {
     section: Option[String],
     departmentCode: DepartmentCode,
     sequence: String,
-    invigilators: Option[Set[Usercode]],
+    invigilators: Set[Usercode],
     title: String,
     description: Option[String],
     durationMinutes: Long,
@@ -110,7 +109,7 @@ object AssessmentsController {
     departmentCode: DepartmentCode,
     sequence: String,
     override val startTime: Option[LocalDateTime],
-    invigilators: Option[Set[Usercode]],
+    invigilators: Set[Usercode],
     title: String,
     description: Option[String],
     durationMinutes: Long,
@@ -181,7 +180,7 @@ class AssessmentsController @Inject()(
       section = assessment.section,
       departmentCode = assessment.departmentCode,
       sequence = assessment.sequence,
-      invigilators = Option(assessment.invigilators),
+      invigilators = assessment.invigilators,
         title = assessment.title,
         description = assessment.brief.text,
         durationMinutes = assessment.duration.toMinutes,
@@ -228,7 +227,7 @@ class AssessmentsController @Inject()(
                   url = data.url,
                   files = Nil,
                 ),
-                invigilators = data.invigilators.get,
+                invigilators = data.invigilators,
                 state = data.operation,
                 tabulaAssessmentId = None,
                 examProfileCode = "EXAPR20",
@@ -265,7 +264,7 @@ class AssessmentsController @Inject()(
               duration = Duration.ofMinutes(data.durationMinutes),
               platform = data.platform,
               assessmentType = data.assessmentType,
-              invigilators = data.invigilators.get,
+              invigilators = data.invigilators,
               brief = assessment.brief.copy(
                 text = data.description,
                 url = data.url
