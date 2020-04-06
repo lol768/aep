@@ -56,7 +56,7 @@ class CachingTabulaAssessmentService @Inject() (
 
   private lazy val ttlStrategy: AssessmentComponentsReturn => Ttl = a => a.fold(
     _ => Ttl(soft = 10.seconds, medium = 1.minute, hard = 1.hour),
-    _ => Ttl(soft = 1.hour, medium = 1.day, hard = 7.days)
+    _ => Ttl(soft = 10.minutes, medium = 1.hour, hard = 4.hours)
   )
 
   private lazy val wrappedCache = VariableTtlCacheHelper.async[AssessmentComponentsReturn](cache, logger, ttlStrategy, timing)
