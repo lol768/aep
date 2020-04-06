@@ -27,4 +27,5 @@ error.approval.must-check-box=You must check the checkbox to approve the assessm
 error.assessment.url-not-specified=You must specify the URL to assessment for the selected platform
 error.assessment.files-not-provided=You must upload some files for an Alternative Exams Portal assessment
 error.permissions.notDepartmentAdminForSelected=You are not an administrator for the selected department code: {0}.
+error.dataGeneration.production=Data generation is disabled on production.
 
