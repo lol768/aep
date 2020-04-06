@@ -7,40 +7,25 @@
         students: Map[UniversityID, User],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-<h3>Queries</h3>
 <div class="query-container">
-  <div class="query-container-inner">
-    @announcementsAndQueries.map { query =>
-      @query.sender match {
-        case Left(sender: String) => {
-          <div class="announcement">
-            <div class="query-user">
-              @sender
-            </div>
-            <div class="query-text">
-          @query.text
-            </div>
-            <div class="query-time">
-          @localisedDatetime(query.date)
-            </div>
-          </div>
+  @announcementsAndQueries.map { query =>
+    <div class="@if(query.isAnnouncement){announcement} else {query}">
+      <div class="query-user">
+        @query.sender match {
+          case Left(sender: String) => { @sender }
+          case Right(universityID: UniversityID) => {
+            @students.get(universityID).map { u =>
+              @u.name.full (@universityID.string)
+            }.getOrElse(universityID.string)
+          }
         }
-        case Right(universityID: UniversityID) => {
-          <div class="query">
-            <div class="query-user">
-              @students.get(universityID).map { u =>
-                @u.name.full (@universityID.string)
-              }.getOrElse(universityID.string)
-            </div>
-            <div class="query-text">
-              @query.text
-            </div>
-            <div class="query-time">
-              @localisedDatetime(query.date)
-            </div>
-          </div>
-        }
-      }
-    }
-  </div>
+      </div>
+      <div class="query-text">
+      @query.text
+      </div>
+      <div class="query-time">
+      @localisedDatetime(query.date)
+      </div>
+    </div>
+  }
 </div>

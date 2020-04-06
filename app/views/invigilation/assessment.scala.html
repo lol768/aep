@@ -15,7 +15,7 @@
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout(assessment.title) {
+@adminLayout("Invigilation for assessment " + assessment.moduleCode) {
     <div class="id7-main-content">
         <div class="row">
             <div class="col-md-6">
