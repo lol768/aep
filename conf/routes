@@ -79,6 +79,7 @@ GET         /admin/student-activity/filter                        @controllers.a
 GET         /invigilation                                         @controllers.invigilation.InvigilatorListController.list()
 GET         /invigilation/assessment/:id                          @controllers.invigilation.InvigilatorAssessmentController.view(id: UUID)
 GET         /invigilation/assessment/:id/student/:uniid/queries   @controllers.invigilation.InvigilatorQueriesController.view(id: UUID, uniid: UniversityID)
+GET         /invigilation/assessment/:id/queries                  @controllers.invigilation.InvigilatorQueriesController.viewAll(id: UUID)
 
 ## Sysadmins ##
 

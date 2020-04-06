@@ -6,6 +6,7 @@ import controllers.BaseController
 import domain.tabula
 import javax.inject.Inject
 import play.api.mvc.{Action, AnyContent}
+import services.messaging.MessageService
 import services.refiners.ActionRefiners
 import services.tabula.TabulaDepartmentService
 import services.{AssessmentService, ReportingService, SecurityService, StudentAssessmentService}
@@ -16,12 +17,10 @@ import scala.concurrent.ExecutionContext
 
 class InvigilatorAssessmentController @Inject()(
   security: SecurityService,
-  actionRefiners: ActionRefiners,
-  assessmentService: AssessmentService,
   reportingService: ReportingService,
   userLookup: UserLookupService,
-  studentAssessmentService: StudentAssessmentService,
   tabulaDepartmentService: TabulaDepartmentService,
+  messageService: MessageService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -36,9 +35,10 @@ class InvigilatorAssessmentController @Inject()(
 
     ServiceResults.zip(
       tabulaDepartmentService.getDepartments,
-      reportingService.expectedSittings(assessmentId)
+      reportingService.expectedSittings(assessmentId),
+      messageService.findByAssessment(assessmentId)
     ).successMap {
-      case (departments, studentAssessments) =>
+      case (departments, studentAssessments, queries) =>
         Ok(views.html.invigilation.assessment(
           assessment = assessment,
           studentAssessments = studentAssessments,
@@ -54,6 +54,7 @@ class InvigilatorAssessmentController @Inject()(
             .getUsers(studentAssessments.map(_.studentId))
             .getOrElse(Map.empty[UniversityID, User]),
           department = departments.find(_.code == assessment.departmentCode.string),
+          studentsWithQueries = queries.map(_.client).distinct
         ))
     }
   }
