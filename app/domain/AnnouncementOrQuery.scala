@@ -10,7 +10,7 @@ case class AnnouncementOrQuery(
   text: String,
   date: OffsetDateTime,
 ) {
-  def isAnnouncement = sender match {
+  def isAnnouncement = sender.isLeft
     case Left(_) => true
     case _ => false
   }
