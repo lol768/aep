@@ -49,7 +49,7 @@ class AnnouncementAndQueriesController @Inject()(
       studentAssessmentService.getMetadata(universityId, assessmentId),
     ).successMap {
       case (departments, queries, announcements, studentAssessmentMetadata) =>
-        val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery)).sortBy(_.date)
+        val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery)).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
         val student = userLookup.getUsers(Seq(universityId)).getOrElse(Map.empty)
         Ok(views.html.invigilation.studentQueries(
           req.assessment,
@@ -72,7 +72,7 @@ class AnnouncementAndQueriesController @Inject()(
       announcementService.getByAssessmentId(assessmentId)
     ).successMap {
       case (departments, queries, announcements) =>
-        val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery)).sortBy(_.date)
+        val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery)).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
         val students = userLookup.getUsers(queries.map(_.client)).getOrElse(Map.empty)
         Ok(views.html.invigilation.allQueries(
           assessment,
