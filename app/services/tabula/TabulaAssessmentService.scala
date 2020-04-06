@@ -61,13 +61,13 @@ class CachingTabulaAssessmentService @Inject() (
 
   private lazy val wrappedCache = VariableTtlCacheHelper.async[AssessmentComponentsReturn](cache, logger, ttlStrategy, timing)
 
-  override def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn] = timing.time(TimingCategories.TabulaRead) {
+  override def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn] =
     wrappedCache.getOrElseUpdate(options.cacheKey) {
       impl.getAssessments(options)
     }
-  }
 
-  override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] = impl.getAssessmentGroupMembers(options)
+  override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] =
+    impl.getAssessmentGroupMembers(options)
 
 }
 
@@ -77,11 +77,12 @@ class TabulaAssessmentServiceImpl @Inject() (
   config: TabulaConfiguration,
   trustedApplicationsManager: TrustedApplicationsManager,
   tabulaHttp: TabulaHttp,
+  timing: TimingService,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentService with Logging {
 
   import tabulaHttp._
 
-  override def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn] = {
+  override def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn] = timing.time(TimingCategories.TabulaRead) {
     val url = config.getAssessmentsUrl(options.deptCode)
     val req = ws.url(url)
       .withQueryStringParameters(Seq(
@@ -95,7 +96,7 @@ class TabulaAssessmentServiceImpl @Inject() (
     }
   }
 
-  override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] = {
+  override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] = timing.time(TimingCategories.TabulaRead) {
     val url = config.getAssessmentComponentMembersUrl(options.deptCode, options.academicYear)
     val req = ws.url(url)
       .withQueryStringParameters(
