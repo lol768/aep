@@ -1,12 +1,12 @@
 package services
 
-import javax.inject.{Inject, Singleton}
 import com.google.inject.ImplementedBy
+import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.mvc.Call
 import system.Roles.{Admin, Sysadmin}
 import warwick.core.timing.TimingContext
-import warwick.sso.{GroupService, LoginContext, User}
+import warwick.sso.{GroupService, LoginContext}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
@@ -64,18 +64,26 @@ class NavigationServiceImpl @Inject()(
   private lazy val sentEmails = NavigationPage("View sent emails", controllers.sysadmin.routes.ViewEmailsController.listAll())
   private lazy val myWarwickQueue = NavigationPage("My Warwick queue", controllers.sysadmin.routes.MyWarwickQueueController.queued())
   private lazy val assessments = NavigationPage("Assessments", controllers.admin.routes.AssessmentsController.index())
-  private lazy val approvals = NavigationPage("Approvals", controllers.admin.routes.ApprovalsController.index())
+  //private lazy val approvals = NavigationPage("Approvals", controllers.admin.routes.ApprovalsController.index())
   private lazy val reporting = NavigationPage("Reporting", controllers.admin.routes.ReportingController.index())
   private lazy val dataGeneration = NavigationPage("Data generation", controllers.sysadmin.routes.DummyDataGenerationController.showForm())
+  private lazy val studentActivity = NavigationPage("View student activity", controllers.admin.routes.ViewStudentActivityController.index)
 
-  private lazy val sysadmin =
-    NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), Seq(
+  private lazy val production = config.get[Boolean]("environment.production")
+
+  private lazy val navigationItems = {
+    val baseItems = Seq(
       emailQueue,
       sentEmails,
       myWarwickQueue,
       masquerade,
-      dataGeneration,
-    ))
+      studentActivity,
+    )
+    if (production) baseItems else baseItems :+ dataGeneration
+  }
+
+  private lazy val sysadmin =
+    NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), navigationItems)
 
   private def sysadminMenu(loginContext: LoginContext): Seq[Navigation] =
     if (loginContext.actualUserHasRole(Sysadmin))
@@ -86,7 +94,7 @@ class NavigationServiceImpl @Inject()(
   private lazy val admin =
     NavigationDropdown("Administration", Call("GET", "/admin"), Seq(
       assessments,
-      approvals,
+      //approvals,
       reporting,
     ))
 

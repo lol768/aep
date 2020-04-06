@@ -42,10 +42,10 @@ GET         /websocket                              @controllers.WebSocketContro
 ## Admins ##
 
 GET         /admin                                                @controllers.admin.IndexController.home
-GET         /admin/approvals                                      @controllers.admin.ApprovalsController.index
-GET         /admin/approvals/:id                                  @controllers.admin.ApprovalsController.show(id: UUID)
-POST        /admin/approvals/:id                                  @controllers.admin.ApprovalsController.update(id: UUID)
-GET         /admin/approvals/:assessmentId/files/:fileId          @controllers.admin.ApprovalsController.getFile(assessmentId: UUID, fileId: UUID)
+#GET         /admin/approvals                                      @controllers.admin.ApprovalsController.index
+#GET         /admin/approvals/:id                                  @controllers.admin.ApprovalsController.show(id: UUID)
+#POST        /admin/approvals/:id                                  @controllers.admin.ApprovalsController.update(id: UUID)
+#GET         /admin/approvals/:assessmentId/files/:fileId          @controllers.admin.ApprovalsController.getFile(assessmentId: UUID, fileId: UUID)
 
 GET         /admin/assessment/announcement/add                    @controllers.admin.CreateAnnouncementController.index
 POST        /admin/assessment/announcement/add                    @controllers.admin.CreateAnnouncementController.add
@@ -70,6 +70,9 @@ GET         /ajax/reporting/:id/started                           @controllers.a
 GET         /ajax/reporting/:id/notstarted                        @controllers.admin.ReportingController.notStartedTable(id: UUID)
 GET         /ajax/reporting/:id/submitted                         @controllers.admin.ReportingController.submittedTable(id: UUID)
 GET         /ajax/reporting/:id/finalised                         @controllers.admin.ReportingController.finalisedTable(id: UUID)
+
+GET         /admin/student-activity                               @controllers.admin.ViewStudentActivityController.index
+GET         /admin/student-activity/filter                        @controllers.admin.ViewStudentActivityController.filter(page: Int ?= 0)
 
 ## Invigilation ##
 

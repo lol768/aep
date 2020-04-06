@@ -42,9 +42,9 @@
           <ul>
           @assessment.brief.files.map { file =>
             <li>
-              <a href="@controllers.admin.routes.ApprovalsController.getFile(assessment.id, file.id)" target="_blank">
+              @*<a href="@controllers.admin.routes.ApprovalsController.getFile(assessment.id, file.id)" target="_blank">
                 <i class="fad fa-file fa-fw"></i>@file.fileName
-              </a>
+              </a>*@
             </li>
           }
           </ul>
@@ -55,14 +55,14 @@
 
   <div class="panel panel-default">
     <div class="panel-body">
-    @b3.vertical.formCSRF(action = controllers.admin.routes.ApprovalsController.update(assessment.id)) { implicit vfc =>
+    @*@b3.vertical.formCSRF(action = controllers.admin.routes.ApprovalsController.update(assessment.id)) { implicit vfc =>
       @b3.checkbox(form("approved"), Symbol("_text") -> "The alternative assessments approval group has reviewed this assessment and confirms that it is fit for purpose and can be delivered to students")
 
       @b3.free() {
         <button type="submit" class="btn btn-primary">Approve</button>
         <a href="@controllers.admin.routes.ApprovalsController.index()" class="btn btn-default">Cancel</a>
       }
-    }
+    }*@
     </div>
   </div>
 }

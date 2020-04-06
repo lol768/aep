@@ -23,17 +23,17 @@
           <td>@assessment.paperCode</td>
           <td>@assessment.section.getOrElse("")</td>
           <td>@assessment.title</td>
-          <td>
+          <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
             @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)
           </td>
-          <td>
+          <td data-sort="@assessment.duration.toMillis">
             @DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
           </td>
           <td>
             @assessment.assessmentType.label
           </td>
           <td class="text-right">
-            <a href="@controllers.admin.routes.ApprovalsController.show(assessment.id)" class="btn btn-default btn-sm">View</a>
+@*            <a href="@controllers.admin.routes.ApprovalsController.show(assessment.id)" class="btn btn-default btn-sm">View</a>*@
           </td>
         </tr>
       }

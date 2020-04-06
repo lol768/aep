@@ -125,15 +125,23 @@ object Assessment {
   object AssessmentType extends PlayEnum[AssessmentType] {
 
     case object OpenBook extends AssessmentType {
-      val label = "Open book (including file based)"
+      val label = "Open Book Assessment"
     }
 
-    case object MultipleChoice extends AssessmentType {
-      val label = "Multiple choice"
+    case object OpenBookFileBased extends AssessmentType {
+      val label = "Open Book Assessment, files based"
     }
 
     case object Spoken extends AssessmentType {
-      val label = "Spoken"
+      val label = "Spoken Open Book Assessment"
+    }
+
+    case object MultipleChoice extends AssessmentType {
+      val label = "MCQ"
+    }
+
+    case object Bespoke extends AssessmentType {
+      val label = "Bespoke Option (only if previously agreed)"
     }
 
     val values: IndexedSeq[AssessmentType] = findValues
@@ -171,7 +179,6 @@ object Assessment {
   object State extends PlayEnum[State] {
     case object Imported extends State { override val label: String = "Needs setup" }
     case object Draft extends State { override val label: String = "Needs setup" }
-    case object Submitted extends State
     case object Approved extends State { override val label: String = "Ready"
       override val cssClass: String = "label label-success"
     }

@@ -3,7 +3,8 @@ package services
 import java.util.UUID
 
 import akka.Done
-import domain.{AssessmentClientNetworkActivity, Fixtures}
+import domain.Fixtures.assessments
+import domain.{AssessmentClientNetworkActivity, Fixtures, Page}
 import domain.dao.{AbstractDaoTest, AssessmentDao, StudentAssessmentDao}
 import helpers.CleanUpDatabaseAfterEachTest
 import warwick.core.helpers.JavaTime
@@ -37,18 +38,35 @@ class AssessmentClientNetworkActivityServiceTest extends AbstractDaoTest with Cl
 
       val studentAssessmentId = base.studentAssessment.id
 
-      val activity = AssessmentClientNetworkActivity(
-        downlink = Some(10.0000),
-        downlinkMax = Some(10.0000),
-        effectiveType = Some("Horse"),
-        rtt = Some(50),
-        `type` = Some("Tin-can"),
-        studentAssessmentId = studentAssessmentId
-      )
+      val activity = createActivity(studentAssessmentId)
       val uploadedFile = activityService.record(activity)
       uploadedFile.serviceValue mustBe Done
 
       activityService.findByStudentAssessmentId(studentAssessmentId).serviceValue.head.effectiveType mustBe Some("Horse")
     }
+
+    "get client activity for" in new Fixture {
+      val base = studentAssessmentService.getWithAssessment(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
+
+      val studentAssessmentId = base.studentAssessment.id
+      val activity = createActivity(studentAssessmentId)
+      for( w <- 0 to 100)  {
+        activityService.record(activity).serviceValue
+      }
+      val studentAssessments = Seq(storedStudentAssessment.asStudentAssessment(Map.empty))
+      val pageOffset = Page(10,15)
+      val (count,results) = activityService.getClientActivityFor(studentAssessments, None, None, pageOffset).serviceValue
+      count mustBe 101
+      results.size mustBe 15
+    }
   }
+
+  private def createActivity(studentAssessmentId: UUID) = AssessmentClientNetworkActivity(
+    downlink = Some(10.0000),
+    downlinkMax = Some(10.0000),
+    effectiveType = Some("Horse"),
+    rtt = Some(50),
+    `type` = Some("Tin-can"),
+    studentAssessmentId = studentAssessmentId
+  )
 }
