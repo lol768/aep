@@ -13,7 +13,7 @@ import warwick.core.helpers.JavaTime.{localDateTime => now}
 import scala.concurrent.duration._
 
 @Singleton
-class ImportTabulaAssignmentHealthCheck @Inject()(
+class ImportTabulaAssessmentsHealthCheck @Inject()(
   system: ActorSystem,
   scheduler: Scheduler
 ) extends ServiceHealthcheckProvider(new ServiceHealthcheck(JobKeys.ImportAssessmentJob.healthCheckJobName, Status.Unknown, now)) with Logging {
