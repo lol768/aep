@@ -208,7 +208,7 @@ class AssessmentsController @Inject()(
       data => {
         val files = request.body.files.map(_.ref).map(f => (f.in, f.metadata))
         if (request.departments.exists(_.code.toLowerCase == data.departmentCode.lowerCase)) {
-          if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
+          if (data.operation != State.Draft && files.isEmpty) {
             departments().successMap { departments =>
               Ok(views.html.admin.assessments.create(adHocAssessmentForm.fill(data).withGlobalError("error.assessment.files-not-provided"), departments))
             }
@@ -256,7 +256,7 @@ class AssessmentsController @Inject()(
       formWithErrors => showForm(assessment, formWithErrors),
       data => {
         val files = request.body.files.map(_.ref)
-        if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
+        if (data.operation != State.Draft && files.isEmpty) {
           showForm(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"))
         } else {
           assessmentService.update(assessment.copy(
