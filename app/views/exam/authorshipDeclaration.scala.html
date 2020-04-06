@@ -17,7 +17,7 @@
     <li>I understand that plagiarism is the presentation of the work, idea or creation of another person as though it is your own. It is a form of cheating and is a very serious academic offence that may lead to exclusion from the University. Plagiarised material can be drawn from, and presented in, written, graphic and visual form, including electronic data and oral presentations. Plagiarism occurs when the origin of the material used is not appropriately cited.</li>
   </ol>
 
-  @b3.vertical.formCSRF(controllers.routes.AssessmentController.authorshipDeclaration(assessmentId)) { implicit fc =>
+  @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessmentId)) { implicit fc =>
     @b3.checkbox(
       form("agreeAuthorship"),
       Symbol("_text") -> "By ticking this box I declare that I have read and understood the declaration and statement of authorship.",

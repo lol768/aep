@@ -9,7 +9,7 @@
 
 @frontend("Reasonable Adjustments") {
 
-  @b3.vertical.formCSRF(controllers.routes.AssessmentController.reasonableAdjustmentsDeclaration(assessmentId)) { implicit fc =>
+  @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessmentId)) { implicit fc =>
     @b3.checkbox(
       form("selfDeclare"),
       Symbol("_text") -> "By ticking this box I declare that I have agreed reasonable adjustments logged with my academic department. Leave unticked and continue if you have not agreed reasonable adjustments",
