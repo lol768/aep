@@ -27,7 +27,7 @@
 
         @studentAssessmentMetadata(assessment)
 
-        @assessment.assessment.platform match {
+        @assessment.assessment.platform.map{ p => @p match {
             case Platform.OnlineExams => {
                 @if(isAssessmentPage) {
                     @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessment.assessment.id)) { implicit fc =>
@@ -65,6 +65,6 @@
                     @Platform.MyWBS.label<i class="fa fa-fw fa-external-link"></i>
                 </a>
             }
-        }
+        }}
     </div>
 </div>
