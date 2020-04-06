@@ -64,11 +64,21 @@ package object tabula {
         title = paper.title.getOrElse(name),
         startTime = Some(schedule.startTime),
         duration = paper.duration.get,
-        platform = existingAssessment.map(_.platform).getOrElse {
-          if (schedule.locationName.contains("Assignment")) Platform.TabulaAssignment
-          else Platform.OnlineExams
-        },
-        assessmentType = existingAssessment.map(_.assessmentType).getOrElse(AssessmentType.OpenBook),
+        platform = existingAssessment.map(_.platform).getOrElse(schedule.locationName.map {
+          case "Assignment" => Platform.TabulaAssignment
+          case "Open book assessment" | "Files-based open book assessment" => Platform.OnlineExams
+          case "Multiple Choice Questions" => Platform.QuestionmarkPerception
+          case "Spoken exam under time conditions" | "Controlled online exam" => Platform.Moodle
+          case _ => Platform.OnlineExams
+        }.getOrElse(Platform.OnlineExams)),
+        assessmentType = existingAssessment.map(_.assessmentType).getOrElse(schedule.locationName.map {
+          case "Open book assessment" => AssessmentType.OpenBook
+          case "Open Book Assessment, files based" => AssessmentType.OpenBookFileBased
+          case "MCQ" => AssessmentType.MultipleChoice
+          case "Spoken Open Book Assessment" => AssessmentType.Spoken
+          case "Bespoke Option (only if previously agreed) " => AssessmentType.Bespoke
+          case _ => AssessmentType.OpenBook
+        }.getOrElse(AssessmentType.OpenBook)),
         brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
         state = existingAssessment.map(_.state).getOrElse(Imported),
