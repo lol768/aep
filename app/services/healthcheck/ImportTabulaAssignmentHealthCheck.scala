@@ -2,16 +2,14 @@ package services.healthcheck
 
 import akka.actor.ActorSystem
 import domain.JobKeys
-import javax.inject.{Inject, Named, Singleton}
-import org.quartz.{JobKey, Scheduler}
-import services.EmailService
+import javax.inject.{Inject, Singleton}
+import org.quartz.Scheduler
 import services.job.JobResult
 import uk.ac.warwick.util.service.ServiceHealthcheck.Status
 import uk.ac.warwick.util.service.{ServiceHealthcheck, ServiceHealthcheckProvider}
 import warwick.core.Logging
 import warwick.core.helpers.JavaTime.{localDateTime => now}
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 @Singleton
