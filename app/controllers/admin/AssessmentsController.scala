@@ -26,6 +26,7 @@ import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
 import scala.concurrent.{ExecutionContext, Future}
 
 object AssessmentsController {
+
   import controllers.admin.AssessmentsController.AbstractAssessmentFormData._
 
   trait AbstractAssessmentFormData {
@@ -181,14 +182,14 @@ class AssessmentsController @Inject()(
       departmentCode = assessment.departmentCode,
       sequence = assessment.sequence,
       invigilators = assessment.invigilators,
-        title = assessment.title,
-        description = assessment.brief.text,
-        durationMinutes = assessment.duration.toMinutes,
-        platform = assessment.platform,
-        assessmentType = assessment.assessmentType,
-        url = assessment.brief.url,
-        operation = assessment.state
-      )))
+      title = assessment.title,
+      description = assessment.brief.text,
+      durationMinutes = assessment.duration.toMinutes,
+      platform = assessment.platform,
+      assessmentType = assessment.assessmentType,
+      url = assessment.brief.url,
+      operation = assessment.state
+    )))
   }
 
   def create(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
@@ -264,13 +265,13 @@ class AssessmentsController @Inject()(
             platform = data.platform,
             assessmentType = data.assessmentType,
             invigilators = data.invigilators,
-              brief = assessment.brief.copy(
-                text = data.description,
-                url = data.url
-              ),
-              state = data.operation
-            ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
-              Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
+            brief = assessment.brief.copy(
+              text = data.description,
+              url = data.url
+            ),
+            state = data.operation
+          ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
+            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
 
           }
         }
