@@ -1,12 +1,13 @@
 @import domain.StudentAssessmentWithAssessment
 @import tags._
 
+@import java.time.OffsetDateTime
 @(title: String, assessments: Seq[StudentAssessmentWithAssessment])(implicit requestHeader: RequestHeader, context: RequestContext)
 
 @if(assessments.nonEmpty) {
   <h2>@title</h2>
 }
-@assessments.grouped(2).map { row =>
+@assessments.sortBy(_.assessment.startTime.getOrElse(OffsetDateTime.MAX)).grouped(2).map { row =>
   <div class="row">
     @row.map { a =>
       <div class="col-md-6">
