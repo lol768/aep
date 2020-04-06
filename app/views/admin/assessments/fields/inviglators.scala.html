@@ -2,16 +2,39 @@
 @import controllers.admin.AssessmentsController.AbstractAssessmentFormData
 @()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
+@invigilators = @{
+  form("invigilators").indexes.flatMap(i => form(s"invigilators[$i]").value)
+}
+
 <label class="control-label" for="invigilators">Invigilators</label>
 <div class="flexi-picker-collection" data-automatic="true">
+  @if(invigilators.nonEmpty) {
+    @for(invigilator <- invigilators) {
+      <div class="flexi-picker-container form-group">
+        <input
+        type="text"
+        name="invigilators[]"
+        class="flexi-picker form-control"
+        data-include-users="true"
+        data-include-groups="false"
+        data-can-delete="true"
+        value="@invigilator"
+        placeholder="Type a usercode"
+        autocomplete="off"
+        autofocus
+        />
+      </div>
+    }
+  }
   @b3.text(
     form("invigilators[]"),
     Symbol("class") -> "flexi-picker",
     Symbol("_class") -> "flexi-picker-container",
-    Symbol("data-automatic") -> true,
-    Symbol("data-include-groups") -> "false",
+    Symbol("data-can-delete") -> true,
+    Symbol("data-include-groups") -> false,
+    Symbol("data-include-users") -> false,
     Symbol("placeholder") -> "Type a usercode",
-    Symbol("autofocus") -> true,
-    Symbol("autocomplete") -> "off"
+    Symbol("autocomplete") -> "off",
+    Symbol("autofocus") -> true
   )
 </div>
