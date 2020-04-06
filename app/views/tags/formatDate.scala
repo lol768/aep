@@ -14,7 +14,7 @@ object formatDate {
       .append(DateTimeFormatter.ofPattern("HH:mm"))
       .toFormatter(Locale.UK)
 
-  private val compactDatetimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yy HH:mm")
+  private val compactDatetimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yy HH:mm:ss")
 
   private val dateFormatter =
     new DateTimeFormatterBuilder()
