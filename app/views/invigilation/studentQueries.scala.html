@@ -2,7 +2,6 @@
 @import domain.Assessment
 @import domain.tabula
 @import domain.StudentAssessmentMetadata
-@import warwick.sso.User
 @import warwick.sso.UniversityID
 @import views.html.invigilation._
 @import domain.AnnouncementOrQuery
@@ -10,10 +9,10 @@
         assessment: Assessment,
         studentAssessment: StudentAssessmentMetadata,
         announcementsAndQueries: Seq[AnnouncementOrQuery],
-        student: Map[UniversityID, User],
+        student: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout("Queries from " + student.get(studentAssessment.studentId).flatMap(_.name.full).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode) {
+@adminLayout("Queries from " + student.get(studentAssessment.studentId).map(_.fullName).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode) {
     <div class="id7-main-content">
         @studentAssessmentInfo(Seq(studentAssessment), student)
         <div class="row">
