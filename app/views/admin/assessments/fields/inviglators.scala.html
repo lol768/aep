@@ -10,20 +10,18 @@
 <div class="flexi-picker-collection" data-automatic="true">
   @if(invigilators.nonEmpty) {
     @for(invigilator <- invigilators) {
-      <div class="flexi-picker-container form-group">
-        <input
-        type="text"
-        name="invigilators[]"
-        class="flexi-picker form-control"
-        data-include-users="true"
-        data-include-groups="false"
-        data-can-delete="true"
-        value="@invigilator"
-        placeholder="Type a usercode"
-        autocomplete="off"
-        autofocus
-        />
-      </div>
+      @b3.text(
+        form("invigilators[]"),
+        Symbol("class") -> "flexi-picker",
+        Symbol("_class") -> "flexi-picker-container",
+        Symbol("data-can-delete") -> true,
+        Symbol("data-include-groups") -> false,
+        Symbol("data-include-users") -> false,
+        Symbol("placeholder") -> "Type a usercode",
+        Symbol("autocomplete") -> "off",
+        Symbol("autofocus") -> true,
+        Symbol("value") -> invigilator
+      )
     }
   }
   @b3.text(
