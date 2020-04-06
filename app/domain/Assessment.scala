@@ -124,6 +124,10 @@ object Assessment {
 
   object AssessmentType extends PlayEnum[AssessmentType] {
 
+    case object Assignment extends AssessmentType {
+      val label = "Assignment"
+    }
+
     case object OpenBook extends AssessmentType {
       val label = "Open book (including file based)"
     }
@@ -134,6 +138,10 @@ object Assessment {
 
     case object Spoken extends AssessmentType {
       val label = "Spoken"
+    }
+
+    case object Controlled extends AssessmentType {
+      val label = "Controlled online exam"
     }
 
     val values: IndexedSeq[AssessmentType] = findValues
