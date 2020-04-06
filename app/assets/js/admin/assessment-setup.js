@@ -1,8 +1,8 @@
 import $ from 'jquery';
 
 $(() => {
-  $('#platform_field').find('input:radio').on('change', () => {
-    const isOnlineExams = $('#platform_OnlineExams').is(':checked');
+  $('#platform_field').find('input:checkbox').on('change', () => {
+    const isOnlineExams = $('#platform[]OnlineExams').is(':checked');
 
     $('#url_field').toggleClass('hide', isOnlineExams)
       .find('input').prop('disabled', isOnlineExams);
