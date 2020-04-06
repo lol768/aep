@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class IndexController @Inject()(
   security: SecurityService,
-  reportingService: AssessmentService
+  reportingService: AssessmentService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._

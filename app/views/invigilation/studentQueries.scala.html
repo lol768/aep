@@ -1,32 +1,34 @@
 @import tags._
-@import org.apache.commons.lang3.time.DurationFormatUtils
 @import domain.Assessment
-@import domain.StudentAssessment
-@import system.routes.Types.Usercode
 @import domain.tabula
 @import domain.StudentAssessmentMetadata
-@import domain.messaging.Message
 @import warwick.sso.User
 @import warwick.sso.UniversityID
 @import views.html.invigilation._
+@import domain.AnnouncementOrQuery
 @(
         assessment: Assessment,
         studentAssessment: StudentAssessmentMetadata,
-        queries: Seq[Message],
+        announcementsAndQueries: Seq[AnnouncementOrQuery],
         student: Map[UniversityID, User],
         department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout("Queries from " + student.get(studentAssessment.studentId).flatMap(_.name.full).getOrElse(studentAssessment.studentId.string) + " for " + assessment.title) {
+@adminLayout("Queries from " + student.get(studentAssessment.studentId).flatMap(_.name.full).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode) {
     <div class="id7-main-content">
         @studentAssessmentInfo(Seq(studentAssessment), student)
         <div class="row">
-            <div class="col-md-5">
-                @moduleInfo(assessment, department)
-                @moduleBrief(assessment)
+            <div class="col-md-6">
+                <h3>Announcements</h3>
+                @displayAnnouncementsAndQueries(announcementsAndQueries.filter(_.isAnnouncement), student)
             </div>
-            <div class="col-md-7">
-                @assessmentQueries(queries, student)
+            <div class="col-md-6">
+                <h3>Queries</h3>
+                @displayAnnouncementsAndQueries(announcementsAndQueries.filter(_.isQuery), student)
             </div>
         </div>
+        <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">
+            <i class="fas fa-arrow-left"></i>
+            Return to invigilation screen
+        </a>
     </div>
 }

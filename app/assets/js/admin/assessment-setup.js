@@ -6,7 +6,5 @@ $(() => {
 
     $('#url_field').toggleClass('hide', isOnlineExams)
       .find('input').prop('disabled', isOnlineExams);
-
-    $('#files_field').toggleClass('hide', !isOnlineExams);
   }).trigger('change');
 });
