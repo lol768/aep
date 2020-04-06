@@ -1,13 +1,24 @@
 .query {
-    padding: 1em 1em 2em 1em;
+    padding: 1em;
     background-color: #5b3069;
     border-radius: 0.5em;
     color: white;
     margin-bottom: 1em;
+
+    .query-user {
+        font-size: 0.8em;
+        font-weight: bold;
+    }
+
+    .query-text {
+        padding: 0.8em 0 0.8em;
+    }
+
     .query-time {
         font-size: 0.8em;
-        right: 2em;
-        position: absolute;
+        width: 100%;
+        text-align: right;
+
         .text-muted {
             color: white;
         }
@@ -17,4 +28,14 @@
             --fa-secondary-opacity: 0.6;
         }
     }
+}
+
+.query-container {
+    height: 80vh;
+    max-height: 80vh;
+    overflow: hidden;
+}
+.query-container-inner {
+    overflow-y: scroll;
+    height: 100%;
 }
