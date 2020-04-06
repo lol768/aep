@@ -1,6 +1,6 @@
-@import domain.StudentAssessmentWithAssessment
+@import domain.Sitting
 
-@(assessment: StudentAssessmentWithAssessment)(implicit context: RequestContext)
+@(assessment: Sitting)(implicit context: RequestContext)
 
 @frontend(s"${assessment.assessment.title} - Assessment not started") {
   <p>

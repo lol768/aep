@@ -54,11 +54,11 @@ class ActionRefiners @Inject() (
     }.map(_.fold(err => Left(showErrors(err)), identity))
 }
 
-  def WithStudentAssessmentWithAssessment(assessmentId: UUID): Refiner[AuthenticatedRequest, StudentAssessmentSpecificRequest] =
+  def WithSitting(assessmentId: UUID): Refiner[AuthenticatedRequest, StudentAssessmentSpecificRequest] =
     new Refiner[AuthenticatedRequest, StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: AuthenticatedRequest[A]): Refinement[StudentAssessmentSpecificRequest[A]] = {
-        studentAssessmentService.getWithAssessment(universityId.get, assessmentId).successMapTo[Either[Result, StudentAssessmentSpecificRequest[A]]] { _.map { studentAssessmentWithAssessment =>
-          Right(new StudentAssessmentSpecificRequest[A](studentAssessmentWithAssessment, request))
+        studentAssessmentService.getWithAssessment(universityId.get, assessmentId).successMapTo[Either[Result, StudentAssessmentSpecificRequest[A]]] { _.map { sitting =>
+          Right(new StudentAssessmentSpecificRequest[A](sitting, request))
         }.getOrElse {
           Left(NotFound(views.html.errors.notFound()))
         }}
@@ -108,8 +108,8 @@ class ActionRefiners @Inject() (
     new Filter[StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
-          if (!request.studentAssessmentWithAssessment.started)
-            Some(Forbidden(views.html.errors.assessmentNotStarted(request.studentAssessmentWithAssessment)))
+          if (!request.sitting.started)
+            Some(Forbidden(views.html.errors.assessmentNotStarted(request.sitting)))
           else
             None
         }
@@ -119,8 +119,8 @@ class ActionRefiners @Inject() (
     new Filter[StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
-          if (request.studentAssessmentWithAssessment.finalised)
-            Some(Forbidden(views.html.errors.assessmentFinished(request.studentAssessmentWithAssessment)))
+          if (request.sitting.finalised)
+            Some(Forbidden(views.html.errors.assessmentFinished(request.sitting)))
           else
             None
         }

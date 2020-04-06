@@ -157,6 +157,7 @@ trait StudentAssessmentDao {
   def insert(declarations: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations]
   def update(declarations: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations]
   def getDeclarations(declarationsId: UUID): DBIO[Option[StoredDeclarations]]
+  def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]]
   def deleteDeclarations(declarationsId: UUID): DBIO[Int]
 }
 
@@ -232,6 +233,9 @@ class StudentAssessmentDaoImpl @Inject()(
 
   override def getDeclarations(declarationsId: UUID): DBIO[Option[StoredDeclarations]] =
     getDeclarationsQuery(declarationsId).result.headOption
+
+  override def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]] =
+    declarations.table.filter(_.id inSet declarationsIds).result
 
   override def deleteDeclarations(declarationsId: UUID): DBIO[Int] =
     getDeclarationsQuery(declarationsId).delete

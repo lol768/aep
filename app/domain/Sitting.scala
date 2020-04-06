@@ -5,7 +5,7 @@ import java.time.Duration
 import views.assessment.AssessmentTimingUpdate
 import warwick.core.helpers.JavaTime
 
-sealed trait BaseStudentAssessmentWithAssessment {
+sealed trait BaseSitting {
   def studentAssessment: BaseStudentAssessment
   def assessment: BaseAssessment
 
@@ -35,12 +35,13 @@ sealed trait BaseStudentAssessmentWithAssessment {
   }
 }
 
-case class StudentAssessmentWithAssessment(
+case class Sitting(
   studentAssessment: StudentAssessment,
-  assessment: Assessment
-) extends BaseStudentAssessmentWithAssessment
+  assessment: Assessment,
+  declarations: Declarations
+) extends BaseSitting
 
-case class StudentAssessmentWithAssessmentMetadata(
+case class SittingMetadata(
   studentAssessment: StudentAssessmentMetadata,
   assessment: AssessmentMetadata
-) extends BaseStudentAssessmentWithAssessment
+) extends BaseSitting

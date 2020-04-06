@@ -1,11 +1,11 @@
-@import domain.StudentAssessmentWithAssessment
+@import domain.Sitting
 @import warwick.core.helpers.JavaTime
 @import tags._
 
 @import controllers.AssessmentController.FinishExamFormData
 @import org.apache.tika.mime.MediaType
 @(
-        assessment: StudentAssessmentWithAssessment,
+        assessment: Sitting,
         finishExamForm: Form[FinishExamFormData],
         supportedMimeTypes: Seq[MediaType]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)

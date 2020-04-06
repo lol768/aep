@@ -1,0 +1,29 @@
+@import controllers.AssessmentController.AuthorshipDeclarationFormData
+@import java.util.UUID
+@import play.api.data.Form
+
+@(
+  assessmentId: UUID,
+  form: Form[AuthorshipDeclarationFormData]
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@frontend("Declaration and statement of authorship") {
+  <ol>
+    <li>I have not impersonated, or allowed myself to be impersonated by any person for the purposes of this assessment.</li>
+    <li>This assessment is my original work and no part of it has been copied from any other source except where due acknowledgement is made.</li>
+    <li>No part of this assessment has been written for me by any other person.</li>
+    <li>I have not previously submitted this work for this or any other course/module.</li>
+    <li>I give permission for my assessment response to be reproduced, communicated, compared and archived for plagiarism detection, benchmarking or educational purposes.</li>
+    <li>I understand that plagiarism is the presentation of the work, idea or creation of another person as though it is your own. It is a form of cheating and is a very serious academic offence that may lead to exclusion from the University. Plagiarised material can be drawn from, and presented in, written, graphic and visual form, including electronic data and oral presentations. Plagiarism occurs when the origin of the material used is not appropriately cited.</li>
+  </ol>
+
+  @b3.vertical.formCSRF(controllers.routes.AssessmentController.authorshipDeclaration(assessmentId)) { implicit fc =>
+    @b3.checkbox(
+      form("agreeAuthorship"),
+      Symbol("_text") -> "By ticking this box I declare that I have read and understood the declaration and statement of authorship.",
+      Symbol("data-undisable-selector") -> ".finish-exam-btn",
+      Symbol("class") -> "undisable-with-checkbox",
+    )
+    @b3.submit(Symbol("class") -> "btn btn-default authorship-declaration-btn", Symbol("disabled") -> "disabled"){ <i class="fad fa-badge-check fa-fw"></i> Make declaration }
+  }
+}

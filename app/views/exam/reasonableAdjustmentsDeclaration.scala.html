@@ -1,0 +1,20 @@
+@import controllers.AssessmentController.ReasonableAdjustmentsDeclarationFormData
+@import java.util.UUID
+@import play.api.data.Form
+
+@(
+  assessmentId: UUID,
+  form: Form[ReasonableAdjustmentsDeclarationFormData]
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@frontend("Reasonable Adjustments") {
+
+  @b3.vertical.formCSRF(controllers.routes.AssessmentController.reasonableAdjustmentsDeclaration(assessmentId)) { implicit fc =>
+    @b3.checkbox(
+      form("selfDeclare"),
+      Symbol("_text") -> "By ticking this box I declare that I have agreed reasonable adjustments logged with my academic department. Leave unticked and continue if you have not agreed reasonable adjustments",
+      Symbol("class") -> "undisable-with-checkbox",
+    )
+    @b3.submit(Symbol("class") -> "btn btn-default authorship-declaration-btn"){ <i class="fad fa-badge-check fa-fw"></i> Make declaration }
+  }
+}

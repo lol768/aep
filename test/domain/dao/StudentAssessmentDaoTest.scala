@@ -4,8 +4,6 @@ import java.time.{Clock, Duration, LocalDateTime}
 import java.util.UUID
 
 import domain.Fixtures.{assessments, studentAssessments, users}
-import domain.dao.AssessmentsTables.StoredAssessment
-import domain.dao.StudentAssessmentsTables.StoredDeclarations
 import helpers.CleanUpDatabaseAfterEachTest
 import uk.ac.warwick.util.core.DateTimeUtils
 import warwick.core.helpers.JavaTime
