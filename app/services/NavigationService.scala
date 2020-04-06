@@ -77,9 +77,7 @@ class NavigationServiceImpl @Inject()(
       sentEmails,
       myWarwickQueue,
       masquerade,
-      dataGeneration,
       studentActivity,
-    ))
     )
     if (production) baseItems else baseItems :+ dataGeneration
   }
