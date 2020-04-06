@@ -7,6 +7,15 @@
 @(metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, User], studentsWithQueries: Option[Seq[UniversityID]] = None)(implicit context: RequestContext)
 
 @if(metadata.nonEmpty) {
+  @studentsWithQueries.map { sWQ =>
+    <div class="alert alert-info">
+      <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
+      @sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.
+      <a href="@controllers.invigilation.routes.InvigilatorQueriesController.viewAll(metadata.head.assessmentId)">
+      View all queries.
+    </a>
+    </div>
+  }
   <table class="table table-bordered">
     <thead>
       <tr>

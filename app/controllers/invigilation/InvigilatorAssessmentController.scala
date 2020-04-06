@@ -39,7 +39,6 @@ class InvigilatorAssessmentController @Inject()(
       messageService.findByAssessment(assessmentId)
     ).successMap {
       case (departments, studentAssessments, queries) =>
-        val studentsWithQueries = queries.map(_.client).distinct
         Ok(views.html.invigilation.assessment(
           assessment = assessment,
           studentAssessments = studentAssessments,
@@ -55,7 +54,7 @@ class InvigilatorAssessmentController @Inject()(
             .getUsers(studentAssessments.map(_.studentId))
             .getOrElse(Map.empty[UniversityID, User]),
           department = departments.find(_.code == assessment.departmentCode.string),
-          studentsWithQueries
+          studentsWithQueries = queries.map(_.client).distinct
         ))
     }
   }
