@@ -26,19 +26,19 @@ class ImportTabulaAssessmentsHealthCheck @Inject()(
         name,
         ServiceHealthcheck.Status.Error,
         now,
-        s"${name} job has failed"
+        s"$name job has failed"
       )
       case Some(false) => new ServiceHealthcheck(
         name,
         ServiceHealthcheck.Status.Okay,
         now,
-        s"${name} job ran successfully"
+        s"$name job ran successfully"
       )
       case _ => new ServiceHealthcheck(
         name,
         ServiceHealthcheck.Status.Okay,
         now,
-        s"${name} job has not run yet"
+        s"$name job has not run yet"
       )
     }
     update(serviceHealthCheck)
