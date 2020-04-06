@@ -284,7 +284,7 @@ class AssessmentsController @Inject()(
 
   private def departments()(implicit timingContext: TimingContext): Future[ServiceResult[Seq[Department]]] = {
     departmentService.getDepartments().successMapTo { departments =>
-      departments.map { tabulaDepartment =>
+      departments.sortBy(_.name).map { tabulaDepartment =>
         Department(code = DepartmentCode(tabulaDepartment.code), name = tabulaDepartment.name)
       }
     }
