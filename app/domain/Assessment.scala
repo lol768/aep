@@ -10,7 +10,7 @@ import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
 
-sealed trait BaseAssessment {
+sealed trait BaseAssessment extends DefinesStartWindow {
   def id: UUID
   def paperCode: String
   def section: Option[String]
@@ -27,6 +27,11 @@ sealed trait BaseAssessment {
   def sequence: String //MAB sequence
 
   def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
+}
+
+trait DefinesStartWindow {
+  // (earliest allowed) start time
+  def startTime: Option[OffsetDateTime]
 
   def lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 

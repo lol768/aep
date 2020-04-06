@@ -134,6 +134,7 @@ class StudentAssessmentServiceImpl @Inject()(
 
   private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
     require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot start assessment, too early")
+    require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot start assessment, too late")
   }
 
   private def startedNotFinalised(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
