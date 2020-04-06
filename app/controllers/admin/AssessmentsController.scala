@@ -254,17 +254,16 @@ class AssessmentsController @Inject()(
     form.bindFromRequest().fold(
       formWithErrors => showForm(assessment, formWithErrors),
       data => {
-        if (assessment.state != State.Approved) {
-          val files = request.body.files.map(_.ref)
-          if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
-            showForm(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"))
-          } else {
-            assessmentService.update(assessment.copy(
-              title = data.title,
-              duration = Duration.ofMinutes(data.durationMinutes),
-              platform = data.platform,
-              assessmentType = data.assessmentType,
-              invigilators = data.invigilators,
+        val files = request.body.files.map(_.ref)
+        if (data.operation != State.Draft && data.platform == Platform.OnlineExams && files.isEmpty) {
+          showForm(assessment, form.fill(data).withGlobalError("error.assessment.files-not-provided"))
+        } else {
+          assessmentService.update(assessment.copy(
+            title = data.title,
+            duration = Duration.ofMinutes(data.durationMinutes),
+            platform = data.platform,
+            assessmentType = data.assessmentType,
+            invigilators = data.invigilators,
               brief = assessment.brief.copy(
                 text = data.description,
                 url = data.url
@@ -272,10 +271,8 @@ class AssessmentsController @Inject()(
               state = data.operation
             ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
               Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.files.uploaded", files.size))
-            }
+
           }
-        } else {
-          Future.successful(MethodNotAllowed(views.html.errors.approvedAssessment()))
         }
       })
   }
