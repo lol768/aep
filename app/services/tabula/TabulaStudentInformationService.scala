@@ -55,7 +55,7 @@ class CachingTabulaStudentInformationService @Inject() (
 
   private lazy val wrappedCache = VariableTtlCacheHelper.async[StudentInformationReturn](cache, logger, ttlStrategy, timing)
 
-  override def getStudentInformation(options: GetStudentInformationOptions)(implicit t: TimingContext): Future[StudentInformationReturn] = timing.time(TimingCategories.TabulaRead) {
+  override def getStudentInformation(options: GetStudentInformationOptions)(implicit t: TimingContext): Future[StudentInformationReturn] = {
     wrappedCache.getOrElseUpdate(options.cacheKey) {
       impl.getStudentInformation(options)
     }
@@ -75,11 +75,12 @@ class TabulaStudentInformationServiceImpl @Inject() (
   config: TabulaConfiguration,
   trustedApplicationsManager: TrustedApplicationsManager,
   tabulaHttp: TabulaHttp,
+  timing: TimingService,
 )(implicit ec: ExecutionContext) extends TabulaStudentInformationService with Logging {
 
   import tabulaHttp._
 
-  override def getStudentInformation(options: GetStudentInformationOptions)(implicit t: TimingContext): Future[StudentInformationReturn] = {
+  override def getStudentInformation(options: GetStudentInformationOptions)(implicit t: TimingContext): Future[StudentInformationReturn] = timing.time(TimingCategories.TabulaRead) {
     val url = config.getStudentInformationUrl(options.universityID)
     val req = ws.url(url)
       .withQueryStringParameters(
@@ -93,6 +94,7 @@ class TabulaStudentInformationServiceImpl @Inject() (
   }
 
   // Shouldn't be called directly, the caching service should sort this out
-  override def getMultipleStudentInformation(options: GetMultipleStudentInformationOptions)(implicit t: TimingContext): Future[MultipleStudentInformationReturn] =
+  override def getMultipleStudentInformation(options: GetMultipleStudentInformationOptions)(implicit t: TimingContext): Future[MultipleStudentInformationReturn] = timing.time(TimingCategories.TabulaRead) {
     Future.successful(ServiceResults.error("Not implemented"))
+  }
 }
