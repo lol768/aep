@@ -14,32 +14,71 @@
 )(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
-  @adminLayout(s"Assessment for ${assessment.title} (${assessment.moduleCode})") {
+  @adminLayout(title = s"Assessment for ${assessment.title} (${assessment.moduleCode})", extraClasses = Seq("grey-nopad")) {
     @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.update(assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
       @views.html.tags.formHasErrors(form)
       @views.html.tags.globalErrors(form)
 
-      <div class="row">
-        <div class="col-sm-6">
-          @fields.department(Some(assessment), departments)
-          @fields.module(Some(assessment))
-          @fields.sequence(Some(assessment))
-        </div>
-        <div class="col-sm-6">
-          @fields.paper(Some(assessment))
-          @b3.text(form("startTime"), Symbol("value") -> assessment.startTime.map(JavaTime.Relative(_, printToday = false)).getOrElse(""), Symbol("_label") -> "Start time", Symbol("readonly") -> true )
-        </div>
-      </div>
+      <fieldset class="panel panel-default">
+        <div class="brand-stripe"></div>
+        <div class="panel-body">
+          <legend>Information from SITS</legend>
 
-      @fields.students(studentAssessments, studentInformation)
+          <div class="row">
+            <div class="col-sm-6">
+              @fields.department(Some(assessment), departments)
+              @fields.module(Some(assessment))
+              @fields.sequence(Some(assessment))
+            </div>
+            <div class="col-sm-6">
+              @fields.paper(Some(assessment))
+              @b3.text(form("startTime"), Symbol("value") -> assessment.startTime.map(JavaTime.Relative(_, printToday = false)).getOrElse(""), Symbol("_label") -> "Start time", Symbol("readonly") -> true )
+            </div>
+          </div>
 
-      @fields.title()
-      @fields.inviglators()
-      @fields.assessmentType()
-      @fields.duration()
-      @fields.description()
-      @fields.url()
-      @fields.upload(Some(assessment))
+          @fields.students(studentAssessments, studentInformation)
+        </div>
+      </fieldset>
+
+      <fieldset class="panel panel-default">
+        <div class="brand-stripe"></div>
+        <div class="panel-body">
+          <legend>Alternative assessment details</legend>
+
+          @fields.title()
+          @fields.assessmentType()
+          @fields.duration()
+          @fields.url()
+        </div>
+      </fieldset>
+
+      <fieldset class="panel panel-default">
+        <div class="brand-stripe"></div>
+        <div class="panel-body">
+          <legend>Description</legend>
+
+          @fields.description()
+        </div>
+      </fieldset>
+
+      <fieldset class="panel panel-default">
+        <div class="brand-stripe"></div>
+        <div class="panel-body">
+          <legend>Files</legend>
+
+          @fields.upload(Some(assessment))
+        </div>
+      </fieldset>
+
+      <fieldset class="panel panel-default">
+        <div class="brand-stripe"></div>
+        <div class="panel-body">
+          <legend>Invigilators</legend>
+
+          @fields.inviglators()
+        </div>
+      </fieldset>
+
       @fields.submit(Some(assessment))
     }
   }
