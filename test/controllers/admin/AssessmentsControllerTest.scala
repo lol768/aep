@@ -127,7 +127,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       platform = Platform.OnlineExams,
       assessmentType = AssessmentType.OpenBook,
       url = None,
-      operation = Assessment.State.Submitted
+      operation = Assessment.State.Approved
     )
   }
 
