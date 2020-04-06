@@ -16,9 +16,6 @@ import scala.concurrent.ExecutionContext
 
 class InvigilatorQueriesController @Inject()(
   security: SecurityService,
-  actionRefiners: ActionRefiners,
-  assessmentService: AssessmentService,
-  reportingService: ReportingService,
   userLookup: UserLookupService,
   studentAssessmentService: StudentAssessmentService,
   tabulaDepartmentService: TabulaDepartmentService,

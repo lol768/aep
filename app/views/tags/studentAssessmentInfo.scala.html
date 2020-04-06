@@ -4,7 +4,7 @@
 @import warwick.sso.User
 @import warwick.sso.UniversityID
 @import org.apache.commons.lang3.time.DurationFormatUtils
-@(metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, User])(implicit context: RequestContext)
+@(metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, User], studentsWithQueries: Option[Seq[UniversityID]] = None)(implicit context: RequestContext)
 
 @if(metadata.nonEmpty) {
   <table class="table table-bordered">
@@ -16,7 +16,9 @@
         <th>Start time</th>
         <th>Finalised time</th>
         <th>Adjustments</th>
-        <th><i class="fad themed-duotone fa-comment-alt-lines mr-half"></i></th>
+        @studentsWithQueries.map { sWQ =>
+          <th><i class="fad themed-duotone fa-comment-alt-lines mr-half"></i></th>
+        }
       </tr>
     </thead>
 
@@ -44,9 +46,15 @@
             }
           </td>
           <td>@md.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
-          <td>
-            @* TODO Add messages here when there's a controller for viewing them            *@
-          </td>
+          @studentsWithQueries.map { sWQ =>
+            <td>
+              @if(sWQ.contains(md.studentId)) {
+                <a href="@controllers.invigilation.routes.InvigilatorQueriesController.view(md.assessmentId, md.studentId)" title="View queries">
+                  <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
+                </a>
+              }
+            </td>
+          }
         </tr>
       }
     </tbody>
