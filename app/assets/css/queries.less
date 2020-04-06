@@ -1,8 +1,6 @@
-.query {
+.query, .announcement {
     padding: 1em;
-    background-color: #5b3069;
     border-radius: 0.5em;
-    color: white;
     margin-bottom: 1em;
 
     .query-user {
@@ -18,7 +16,15 @@
         font-size: 0.8em;
         width: 100%;
         text-align: right;
+    }
+}
 
+.query {
+    background-color: #5b3069;
+    color: white;
+
+
+    .query-time {
         .text-muted {
             color: white;
         }
@@ -28,6 +34,14 @@
             --fa-secondary-opacity: 0.6;
         }
     }
+}
+
+.announcement {
+    background-color: white;
+    border-color: #5b3069;
+    color: #5b3069;
+    border-style: solid;
+    border-width: 2px;
 }
 
 .query-container {
