@@ -71,11 +71,11 @@ package object tabula {
           case "Spoken exam under time conditions" | "Controlled online exam" => Platform.Moodle
         }.getOrElse(Platform.OnlineExams)),
         assessmentType = existingAssessment.map(_.assessmentType).getOrElse(schedule.locationName.map {
-          case "Assignment" => AssessmentType.Assignment
-          case "Open book assessment" | "Files-based open book assessment" => AssessmentType.OpenBook
-          case "Multiple Choice Questions" => AssessmentType.MultipleChoice
-          case "Spoken exam under time conditions" => AssessmentType.Spoken
-          case "Controlled online exam" => AssessmentType.Controlled
+          case "Open book assessment" => AssessmentType.OpenBook
+          case "Open Book Assessment, files based" => AssessmentType.OpenBookFileBased
+          case "MCQ" => AssessmentType.MultipleChoice
+          case "Spoken Open Book Assessment" => AssessmentType.Spoken
+          case "Bespoke Option (only if previously agreed) " => AssessmentType.Bespoke
         }.getOrElse(AssessmentType.OpenBook)),
         brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
