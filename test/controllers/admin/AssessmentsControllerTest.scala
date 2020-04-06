@@ -145,7 +145,8 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       platform = a.platform,
       assessmentType = a.assessmentType,
       url = Some("https://www.warwick.ac.uk"),
-      operation = a.state
+      operation = a.state,
+      invigilators = None,
     )
   }
 
