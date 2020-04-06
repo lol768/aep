@@ -3,7 +3,8 @@ package domain
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
-import domain.Assessment._
+import domain.Assessment.Duration.{ThreeHours, TwentyFourHours, TwoHours}
+import domain.Assessment.{AssessmentType, _}
 import domain.dao.AssessmentsTables.StoredBrief
 import enumeratum.{EnumEntry, PlayEnum}
 import warwick.core.helpers.JavaTime
@@ -118,30 +119,62 @@ object Assessment {
     val values: IndexedSeq[Platform] = findValues
   }
 
+  sealed trait Duration extends EnumEntry {
+    val label: String
+    val helpText: Option[String] = None
+    val minutes: Long
+  }
+
+  object Duration extends PlayEnum[Duration] {
+    case object TwoHours extends Duration {
+      override val label: String = "2 hours"
+      override val minutes: Long = 120
+    }
+
+    case object ThreeHours extends Duration {
+      override val label: String = "3 hours"
+      override val minutes: Long = 180
+    }
+
+    case object TwentyFourHours extends Duration {
+      override val label: String = "24 hours"
+      override val minutes: Long = 1440
+      override val helpText: Option[String] = Some("5 or 6 hours of student effort")
+    }
+
+    val values: IndexedSeq[Duration] = findValues
+  }
+
   sealed trait AssessmentType extends EnumEntry {
     val label: String
+    val availableDurations: Seq[Duration]
   }
 
   object AssessmentType extends PlayEnum[AssessmentType] {
 
     case object OpenBook extends AssessmentType {
       val label = "Open Book Assessment"
+      override val availableDurations: Seq[Duration] = Seq(TwoHours, ThreeHours, TwentyFourHours)
     }
 
     case object OpenBookFileBased extends AssessmentType {
       val label = "Open Book Assessment, files based"
+      override val availableDurations: Seq[Duration] = Seq(TwoHours, ThreeHours, TwentyFourHours)
     }
 
     case object Spoken extends AssessmentType {
       val label = "Spoken Open Book Assessment"
+      override val availableDurations: Seq[Duration] = Seq(TwoHours, ThreeHours)
     }
 
     case object MultipleChoice extends AssessmentType {
       val label = "MCQ"
+      override val availableDurations: Seq[Duration] = Seq(TwoHours, ThreeHours)
     }
 
     case object Bespoke extends AssessmentType {
       val label = "Bespoke Option (only if previously agreed)"
+      override val availableDurations: Seq[Duration] = Nil
     }
 
     val values: IndexedSeq[AssessmentType] = findValues
