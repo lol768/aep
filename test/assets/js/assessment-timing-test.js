@@ -35,8 +35,7 @@ describe('calculateTimingInfo', () => {
     })
   });
 
-  // this will change
-  it('still shows start button after end of last start time', () => {
+  it('prevents start after end of last start time', () => {
     const result = calculateTimingInfo({
       windowStart: BASE_TIME - 300*MINUTE,
       windowEnd: BASE_TIME - 10*MINUTE,
@@ -44,7 +43,7 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: true,
       text: 'The assessment window has now passed.',
-      allowStart: true
+      allowStart: false
     })
   });
 

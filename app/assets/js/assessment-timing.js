@@ -125,7 +125,7 @@ export function calculateTimingInfo(data, now) {
   }
 
   return {
-    allowStart: !hasStarted && timeUntilStart <= 0 /* && timeUntilEndOfWindow > 0 */,
+    allowStart: !hasStarted && timeUntilStart <= 0 && timeUntilEndOfWindow > 0,
     text,
     warning,
   };
