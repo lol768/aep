@@ -120,7 +120,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       departmentCode = DepartmentCode("ph"),
       sequence = "honk",
       startTime = Some(JavaTime.localDateTime),
-      invigilators = Some(Set.empty),
+      invigilators = Set.empty,
       title = "bonk",
       description = None,
       durationMinutes = 120L,
@@ -145,7 +145,8 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       platform = a.platform,
       assessmentType = a.assessmentType,
       url = Some("https://www.warwick.ac.uk"),
-      operation = a.state
+      operation = a.state,
+      invigilators = Set.empty,
     )
   }
 
@@ -203,7 +204,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       "assessmentType" -> data.assessmentType.toString,
       "url" -> data.url.getOrElse(""),
       "operation" -> data.operation.toString,
-    ) ++ data.invigilators.getOrElse(Set.empty).zipWithIndex.map { case (invigilator, index) =>
+    ) ++ data.invigilators.zipWithIndex.map { case (invigilator, index) =>
       s"invigilators[$index]" -> invigilator.string
     }.toSeq
 

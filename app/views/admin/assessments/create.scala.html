@@ -20,19 +20,7 @@
             @fields.sequence(None)
 
             @fields.title()
-            <label class="control-label" for="invigilators">Invigilators</label>
-            <div class="flexi-picker-collection" data-automatic="true">
-            @b3.text(
-                form("invigilators[]"),
-                Symbol("class") -> "flexi-picker",
-                Symbol("_class") -> "flexi-picker-container",
-                Symbol("data-automatic") -> true,
-                Symbol("data-include-groups") -> "false",
-                Symbol("placeholder") -> "Type a usercode",
-                Symbol("autofocus") -> true,
-                Symbol("autocomplete") -> "off"
-            )
-            </div>
+            @fields.inviglators()
             @fields.assessmentType()
             @b3.datetimePicker(form("startTime"), Symbol("value") -> None, Symbol("_label") -> "Date")
             @fields.duration()
