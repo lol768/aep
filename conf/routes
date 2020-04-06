@@ -71,6 +71,9 @@ GET         /ajax/reporting/:id/notstarted                        @controllers.a
 GET         /ajax/reporting/:id/submitted                         @controllers.admin.ReportingController.submittedTable(id: UUID)
 GET         /ajax/reporting/:id/finalised                         @controllers.admin.ReportingController.finalisedTable(id: UUID)
 
+GET         /admin/student-activity                               @controllers.admin.ViewStudentActivityController.index
+GET         /admin/student-activity/filter                        @controllers.admin.ViewStudentActivityController.filter(page: Int ?= 0)
+
 ## Invigilation ##
 
 GET         /invigilation                                         @controllers.invigilation.InvigilatorListController.list()
