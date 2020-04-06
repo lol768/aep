@@ -46,7 +46,7 @@ class ImportTabulaAssignmentHealthCheck @Inject()(
     update(serviceHealthCheck)
   }
 
-  system.scheduler.scheduleAtFixedRate(0.seconds, interval = 2.minutes)(() => {
+  system.scheduler.scheduleAtFixedRate(0.seconds, interval = 30.minutes)(() => {
     try run()
     catch {
       case e: Throwable =>
