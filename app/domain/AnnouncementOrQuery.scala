@@ -9,4 +9,8 @@ case class AnnouncementOrQuery(
   sender: Either[String, UniversityID],
   text: String,
   date: OffsetDateTime,
-)
+) {
+  def isAnnouncement = sender.isLeft
+
+  def isQuery = !isAnnouncement
+}
