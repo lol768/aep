@@ -20,7 +20,7 @@
         @b3.vertical.formCSRF(controllers.invigilation.routes.AnnouncementAndQueriesController.addAnnouncement(assessment.id)) { implicit fc =>
           @views.html.tags.globalErrors(form)
 
-          @b3.textarea(form("message"), Symbol("_label") -> "Add announcement", Symbol("rows") -> 10)
+          @b3.textarea(form("message"), Symbol("rows") -> 10)
 
           @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fad fa-plus fa-fw"></i> Add }
         }
