@@ -129,7 +129,7 @@ object Assessment {
     }
 
     case object OpenBookFileBased extends AssessmentType {
-      val label = "Open Book Assessment, file based"
+      val label = "Open Book Assessment, files based"
     }
 
     case object Spoken extends AssessmentType {
