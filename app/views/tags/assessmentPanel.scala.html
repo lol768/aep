@@ -47,17 +47,22 @@
             }
             case Platform.Moodle => {
                 <a href="/service/stub" target="_blank">
-                  Assessment on Moodle<i class="fa fa-fw fa-external-link"></i>
+                  @Platform.Moodle.label <i class="fa fa-fw fa-external-link"></i>
                 </a>
             }
             case Platform.QuestionmarkPerception => {
                 <a href="/service/stub" target="_blank">
-                  Assessment on Questionmark Perception<i class="fa fa-fw fa-external-link"></i>
+                  @Platform.QuestionmarkPerception.label<i class="fa fa-fw fa-external-link"></i>
                 </a>
             }
             case Platform.TabulaAssignment => {
                 <a href="/service/stub" target="_blank">
-                  Assessment on Tabula<i class="fa fa-fw fa-external-link"></i>
+                    @Platform.TabulaAssignment.label<i class="fa fa-fw fa-external-link"></i>
+                </a>
+            }
+            case Platform.MyWBS => {
+                <a href="/service/stub" target="_blank">
+                    @Platform.MyWBS.label<i class="fa fa-fw fa-external-link"></i>
                 </a>
             }
         }

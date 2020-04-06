@@ -100,7 +100,7 @@ object Assessment {
 
   object Platform extends PlayEnum[Platform] {
     case object OnlineExams extends Platform {
-      val label = "Alternative Exams Portal"
+      val label = "Download & Submission through AEP"
     }
 
     case object Moodle extends Platform {
@@ -108,11 +108,15 @@ object Assessment {
     }
 
     case object QuestionmarkPerception extends Platform {
-      val label = "Questionmark Perception"
+      val label = "QMP"
     }
 
     case object TabulaAssignment extends Platform {
-      val label = "Tabula Assignment Management"
+      val label = "Submission through Tabula Assignment Management"
+    }
+
+    case object MyWBS extends Platform {
+      val label = "My WBS"
     }
 
     val values: IndexedSeq[Platform] = findValues
