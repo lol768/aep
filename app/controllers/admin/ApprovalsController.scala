@@ -37,9 +37,10 @@ class ApprovalsController @Inject()(
   import security._
 
   def index: Action[AnyContent] = RequireApprover.async { implicit request =>
-    assessmentService.findByStates(Seq(State.Submitted)).successMap { assessments =>
-      Ok(views.html.admin.approvals.index(assessments))
-    }
+//    assessmentService.findByStates(Seq(State.Submitted)).successMap { assessments =>
+//      Ok(views.html.admin.approvals.index(assessments))
+//    }
+    throw new NotImplementedError()
   }
 
   def show(id: UUID): Action[AnyContent] = RequireApprover.async { implicit request =>
@@ -49,15 +50,16 @@ class ApprovalsController @Inject()(
   }
 
   def update(id: UUID): Action[AnyContent] = RequireApprover.async { implicit request =>
-    assessmentService.get(id).successFlatMap { assessment =>
-      form.bindFromRequest().fold(
-        formWithErrors => Future.successful(Ok(views.html.admin.approvals.show(assessment, formWithErrors))),
-        data => {
-          assessmentService.update(assessment.copy(state = State.Approved), files = Nil).successMap { _ =>
-            Redirect(routes.ApprovalsController.index()).flashing("success" -> Messages("flash.assessment.approved"))
-          }
-        })
-    }
+//    assessmentService.get(id).successFlatMap { assessment =>
+//      form.bindFromRequest().fold(
+//        formWithErrors => Future.successful(Ok(views.html.admin.approvals.show(assessment, formWithErrors))),
+//        data => {
+//          assessmentService.update(assessment.copy(state = State.Approved), files = Nil).successMap { _ =>
+//            Redirect(routes.ApprovalsController.index()).flashing("success" -> Messages("flash.assessment.approved"))
+//          }
+//        })
+//    }
+    throw new NotImplementedError()
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireApprover.async { implicit request =>

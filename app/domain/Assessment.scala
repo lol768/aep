@@ -171,7 +171,6 @@ object Assessment {
   object State extends PlayEnum[State] {
     case object Imported extends State { override val label: String = "Needs setup" }
     case object Draft extends State { override val label: String = "Needs setup" }
-    case object Submitted extends State
     case object Approved extends State { override val label: String = "Ready"
       override val cssClass: String = "label label-success"
     }
