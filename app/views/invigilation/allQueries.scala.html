@@ -1,25 +1,36 @@
-@import tags._
 @import domain.Assessment
 @import domain.tabula
-@import domain.messaging.Message
+@import domain.AnnouncementOrQuery
 @import warwick.sso.User
 @import warwick.sso.UniversityID
 @import views.html.invigilation._
+@import controllers.invigilation.AnnouncementAndQueriesController.AnnouncementData
 @(
         assessment: Assessment,
-        queries: Seq[Message],
+        announcementsAndQueries: Seq[AnnouncementOrQuery],
         students: Map[UniversityID, User],
         department: Option[tabula.Department],
+        form: Form[AnnouncementData]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout("Queries for " + assessment.title) {
   <div class="id7-main-content">
+    <div>
+      <h3>Add announcement</h3>
+      @b3.vertical.formCSRF(controllers.invigilation.routes.AnnouncementAndQueriesController.addAnnouncement(assessment.id)) { implicit fc =>
+        @views.html.tags.globalErrors(form)
+
+        @b3.textarea(form("message"), Symbol("_label") -> "Message", Symbol("rows") -> 10)
+
+        @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fad fa-plus fa-fw"></i> Add }
+      }
+    </div>
     <div class="row">
       <div class="col-md-5">
         @moduleInfo(assessment, department)
         @moduleBrief(assessment)
       </div>
       <div class="col-md-7">
-        @assessmentQueries(queries, students)
+        @displayAnnouncementsAndQueries(announcementsAndQueries, students)
       </div>
     </div>
   </div>

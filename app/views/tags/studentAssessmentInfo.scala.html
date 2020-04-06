@@ -11,7 +11,7 @@
     <div class="alert alert-info">
       <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
       @sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.
-      <a href="@controllers.invigilation.routes.InvigilatorQueriesController.viewAll(metadata.head.assessmentId)">
+      <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessmentId)">
       View all queries.
     </a>
     </div>
@@ -58,7 +58,7 @@
           @studentsWithQueries.map { sWQ =>
             <td>
               @if(sWQ.contains(md.studentId)) {
-                <a href="@controllers.invigilation.routes.InvigilatorQueriesController.view(md.assessmentId, md.studentId)" title="View queries">
+                <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.view(md.assessmentId, md.studentId)" title="View queries">
                   <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
                 </a>
               }

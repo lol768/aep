@@ -9,10 +9,11 @@
 @import warwick.sso.User
 @import warwick.sso.UniversityID
 @import views.html.invigilation._
+@import domain.AnnouncementOrQuery
 @(
         assessment: Assessment,
         studentAssessment: StudentAssessmentMetadata,
-        queries: Seq[Message],
+        announcementsAndQueries: Seq[AnnouncementOrQuery],
         student: Map[UniversityID, User],
         department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
@@ -25,7 +26,7 @@
                 @moduleBrief(assessment)
             </div>
             <div class="col-md-7">
-                @assessmentQueries(queries, student)
+                @displayAnnouncementsAndQueries(announcementsAndQueries, student)
             </div>
         </div>
     </div>
