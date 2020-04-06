@@ -2,7 +2,7 @@ package controllers.sysadmin
 
 import java.util.UUID
 
-import controllers.BaseController
+import controllers.{BaseController, FormMappings}
 import domain.Pagination
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
@@ -28,8 +28,8 @@ class ViewEmailsController @Inject() (
   val emailFilterForm: Form[EmailFilter] = Form(
     mapping(
       "query" -> optional(text),
-      "startDate" -> optional(JavaTime.offsetDateTimeFormField),
-      "endDate" -> optional(JavaTime.offsetDateTimeFormField)
+      "startDate" -> optional(FormMappings.offsetDateTime),
+      "endDate" -> optional(FormMappings.offsetDateTime)
     )(EmailFilter.apply)(EmailFilter.unapply)
   )
 
