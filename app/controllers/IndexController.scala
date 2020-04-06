@@ -2,7 +2,7 @@ package controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
-import services.{SecurityService, StudentAssessmentService}
+import services.{AssessmentService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 
@@ -12,6 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class IndexController @Inject()(
   security: SecurityService,
   studentAssessmentService: StudentAssessmentService,
+  assessmentService: AssessmentService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
   import security._
 
@@ -24,11 +25,28 @@ class IndexController @Inject()(
         studentAssessmentService.byUniversityId(universityId).map(_.map(_.nonEmpty))
       }.getOrElse(Future.successful(ServiceResults.success(true)))
 
-    checkRedirectToAssessmentsView.successMap {
-      case true => Redirect(controllers.routes.AssessmentsController.index())
-      case _ =>
-        // At some point in the future we may redirect somewhere useful for staff
-        Ok(views.html.home(userRoles))
+    lazy val isInvigilator = assessmentService.isInvigilator(currentUser().usercode)
+
+    lazy val isAdmin = userRoles.isAdmin || userRoles.isSysAdmin
+
+    // Redirect if admin, invigilator or examinee
+    // (if both admin and invigilator then we go to admin)
+
+    // nesting nightmare because of mix of bools, futures and serviceresults
+    if (isAdmin) {
+      Future.successful(Redirect(controllers.admin.routes.IndexController.home()))
+    } else {
+      checkRedirectToAssessmentsView.successFlatMap {
+        case true => Future.successful(Redirect(controllers.routes.AssessmentsController.index()))
+        case _ =>
+          isInvigilator.successMap { invigilator =>
+            if (invigilator) {
+              Redirect(controllers.invigilation.routes.InvigilatorListController.list())
+            } else {
+              Ok(views.html.homeNoRoles(userRoles))
+            }
+          }
+      }
     }
   }
 
