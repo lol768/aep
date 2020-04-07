@@ -12,7 +12,9 @@ flash.assessment.created=Assessment "{0}" has been created and is now ready.
 flash.assessment.created.notReady=Assessment "{0}" has been created. To be ready: {1}
 flash.assessment.updated=Assessment "{0}" has been updated and is now ready.
 flash.assessment.updated.notReady=Assessment "{0}" has been updated. To be ready: {1}
-flash.assessment.finish.must-check-box=You must check the checkbox to finish the assessment.
+flash.assessment.declaration.must-check-box=You must tick the box to start the assessment.
+flash.assessment.declaration.must-choose-radio=You must choose an option to start the assessment.
+flash.assessment.finish.must-check-box=You must tick the box to finish the assessment.
 flash.assessment.started=The assessment has begun.
 flash.assessment.filesUploaded=The files have been uploaded to the assessment. Please check them and finish the assessment when you are done.
 flash.assessment.filesDuplicates=You uploaded at least one file, {0}, which already exists. Please delete it first.
@@ -28,10 +30,11 @@ flash.messages.sentToInvigilator=Message sent to invigilator
 # Overrides of keys in messages.default
 
 error.required=This field is required.
-error.approval.must-check-box=You must check the checkbox to approve the assessment.
+error.approval.must-check-box=You must tick the box to approve the assessment.
 error.assessment.url-not-specified=You must specify the URL to assessment for the selected platform
 error.assessment.files-not-provided=You must upload at least one file for an assessment
 error.assessment.duration-not-valid=You must pick a valid duration for assessments of type: {0}.
 error.permissions.notDepartmentAdminForSelected=You are not an administrator for the selected department code: {0}.
 error.dataGeneration.production=Data generation is disabled on production.
-
+error.students.error=There was an error validating the University IDs: {0}.
+error.students.invalid=The University ID {0} was not found.

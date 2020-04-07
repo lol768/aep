@@ -5,7 +5,7 @@ import java.time.Duration
 import views.assessment.AssessmentTimingUpdate
 import warwick.core.helpers.JavaTime
 
-sealed trait BaseStudentAssessmentWithAssessment {
+sealed trait BaseSitting {
   def studentAssessment: BaseStudentAssessment
   def assessment: BaseAssessment
 
@@ -13,6 +13,8 @@ sealed trait BaseStudentAssessmentWithAssessment {
 
   def started: Boolean = studentAssessment.startTime.nonEmpty
   def finalised: Boolean = studentAssessment.hasFinalised
+
+  def uploadGraceDuration: Duration = Duration.ofMinutes(45)
 
   def isCurrentForStudent: Boolean = !finalised &&
     assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
@@ -46,12 +48,13 @@ sealed trait BaseStudentAssessmentWithAssessment {
   }
 }
 
-case class StudentAssessmentWithAssessment(
+case class Sitting(
   studentAssessment: StudentAssessment,
-  assessment: Assessment
-) extends BaseStudentAssessmentWithAssessment
+  assessment: Assessment,
+  declarations: Declarations
+) extends BaseSitting
 
-case class StudentAssessmentWithAssessmentMetadata(
+case class SittingMetadata(
   studentAssessment: StudentAssessmentMetadata,
   assessment: AssessmentMetadata
-) extends BaseStudentAssessmentWithAssessment
+) extends BaseSitting

@@ -1,16 +1,16 @@
 package controllers.admin
 
-import java.time.{Duration, LocalDateTime}
-import java.util.UUID
-
+import akka.Done
 import controllers.BaseController
+import controllers.admin.AssessmentsController.AbstractAssessmentFormData
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import domain.tabula.SitsProfile
-import domain.{Assessment, Department, DepartmentCode}
+import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
+import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
-import play.api.data.{Form, FormError, Mapping}
 import play.api.data.Forms._
 import play.api.data.validation.{Constraint, Invalid, Valid, ValidationError}
+import play.api.data.{Form, FormError, Mapping}
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
@@ -24,47 +24,36 @@ import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 object AssessmentsController {
 
-  import controllers.admin.AssessmentsController.AbstractAssessmentFormData._
+  import controllers.admin.AssessmentsController.AssessmentFormData._
 
-  trait AbstractAssessmentFormData {
-    val moduleCode: String
-
-    val paperCode: String
-
-    val section: Option[String]
-
-    val departmentCode: DepartmentCode
-
-    val sequence: String
-
-    val startTime: Option[LocalDateTime] = None
-
-    val invigilators: Set[Usercode]
-
-    val title: String
-
-    val description: Option[String]
-
-    val durationMinutes: Option[Long]
-
-    val platform: Platform
-
-    val assessmentType: AssessmentType
-
-    val url: Option[String]
-  }
-
-  object AbstractAssessmentFormData {
+  object AssessmentFormData {
     val invigilatorsFieldMapping: Mapping[Set[Usercode]] = set(text)
       .transform[Set[Usercode]](codes => codes.filter(_.nonEmpty).map(Usercode), _.map(_.string))
 
     val departmentCodeFieldMapping: Mapping[DepartmentCode] = nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string)
-  }
 
+    val startTimeFieldMapping: Mapping[Option[LocalDateTime]] =
+      nonEmptyText.transform[LocalDateTime](LocalDateTime.parse, _.toString)
+                  .transform[Option[LocalDateTime]](Option.apply, _.get)
+
+    def studentsFieldMapping(implicit studentInformationService: TabulaStudentInformationService, ec: ExecutionContext, t: TimingContext): Mapping[Set[UniversityID]] =
+      text.transform[Set[UniversityID]](_.linesIterator.filter(_.hasText).toSet.map(UniversityID.apply), _.map(_.string).toSeq.sorted.mkString("\n"))
+          .verifying(Constraint { universityIDs: Set[UniversityID] =>
+            Await.result(studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs.toSeq)), scala.concurrent.duration.Duration.Inf) // Rely on HTTP timeout
+              .fold(
+                errors => Invalid("error.students.error", errors.map(_.message).mkString(", ")),
+                info => {
+                  val missing = universityIDs.filterNot(info.contains)
+                  if (missing.nonEmpty) Invalid(missing.toSeq.map(universityID => ValidationError("error.students.invalid", universityID.string)))
+                  else Valid
+                }
+              )
+          })
+  }
 
   case class AssessmentFormData(
     moduleCode: String,
@@ -72,16 +61,18 @@ object AssessmentsController {
     section: Option[String],
     departmentCode: DepartmentCode,
     sequence: String,
-    invigilators: Set[Usercode],
+    startTime: Option[LocalDateTime],
+    students: Set[UniversityID],
     title: String,
-    description: Option[String],
-    durationMinutes: Option[Long],
-    platform: Platform,
+    platform: Set[Platform],
     assessmentType: AssessmentType,
+    durationMinutes: Option[Long],
     url: Option[String],
-  ) extends AbstractAssessmentFormData
+    description: Option[String],
+    invigilators: Set[Usercode],
+  )
 
-  val durationConstraint: Constraint[AbstractAssessmentFormData] = Constraint { assessmentForm =>
+  val durationConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
     val validDuration = assessmentForm.durationMinutes
       .map(d => assessmentForm.assessmentType.validDurations.contains(d))
       .getOrElse(assessmentForm.assessmentType.validDurations.isEmpty)
@@ -91,66 +82,31 @@ object AssessmentsController {
       Invalid(Seq(ValidationError("error.assessment.duration-not-valid", assessmentForm.assessmentType.label)))
   }
 
-  val formMapping: Mapping[AssessmentFormData] = mapping(
-    "moduleCode" -> nonEmptyText,
-    "paperCode" -> nonEmptyText,
-    "section" -> optional(text),
-    "departmentCode" -> departmentCodeFieldMapping,
-    "sequence" -> nonEmptyText,
-    "invigilators" -> invigilatorsFieldMapping,
-    "title" -> nonEmptyText,
-    "description" -> optional(nonEmptyText),
-    "durationMinutes" -> optional(longNumber),
-    "platform" -> Platform.formField,
-    "assessmentType" -> AssessmentType.formField,
-    "url" -> optional(text),
-  )(AssessmentFormData.apply)(AssessmentFormData.unapply)
+  def formMapping(existing: Option[Assessment], ready: Boolean = false)(implicit studentInformationService: TabulaStudentInformationService, ec: ExecutionContext, t: TimingContext): Form[AssessmentFormData] = {
+    val baseMapping = mapping(
+      "moduleCode" -> nonEmptyText,
+      "paperCode" -> nonEmptyText,
+      "section" -> optional(text),
+      "departmentCode" -> departmentCodeFieldMapping,
+      "sequence" -> nonEmptyText,
+      "startTime" -> startTimeFieldMapping,
+      "students" -> studentsFieldMapping,
+      "title" -> nonEmptyText,
+      "platform" -> set(Platform.formField),
+      "assessmentType" -> AssessmentType.formField,
+      "durationMinutes" -> durationFieldMapping,
+      "url" -> optional(text),
+      "description" -> optional(text),
+      "invigilators" -> invigilatorsFieldMapping,
+    )(AssessmentFormData.apply)(AssessmentFormData.unapply)
 
-  val form: Form[AssessmentFormData] = Form(formMapping)
-  val readyForm: Form[AssessmentFormData] = Form(readyMapping(formMapping))
-
-  case class AdHocAssessmentFormData(
-    moduleCode: String,
-    paperCode: String,
-    section: Option[String],
-    departmentCode: DepartmentCode,
-    sequence: String,
-    override val startTime: Option[LocalDateTime],
-    invigilators: Set[Usercode],
-    title: String,
-    description: Option[String],
-    durationMinutes: Option[Long],
-    platform: Platform,
-    assessmentType: AssessmentType,
-    url: Option[String],
-  ) extends AbstractAssessmentFormData
-
-  val adHocAssessmentFormMapping: Mapping[AdHocAssessmentFormData] = mapping(
-    "moduleCode" -> nonEmptyText,
-    "paperCode" -> nonEmptyText,
-    "section" -> optional(text),
-    "departmentCode" -> departmentCodeFieldMapping,
-    "sequence" -> nonEmptyText,
-    "startTime" -> nonEmptyText
-      .transform[LocalDateTime](LocalDateTime.parse(_), _.toString)
-      .transform[Option[LocalDateTime]](Option.apply, _.get),
-    "invigilators" -> invigilatorsFieldMapping,
-    "title" -> nonEmptyText,
-    "description" -> optional(nonEmptyText),
-    "durationMinutes" -> optional(longNumber),
-    "platform" -> Platform.formField,
-    "assessmentType" -> AssessmentType.formField,
-    "url" -> optional(text),
-  )(AdHocAssessmentFormData.apply)(AdHocAssessmentFormData.unapply)
-
-  val adHocAssessmentForm: Form[AdHocAssessmentFormData] = Form(adHocAssessmentFormMapping)
-  val adHocAssessmentReadyForm: Form[AdHocAssessmentFormData] = Form(readyMapping(adHocAssessmentFormMapping))
-
-  // Additional validation on the mapping that allows the state to go to Ready if it passes
-  def readyMapping[A <: AbstractAssessmentFormData](mapping: Mapping[A]): Mapping[A] =
-    mapping
-      .verifying("error.assessment.url-not-specified", data => data.platform == Platform.OnlineExams || data.url.exists(_.nonEmpty))
-      .verifying(durationConstraint)
+    Form(
+      (
+        if (ready) baseMapping.verifying("error.assessment.url-not-specified", data => data.platform == Platform.OnlineExams || data.url.exists(_.nonEmpty))
+        else baseMapping
+      ).verifying(durationConstraint)
+    )
+  }
 }
 
 @Singleton
@@ -158,10 +114,12 @@ class AssessmentsController @Inject()(
   security: SecurityService,
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
-  studentInformationService: TabulaStudentInformationService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   departmentService: TabulaDepartmentService,
-)(implicit ec: ExecutionContext) extends BaseController {
+)(implicit
+  studentInformationService: TabulaStudentInformationService,
+  ec: ExecutionContext
+) extends BaseController {
 
   import AssessmentsController._
   import security._
@@ -184,32 +142,14 @@ class AssessmentsController @Inject()(
         }
     }
 
-  def show(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
-    val assessment = request.assessment
-    showForm(assessment, form.fill(AssessmentFormData(
-      moduleCode = assessment.moduleCode,
-      paperCode = assessment.paperCode,
-      section = assessment.section,
-      departmentCode = assessment.departmentCode,
-      sequence = assessment.sequence,
-      invigilators = assessment.invigilators,
-      title = assessment.title,
-      description = assessment.brief.text,
-      durationMinutes = assessment.duration.map(_.toMinutes),
-      platform = assessment.platform,
-      assessmentType = assessment.assessmentType,
-      url = assessment.brief.url,
-    )))
-  }
-
-  def create(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
+  def createForm(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     departments().successMap { departments =>
-      Ok(views.html.admin.assessments.create(adHocAssessmentForm, departments))
+      Ok(views.html.admin.assessments.create(formMapping(existing = None), departments))
     }
   }
 
-  def save(): Action[MultipartFormData[TemporaryUploadedFile]] = GeneralDepartmentAdminAction(uploadedFileControllerHelper.bodyParser).async { implicit request =>
-    adHocAssessmentForm.bindFromRequest().fold(
+  def create(): Action[MultipartFormData[TemporaryUploadedFile]] = GeneralDepartmentAdminAction(uploadedFileControllerHelper.bodyParser).async { implicit request =>
+    formMapping(existing = None).bindFromRequest().fold(
       formWithErrors => {
         departments().successMap { departments =>
           Ok(views.html.admin.assessments.create(formWithErrors, departments))
@@ -222,7 +162,7 @@ class AssessmentsController @Inject()(
             if (files.isEmpty) Seq(FormError("", "error.assessment.files-not-provided"))
             else Nil
 
-          val (newState, readyErrors) = adHocAssessmentReadyForm.bindFromRequest().fold(
+          val (newState, readyErrors) = formMapping(existing = None, ready = true).bindFromRequest().fold(
             formWithErrors => (State.Draft, formWithErrors.errors ++ fileErrors),
             _ => if (fileErrors.isEmpty) (State.Approved, Nil) else (State.Draft, fileErrors)
           )
@@ -268,9 +208,31 @@ class AssessmentsController @Inject()(
       })
   }
 
+  def updateForm(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
+    val assessment = request.assessment
+    studentAssessmentService.byAssessmentId(assessment.id).successFlatMap { studentAssessments =>
+      showForm(assessment, formMapping(existing = Some(assessment)).fill(AssessmentFormData(
+        moduleCode = assessment.moduleCode,
+        paperCode = assessment.paperCode,
+        section = assessment.section,
+        departmentCode = assessment.departmentCode,
+        sequence = assessment.sequence,
+        startTime = assessment.startTime.map(_.toLocalDateTime),
+        students = studentAssessments.map(_.studentId).toSet,
+        title = assessment.title,
+        platform = assessment.platform,
+        assessmentType = assessment.assessmentType,
+        durationMinutes = assessment.duration.toMinutes,
+        url = assessment.brief.url,
+        description = assessment.brief.text,
+        invigilators = assessment.invigilators,
+      )))
+    }
+  }
+
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val assessment = request.assessment
-    form.bindFromRequest().fold(
+    formMapping(existing = Some(assessment)).bindFromRequest().fold(
       formWithErrors => showForm(assessment, formWithErrors),
       data => {
         val files = request.body.files.map(_.ref)
@@ -278,23 +240,68 @@ class AssessmentsController @Inject()(
           if (assessment.brief.files.isEmpty && files.isEmpty) Seq(FormError("", "error.assessment.files-not-provided"))
           else Nil
 
-        val (newState, readyErrors) = readyForm.bindFromRequest().fold(
+        val (newState, readyErrors) = formMapping(existing = Some(assessment), ready = true).bindFromRequest().fold(
           formWithErrors => (State.Draft, formWithErrors.errors ++ fileErrors),
           _ => if (fileErrors.isEmpty) (State.Approved, Nil) else (State.Draft, fileErrors)
         )
 
-        assessmentService.update(assessment.copy(
-          title = data.title,
-          duration = data.durationMinutes.map(Duration.ofMinutes),
-          platform = data.platform,
-          assessmentType = data.assessmentType,
-          invigilators = data.invigilators,
-          brief = assessment.brief.copy(
-            text = data.description,
-            url = data.url
-          ),
-          state = newState
-        ), files = files.map(f => (f.in, f.metadata))).successMap { _ =>
+        val updatedIfAdHoc =
+          if (assessment.tabulaAssessmentId.isEmpty) {
+            import helpers.DateConversion._
+            assessment.copy(
+              moduleCode = data.moduleCode,
+              paperCode = data.paperCode,
+              section = data.section,
+              departmentCode = data.departmentCode,
+              sequence = data.sequence,
+              startTime = data.startTime.map(_.asOffsetDateTime),
+            )
+          } else assessment
+
+        val updateStudents: Future[ServiceResult[Done]] =
+          if (assessment.tabulaAssessmentId.isEmpty) {
+            studentAssessmentService.byAssessmentId(assessment.id).successFlatMapTo { studentAssessments =>
+              val deletions: Seq[StudentAssessment] =
+                studentAssessments.filterNot(sa => data.students.contains(sa.studentId))
+
+              val additions: Seq[StudentAssessment] =
+                data.students.filterNot(s => studentAssessments.exists(_.studentId == s))
+                  .toSeq
+                  .map { universityID =>
+                    StudentAssessment(
+                      id = UUID.randomUUID(),
+                      assessmentId = assessment.id,
+                      studentId = universityID,
+                      inSeat = false,
+                      startTime = None,
+                      extraTimeAdjustment = None,
+                      finaliseTime = None,
+                      uploadedFiles = Nil,
+                    )
+                  }
+
+              ServiceResults.futureSequence(
+                deletions.map(studentAssessmentService.delete) ++
+                additions.map(studentAssessmentService.upsert)
+              ).successMapTo(_ => Done)
+            }
+          } else Future.successful(ServiceResults.success(Done))
+
+        ServiceResults.zip(
+          updateStudents,
+          assessmentService.update(updatedIfAdHoc.copy(
+            title = data.title,
+            duration = data.durationMinutes.map(Duration.ofMinutes),
+            platform = data.platform,
+            assessmentType = data.assessmentType,
+            invigilators = data.invigilators,
+            brief = assessment.brief.copy(
+              text = data.description,
+              url = data.url
+            ),
+            state = newState
+          ), files = files.map(f => (f.in, f.metadata)))
+        ).successMap { _ =>
           Redirect(routes.AssessmentsController.index()).flashing {
             if (newState == State.Approved)
               "success" -> Messages("flash.assessment.updated", data.title)

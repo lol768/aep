@@ -113,5 +113,48 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
         noAssIdResult.isEmpty mustBe true
       })
     }
+
+    "save, retrieve, and update declarations" in {
+      val earlier = now.minusSeconds(600)
+
+      val test = for {
+        _ <- DBIO.from(Future.successful {
+          DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(earlier, JavaTime.timeZone)
+        })
+
+        assessment = assessments.storedAssessment()
+        sa = studentAssessments.storedStudentAssessment(assessment.id, student1).copy(extraTimeAdjustment = None)
+        declaration = studentAssessments.storedDeclarations(sa.id)
+
+        _ <- assDao.insert(assessment)
+        _ <- dao.insert(sa)
+        inserted <- dao.insert(declaration)
+
+        _ <- DBIO.from(Future.successful {
+          DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(now, JavaTime.timeZone)
+        })
+
+        _ <- DBIO.from(Future.successful {
+          inserted.created.toInstant mustBe declaration.created.toInstant
+          inserted.version.toInstant mustBe earlier
+          inserted.studentAssessmentId mustEqual declaration.studentAssessmentId
+          inserted.acceptsAuthorship mustEqual declaration.acceptsAuthorship
+          inserted.selfDeclaredRA mustEqual declaration.selfDeclaredRA
+          inserted.completedRA mustEqual declaration.completedRA
+        })
+
+        updated <- dao.update(inserted.copy(selfDeclaredRA = true))
+
+        _ <- DBIO.from(Future.successful {
+          updated.created.toInstant mustBe declaration.created.toInstant
+          updated.version.toInstant mustBe now
+          updated.studentAssessmentId mustEqual sa.id
+          updated.selfDeclaredRA mustBe true
+        })
+      } yield updated
+
+      exec(test)
+      DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.systemDefaultZone
+    }
   }
 }

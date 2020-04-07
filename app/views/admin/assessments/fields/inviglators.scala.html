@@ -1,6 +1,6 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
-@import controllers.admin.AssessmentsController.AbstractAssessmentFormData
-@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+@import controllers.admin.AssessmentsController.AssessmentFormData
+@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 @invigilators = @{
   form("invigilators").indexes.flatMap(i => form(s"invigilators[$i]").value)

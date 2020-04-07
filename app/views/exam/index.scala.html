@@ -1,46 +1,125 @@
 @import controllers.AssessmentController.FinishExamFormData
 @import domain.Assessment.Platform
-@import domain.StudentAssessmentWithAssessment
+@import domain.Sitting
 @import org.apache.tika.mime.MediaType
 @import tags._
 @import warwick.core.helpers.JavaTime
 
 @(
-  assessment: StudentAssessmentWithAssessment,
+  sitting: Sitting,
   finishExamForm: Form[FinishExamFormData],
   supportedMimeTypes: Seq[MediaType]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@defining(if (assessment.inProgress) "beforeunload" else "") { className =>
-  @frontend(assessment.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className)) {
-    @assessmentPanel(assessment, isAssessmentPage = true)
-    @if(assessment.started) {
+@defining(if (sitting.inProgress) "beforeunload" else "") { className =>
+  @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className)) {
+    @assessmentPanel(sitting, isAssessmentPage = true)
+    @if(sitting.started) {
+      @sitting.studentAssessment.startTime.map { startTime =>
+        <div class="timeline">
+          <div class="block turqoise">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-2x fa-clock"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(sitting.assessment.startTime.get) Assessment opened</h1>
+              @sitting.assessment.lastAllowedStartTime.map { end =>
+                <p>
+                  The assessment can be started any time between @bareLocalisedDateTime(sitting.assessment.startTime.get) and @bareLocalisedDateTime(end, true)</p>
+              }
+            </div>
+          </div>
+          <div class="block green active">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-2x fa-stopwatch"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(startTime) You started the assessment</h1>
+              <p>
+                This is a @sitting.duration.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(sitting.duration), true)</p>
+              <p>Please plan your time accordingly.</p>
+              @if(sitting.duration.toHours==3) {
+                <div class="duration-3-spacer"></div>
+              }
+            </div>
+          </div>
+          <div class="block orange">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-cloud-upload fa-2x"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1 class="mb-1">@bareLocalisedDateTime(startTime.plus(sitting.duration))
+                You have @sitting.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(sitting.duration).plus(sitting.uploadGraceDuration)) to upload your answers</h1>
+            </div>
+          </div>
+          <div class="block pink">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-exclamation-triangle fa-2x"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(startTime.plus(sitting.duration).plus(sitting.uploadGraceDuration))
+                Your assessment is now late</h1>
+              <p>
+                You can still upload your answers but you may be subject to late penalties, unless you have reasonable adjustments.</p>
+              <div class="vert-space"></div>
+            </div>
+          </div>
+          <div class="block red">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-ban fa-2x"></i></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(startTime.plus(sitting.durationIncludingLate).plus(sitting.uploadGraceDuration)) You can't upload answers at all after this point</h1>
+            </div>
+          </div>
+        </div>
+      }
+
       <div class="panel panel-default">
         <div class="brand-stripe"></div>
         <div class="panel-body">
           <h2>Assessment brief</h2>
-          <span class="in-progress-assessment-data" data-id="@assessment.studentAssessment.id" />
+          <span class="in-progress-assessment-data" data-id="@sitting.studentAssessment.id" />
 
           <p>Your department has provided the following information:</p>
-          @if(assessment.assessment.brief.text.isDefined) {
-            <blockquote>@assessment.assessment.brief.text</blockquote>
+          @if(sitting.assessment.brief.text.isDefined) {
+            <blockquote>@sitting.assessment.brief.text</blockquote>
           }
           <ul class="list-unstyled">
-            @if(assessment.assessment.platform == Platform.OnlineExams && assessment.assessment.brief.url.isDefined) {
+            @if(sitting.assessment.platform == Platform.OnlineExams && sitting.assessment.brief.url.isDefined) {
               <li>
-                <a href="@assessment.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
+                <a href="@sitting.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
               </li>
             }
-            @assessment.assessment.brief.files.map { file =>
+            @sitting.assessment.brief.files.map { file =>
               <li>
-                <a class="assessment-brief-file" target="_blank" href="@controllers.routes.AssessmentController.downloadFile(assessment.assessment.id, file.id)">@file.fileName</a>
+                <a class="assessment-brief-file" target="_blank" href="@controllers.routes.AssessmentController.downloadFile(sitting.assessment.id, file.id)">@file.fileName</a>
               </li>
             }
           </ul>
         </div>
       </div>
 
-      @if(assessment.assessment.platform == Platform.OnlineExams) {
+      @if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
         <div class="panel panel-default">
           <div class="brand-stripe"></div>
           <div class="panel-body">
@@ -51,7 +130,7 @@
               potential errors and alert the entire cohort if necessary.
             </p>
             <p>
-              <a href="@controllers.routes.MessageController.showForm(assessment.assessment.id)" target="_blank">
+              <a href="@controllers.routes.MessageController.showForm(sitting.assessment.id)" target="_blank">
                 Contact an invigilator
               </a>
             </p>
@@ -61,14 +140,14 @@
           <div class="brand-stripe"></div>
           <div class="panel-body">
             <h2>Uploaded answer files</h2>
-            @if(assessment.inProgress) {
+            @if(sitting.inProgress) {
               <p class="text-muted"><i class="fad themed-duotone fa-info-circle" aria-hidden="true"></i>
                 We accept all common file formats: PDF, Word/Excel/Powerpoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, m4a, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
               </p>
             }
-            @if(assessment.studentAssessment.uploadedFiles.nonEmpty) {
-              @if(assessment.inProgress) {
-                @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress quash-beforeunload") { implicit vfc =>
+            @if(sitting.studentAssessment.uploadedFiles.nonEmpty) {
+              @if(sitting.inProgress) {
+                @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(sitting.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress quash-beforeunload") { implicit vfc =>
                   @b3.free(Symbol("_label") -> "Attach file") {
                     <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
                   }
@@ -87,28 +166,28 @@
                 }
               }
               <div class="uploaded-files">
-                @assessment.studentAssessment.uploadedFiles.map { file =>
+                @sitting.studentAssessment.uploadedFiles.map { file =>
                   <div class="panel uploaded-file">
                     <div class="panel-body">
                       <div class="media">
                         <div class="media-left">
-                          <a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)">
+                          <a href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)">
                           @mimeTypeIcon(file.contentType)
                           </a>
                         </div>
                         <div class="media-body">
-                          <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" target="_blank">@file.fileName</a></h4>
+                          <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" target="_blank">@file.fileName</a></h4>
                           <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@JavaTime.Relative(file.created)</small></p>
-                          @if(assessment.inProgress) {
-                            @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(assessment.assessment.id, file.id), Symbol("class") -> "quash-beforeunload") { implicit ifc =>
+                          @if(sitting.inProgress) {
+                            @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(sitting.assessment.id, file.id), Symbol("class") -> "quash-beforeunload") { implicit ifc =>
                               <p>
-                                <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
+                                <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
                                   Download</a> <button delete type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i>
                                 Delete</button>
                               </p>
                             }
                           } else {
-                            <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
+                            <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
                               Download</a>
                           }
                         </div>
@@ -118,13 +197,13 @@
                 }
               </div>
             } else {
-              @if(assessment.inProgress) {
+              @if(sitting.inProgress) {
                 <div class="blankslate">
                   <i class="fad fa-folder-open themed-duotone fa-2x"></i> <i class="fad fa-file themed-duotone fa-2x"></i>
                   <h3>You've not yet uploaded any answer files</h3>
                   <div class="left-align">
                     <p>Once you've answered the assessment questions and you're ready to submit, you can upload your files below.</p>
-                    @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
+                    @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(sitting.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
                       @b3.free(Symbol("_label") -> "Attach file") {
                         <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
                       }
@@ -147,7 +226,7 @@
             }
           </div>
         </div>
-        @if(assessment.inProgress && assessment.studentAssessment.uploadedFiles.nonEmpty) {
+        @if(sitting.inProgress && sitting.studentAssessment.uploadedFiles.nonEmpty) {
           <div class="panel panel-default finish-exam-panel">
             <div class="brand-stripe"></div>
             <div class="panel-body">
@@ -159,7 +238,7 @@
                 <li>Downloaded your final submission and checked to ensure it was uploaded in its entirety</li>
                 <li>Checked through your answers to the assessment questions</li>
               </ul>
-              @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id), Symbol("class") -> "quash-beforeunload") { implicit fc =>
+              @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(sitting.assessment.id), Symbol("class") -> "quash-beforeunload") { implicit fc =>
                 @b3.checkbox(
                   finishExamForm("agreeDisclaimer"),
                   Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.",
@@ -178,24 +257,24 @@
             <h2>Submit your assessment</h2>
 
             <p class="lead">
-              @assessment.assessment.platform match {
+              @sitting.assessment.platform.map{ p => @p match {
                 case Platform.Moodle => {
-                  <a href="@assessment.assessment.brief.url" target="_blank">
+                  <a href="@sitting.assessment.brief.url" target="_blank">
                     View your assessment in Moodle<i class="fa fa-fw fa-external-link"></i>
                   </a>
                 }
                 case Platform.QuestionmarkPerception => {
-                  <a href="@assessment.assessment.brief.url" target="_blank">
+                  <a href="@sitting.assessment.brief.url" target="_blank">
                     Take your assessment in Perception<i class="fa fa-fw fa-external-link"></i>
                   </a>
                 }
                 case Platform.TabulaAssignment => {
-                  <a href="@assessment.assessment.brief.url" target="_blank">
+                  <a href="@sitting.assessment.brief.url" target="_blank">
                     Submit your assessment on Tabula<i class="fa fa-fw fa-external-link"></i>
                   </a>
                 }
                 case Platform.MyWBS => {
-                  <a href="@assessment.assessment.brief.url" target="_blank">
+                  <a href="@sitting.assessment.brief.url" target="_blank">
                     Submit your assessment on MyWBS<i class="fa fa-fw fa-external-link"></i>
                   </a>
                 }
@@ -203,7 +282,7 @@
                   @* This should be impossible *@
                   Please call the IT Services help desk on 024 765 73737.
                 }
-              }
+              }}
             </p>
           </div>
         </div>

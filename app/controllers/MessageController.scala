@@ -24,7 +24,7 @@ class MessageController @Inject()(
   import MessageController._
 
   def showForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId) { implicit request =>
-    Ok(views.html.assessment.messages(request.studentAssessmentWithAssessment.assessment, blankForm))
+    Ok(views.html.assessment.messages(request.sitting.assessment, blankForm))
   }
 
   def submitForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
@@ -36,7 +36,7 @@ class MessageController @Inject()(
 
 
     def failure(badForm: Form[MessageData]) = Future.successful(
-      BadRequest(views.html.assessment.messages(request.studentAssessmentWithAssessment.assessment, badForm))
+      BadRequest(views.html.assessment.messages(request.sitting.assessment, badForm))
     )
 
     blankForm.bindFromRequest().fold(failure, success)

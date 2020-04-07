@@ -1,0 +1,9 @@
+@import views.html.tags.modal
+@(numberOfPlatforms: Int = 2)
+@modal(
+    id = "platformModal",
+    title = "Warning!",
+    bodyText = s"You can only select ${numberOfPlatforms} platforms",
+    buttonText = None,
+    cancelButtonText = "OK"
+)

@@ -6,7 +6,7 @@ import java.util.UUID
 import com.typesafe.config.Config
 import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
-import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
+import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
 import domain.Assessment.{AssessmentType, Platform}
@@ -112,16 +112,30 @@ object Fixtures {
 
     // If you just need any old assessment that's assigned to philosophy to test with...
     lazy val philosophyAssessment: Assessment = Assessment(
-      UUID.randomUUID, "ph-assessment", None, "Philosophy Assessment", Some(JavaTime.offsetDateTime), Some(Duration.ofHours(3)), Platform.OnlineExams,
+      UUID.randomUUID, "ph-assessment", None, "Philosophy Assessment", Some(JavaTime.offsetDateTime),  Some(Duration.ofHours(3)), Set(Platform.OnlineExams),
       AssessmentType.OpenBook, Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, "meh", "ph101", DepartmentCode("ph"),
       "sequence"
     )
   }
 
   object studentAssessments {
+    import helpers.DateConversion._
 
     def storedStudentAssessment(assId: UUID, studentId: UniversityID = users.student1.universityId.get): StoredStudentAssessment = {
       DataGenerationService.makeStoredStudentAssessment(assId, studentId)
+    }
+
+    def storedDeclarations(id: UUID): StoredDeclarations = {
+      val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
+
+      StoredDeclarations(
+        studentAssessmentId = id,
+        acceptsAuthorship = true,
+        selfDeclaredRA = false,
+        completedRA = true,
+        created = createTime.asOffsetDateTime,
+        version = createTime.asOffsetDateTime
+      )
     }
   }
 

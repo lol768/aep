@@ -21,6 +21,8 @@ GET         /assessment/:id                         @controllers.AssessmentContr
 POST        /assessment/:id                         @controllers.AssessmentController.start(id: UUID)
 POST        /assessment/:id/done                    @controllers.AssessmentController.finish(id: UUID)
 POST        /assessment/:id/upload                  @controllers.AssessmentController.uploadFiles(id: UUID)
+POST        /assessment/:id/authorship              @controllers.AssessmentController.authorshipDeclaration(id: UUID)
+POST        /assessment/:id/adjustments             @controllers.AssessmentController.reasonableAdjustmentsDeclaration(id: UUID)
 
 GET         /assessment/:id/messages                @controllers.MessageController.showForm(id: UUID)
 POST        /assessment/:id/messages                @controllers.MessageController.submitForm(id: UUID)
@@ -51,9 +53,9 @@ GET         /admin/assessment/announcement/add                    @controllers.a
 POST        /admin/assessment/announcement/add                    @controllers.admin.CreateAnnouncementController.add
 
 GET         /admin/assessments                                    @controllers.admin.AssessmentsController.index
-GET         /admin/assessments/create                             @controllers.admin.AssessmentsController.create
-POST        /admin/assessments/create                             @controllers.admin.AssessmentsController.save
-GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.show(id: UUID)
+GET         /admin/assessments/create                             @controllers.admin.AssessmentsController.createForm
+POST        /admin/assessments/create                             @controllers.admin.AssessmentsController.create
+GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.updateForm(id: UUID)
 POST        /admin/assessments/:id                                @controllers.admin.AssessmentsController.update(id: UUID)
 GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
 

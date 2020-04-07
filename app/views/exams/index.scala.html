@@ -1,7 +1,7 @@
-@import domain.StudentAssessmentWithAssessment
+@import domain.Sitting
 
 @import views.html.exams.rows
-@(assessments: Seq[StudentAssessmentWithAssessment])(implicit requestHeader: RequestHeader, context: RequestContext)
+@(assessments: Seq[Sitting])(implicit requestHeader: RequestHeader, context: RequestContext)
 
 @frontend("My assessments", extraClasses = Seq("grey-nopad", "connect-ws")) {
 
