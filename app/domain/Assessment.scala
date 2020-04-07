@@ -10,7 +10,7 @@ import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
 
-sealed trait BaseAssessment {
+sealed trait BaseAssessment extends DefinesStartWindow {
   def id: UUID
   def paperCode: String
   def section: Option[String]
@@ -27,6 +27,11 @@ sealed trait BaseAssessment {
   def sequence: String //MAB sequence
 
   def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
+}
+
+trait DefinesStartWindow {
+  // (earliest allowed) start time
+  def startTime: Option[OffsetDateTime]
 
   def lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
@@ -100,7 +105,7 @@ object Assessment {
 
   object Platform extends PlayEnum[Platform] {
     case object OnlineExams extends Platform {
-      val label = "Alternative Exams Portal"
+      val label = "Download & Submission through AEP"
     }
 
     case object Moodle extends Platform {
@@ -108,11 +113,15 @@ object Assessment {
     }
 
     case object QuestionmarkPerception extends Platform {
-      val label = "Questionmark Perception"
+      val label = "QMP"
     }
 
     case object TabulaAssignment extends Platform {
-      val label = "Tabula Assignment Management"
+      val label = "Submission through Tabula Assignment Management"
+    }
+
+    case object MyWBS extends Platform {
+      val label = "My WBS"
     }
 
     val values: IndexedSeq[Platform] = findValues

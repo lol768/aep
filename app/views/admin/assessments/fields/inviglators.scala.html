@@ -1,0 +1,37 @@
+@import views.html.b3.vertical.VerticalFieldConstructor
+@import controllers.admin.AssessmentsController.AbstractAssessmentFormData
+@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+
+@invigilators = @{
+  form("invigilators").indexes.flatMap(i => form(s"invigilators[$i]").value)
+}
+
+<label class="control-label" for="invigilators">Invigilators</label>
+<div class="flexi-picker-collection" data-automatic="true">
+  @if(invigilators.nonEmpty) {
+    @for(invigilator <- invigilators) {
+      @b3.text(
+        form("invigilators[]"),
+        Symbol("class") -> "flexi-picker",
+        Symbol("_class") -> "flexi-picker-container",
+        Symbol("data-can-delete") -> true,
+        Symbol("data-include-groups") -> false,
+        Symbol("data-include-users") -> false,
+        Symbol("placeholder") -> "Type a usercode",
+        Symbol("autocomplete") -> "off",
+        Symbol("value") -> invigilator
+      )
+    }
+  }
+  @b3.text(
+    form("invigilators[]"),
+    Symbol("class") -> "flexi-picker",
+    Symbol("_class") -> "flexi-picker-container",
+    Symbol("data-can-delete") -> true,
+    Symbol("data-include-groups") -> false,
+    Symbol("data-include-users") -> false,
+    Symbol("placeholder") -> "Type a usercode",
+    Symbol("autocomplete") -> "off"
+  )
+</div>
+<p class="help-block">The invigilator would normally be the module convenor. If the module convenor is not the invigilator, the invigilator should have a way to contact the convenor during the assessment. It may be sensible to have more than one invigilator in case of illness.</p>

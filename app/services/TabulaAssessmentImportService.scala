@@ -41,6 +41,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   configuration: Configuration,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
+  private[this] lazy val importStudentExtraTime = configuration.get[Boolean]("app.importStudentExtraTime")
 
   private def traverseSerial[A, B](in: Seq[A])(fn: A => Future[ServiceResult[B]]): Future[ServiceResult[Seq[B]]] =
     in.foldLeft(Future.successful(Seq.empty[ServiceResult[B]])) { (future, item) =>
@@ -111,13 +112,14 @@ class TabulaAssessmentImportServiceImpl @Inject()(
           val additions: Seq[StudentAssessment] =
             schedule.students.filterNot(s => studentAssessments.exists(_.studentId == s.universityID))
               .map { scheduleStudent =>
+                val extraTimeAdjustment = if (importStudentExtraTime) scheduleStudent.extraTimePerHour else None
                 StudentAssessment(
                   id = UUID.randomUUID(),
                   assessmentId = assessment.id,
                   studentId = scheduleStudent.universityID,
                   inSeat = false,
                   startTime = None,
-                  extraTimeAdjustment = scheduleStudent.extraTimePerHour,
+                  extraTimeAdjustment = extraTimeAdjustment,
                   finaliseTime = None,
                   uploadedFiles = Nil,
                 )
@@ -125,9 +127,10 @@ class TabulaAssessmentImportServiceImpl @Inject()(
 
           val modifications: Seq[StudentAssessment] =
             schedule.students.flatMap { scheduleStudent =>
+              val extraTimeAdjustment = if (importStudentExtraTime) scheduleStudent.extraTimePerHour else None
               studentAssessments.find(_.studentId == scheduleStudent.universityID).flatMap { studentAssessment =>
                 val updated = studentAssessment.copy(
-                  extraTimeAdjustment = scheduleStudent.extraTimePerHour,
+                  extraTimeAdjustment = extraTimeAdjustment,
                 )
 
                 // Don't return no-ops

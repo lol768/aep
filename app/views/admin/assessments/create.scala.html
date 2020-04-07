@@ -3,42 +3,76 @@
 @import domain.Department
 @(form: Form[AdHocAssessmentFormData], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
-    @adminLayout(s"Create assessment") {
+    @adminLayout(title = s"Create mock (non-SITS) assessment", extraClasses = Seq("grey-nopad")) {
+        <div class="alert alert-info">
+            Creating an assessment here is intended for mock or practice exams.
+            Assessments created here will not have an equivalent in SITS, so 'real' assessments should not be created here unless there is an emergency,
+            i.e. an assessment which is about to start which does not appear in the list of scheduled assessments.
+            If you create a real assessment here, you will be storing up problems when you later need to upload the marks from it to SITS.
+        </div>
+
         @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.save(), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
             @views.html.tags.formHasErrors(form)
             @views.html.tags.globalErrors(form)
 
-            <div class="row">
-                <div class="col-sm-6">
-                    @fields.department(None, departments)
-                    @fields.module(None)
-                </div>
-                <div class="col-sm-6">
-                    @fields.paper(None)
-                </div>
-            </div>
-            @fields.sequence(None)
+            <fieldset class="panel panel-default">
+                <div class="brand-stripe"></div>
+                <div class="panel-body">
+                    <legend>Paper details</legend>
 
-            @fields.title()
-            <label class="control-label" for="invigilators">Invigilators</label>
-            <div class="flexi-picker-collection" data-automatic="true">
-            @b3.text(
-                form("invigilators[]"),
-                Symbol("class") -> "flexi-picker",
-                Symbol("_class") -> "flexi-picker-container",
-                Symbol("data-automatic") -> true,
-                Symbol("data-include-groups") -> "false",
-                Symbol("placeholder") -> "Type a usercode",
-                Symbol("autofocus") -> true,
-                Symbol("autocomplete") -> "off"
-            )
-            </div>
-            @fields.assessmentType()
-            @b3.datetimePicker(form("startTime"), Symbol("value") -> None, Symbol("_label") -> "Date")
-            @fields.duration()
-            @fields.description()
-            @fields.url()
-            @fields.upload(None)
+                    <div class="row">
+                        <div class="col-sm-6">
+                            @fields.department(None, departments)
+                            @fields.module(None)
+                            @fields.sequence(None)
+                        </div>
+                        <div class="col-sm-6">
+                            @fields.paper(None)
+                            @b3.datetimePicker(form("startTime"), Symbol("value") -> None, Symbol("_label") -> "Date")
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="panel panel-default">
+                <div class="brand-stripe"></div>
+                <div class="panel-body">
+                    <legend>Alternative assessment details</legend>
+
+                    @fields.title()
+                    @fields.assessmentType()
+                    @fields.duration()
+                    @fields.url()
+                </div>
+            </fieldset>
+
+            <fieldset class="panel panel-default">
+                <div class="brand-stripe"></div>
+                <div class="panel-body">
+                    <legend>Description</legend>
+
+                    @fields.description()
+                </div>
+            </fieldset>
+
+            <fieldset class="panel panel-default">
+                <div class="brand-stripe"></div>
+                <div class="panel-body">
+                    <legend>Files</legend>
+
+                    @fields.upload(None)
+                </div>
+            </fieldset>
+
+            <fieldset class="panel panel-default">
+                <div class="brand-stripe"></div>
+                <div class="panel-body">
+                    <legend>Invigilators</legend>
+
+                    @fields.inviglators()
+                </div>
+            </fieldset>
+
             @fields.submit(None)
         }
     }

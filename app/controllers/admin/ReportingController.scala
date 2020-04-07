@@ -6,6 +6,9 @@ import controllers.{BaseController, RequestContext}
 import domain.{Assessment, StudentAssessmentMetadata}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, Result}
+import services.messaging.MessageService
+import services.tabula.TabulaStudentInformationService
+import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.{AssessmentService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -19,7 +22,8 @@ class ReportingController @Inject()(
   security: SecurityService,
   assessmentService: AssessmentService,
   reportingService: ReportingService,
-  userLookupService: UserLookupService,
+  studentInformationService: TabulaStudentInformationService,
+  messageService: MessageService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -52,24 +56,29 @@ class ReportingController @Inject()(
     ServiceResults.zip(
       assessmentService.get(id),
       getSittings,
-    ).successMap { case (assessment, sittings) =>
-      userLookupService.getUsers(sittings.map(_.studentId)).map { userMap =>
-        val sorted = sittings.sortBy(md => userMap.get(md.studentId).flatMap(_.name.last).getOrElse(""))
-        Ok(views.html.admin.reporting.expandedList(assessment, sorted, userMap, title, route))
-      }.getOrElse {
-        Ok(views.html.admin.reporting.expandedList(assessment, sittings, Map.empty[UniversityID, User], title, route))
-      }
+      messageService.findByAssessment(id)
+    ).successFlatMap { case (assessment, sittings, queries) =>
+      studentInformationService
+        .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId)))
+        .successMap { profiles =>
+          val sorted = sittings.sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+          Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.client).distinct))
+        }
     }
   }
 
-  def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]])(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
-    getSittings.successMap { sittings =>
-      userLookupService.getUsers(sittings.map(_.studentId)).map { userMap =>
-        val sorted = sittings.sortBy(md => userMap.get(md.studentId).flatMap(_.name.last).getOrElse(""))
-        Ok(views.html.tags.studentAssessmentInfo(sorted, userMap))
-      }.getOrElse {
-        Ok(views.html.tags.studentAssessmentInfo(sittings, Map.empty[UniversityID, User]))
-      }
+  def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]], assessmentId: UUID)(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
+    ServiceResults.zip(
+      getSittings,
+      messageService.findByAssessment(assessmentId)
+    ).successFlatMap {
+      case (sittings, queries) =>
+        studentInformationService
+          .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId)))
+          .successMap { profiles =>
+            val sorted = sittings.sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct)))
+          }
     }
   }
 
@@ -78,7 +87,7 @@ class ReportingController @Inject()(
   }
 
   def expectedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
-    showStudentAssessmentInfoTable(reportingService.expectedSittings(id))
+    showStudentAssessmentInfoTable(reportingService.expectedSittings(id), id)
   }
 
   def started(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
@@ -86,7 +95,7 @@ class ReportingController @Inject()(
   }
 
   def startedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
-    showStudentAssessmentInfoTable(reportingService.startedSittings(id))
+    showStudentAssessmentInfoTable(reportingService.startedSittings(id), id)
   }
 
   def notStarted(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
@@ -94,7 +103,7 @@ class ReportingController @Inject()(
   }
 
   def notStartedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
-    showStudentAssessmentInfoTable(reportingService.notStartedSittings(id))
+    showStudentAssessmentInfoTable(reportingService.notStartedSittings(id), id)
   }
 
   def submitted(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
@@ -102,7 +111,7 @@ class ReportingController @Inject()(
   }
 
   def submittedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
-    showStudentAssessmentInfoTable(reportingService.submittedSittings(id))
+    showStudentAssessmentInfoTable(reportingService.submittedSittings(id), id)
   }
 
   def finalised(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
@@ -110,7 +119,7 @@ class ReportingController @Inject()(
   }
 
   def finalisedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
-    showStudentAssessmentInfoTable(reportingService.finalisedSittings(id))
+    showStudentAssessmentInfoTable(reportingService.finalisedSittings(id), id)
   }
 }
 

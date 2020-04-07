@@ -4,15 +4,15 @@ import java.io.File
 
 import controllers.admin.AssessmentsController.{AdHocAssessmentFormData, AssessmentFormData}
 import domain.Assessment.{AssessmentType, Platform}
-import domain.{Assessment, DepartmentCode, Fixtures}
+import domain.{DepartmentCode, Fixtures}
 import helpers.{CleanUpDatabaseAfterEachTest, Scenario}
-import specs.BaseSpec
-import warwick.sso.User
 import play.api.mvc._
 import play.api.test.Helpers._
-import system.routes.Types.UUID
 import services.AssessmentService
+import specs.BaseSpec
+import system.routes.Types.UUID
 import warwick.core.helpers.JavaTime
+import warwick.sso.User
 
 import scala.concurrent.Future
 
@@ -120,14 +120,13 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       departmentCode = DepartmentCode("ph"),
       sequence = "honk",
       startTime = Some(JavaTime.localDateTime),
-      invigilators = Some(Set.empty),
+      invigilators = Set.empty,
       title = "bonk",
       description = None,
       durationMinutes = 120L,
       platform = Platform.OnlineExams,
       assessmentType = AssessmentType.OpenBook,
       url = None,
-      operation = Assessment.State.Approved
     )
   }
 
@@ -145,7 +144,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       platform = a.platform,
       assessmentType = a.assessmentType,
       url = Some("https://www.warwick.ac.uk"),
-      operation = a.state
+      invigilators = Set.empty,
     )
   }
 
@@ -185,7 +184,6 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       "platform" -> data.platform.toString,
       "assessmentType" -> data.assessmentType.toString,
       "url" -> data.url.getOrElse(""),
-      "operation" -> data.operation.toString,
     )
 
   def tuplesFromAdHocData(data: AdHocAssessmentFormData): Seq[(String, String)] =
@@ -202,8 +200,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       "platform" -> data.platform.toString,
       "assessmentType" -> data.assessmentType.toString,
       "url" -> data.url.getOrElse(""),
-      "operation" -> data.operation.toString,
-    ) ++ data.invigilators.getOrElse(Set.empty).zipWithIndex.map { case (invigilator, index) =>
+    ) ++ data.invigilators.zipWithIndex.map { case (invigilator, index) =>
       s"invigilators[$index]" -> invigilator.string
     }.toSeq
 

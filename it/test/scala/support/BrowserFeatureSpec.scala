@@ -3,9 +3,9 @@ package support
 import java.io.File
 import java.time.OffsetDateTime
 import java.util.UUID
-import scala.jdk.CollectionConverters._
 
-import domain.Assessment.Platform.OnlineExams
+import scala.jdk.CollectionConverters._
+import domain.Assessment.Platform.{Moodle, OnlineExams}
 import domain.Fixtures.{assessments, studentAssessments}
 import domain.dao.AssessmentsTables.StoredBrief
 import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunning, StudentAssessmentDao}
@@ -211,6 +211,37 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
 
       val assessmentId: UUID = UUID.randomUUID()
       val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId)
+      val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get).copy(
+        startTime = Some(OffsetDateTime.now().minusMinutes(5))
+      )
+
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.Assessment))
+      execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, url = None, fileIds = Seq(examPaper.id)))))
+      execWithCommit(studentAssessmentDao.insert(studentAssessment))
+
+      assessmentPage = new AssessmentPage(assessment.id)
+    }
+
+    def i_have_a_moodle_assignment_to_take(student: User): Unit = {
+      Given("I have a Moodle assignment to take")
+
+      val assessmentId: UUID = UUID.randomUUID()
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(Moodle)).copy(id = assessmentId, startTime = Some(OffsetDateTime.now))
+      val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
+
+      val brief = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Brief.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.Assessment))
+      val url = "https://moodle.warwick.ac.uk/assignment"
+      execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, url = Some(url), fileIds = Seq(brief.id)))))
+      execWithCommit(studentAssessmentDao.insert(studentAssessment))
+
+      assessmentPage = new AssessmentPage(assessment.id)
+    }
+
+    def i_have_a_moodle_assignment_in_progress(student: User): Unit = {
+      Given("I have a Moodle assignment in progress")
+
+      val assessmentId: UUID = UUID.randomUUID()
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(Moodle)).copy(id = assessmentId)
       val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get).copy(
         startTime = Some(OffsetDateTime.now().minusMinutes(5))
       )

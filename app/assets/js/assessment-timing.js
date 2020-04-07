@@ -15,6 +15,7 @@ import msToHumanReadable from './time-helper';
  * @property {boolean} hasStarted - has the exam started
  * @property {boolean} hasFinalised - have answers been submitted and finalised
  * @property {millis} extraTimeAdjustment - any reasonable adjustment the user has
+ * @property {boolean} showTimeRemaining - should the time remaining be displayed
  */
 
 /**
@@ -87,6 +88,7 @@ export function calculateTimingInfo(data, now) {
     hasStarted,
     hasFinalised,
     extraTimeAdjustment,
+    showTimeRemaining,
   } = data;
 
   const hasWindowPassed = now > windowEnd;
@@ -103,15 +105,17 @@ export function calculateTimingInfo(data, now) {
     text = 'Assessment complete.';
   } else if (hasStarted) {
     text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
-    if (timeRemaining > 0) {
-      text += ` ${msToHumanReadable(timeRemaining)} remaining`;
-      if (extraTimeAdjustment) {
-        text += ` (including ${msToHumanReadable(extraTimeAdjustment)} additional time)`;
+    if (showTimeRemaining) {
+      if (timeRemaining > 0) {
+        text += ` ${msToHumanReadable(timeRemaining)} remaining`;
+        if (extraTimeAdjustment) {
+          text += ` (including ${msToHumanReadable(extraTimeAdjustment)} additional time)`;
+        }
+        text += '.';
+      } else {
+        text += `\nExceeded deadline by ${msToHumanReadable(-timeRemaining)}.`;
+        warning = true;
       }
-      text += '.';
-    } else {
-      text += `\nExceeded deadline by ${msToHumanReadable(-timeRemaining)}.`;
-      warning = true;
     }
   } else if (timeUntilStart > 0) {
     text = `You can start in ${msToHumanReadable(timeUntilStart)}.`;
@@ -125,7 +129,7 @@ export function calculateTimingInfo(data, now) {
   }
 
   return {
-    allowStart: !hasStarted && timeUntilStart <= 0 /* && timeUntilEndOfWindow > 0 */,
+    allowStart: !hasStarted && timeUntilStart <= 0 && timeUntilEndOfWindow > 0,
     text,
     warning,
   };

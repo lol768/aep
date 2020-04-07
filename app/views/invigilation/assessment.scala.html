@@ -1,7 +1,5 @@
 @import tags._
-@import org.apache.commons.lang3.time.DurationFormatUtils
 @import domain.Assessment
-@import domain.StudentAssessment
 @import system.routes.Types.Usercode
 @import domain.tabula
 @import domain.StudentAssessmentMetadata
@@ -13,10 +11,11 @@
         assessment: Assessment,
         studentAssessments: Seq[StudentAssessmentMetadata],
         invigilators: Map[Usercode, String],
-        students: Map[UniversityID, User],
+        students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
+        studentsWithQueries: Seq[UniversityID]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout(assessment.title) {
+@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}") {
     <div class="id7-main-content">
         <div class="row">
             <div class="col-md-6">
@@ -43,13 +42,12 @@
                 </dl>
             </div>
         </div>
-
         <h2>Students</h2>
         <div class="alert alert-info">
             <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
         </div>
         <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="expected">
-            @studentAssessmentInfo(studentAssessments, students)
+            @studentAssessmentInfo(studentAssessments, students, Some(studentsWithQueries))
         </div>
     </div>
 }

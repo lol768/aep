@@ -42,7 +42,7 @@ class AnnouncementServiceImpl @Inject()(
       id = announcement.id,
       assessmentId = announcement.assessment,
       text = announcement.text,
-      created = OffsetDateTime.now(),
+      created = announcement.created,
       version = OffsetDateTime.now()
     )
     pubSubService.publish(
