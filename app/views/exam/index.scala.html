@@ -1,13 +1,14 @@
-@import domain.StudentAssessmentWithAssessment
-@import warwick.core.helpers.JavaTime
-@import tags._
-
 @import controllers.AssessmentController.FinishExamFormData
+@import domain.Assessment.Platform
+@import domain.StudentAssessmentWithAssessment
 @import org.apache.tika.mime.MediaType
+@import tags._
+@import warwick.core.helpers.JavaTime
+
 @(
-        assessment: StudentAssessmentWithAssessment,
-        finishExamForm: Form[FinishExamFormData],
-        supportedMimeTypes: Seq[MediaType]
+  assessment: StudentAssessmentWithAssessment,
+  finishExamForm: Form[FinishExamFormData],
+  supportedMimeTypes: Seq[MediaType]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @defining(if (assessment.inProgress) "beforeunload" else "") { className =>
@@ -25,7 +26,7 @@
             <blockquote>@assessment.assessment.brief.text</blockquote>
           }
           <ul class="list-unstyled">
-            @if(assessment.assessment.brief.url.isDefined) {
+            @if(assessment.assessment.platform == Platform.OnlineExams && assessment.assessment.brief.url.isDefined) {
               <li>
                 <a href="@assessment.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
               </li>
@@ -38,133 +39,172 @@
           </ul>
         </div>
       </div>
-      <div class="panel panel-default">
-        <div class="brand-stripe"></div>
-        <div class="panel-body">
-          <h2>Contact an invigilator</h2>
-          <p>
-            If you have concerns with specific parts of the assessment, you can use this form to bring it to the attention
-            of an invigilator. Invigilators cannot assist you with understanding the assessment, but can look into
-            potential errors and alert the entire cohort if necessary.
-          </p>
-          <p>
-            <a href="@controllers.routes.MessageController.showForm(assessment.assessment.id)" target="_blank">
-              Contact an invigilator
-            </a>
-          </p>
-        </div>
-      </div>
-      <div class="panel panel-default">
-        <div class="brand-stripe"></div>
-        <div class="panel-body">
-          <h2>Uploaded answer files</h2>
-          @if(assessment.inProgress) {
-            <p class="text-muted"><i class="fad themed-duotone fa-info-circle" aria-hidden="true"></i>
-              We accept all common file formats: PDF, Word/Excel/Powerpoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, m4a, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
+
+      @if(assessment.assessment.platform == Platform.OnlineExams) {
+        <div class="panel panel-default">
+          <div class="brand-stripe"></div>
+          <div class="panel-body">
+            <h2>Contact an invigilator</h2>
+            <p>
+              If you have concerns with specific parts of the assessment, you can use this form to bring it to the attention
+              of an invigilator. Invigilators cannot assist you with understanding the assessment, but can look into
+              potential errors and alert the entire cohort if necessary.
             </p>
-          }
-          @if(assessment.studentAssessment.uploadedFiles.nonEmpty) {
+            <p>
+              <a href="@controllers.routes.MessageController.showForm(assessment.assessment.id)" target="_blank">
+                Contact an invigilator
+              </a>
+            </p>
+          </div>
+        </div>
+        <div class="panel panel-default">
+          <div class="brand-stripe"></div>
+          <div class="panel-body">
+            <h2>Uploaded answer files</h2>
             @if(assessment.inProgress) {
-              @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress quash-beforeunload") { implicit vfc =>
-                @b3.free(Symbol("_label") -> "Attach file") {
-                  <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
-                }
+              <p class="text-muted"><i class="fad themed-duotone fa-info-circle" aria-hidden="true"></i>
+                We accept all common file formats: PDF, Word/Excel/Powerpoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, m4a, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
+              </p>
+            }
+            @if(assessment.studentAssessment.uploadedFiles.nonEmpty) {
+              @if(assessment.inProgress) {
+                @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress quash-beforeunload") { implicit vfc =>
+                  @b3.free(Symbol("_label") -> "Attach file") {
+                    <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
+                  }
 
-                <div class="help-block upload-info hide">
-                  <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
-                  <progress value="0" max="100"></progress>
-                </div>
-                <p class="help-block upload-error hide">
-                  <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
-                </p>
+                  <div class="help-block upload-info hide">
+                    <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
+                    <progress value="0" max="100"></progress>
+                  </div>
+                  <p class="help-block upload-error hide">
+                    <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
+                  </p>
 
-                @b3.free(Symbol("_class") -> "spaced-buttons") {
-                  <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
+                  @b3.free(Symbol("_class") -> "spaced-buttons") {
+                    <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
+                  }
                 }
               }
-            }
-            <div class="uploaded-files">
-              @assessment.studentAssessment.uploadedFiles.map { file =>
-                <div class="panel uploaded-file">
-                  <div class="panel-body">
-                    <div class="media">
-                      <div class="media-left">
-                        <a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)">
-                        @mimeTypeIcon(file.contentType)
-                        </a>
-                      </div>
-                      <div class="media-body">
-                        <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" target="_blank">@file.fileName</a></h4>
-                        <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@JavaTime.Relative(file.created)</small></p>
-                        @if(assessment.inProgress) {
-                          @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(assessment.assessment.id, file.id), Symbol("class") -> "quash-beforeunload") { implicit ifc =>
-                            <p>
-                              <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
-                                Download</a> <button delete type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i>
-                              Delete</button>
-                            </p>
+              <div class="uploaded-files">
+                @assessment.studentAssessment.uploadedFiles.map { file =>
+                  <div class="panel uploaded-file">
+                    <div class="panel-body">
+                      <div class="media">
+                        <div class="media-left">
+                          <a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)">
+                          @mimeTypeIcon(file.contentType)
+                          </a>
+                        </div>
+                        <div class="media-body">
+                          <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" target="_blank">@file.fileName</a></h4>
+                          <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@JavaTime.Relative(file.created)</small></p>
+                          @if(assessment.inProgress) {
+                            @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(assessment.assessment.id, file.id), Symbol("class") -> "quash-beforeunload") { implicit ifc =>
+                              <p>
+                                <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
+                                  Download</a> <button delete type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i>
+                                Delete</button>
+                              </p>
+                            }
+                          } else {
+                            <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
+                              Download</a>
                           }
-                        } else {
-                          <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(assessment.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
-                            Download</a>
-                        }
+                        </div>
                       </div>
                     </div>
                   </div>
+                }
+              </div>
+            } else {
+              @if(assessment.inProgress) {
+                <div class="blankslate">
+                  <i class="fad fa-folder-open themed-duotone fa-2x"></i> <i class="fad fa-file themed-duotone fa-2x"></i>
+                  <h3>You've not yet uploaded any answer files</h3>
+                  <div class="left-align">
+                    <p>Once you've answered the assessment questions and you're ready to submit, you can upload your files below.</p>
+                    @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
+                      @b3.free(Symbol("_label") -> "Attach file") {
+                        <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
+                      }
+
+                        <div class="help-block upload-info hide">
+                          <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
+                          <progress value="0" max="100"></progress>
+                        </div>
+                        <p class="help-block upload-error hide">
+                          <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
+                        </p>
+
+                      @b3.free(Symbol("_class") -> "spaced-buttons") {
+                        <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
+                      }
+                    }
+                  </div>
                 </div>
               }
-            </div>
-          } else {
-            @if(assessment.inProgress) {
-              <div class="blankslate">
-                <i class="fad fa-folder-open themed-duotone fa-2x"></i> <i class="fad fa-file themed-duotone fa-2x"></i>
-                <h3>You've not yet uploaded any answer files</h3>
-                <div class="left-align">
-                  <p>Once you've answered the assessment questions and you're ready to submit, you can upload your files below.</p>
-                  @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(assessment.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
-                    @b3.free(Symbol("_label") -> "Attach file") {
-                      <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
-                    }
-
-                      <div class="help-block upload-info hide">
-                        <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
-                        <progress value="0" max="100"></progress>
-                      </div>
-                      <p class="help-block upload-error hide">
-                        <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
-                      </p>
-
-                    @b3.free(Symbol("_class") -> "spaced-buttons") {
-                      <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
-                    }
-                  }
-                </div>
-              </div>
             }
-          }
+          </div>
         </div>
-      </div>
-      @if(assessment.inProgress && assessment.studentAssessment.uploadedFiles.nonEmpty) {
-        <div class="panel panel-default finish-exam-panel">
+        @if(assessment.inProgress && assessment.studentAssessment.uploadedFiles.nonEmpty) {
+          <div class="panel panel-default finish-exam-panel">
+            <div class="brand-stripe"></div>
+            <div class="panel-body">
+              <h2>Finish assessment</h2>
+              <p class="lead">Once you're ready, you can finish the assessment below. We'll record the time at which you do this.</p>
+              <p>Have you completed all of the following tasks?</p>
+              <ul>
+                <li>Uploaded your final submission above</li>
+                <li>Downloaded your final submission and checked to ensure it was uploaded in its entirety</li>
+                <li>Checked through your answers to the assessment questions</li>
+              </ul>
+              @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id), Symbol("class") -> "quash-beforeunload") { implicit fc =>
+                @b3.checkbox(
+                  finishExamForm("agreeDisclaimer"),
+                  Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.",
+                  Symbol("data-undisable-selector") -> ".finish-exam-btn",
+                  Symbol("class") -> "undisable-with-checkbox",
+                )
+                @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish assessment }
+              }
+            </div>
+          </div>
+        }
+      } else {
+        <div class="panel panel-default">
           <div class="brand-stripe"></div>
           <div class="panel-body">
-            <h2>Finish assessment</h2>
-            <p class="lead">Once you're ready, you can finish the assessment below. We'll record the time at which you do this.</p>
-            <p>Have you completed all of the following tasks?</p>
-            <ul>
-              <li>Uploaded your final submission above</li>
-              <li>Downloaded your final submission and checked to ensure it was uploaded in its entirety</li>
-              <li>Checked through your answers to the assessment questions</li>
-            </ul>
-            @b3.vertical.formCSRF(controllers.routes.AssessmentController.finish(assessment.assessment.id), Symbol("class") -> "quash-beforeunload") { implicit fc =>
-              @b3.checkbox(
-                finishExamForm("agreeDisclaimer"),
-                Symbol("_text") -> "I understand that this action is final and that I won't be able to make further submissions.",
-                Symbol("data-undisable-selector") -> ".finish-exam-btn",
-                Symbol("class") -> "undisable-with-checkbox",
-              )
-              @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish assessment }
-            }
+            <h2>Submit your assessment</h2>
+
+            <p class="lead">
+              @assessment.assessment.platform match {
+                case Platform.Moodle => {
+                  <a href="@assessment.assessment.brief.url" target="_blank">
+                    View your assessment in Moodle<i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.QuestionmarkPerception => {
+                  <a href="@assessment.assessment.brief.url" target="_blank">
+                    Take your assessment in Perception<i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.TabulaAssignment => {
+                  <a href="@assessment.assessment.brief.url" target="_blank">
+                    Submit your assessment on Tabula<i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.MyWBS => {
+                  <a href="@assessment.assessment.brief.url" target="_blank">
+                    Submit your assessment on MyWBS<i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.OnlineExams => {
+                  @* This should be impossible *@
+                  Please call the IT Services help desk on 024 765 73737.
+                }
+              }
+            </p>
           </div>
         </div>
       }

@@ -15,6 +15,7 @@ describe('calculateTimingInfo', () => {
       // hasStarted: false,
       // hasFinalised: false,
       // extraTimeAdjustment: null,
+      // showTimeRemaining: true,
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
@@ -56,6 +57,7 @@ describe('calculateTimingInfo', () => {
       hasStarted: true,
       hasFinalised: false,
       extraTimeAdjustment: null,
+      showTimeRemaining: true,
     };
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
@@ -80,6 +82,7 @@ describe('calculateTimingInfo', () => {
       hasStarted: true,
       hasFinalised: false,
       extraTimeAdjustment: null,
+      showTimeRemaining: true,
     };
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
@@ -100,6 +103,50 @@ describe('calculateTimingInfo', () => {
       text: 'Assessment complete.',
       allowStart: false
     });
-  })
+  });
+
+  it('optionally hides time remaining', () => {
+    const data = {
+      windowStart: BASE_TIME + 90*MINUTE,
+      windowEnd: BASE_TIME + 360*MINUTE,
+      start: BASE_TIME - 10*MINUTE,
+      end: BASE_TIME + 65*MINUTE,
+      hasStarted: true,
+      hasFinalised: false,
+      extraTimeAdjustment: null,
+      showTimeRemaining: false,
+    };
+
+    expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
+      warning: false,
+      text: 'Started 10 minutes ago.',
+      allowStart: false
+    });
+
+    // extraTimeAdjustment makes no difference here
+    data.extraTimeAdjustment = 21*MINUTE;
+    expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
+      warning: false,
+      text: 'Started 10 minutes ago.',
+      allowStart: false
+    });
+  });
+
+  it('does not warn for a "missed" deadline if showTimeRemaining = false', () => {
+    const data = {
+      start: BASE_TIME - 125*MINUTE,
+      end: BASE_TIME - 5*MINUTE,
+      hasStarted: true,
+      hasFinalised: false,
+      extraTimeAdjustment: null,
+      showTimeRemaining: false,
+    };
+
+    expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
+      warning: false,
+      text: "Started 2 hours and 5 minutes ago.",
+      allowStart: false
+    });
+  });
 
 });
