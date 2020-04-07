@@ -3,9 +3,6 @@
 @import domain.Assessment
 @(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
-@if(existing.nonEmpty && existing.exists(_.tabulaAssessmentId)) {
-  @b3.text(form("sequence"), Symbol("_label") -> "Assessment Sequence", Symbol("readonly") -> true )
-} else {
-  @b3.text(form("sequence"), Symbol("_label") -> "Assessment Sequence")
-}
+@b3.text(form("sequence"), Symbol("_label") -> "Assessment Sequence", Symbol("readonly") -> (existing.nonEmpty && existing.exists(_.tabulaAssessmentId)))
+
 
