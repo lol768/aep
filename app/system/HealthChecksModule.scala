@@ -23,6 +23,7 @@ class HealthChecksModule(environment: Environment, configuration: Configuration)
     healthchecks.addBinding.to[VirusScanServiceHealthCheck]
     healthchecks.addBinding.to[AkkaClusterSizeHealthCheck]
     healthchecks.addBinding.to[AkkaClusterUnreachableHealthCheck]
+    healthchecks.addBinding.to[ImportTabulaAssessmentsHealthCheck]
 
     healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("default"))
     healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("fileUploadsExecutionContext", "uploads.threads.fileUploadsExecutionContext"))

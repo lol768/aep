@@ -15,6 +15,16 @@ class AssessmentPage(id: UUID)(implicit driver: WebDriver, server: ServerInfo) e
 
   def startButton: WebElement = driver.findElement(By.id("startAssessment"))
 
+  def agreeAuthorshipCheckbox: WebElement = driver.findElement(By.id("agreeAuthorship"))
+
+  def authorshipDeclarationButton: WebElement = driver.findElement(By.cssSelector(".authorship-declaration-btn"))
+
+  def hasRACheckbox: WebElement = driver.findElement(By.cssSelector("input[type=radio][value=hasRA]"))
+
+  def hasNoRACheckbox: WebElement = driver.findElement(By.cssSelector("input[type=radio][value=hasNoRA]"))
+
+  def raDeclarationButton: WebElement = driver.findElement(By.cssSelector(".ra-declaration-btn"))
+
   def fileInput: WebElement = driver.findElement(By.name("file"))
 
   def uploadFilesButton: WebElement = driver.findElement(By.cssSelector("form.upload-progress button[type=submit]"))

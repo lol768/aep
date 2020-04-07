@@ -13,8 +13,8 @@
     <dt>Type</dt>
     <dd>@assessment.assessmentType.label</dd>
 
-    <dt>Platform</dt>
-    <dd>@assessment.platform.label</dd>
+    <dt>Platforms</dt>
+    <dd>@assessment.platform.map(_.label).mkString(",")</dd>
 
     <dt>Duration</dt>
     <dd>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)</dd>

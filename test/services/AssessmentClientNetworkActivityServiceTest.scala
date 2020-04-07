@@ -34,7 +34,7 @@ class AssessmentClientNetworkActivityServiceTest extends AbstractDaoTest with Cl
   "AssessmentClientNetworkActivityService" should {
     "save an assessmentClientNetworkActivity in the database" in new Fixture {
 
-      val base = studentAssessmentService.getWithAssessment(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
+      val base = studentAssessmentService.getSitting(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
 
       val studentAssessmentId = base.studentAssessment.id
 
@@ -46,7 +46,7 @@ class AssessmentClientNetworkActivityServiceTest extends AbstractDaoTest with Cl
     }
 
     "get client activity for" in new Fixture {
-      val base = studentAssessmentService.getWithAssessment(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
+      val base = studentAssessmentService.getSitting(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
 
       val studentAssessmentId = base.studentAssessment.id
       val activity = createActivity(studentAssessmentId)

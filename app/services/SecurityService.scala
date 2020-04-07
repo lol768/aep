@@ -130,7 +130,7 @@ class SecurityServiceImpl @Inject()(
     Unauthorized(Json.toJson(JsonClientError(status = "unauthorized", errors = Seq("You are not signed in.  You may authenticate through Web Sign-On."))))
 
   override def StudentAssessmentAction(assessmentId: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
-    SigninRequiredAction andThen WithStudentAssessmentWithAssessment(assessmentId)
+    SigninRequiredAction andThen WithSitting(assessmentId)
 
   override def StudentAssessmentIsStartedAction(assessmentId: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
     StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted

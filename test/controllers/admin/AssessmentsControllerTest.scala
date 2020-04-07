@@ -2,7 +2,7 @@ package controllers.admin
 
 import java.io.File
 
-import controllers.admin.AssessmentsController.{AdHocAssessmentFormData, AssessmentFormData}
+import controllers.admin.AssessmentsController.AssessmentFormData
 import domain.Assessment.{AssessmentType, Platform}
 import domain.{DepartmentCode, Fixtures}
 import helpers.{CleanUpDatabaseAfterEachTest, Scenario}
@@ -15,7 +15,6 @@ import warwick.core.helpers.JavaTime
 import warwick.sso.User
 
 import scala.concurrent.Future
-
 
 class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTest {
 
@@ -43,7 +42,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
 
     "Display an assessment to an app admin or a departmental admin for the dept code associated with that assessment" in scenario(new PhilosophyAssessmentScenario()) { s =>
       Seq(appAdminUser, phAdminUser).foreach { user =>
-        val resShow = reqShow(user, s.assessmentId)
+        val resShow = reqUpdateForm(user, s.assessmentId)
         status(resShow) mustBe OK
         htmlErrors(resShow) mustBe empty
       }
@@ -51,27 +50,27 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
 
     "Not display an assessment to a user who isn't an admin for the dept code associated with the assessment" in scenario(new PhilosophyAssessmentScenario()) { s =>
       Seq(lfAdminUser, someGuy).foreach{ user =>
-        val resShow = reqShow(user, s.assessmentId)
+        val resShow = reqUpdateForm(user, s.assessmentId)
         status(resShow) mustBe FORBIDDEN
       }
     }
 
     "Allow app admin or admin for any department to view the create assessment form" in {
       Seq(appAdminUser, phAdminUser, lfAdminUser).foreach { user =>
-        val resCreate = reqCreate(user)
+        val resCreate = reqCreateForm(user)
         status(resCreate) mustBe OK
         htmlErrors(resCreate) mustBe empty
       }
     }
 
     "Not allow non-admins to view the create assessment form" in {
-      val resCreate = reqCreate(someGuy)
+      val resCreate = reqCreateForm(someGuy)
       status(resCreate) mustBe FORBIDDEN
     }
 
     "Allow an app admin or dept admin for appropriate department to save an assessment" in scenario(new CreatingPhilosophyAssessmentScenario()) { s =>
       Seq(appAdminUser, phAdminUser).foreach { user =>
-        val resSave = reqSave(user, s.data)
+        val resSave = reqCreate(user, s.data)
         status(resSave) mustBe SEE_OTHER
         htmlErrors(resSave) mustBe empty
         header("Location", resSave).value mustBe controllers.admin.routes.AssessmentsController.index().url
@@ -79,11 +78,11 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
     }
 
     "Not allow non-admin or admin for other department to save an assessment if not correct dept" in scenario(new CreatingPhilosophyAssessmentScenario()) { s =>
-      val resSaveLfAdmin = reqSave(lfAdminUser, s.data)
+      val resSaveLfAdmin = reqCreate(lfAdminUser, s.data)
       status(resSaveLfAdmin) mustBe SEE_OTHER
       header("Location", resSaveLfAdmin).value mustBe controllers.admin.routes.AssessmentsController.create().url
 
-      val resSaveSomeGuy = reqSave(someGuy, s.data)
+      val resSaveSomeGuy = reqCreate(someGuy, s.data)
       status(resSaveSomeGuy) mustBe FORBIDDEN
     }
 
@@ -113,7 +112,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
   }
 
   class CreatingPhilosophyAssessmentScenario extends Scenario(scenarioCtx) {
-    val data: AdHocAssessmentFormData = AdHocAssessmentFormData(
+    val data: AssessmentFormData = AssessmentFormData(
       moduleCode = "honk",
       paperCode = "bonk",
       section = None,
@@ -124,8 +123,9 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       title = "bonk",
       description = None,
       durationMinutes = 120L,
-      platform = Platform.OnlineExams,
+      platform = Set(Platform.OnlineExams),
       assessmentType = AssessmentType.OpenBook,
+      students = Set.empty,
       url = None,
     )
   }
@@ -138,12 +138,14 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       section = a.section,
       departmentCode = a.departmentCode,
       sequence = a.sequence,
+      startTime = a.startTime.map(_.toLocalDateTime),
       title = a.title,
       description = Some("Honky bonky binky bang"),
       durationMinutes = a.duration.toMinutes,
       platform = a.platform,
       assessmentType = a.assessmentType,
       url = Some("https://www.warwick.ac.uk"),
+      students = Set.empty,
       invigilators = Set.empty,
     )
   }
@@ -153,17 +155,17 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
   def reqIndex(user: User): Future[Result] =
     req(controllerRoute.index().url).forUser(user).get()
 
-  def reqShow(user: User, assessmentId: UUID): Future[Result] =
-    req(controllerRoute.show(assessmentId).url).forUser(user).get()
+  def reqUpdateForm(user: User, assessmentId: UUID): Future[Result] =
+    req(controllerRoute.updateForm(assessmentId).url).forUser(user).get()
 
-  def reqCreate(user: User): Future[Result] =
-    req(controllerRoute.create().url).forUser(user).get()
+  def reqCreateForm(user: User): Future[Result] =
+    req(controllerRoute.createForm().url).forUser(user).get()
 
-  def reqSave(user: User, data: AdHocAssessmentFormData): Future[Result] =
-    req(controllerRoute.save().url)
+  def reqCreate(user: User, data: AssessmentFormData): Future[Result] =
+    req(controllerRoute.create().url)
       .forUser(user)
       .withFile(file)
-      .postMultiPartForm(tuplesFromAdHocData(data))
+      .postMultiPartForm(tuplesFromFormData(data))
 
   def reqUpdate(user: User, assessmentId: UUID, data: AssessmentFormData): Future[Result] =
     req(controllerRoute.update(assessmentId).url)
@@ -171,22 +173,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       .withFile(file)
       .postMultiPartForm(tuplesFromFormData(data))
 
-  def tuplesFromFormData(data:AssessmentFormData): Seq[(String, String)] =
-    Seq(
-      "moduleCode" -> data.moduleCode,
-      "paperCode" -> data.paperCode,
-      "section" -> data.section.getOrElse(""),
-      "departmentCode" -> data.departmentCode.lowerCase,
-      "sequence" -> data.sequence,
-      "title" -> data.title,
-      "description" -> data.description.getOrElse(""),
-      "durationMinutes" -> data.durationMinutes.toString,
-      "platform" -> data.platform.toString,
-      "assessmentType" -> data.assessmentType.toString,
-      "url" -> data.url.getOrElse(""),
-    )
-
-  def tuplesFromAdHocData(data: AdHocAssessmentFormData): Seq[(String, String)] =
+  def tuplesFromFormData(data: AssessmentFormData): Seq[(String, String)] =
     Seq(
       "moduleCode" -> data.moduleCode,
       "paperCode" -> data.paperCode,
@@ -197,8 +184,9 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       "title" -> data.title,
       "description" -> data.description.getOrElse(""),
       "durationMinutes" -> data.durationMinutes.toString,
-      "platform" -> data.platform.toString,
+      "platform[]" -> data.platform.mkString(","),
       "assessmentType" -> data.assessmentType.toString,
+      "students" -> data.students.toSeq.map(_.string).sorted.mkString("\n"),
       "url" -> data.url.getOrElse(""),
     ) ++ data.invigilators.zipWithIndex.map { case (invigilator, index) =>
       s"invigilators[$index]" -> invigilator.string

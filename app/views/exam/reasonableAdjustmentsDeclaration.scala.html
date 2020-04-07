@@ -1,0 +1,31 @@
+@import controllers.AssessmentController.ReasonableAdjustmentsDeclarationFormData
+@import java.util.UUID
+@import play.api.data.Form
+
+@(
+  assessmentId: UUID,
+  form: Form[ReasonableAdjustmentsDeclarationFormData]
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@frontend("Reasonable Adjustments") {
+  <div class="panel panel-default">
+    <div class="brand-stripe"></div>
+    <div class="panel-body">
+      <p>When taking assessments on the @{context.appFullName}, students are automatically given extra time for upload.</p>
+
+      <p>Additional <em>reasonable adjustments</em> may also be provided for students with a long term condition or temporary disability that is known far enough in advance.</p>
+    </div>
+  </div>
+
+  @b3.vertical.formCSRF(controllers.routes.AssessmentController.reasonableAdjustmentsDeclaration(assessmentId)) { implicit fc =>
+    @b3.radio(
+      form("reasonableAdjustments"),
+      Seq(
+        "hasRA" -> "I have already agreed reasonable adjustments with my academic department.",
+        "hasNoRA" -> "I have no agreed reasonable adjustments."),
+      Symbol("data-undisable-selector") -> ".ra-declaration-btn",
+      Symbol("class") -> "undisable-with-checkbox",
+    )
+    @b3.submit(Symbol("class") -> "btn btn-default ra-declaration-btn"){ <i class="fad fa-badge-check fa-fw fa-lg"></i> Continue }
+  }
+}

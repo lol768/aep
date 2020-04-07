@@ -5,7 +5,7 @@ import java.util.UUID
 
 import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
-import domain.dao.StudentAssessmentsTables.{StoredStudentAssessment, StoredStudentAssessmentVersion}
+import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredDeclarationsVersion, StoredStudentAssessment, StoredStudentAssessmentVersion}
 import domain.dao.UploadedFilesTables.{StoredUploadedFile, StoredUploadedFileVersion}
 import domain.{AssessmentClientNetworkActivity, DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
 import javax.inject.{Inject, Singleton}
@@ -30,7 +30,7 @@ class AssessmentTables @Inject()(
     def title = column[String]("title")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
     def duration = column[Duration]("duration")
-    def platform = column[Platform]("platform")
+    def platform = column[Set[Platform]]("platform")
     def assessmentType = column[AssessmentType]("type")
     def storedBrief = column[StoredBrief]("brief")
     def invigilators = column[List[String]]("invigilators")
@@ -185,5 +185,38 @@ class AssessmentTables @Inject()(
 
   val assessmentClientNetworkActivities = TableQuery[AssessmentClientNetworkActivities]
 
+  trait DeclarationsCommonProperties { self: Table[_] =>
+    def acceptsAuthorship = column[Boolean]("accepts_authorship")
+    def selfDeclaredRA = column[Boolean]("self_declared_ra")
+    def completedRADeclaration = column[Boolean]("completed_ra")
+    def created = column[OffsetDateTime]("created_utc")
+    def version = column[OffsetDateTime]("version_utc")
+  }
+  class Declarations(tag: Tag) extends Table[StoredDeclarations](tag, "declarations")
+    with VersionedTable[StoredDeclarations]
+    with DeclarationsCommonProperties {
+    override def matchesPrimaryKey(other: StoredDeclarations): Rep[Boolean] = studentAssessmentId === other.studentAssessmentId
+    def studentAssessmentId = column[UUID]("id", O.PrimaryKey)
 
+    def pk = primaryKey("pk_declaration", studentAssessmentId)
+
+    override def * : ProvenShape[StoredDeclarations] =
+      (studentAssessmentId, acceptsAuthorship, selfDeclaredRA, completedRADeclaration, created, version).mapTo[StoredDeclarations]
+  }
+
+  class DeclarationsVersions(tag: Tag) extends Table[StoredDeclarationsVersion](tag, "declarations_version")
+    with StoredVersionTable[StoredDeclarations]
+    with DeclarationsCommonProperties {
+    def studentAssessmentId = column[UUID]("id")
+    def operation = column[DatabaseOperation]("version_operation")
+    def timestamp = column[OffsetDateTime]("version_timestamp_utc")
+    def auditUser = column[Option[Usercode]]("version_user")
+
+    override def * : ProvenShape[StoredDeclarationsVersion] =
+      (studentAssessmentId, acceptsAuthorship, selfDeclaredRA, completedRADeclaration, created, version, operation, timestamp, auditUser).mapTo[StoredDeclarationsVersion]
+    def pk = primaryKey("pk_declarations_version", (studentAssessmentId, timestamp))
+  }
+
+  val declarations: VersionedTableQuery[StoredDeclarations, StoredDeclarationsVersion, Declarations, DeclarationsVersions] =
+    VersionedTableQuery(TableQuery[Declarations], TableQuery[DeclarationsVersions])
 }

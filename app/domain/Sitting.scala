@@ -5,7 +5,7 @@ import java.time.Duration
 import views.assessment.AssessmentTimingUpdate
 import warwick.core.helpers.JavaTime
 
-sealed trait BaseStudentAssessmentWithAssessment {
+sealed trait BaseSitting {
   def studentAssessment: BaseStudentAssessment
   def assessment: BaseAssessment
 
@@ -19,11 +19,17 @@ sealed trait BaseStudentAssessmentWithAssessment {
     assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
 
   // How long the student has to submit without being counted late
-  lazy val duration = assessment.duration
+  lazy val duration: Duration = assessment.duration
     .plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
 
   // Hard limit for student submitting, though they may be counted late.
-  lazy val durationIncludingLate = duration.plus(Assessment.lateSubmissionPeriod)
+  lazy val durationIncludingLate: Duration = duration.plus(Assessment.lateSubmissionPeriod)
+
+  def canFinalise: Boolean = studentAssessment.startTime.exists(startTime =>
+    !finalised &&
+      startTime.plus(durationIncludingLate).isAfter(JavaTime.offsetDateTime) &&
+      !assessment.hasLastAllowedStartTimePassed
+  )
 
   def getTimingInfo: AssessmentTimingUpdate = {
     AssessmentTimingUpdate(
@@ -35,12 +41,13 @@ sealed trait BaseStudentAssessmentWithAssessment {
   }
 }
 
-case class StudentAssessmentWithAssessment(
+case class Sitting(
   studentAssessment: StudentAssessment,
-  assessment: Assessment
-) extends BaseStudentAssessmentWithAssessment
+  assessment: Assessment,
+  declarations: Declarations
+) extends BaseSitting
 
-case class StudentAssessmentWithAssessmentMetadata(
+case class SittingMetadata(
   studentAssessment: StudentAssessmentMetadata,
   assessment: AssessmentMetadata
-) extends BaseStudentAssessmentWithAssessment
+) extends BaseSitting

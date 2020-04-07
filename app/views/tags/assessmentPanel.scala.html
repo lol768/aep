@@ -1,8 +1,8 @@
 @import domain.Assessment.Platform
-@import domain.StudentAssessmentWithAssessment
+@import domain.Sitting
 @import tags._
 
-@(assessment: StudentAssessmentWithAssessment, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
+@(assessment: Sitting, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
 <div class="panel panel-default assessment-information-panel">
     @if(isAssessmentPage) {
         <div class="brand-stripe"></div>

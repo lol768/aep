@@ -12,6 +12,7 @@ import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunning, StudentAssessme
 import domain.{Fixtures, UploadedFileOwner}
 import helpers.{FutureServiceMixins, HasApplicationGet}
 import org.apache.commons.text.StringEscapeUtils
+import org.openqa.selenium.WebElement
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterEach, GivenWhenThen}
 import org.scalatestplus.selenium.{Page, WebBrowser}
@@ -260,9 +261,54 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       assessmentList.head.viewLink.click()
     }
 
-    def i_start_the_assessment(): Unit = {
+    def i_click_to_start_the_assessment(): Unit = {
       When("I start the assessment")
       assessmentPage.startButton.click()
+    }
+
+    def the_authorship_declaration_button_is_disabled(): Unit =
+      element_is_disabled(assessmentPage.authorshipDeclarationButton)
+
+    def the_authorship_declaration_button_is_enabled(): Unit =
+      element_is_enabled(assessmentPage.authorshipDeclarationButton)
+
+    def the_ra_declaration_button_is_disabled(): Unit =
+      element_is_disabled(assessmentPage.raDeclarationButton)
+
+    def the_ra_declaration_button_is_enabled(): Unit =
+      element_is_enabled(assessmentPage.raDeclarationButton)
+
+    def element_is_disabled(el: WebElement): Unit = {
+      eventually(assert(el.getAttribute("disabled") == "true", s"${el.getTagName} '${el.getText}' was not disabled"))
+    }
+
+    def element_is_enabled(el: WebElement): Unit = {
+      eventually(assert(el.getAttribute("disabled") != "true", s"${el.getTagName} '${el.getText}' was disabled"))
+    }
+
+    def i_tick_the_authorship_declaration(): Unit = {
+      When("I tick the authorship declaration")
+      assessmentPage.agreeAuthorshipCheckbox.click()
+    }
+
+    def i_click_to_confirm_the_authorship_declaration(): Unit = {
+      When("I click to confirm the authorship declaration")
+      assessmentPage.authorshipDeclarationButton.click()
+    }
+
+    def i_choose_the_no_ra_declaration(): Unit = {
+      When("I choose the no reasonable adjustments radio button")
+      assessmentPage.hasNoRACheckbox.click()
+    }
+
+    def i_choose_the_has_ra_declaration(): Unit = {
+      When("I choose the has reasonable adjustments radio button")
+      assessmentPage.hasRACheckbox.click()
+    }
+
+    def i_click_to_confirm_the_ra_declaration(): Unit = {
+      When("I click to confirm the reasonable adjustments declaration")
+      assessmentPage.raDeclarationButton.click()
     }
 
     def i_upload(filename: String): Unit = {

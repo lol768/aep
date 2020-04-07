@@ -1,15 +1,22 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
-@import controllers.admin.AssessmentsController.AbstractAssessmentFormData
+@import controllers.admin.AssessmentsController.AssessmentFormData
 @import domain.Assessment.Platform
 @import domain.Assessment.AssessmentType
 
-@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+@import views.html.b3.multiCheckbox
+@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 <div class="row">
     <div class="col-sm-6">
-    @b3.radio(form("assessmentType"), AssessmentType.values.map(p => (p.entryName, p.label)), Symbol("_label") -> "Type")
+        @b3.radio(form("assessmentType"), AssessmentType.values.map(p => (p.entryName, p.label)), Symbol("_label") -> "Type")
     </div>
     <div class="col-sm-6">
-    @b3.radio(form("platform"), Platform.values.map(p => (p.entryName, p.label)), Symbol("_label") -> "Platform")
+        <div class="form-group  " id="platform_field">
+        @multiCheckbox(
+            "platform[]",
+            Platform.values.map(p => (p.label, p.entryName)),
+            form.value.map(_.platform.map(_.entryName)).getOrElse(Set.empty).toSeq
+        )
+        </div>
     </div>
 </div>

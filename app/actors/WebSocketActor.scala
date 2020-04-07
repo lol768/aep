@@ -11,7 +11,7 @@ import services.{AssessmentClientNetworkActivityService, StudentAssessmentServic
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
-import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, StudentAssessmentWithAssessmentMetadata}
+import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
 import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.ServiceResult
 
@@ -113,7 +113,7 @@ class WebSocketActor @Inject() (
           val requestedAssessmentId: Option[UUID] = request.map(_.assessmentId)
 
           // Get single assessment or all user's assessments, depending on what was requested
-          val getAssessments: Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]] = requestedAssessmentId.map { id =>
+          val getAssessments: Future[ServiceResult[Seq[SittingMetadata]]] = requestedAssessmentId.map { id =>
             studentAssessmentService.getMetadataWithAssessment(universityID, id)(TimingContext.none).successMapTo(a => Seq(a))
           }.getOrElse {
             studentAssessmentService.getMetadataWithAssessment(universityID)(TimingContext.none)
