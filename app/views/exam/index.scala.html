@@ -26,14 +26,14 @@
               <div class="peg"></div>
             </div>
             <div class="right">
-              <h1>@bareLocalisedDateTime(startTime) Assessment opened</h1>
-              @assessment.assessment.lastAllowedStartTime.map { end =>
+              <h1>@bareLocalisedDateTime(sitting.assessment.startTime.get) Assessment opened</h1>
+              @sitting.assessment.lastAllowedStartTime.map { end =>
                 <p>
-                  The assessment can be started any time between @bareLocalisedDateTime(assessment.assessment.startTime.get) and @bareLocalisedDateTime(end, true)</p>
+                  The assessment can be started any time between @bareLocalisedDateTime(sitting.assessment.startTime.get) and @bareLocalisedDateTime(end, true)</p>
               }
             </div>
           </div>
-          <div class="block green">
+          <div class="block green active">
             <div class="left">
               <div class="bubble"><i class="fal fa-2x fa-stopwatch"></i></div>
               <div class="stick"></div>
@@ -44,11 +44,9 @@
             <div class="right">
               <h1>@bareLocalisedDateTime(startTime) You started the assessment</h1>
               <p>
-                This is a @assessment.assessment.duration.toHours hour paper, plus 45 minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plusSeconds(assessment.duration.toSeconds + (45 * 60)), true)</p>
+                This is a @sitting.duration.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(sitting.duration).plus(sitting.uploadGraceDuration), true)</p>
               <p>Please plan your time accordingly.</p>
-
             </div>
-
           </div>
           <div class="block orange">
             <div class="left">
@@ -59,9 +57,8 @@
               <div class="peg"></div>
             </div>
             <div class="right">
-              <h1 class="mb-1">@bareLocalisedDateTime(startTime.plusSeconds(assessment.duration.toSeconds))
-                You have 45 minutes until @bareLocalisedDateTime(startTime.plusSeconds(assessment.duration.toSeconds + (45 * 60))) to upload your answers</h1>
-
+              <h1 class="mb-1">@bareLocalisedDateTime(startTime.plus(sitting.duration))
+                You have @sitting.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(sitting.duration).plus(sitting.uploadGraceDuration)) to upload your answers</h1>
             </div>
           </div>
           <div class="block pink">
@@ -73,14 +70,14 @@
               <div class="peg"></div>
             </div>
             <div class="right">
-              <h1>@bareLocalisedDateTime(startTime.plusSeconds(assessment.duration.toSeconds + (45 * 60)))
-                Your assessment is now late.</h1>
+              <h1>@bareLocalisedDateTime(startTime.plus(sitting.duration).plus(sitting.uploadGraceDuration))
+                Your assessment is now late</h1>
               <p>
                 You can still upload your answers but you may be subject to late penalties, unless you have reasonable adjustments.</p>
               <div class="vert-space"></div>
             </div>
           </div>
-          <div class="block red active">
+          <div class="block red">
             <div class="left">
               <div class="bubble"><i class="fal fa-ban fa-2x"></i></div>
             </div>
@@ -88,7 +85,7 @@
               <div class="peg"></div>
             </div>
             <div class="right">
-              <h1>16:15 You can't upload answers at all after this point</h1>
+              <h1>@bareLocalisedDateTime(startTime.plus(sitting.durationIncludingLate).plus(sitting.uploadGraceDuration)) You can't upload answers at all after this point</h1>
             </div>
           </div>
         </div>

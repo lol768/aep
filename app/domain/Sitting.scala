@@ -14,6 +14,8 @@ sealed trait BaseSitting {
   def started: Boolean = studentAssessment.startTime.nonEmpty
   def finalised: Boolean = studentAssessment.hasFinalised
 
+  def uploadGraceDuration: Duration = Duration.ofMinutes(45)
+
   def isCurrentForStudent: Boolean = !finalised &&
     assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
     assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
