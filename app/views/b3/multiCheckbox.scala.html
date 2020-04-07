@@ -1,10 +1,8 @@
-@(field: String, values: Seq[(String, String)], checked: Seq[String] = Seq.empty)
-
-
-  <label class="control-label">Platform</label>
-  @values.map{ case (label, value)  =>
-    <div class="radio">
-      <input type="checkbox" id="@value" name="@field" value="@value" @if(checked.contains(value)){checked}>@label</input>
-    </div>
-  }
-
+@(fieldsWithArgs: (Field, Seq[(Symbol,Any)])*)(globalArgs: (Symbol,Any)*)(implicit fc: b3.B3FieldConstructor, messages: Messages)
+@b3.multifield(fieldsWithArgs.map(_._1):_*)(globalArgs, fieldsWithArgs.flatMap(_._2)) { implicit cfc =>
+  <div @toHtmlArgs(bs.Args.inner(globalArgs).toMap)>
+    @fieldsWithArgs.map { case (field, fieldArgs) =>
+      @b3.checkbox(field, fieldArgs:_*)
+    }
+  </div>
+}
