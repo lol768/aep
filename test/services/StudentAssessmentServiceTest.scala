@@ -22,21 +22,46 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
     private val assessmentDao = get[AssessmentDao]
     private val studentAssessmentDao = get[StudentAssessmentDao]
 
-    // Set up some test assessments
     val storedAssessment = Fixtures.assessments.storedAssessment().copy(startTime = Some(JavaTime.offsetDateTime.minusHours(1)))
-    execWithCommit(DBIO.sequence(Seq(storedAssessment).map(assessmentDao.insert)))
+    execWithCommit(assessmentDao.insert(storedAssessment))
 
     val storedStudentAssessment = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("1234567"))
-    execWithCommit(DBIO.sequence(Seq(storedStudentAssessment).map(studentAssessmentDao.insert)))
+    val storedGoodDeclarations = Fixtures.studentAssessments.storedDeclarations(storedStudentAssessment.id)
+    execWithCommit(studentAssessmentDao.insert(storedStudentAssessment) andThen studentAssessmentDao.insert(storedGoodDeclarations))
+
+    val storedStudentAssessmentNoAuthorship = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("0000001"))
+    val storedDeclarationsNoAuthorship = Fixtures.studentAssessments.storedDeclarations(storedStudentAssessmentNoAuthorship.id).copy(acceptsAuthorship = false)
+    execWithCommit(studentAssessmentDao.insert(storedStudentAssessmentNoAuthorship) andThen studentAssessmentDao.insert(storedDeclarationsNoAuthorship))
+
+    val storedStudentAssessmentNoRA = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("9876543"))
+    val storedDeclarationsNoRA = Fixtures.studentAssessments.storedDeclarations(storedStudentAssessmentNoRA.id).copy(completedRA = false)
+    execWithCommit(studentAssessmentDao.insert(storedStudentAssessmentNoRA) andThen studentAssessmentDao.insert(storedDeclarationsNoRA))
   }
 
   "StudentAssessmentService" should {
+    "validate declarations" in new Fixture {
+      val noAuthorshipSitting = service.getSitting(storedStudentAssessmentNoAuthorship.studentId, storedStudentAssessmentNoAuthorship.assessmentId).serviceValue.get
+      val noAuthorshipCaught = intercept[IllegalArgumentException] {
+        service.startAssessment(noAuthorshipSitting.studentAssessment).serviceValue
+      }
+      noAuthorshipCaught.getMessage must include("declarations not made")
+
+      val noRASitting = service.getSitting(storedStudentAssessmentNoRA.studentId, storedStudentAssessmentNoRA.assessmentId).serviceValue.get
+      val noRACaught = intercept[IllegalArgumentException] {
+        service.startAssessment(noRASitting.studentAssessment).serviceValue
+      }
+      noRACaught.getMessage must include("declarations not made")
+
+      val goodSitting = service.getSitting(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
+      service.startAssessment(goodSitting.studentAssessment).serviceValue
+    }
+
     "inflate UploadedFiles in the same order as submitted" in new Fixture {
       // Add some files to studentAssessment
       val file1 = (specialJPG.temporaryUploadedFile.in, specialJPG.uploadedFileSave)
       val file2 = (homeOfficeStatementPDF.temporaryUploadedFile.in, homeOfficeStatementPDF.uploadedFileSave)
 
-      val base = service.getWithAssessment(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
+      val base = service.getSitting(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
 
       val started = service.startAssessment(base.studentAssessment).serviceValue
 
@@ -72,9 +97,9 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
       val early = JavaTime.instant.minus(Duration.ofHours(7))
 
       DateTimeUtils.useMockDateTime(early, () => {
-        val sawa = service.getWithAssessment(storedStudentAssessment.studentId, storedAssessment.id).serviceValue.value
+        val sitting = service.getSitting(storedStudentAssessment.studentId, storedAssessment.id).serviceValue.value
         val caught = intercept[IllegalArgumentException] {
-          service.startAssessment(sawa.studentAssessment).serviceValue
+          service.startAssessment(sitting.studentAssessment).serviceValue
         }
         caught.getMessage must include("too early")
       })
@@ -82,8 +107,8 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
 
     "can start inside allowed start range" in new Fixture {
       // startTime is set to 1 hour before current time so we can use real time
-      val sawa = service.getWithAssessment(storedStudentAssessment.studentId, storedAssessment.id).serviceValue.value
-      val studentAssessment: StudentAssessment = service.startAssessment(sawa.studentAssessment).serviceValue
+      val sitting = service.getSitting(storedStudentAssessment.studentId, storedAssessment.id).serviceValue.value
+      val studentAssessment: StudentAssessment = service.startAssessment(sitting.studentAssessment).serviceValue
       studentAssessment.startTime mustBe defined
     }
 
@@ -91,31 +116,31 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
       val veryLate = JavaTime.instant.plus(Duration.ofHours(25))
 
       DateTimeUtils.useMockDateTime(veryLate, () => {
-        val sawa = service.getWithAssessment(storedStudentAssessment.studentId, storedAssessment.id).serviceValue.value
+        val sitting = service.getSitting(storedStudentAssessment.studentId, storedAssessment.id).serviceValue.value
         val caught = intercept[IllegalArgumentException] {
-          service.startAssessment(sawa.studentAssessment).serviceValue
+          service.startAssessment(sitting.studentAssessment).serviceValue
         }
         caught.getMessage must include("too late")
       })
+    }
 
-      "get, insert and update declarations" in new Fixture {
-        val newStudentAssessment = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("HONK"))
-        val newDeclarations = Fixtures.studentAssessments.storedDeclarations(newStudentAssessment.id)
+    "get, insert and update declarations" in new Fixture {
+      val newStudentAssessment = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("HONK"))
+      val newDeclarations = Fixtures.studentAssessments.storedDeclarations(newStudentAssessment.id)
 
-        service.upsert(newDeclarations.asDeclarations).serviceValue
+      service.upsert(newDeclarations.asDeclarations).serviceValue
 
-        val declarationsFromDB = service.getDeclarations(newDeclarations.id).serviceValue
-        declarationsFromDB.acceptable mustBe true
+      val declarationsFromDB = service.getDeclarations(newDeclarations.id).serviceValue
+      declarationsFromDB.acceptable mustBe true
 
-        val finaliseTime = JavaTime.offsetDateTime
-        val updatedDeclarations = declarationsFromDB.copy(
-          selfDeclaredRA = true
-        )
+      val finaliseTime = JavaTime.offsetDateTime
+      val updatedDeclarations = declarationsFromDB.copy(
+        selfDeclaredRA = true
+      )
 
-        service.upsert(updatedDeclarations).serviceValue
+      service.upsert(updatedDeclarations).serviceValue
 
-        service.getDeclarations(newDeclarations.id).serviceValue.selfDeclaredRA mustBe true
-      }
+      service.getDeclarations(newDeclarations.id).serviceValue.selfDeclaredRA mustBe true
     }
   }
 }

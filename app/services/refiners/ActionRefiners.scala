@@ -57,7 +57,7 @@ class ActionRefiners @Inject() (
   def WithSitting(assessmentId: UUID): Refiner[AuthenticatedRequest, StudentAssessmentSpecificRequest] =
     new Refiner[AuthenticatedRequest, StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: AuthenticatedRequest[A]): Refinement[StudentAssessmentSpecificRequest[A]] = {
-        studentAssessmentService.getWithAssessment(universityId.get, assessmentId).successMapTo[Either[Result, StudentAssessmentSpecificRequest[A]]] { _.map { sitting =>
+        studentAssessmentService.getSitting(universityId.get, assessmentId).successMapTo[Either[Result, StudentAssessmentSpecificRequest[A]]] { _.map { sitting =>
           Right(new StudentAssessmentSpecificRequest[A](sitting, request))
         }.getOrElse {
           Left(NotFound(views.html.errors.notFound()))

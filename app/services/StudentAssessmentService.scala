@@ -30,7 +30,7 @@ trait StudentAssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
-  def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
+  def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
   def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]]
   def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]]
   def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]]
@@ -98,7 +98,7 @@ class StudentAssessmentServiceImpl @Inject()(
       }
   }
 
-  override def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]] = {
+  override def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]] = {
     daoRunner.run(
       for {
         studentAssessmentRows <- dao.loadWithUploadedFiles(universityId, assessmentId)
@@ -106,10 +106,9 @@ class StudentAssessmentServiceImpl @Inject()(
       } yield (inflateRowWithUploadedFiles(studentAssessmentRows), AssessmentService.inflateRowWithUploadedFiles(assessmentRows))
     ).flatMap {
       case (Some(studentAssessment), Some(assessment)) =>
-        val foo = getDeclarations(studentAssessment.id).successMapTo(declarations =>
+        getDeclarations(studentAssessment.id).successMapTo(declarations =>
           Some(Sitting(studentAssessment, assessment, declarations))
         )
-        foo
       case _ =>
         Future.successful(ServiceResults.success(None))
     }
@@ -162,7 +161,7 @@ class StudentAssessmentServiceImpl @Inject()(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessmentOption <- assessmentDao.getById(studentAssessment.assessmentId)
-          storedDeclarationsOption <- dao.getDeclarations(studentAssessment.assessmentId)
+          storedDeclarationsOption <- dao.getDeclarations(studentAssessment.id)
           _ <- DBIO.from(isTimeInRange(
             storedAssessmentOption.getOrElse(noAssessmentFound(studentAssessment.assessmentId)),
             storedStudentAssessmentOption.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId))
