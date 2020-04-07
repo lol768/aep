@@ -124,7 +124,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       title = "bonk",
       description = None,
       durationMinutes = 120L,
-      platform = Platform.OnlineExams,
+      platform = List(Platform.OnlineExams),
       assessmentType = AssessmentType.OpenBook,
       url = None,
     )
@@ -181,7 +181,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       "title" -> data.title,
       "description" -> data.description.getOrElse(""),
       "durationMinutes" -> data.durationMinutes.toString,
-      "platform" -> data.platform.toString,
+      "platform[]" -> data.platform.mkString(","),
       "assessmentType" -> data.assessmentType.toString,
       "url" -> data.url.getOrElse(""),
     )
@@ -197,7 +197,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       "title" -> data.title,
       "description" -> data.description.getOrElse(""),
       "durationMinutes" -> data.durationMinutes.toString,
-      "platform" -> data.platform.toString,
+      "platform[]" -> data.platform.mkString(","),
       "assessmentType" -> data.assessmentType.toString,
       "url" -> data.url.getOrElse(""),
     ) ++ data.invigilators.zipWithIndex.map { case (invigilator, index) =>
