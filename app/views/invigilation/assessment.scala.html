@@ -11,11 +11,11 @@
         assessment: Assessment,
         studentAssessments: Seq[StudentAssessmentMetadata],
         invigilators: Map[Usercode, String],
-        students: Map[UniversityID, User],
+        students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout(assessment.title) {
+@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}") {
     <div class="id7-main-content">
         <div class="row">
             <div class="col-md-6">

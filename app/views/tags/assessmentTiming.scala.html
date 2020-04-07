@@ -1,6 +1,6 @@
+@import domain.Assessment.Platform
 @import domain.Sitting
 @import play.api.libs.json.Json
-
 @import play.api.libs.json.JsNumber
 @import play.api.libs.json.JsBoolean
 @import play.api.libs.json.JsNull
@@ -20,7 +20,8 @@
                 "end" -> sitting.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli + sitting.duration.toMillis)).getOrElse(JsNull),
                 "hasStarted" -> JsBoolean(sitting.studentAssessment.startTime.nonEmpty),
                 "hasFinalised" -> JsBoolean(sitting.studentAssessment.finaliseTime.nonEmpty),
-                "extraTimeAdjustment" -> sitting.studentAssessment.extraTimeAdjustment.map(et => JsNumber(et.toMillis)).getOrElse(JsNull)
+                "extraTimeAdjustment" -> sitting.studentAssessment.extraTimeAdjustment.map(et => JsNumber(et.toMillis)).getOrElse(JsNull),
+                "showTimeRemaining" -> JsBoolean(sitting.assessment.platform == Platform.OnlineExams),
             )))
         }"
         ></span>

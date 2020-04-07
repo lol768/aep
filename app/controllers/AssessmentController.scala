@@ -119,10 +119,22 @@ class AssessmentController @Inject()(
     AssessmentController.finishExamForm.bindFromRequest().fold(
       form => Future.successful(BadRequest(views.html.exam.index(request.sitting, form, uploadedFileControllerHelper.supportedMimeTypes))),
       _ => {
-        studentAssessmentService.finishAssessment(request.sitting.studentAssessment).successMap { _ =>
+        studentAssessmentService.finishAssessment(request.sitting.studentAssessment).successFlatMap { _ =>
           redirectToAssessment(assessmentId)
+          if (request.sitting.finalised) {
+            val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
+            Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
+          } else if (!request.sitting.canFinalise) {
+            val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
+            Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
+          } else {
+            studentAssessmentService.finishAssessment(request.sitting.studentAssessment).successMap { _ =>
+              redirectToAssessment(assessmentId)
+            }
+          }
         }
-      })
+      }
+    )
   }
 
   def uploadFiles(assessmentId: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = StudentAssessmentInProgressAction(assessmentId)(uploadedFileControllerHelper.bodyParser).async { implicit request =>

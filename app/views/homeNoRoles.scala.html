@@ -1,4 +1,3 @@
-@import views.html.tags.contactEmail
 @(userRoles: UserRoles)(implicit context: RequestContext)
 
 @frontend() {
@@ -8,9 +7,9 @@
     Exams Portal, either as a participant, an examiner or an invigilator.
   </p>
 
-  @if(!userRoles.isAdmin && !userRoles.isSysAdmin && !userRoles.isStudent) {
+  @if(!userRoles.isAdmin && !userRoles.isSysAdmin) {
     <p class="lead">
-      If you believe that this is incorrect, please contact @{contactEmail()}.
+      If you believe that this is incorrect, please contact your department.
     </p>
   }
 

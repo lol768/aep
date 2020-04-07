@@ -101,5 +101,17 @@ class AssessmentSpec extends BrowserFeatureSpec {
       When.i_finish_the_assessment()
       Then the_page_content_should_not_contain "Finish exam"
     }
+
+    "be able to start a Moodle assignment" in {
+      Given.i_am_a_student()
+      And i_have_a_moodle_assignment_to_take(student)
+
+      When i_visit_the assessmentPage
+      And.i_start_the_assessment()
+
+      Then i_should_see_the_text "The assessment has begun."
+      And i_should_see_the_text "Started a moment ago"
+      And i_should_see_the_text "View your assessment in Moodle"
+    }
   }
 }

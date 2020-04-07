@@ -7,6 +7,8 @@ import domain.{Assessment, StudentAssessmentMetadata}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
+import services.tabula.TabulaStudentInformationService
+import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.{AssessmentService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -20,7 +22,7 @@ class ReportingController @Inject()(
   security: SecurityService,
   assessmentService: AssessmentService,
   reportingService: ReportingService,
-  userLookupService: UserLookupService,
+  studentInformationService: TabulaStudentInformationService,
   messageService: MessageService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
@@ -55,13 +57,13 @@ class ReportingController @Inject()(
       assessmentService.get(id),
       getSittings,
       messageService.findByAssessment(id)
-    ).successMap { case (assessment, sittings, queries) =>
-      userLookupService.getUsers(sittings.map(_.studentId)).map { userMap =>
-        val sorted = sittings.sortBy(md => userMap.get(md.studentId).flatMap(_.name.last).getOrElse(""))
-        Ok(views.html.admin.reporting.expandedList(assessment, sorted, userMap, title, route, queries.map(_.client).distinct))
-      }.getOrElse {
-        Ok(views.html.admin.reporting.expandedList(assessment, sittings, Map.empty[UniversityID, User], title, route, queries.map(_.client).distinct))
-      }
+    ).successFlatMap { case (assessment, sittings, queries) =>
+      studentInformationService
+        .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId)))
+        .successMap { profiles =>
+          val sorted = sittings.sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+          Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.client).distinct))
+        }
     }
   }
 
@@ -69,14 +71,14 @@ class ReportingController @Inject()(
     ServiceResults.zip(
       getSittings,
       messageService.findByAssessment(assessmentId)
-    ).successMap {
+    ).successFlatMap {
       case (sittings, queries) =>
-        userLookupService.getUsers(sittings.map(_.studentId)).map { userMap =>
-          val sorted = sittings.sortBy(md => userMap.get(md.studentId).flatMap(_.name.last).getOrElse(""))
-          Ok(views.html.tags.studentAssessmentInfo(sorted, userMap, Some(queries.map(_.client).distinct)))
-        }.getOrElse {
-          Ok(views.html.tags.studentAssessmentInfo(sittings, Map.empty[UniversityID, User], Some(queries.map(_.client).distinct)))
-        }
+        studentInformationService
+          .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId)))
+          .successMap { profiles =>
+            val sorted = sittings.sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct)))
+          }
     }
   }
 

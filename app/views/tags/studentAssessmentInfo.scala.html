@@ -1,17 +1,16 @@
 @import tags._
 @import domain.StudentAssessmentMetadata
-@import domain.Assessment
-@import warwick.sso.User
+@import domain.tabula
 @import warwick.sso.UniversityID
 @import org.apache.commons.lang3.time.DurationFormatUtils
-@(metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, User], studentsWithQueries: Option[Seq[UniversityID]] = None)(implicit context: RequestContext)
+@(metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, tabula.SitsProfile], studentsWithQueries: Option[Seq[UniversityID]] = None)(implicit context: RequestContext)
 
 @if(metadata.nonEmpty) {
   @studentsWithQueries.map { sWQ =>
     <div class="alert alert-info">
       <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
       @sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.
-      <a href="@controllers.invigilation.routes.InvigilatorQueriesController.viewAll(metadata.head.assessmentId)">
+      <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessmentId)">
       View all queries.
     </a>
     </div>
@@ -34,9 +33,9 @@
     <tbody>
       @metadata.map { md =>
         <tr>
-          @userMap.get(md.studentId).map { user =>
-            <td>@user.name.full.getOrElse("Unknown name") <span class="text-muted">(@md.studentId.string)</span></td>
-            <td>@user.department.flatMap(_.name).getOrElse("Unknown department")</td>
+          @userMap.get(md.studentId).map { profile =>
+            <td>@profile.fullName <span class="text-muted">(@md.studentId.string)</span></td>
+            <td>@profile.department.name</td>
           }.getOrElse {
             <td>Unknown name <span class="text-muted">(@md.studentId.string)</span></td>
             <td>Unknown department</td>
@@ -58,7 +57,7 @@
           @studentsWithQueries.map { sWQ =>
             <td>
               @if(sWQ.contains(md.studentId)) {
-                <a href="@controllers.invigilation.routes.InvigilatorQueriesController.view(md.assessmentId, md.studentId)" title="View queries">
+                <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.view(md.assessmentId, md.studentId)" title="View queries">
                   <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
                 </a>
               }
