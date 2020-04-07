@@ -61,7 +61,10 @@ class AssessmentController @Inject()(
     AssessmentController.finishExamForm.bindFromRequest().fold(
       form => Future.successful(BadRequest(views.html.exam.index(request.studentAssessmentWithAssessment, form, uploadedFileControllerHelper.supportedMimeTypes))),
       _ => {
-        if (!request.studentAssessmentWithAssessment.canFinalise) {
+        if (request.studentAssessmentWithAssessment.finalised) {
+          val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
+          Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
+        } else if (!request.studentAssessmentWithAssessment.canFinalise) {
           val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
         } else {

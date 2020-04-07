@@ -26,7 +26,8 @@ sealed trait BaseStudentAssessmentWithAssessment {
   lazy val durationIncludingLate: Duration = duration.plus(Assessment.lateSubmissionPeriod)
 
   def canFinalise: Boolean = studentAssessment.startTime.exists(startTime =>
-    startTime.plus(durationIncludingLate).isAfter(JavaTime.offsetDateTime) &&
+    !finalised &&
+      startTime.plus(durationIncludingLate).isAfter(JavaTime.offsetDateTime) &&
       !assessment.hasLastAllowedStartTimePassed
   )
 
