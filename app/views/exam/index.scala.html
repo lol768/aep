@@ -15,6 +15,85 @@
   @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className)) {
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
+      @sitting.studentAssessment.startTime.map { startTime =>
+        <div class="timeline">
+          <div class="block turqoise">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-2x fa-clock"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(startTime) Assessment opened</h1>
+              @assessment.assessment.lastAllowedStartTime.map { end =>
+                <p>
+                  The assessment can be started any time between @bareLocalisedDateTime(assessment.assessment.startTime.get) and @bareLocalisedDateTime(end, true)</p>
+              }
+            </div>
+          </div>
+          <div class="block green">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-2x fa-stopwatch"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(startTime) You started the assessment</h1>
+              <p>
+                This is a @assessment.assessment.duration.toHours hour paper, plus 45 minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plusSeconds(assessment.duration.toSeconds + (45 * 60)), true)</p>
+              <p>Please plan your time accordingly.</p>
+
+            </div>
+
+          </div>
+          <div class="block orange">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-cloud-upload fa-2x"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1 class="mb-1">@bareLocalisedDateTime(startTime.plusSeconds(assessment.duration.toSeconds))
+                You have 45 minutes until @bareLocalisedDateTime(startTime.plusSeconds(assessment.duration.toSeconds + (45 * 60))) to upload your answers</h1>
+
+            </div>
+          </div>
+          <div class="block pink">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-exclamation-triangle fa-2x"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(startTime.plusSeconds(assessment.duration.toSeconds + (45 * 60)))
+                Your assessment is now late.</h1>
+              <p>
+                You can still upload your answers but you may be subject to late penalties, unless you have reasonable adjustments.</p>
+              <div class="vert-space"></div>
+            </div>
+          </div>
+          <div class="block red active">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-ban fa-2x"></i></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>16:15 You can't upload answers at all after this point</h1>
+            </div>
+          </div>
+        </div>
+      }
+
       <div class="panel panel-default">
         <div class="brand-stripe"></div>
         <div class="panel-body">
