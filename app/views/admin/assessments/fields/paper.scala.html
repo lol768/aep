@@ -3,5 +3,5 @@
 @import domain.Assessment
 @(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
-@b3.text(form("paperCode"), Symbol("_label") -> "Paper code", Symbol("readonly") -> (existing.nonEmpty && existing.exists(_.tabulaAssessmentId)))
+@b3.text(form("paperCode"), Symbol("_label") -> "Paper code", Symbol("readonly") -> existing.exists(_.tabulaAssessmentId))
 @b3.text(form("section"), Symbol("_label") -> "Section", Symbol("readonly") -> true )
