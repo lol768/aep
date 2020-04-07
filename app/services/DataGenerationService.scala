@@ -34,7 +34,9 @@ class DataGenerationServiceImpl @Inject()(
   studentAssessmentService: StudentAssessmentService,
   daoRunner: DaoRunner,
 )(
-  implicit val ec: ExecutionContext,
+  implicit
+  val ec: ExecutionContext,
+  dataGeneration: DataGeneration,
 ) extends DataGenerationService with Logging {
 
   import DataGenerationService._
@@ -92,15 +94,15 @@ object DataGenerationService {
 
   private val extraTimeAdjustmentDurations = Seq(20, 30, 45, 60, 90, 120).map(_.toLong)
 
-  def makeStoredBrief: StoredBrief =
+  def makeStoredBrief(implicit dataGeneration: DataGeneration): StoredBrief =
     StoredBrief(
-      Some(DataGeneration.dummyWords(Random.between(6,30))),
+      Some(dataGeneration.dummyWords(dataGeneration.random.between(6,30))),
       Seq.empty,
-      Some(DataGeneration.fakePath)
+      Some(dataGeneration.fakePath)
     )
 
-  def makeStoredAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None): StoredAssessment = {
-    val deptCode = DataGeneration.fakeDept
+  def makeStoredAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None)(implicit dataGeneration: DataGeneration): StoredAssessment = {
+    val deptCode = dataGeneration.fakeDept
     val stemModuleCode =  f"$deptCode${Random.between(101, 999)}%03d"
     val cats =   f"${Random.between(1, 99)}%02d"
 
@@ -113,13 +115,13 @@ object DataGenerationService {
     val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
     val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
     val moduleCode =  s"$stemModuleCode-$cats"
-    val sequence = f"E${Random.between(1, 9)}%02d"
+    val sequence = f"E${dataGeneration.random.between(1, 9)}%02d"
 
     StoredAssessment(
       id = uuid,
       paperCode = paperCode,
       section = None,
-      title = DataGeneration.fakeTitle,
+      title = dataGeneration.fakeTitle,
       startTime = Some(startTime),
       duration = Duration.ofHours(3),
       platform = Set(platform),
