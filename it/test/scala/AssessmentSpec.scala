@@ -107,8 +107,31 @@ class AssessmentSpec extends BrowserFeatureSpec {
       And i_have_a_moodle_assignment_to_take(student)
 
       When i_visit_the assessmentPage
-      And.i_start_the_assessment()
+      And.i_click_to_start_the_assessment()
 
+      screenshot("Authorship declaration")
+
+      Then i_should_see_the_text "This assessment is my original work"
+      And i_should_see_the_text "I declare I will comply with this statement"
+      And.the_authorship_declaration_button_is_disabled()
+
+      When.i_tick_the_authorship_declaration()
+      Then.the_authorship_declaration_button_is_enabled()
+
+      When.i_click_to_confirm_the_authorship_declaration()
+
+      screenshot("Reasonable adjustments declaration")
+
+      Then i_should_see_the_text "I have already agreed reasonable adjustments"
+      And.the_ra_declaration_button_is_disabled()
+
+      When.i_choose_the_no_ra_declaration()
+      Then.the_ra_declaration_button_is_enabled()
+
+      When.i_choose_the_has_ra_declaration()
+      Then.the_ra_declaration_button_is_enabled()
+
+      When.i_click_to_confirm_the_ra_declaration()
       Then i_should_see_the_text "The assessment has begun."
       And i_should_see_the_text "Started a moment ago"
       And i_should_see_the_text "View your assessment in Moodle"
