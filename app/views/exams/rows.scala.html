@@ -1,7 +1,5 @@
 @import domain.StudentAssessmentWithAssessment
 @import tags._
-
-@import java.time.OffsetDateTime
 @(title: String, assessments: Seq[StudentAssessmentWithAssessment])(implicit requestHeader: RequestHeader, context: RequestContext)
 
 @if(assessments.nonEmpty) {
