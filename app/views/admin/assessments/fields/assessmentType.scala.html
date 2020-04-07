@@ -1,10 +1,10 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
-@import controllers.admin.AssessmentsController.AbstractAssessmentFormData
+@import controllers.admin.AssessmentsController.AssessmentFormData
 @import domain.Assessment.Platform
 @import domain.Assessment.AssessmentType
 
 @import views.html.b3.multiCheckbox
-@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 <div class="row">
     <div class="col-sm-6">

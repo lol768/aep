@@ -47,11 +47,11 @@
           </td>
           <td>
             <label class="@assessment.state.cssClass">
-                @assessment.state.label
+              @assessment.state.label
             </label>
           </td>
           <td class="text-right">
-            <a href="@controllers.admin.routes.AssessmentsController.show(assessment.id)" class="btn btn-default btn-sm">Edit</a>
+            <a href="@controllers.admin.routes.AssessmentsController.updateForm(assessment.id)" class="btn btn-default btn-sm">Edit</a>
           </td>
         </tr>
       }
