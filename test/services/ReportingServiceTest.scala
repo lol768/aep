@@ -9,8 +9,12 @@ import domain.dao.{AbstractDaoTest, AssessmentDao, StudentAssessmentDao}
 import helpers.{CleanUpDatabaseAfterEachTest, DaoPatience}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.inject.guice.GuiceApplicationBuilder
+import services.sandbox.DataGeneration
+import system.BindingOverrides
 import uk.ac.warwick.util.core.DateTimeUtils
 import warwick.core.helpers.JavaTime
+import warwick.sso.User
 
 class ReportingServiceTest
   extends AbstractDaoTest
