@@ -32,7 +32,7 @@
             </div>
             <div class="col-sm-6">
               @fields.paper(Some(assessment))
-              @b3.text(form("startTime"), Symbol("value") -> assessment.startTime.map(JavaTime.Relative(_, printToday = false)).getOrElse(""), Symbol("_label") -> "Start time", Symbol("readonly") -> (Option(assessment).exists(_.tabulaAssessmentId)))
+              @fields.startTime(Some(assessment))
             </div>
           </div>
 

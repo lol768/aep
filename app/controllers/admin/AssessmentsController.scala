@@ -78,12 +78,12 @@ object AssessmentsController {
 
   def formMapping(existing: Option[Assessment], ready: Boolean = false)(implicit studentInformationService: TabulaStudentInformationService, ec: ExecutionContext, t: TimingContext): Form[AssessmentFormData] = {
     val baseMapping = mapping(
-      "moduleCode" -> existing.filterNot(_.tabulaAssessmentId.isEmpty).map(a => ignored(a.moduleCode)).getOrElse(nonEmptyText),
-      "paperCode" -> existing.filterNot(_.tabulaAssessmentId.isEmpty).map(a => ignored(a.paperCode)).getOrElse(nonEmptyText),
-      "section" -> existing.filterNot(_.tabulaAssessmentId.isEmpty).map(a => ignored(a.section)).getOrElse(optional(text)),
-      "departmentCode" -> existing.filterNot(_.tabulaAssessmentId.isEmpty).map(a => ignored(a.departmentCode)).getOrElse(departmentCodeFieldMapping),
-      "sequence" -> existing.filterNot(_.tabulaAssessmentId.isEmpty).map(a => ignored(a.sequence)).getOrElse(nonEmptyText),
-      "startTime" -> existing.filterNot(_.tabulaAssessmentId.isEmpty).map(a => ignored(a.startTime.map(_.toLocalDateTime))).getOrElse(startTimeFieldMapping),
+      "moduleCode" -> nonEmptyText,
+      "paperCode" -> nonEmptyText,
+      "section" -> optional(text),
+      "departmentCode" -> departmentCodeFieldMapping,
+      "sequence" -> nonEmptyText,
+      "startTime" -> startTimeFieldMapping,
       "students" -> studentsFieldMapping,
       "title" -> nonEmptyText,
       "platform" -> Platform.formField,
