@@ -1,10 +1,10 @@
 @import tags._
 @import domain.AnnouncementOrQuery
-@import warwick.sso.User
+@import domain.tabula
 @import warwick.sso.UniversityID
 @(
         announcementsAndQueries: Seq[AnnouncementOrQuery],
-        students: Map[UniversityID, User],
+        students: Map[UniversityID, tabula.SitsProfile],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 <div class="query-container">
@@ -15,7 +15,7 @@
           case Left(sender: String) => { @sender }
           case Right(universityID: UniversityID) => {
             @students.get(universityID).map { u =>
-              @u.name.full (@universityID.string)
+              @u.fullName (@universityID.string)
             }.getOrElse(universityID.string)
           }
         }

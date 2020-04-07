@@ -11,7 +11,7 @@
         assessment: Assessment,
         studentAssessments: Seq[StudentAssessmentMetadata],
         invigilators: Map[Usercode, String],
-        students: Map[UniversityID, User],
+        students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)

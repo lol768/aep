@@ -19,44 +19,20 @@
 
         @studentAssessmentMetadata(assessment)
 
-        @assessment.assessment.platform.map{ p => @p match {
-            case Platform.OnlineExams => {
-                @if(isAssessmentPage) {
-                    @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessment.assessment.id)) { implicit fc =>
-                        @if(assessment.studentAssessment.startTime.isEmpty) {
-                            <button type="submit" class="btn btn-primary" id="startAssessment">
-                                Start
-                            </button>
-                        }
-                        @assessmentTiming(assessment)
-                    }
-                } else {
-                    <a href="@routes.AssessmentController.view(assessment.assessment.id)" class="btn btn-primary">
-                        View
-                    </a>
-                    @assessmentTiming(assessment)
+        @if(isAssessmentPage) {
+            @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessment.assessment.id)) { implicit fc =>
+                @if(assessment.studentAssessment.startTime.isEmpty) {
+                    <button type="submit" class="btn btn-primary" id="startAssessment">
+                        Start
+                    </button>
                 }
+                @assessmentTiming(assessment)
             }
-            case Platform.Moodle => {
-                <a href="/service/stub" target="_blank">
-                  @Platform.Moodle.label <i class="fa fa-fw fa-external-link"></i>
-                </a>
-            }
-            case Platform.QuestionmarkPerception => {
-                <a href="/service/stub" target="_blank">
-                  @Platform.QuestionmarkPerception.label<i class="fa fa-fw fa-external-link"></i>
-                </a>
-            }
-            case Platform.TabulaAssignment => {
-                <a href="/service/stub" target="_blank">
-                    @Platform.TabulaAssignment.label<i class="fa fa-fw fa-external-link"></i>
-                </a>
-            }
-            case Platform.MyWBS => {
-                <a href="/service/stub" target="_blank">
-                    @Platform.MyWBS.label<i class="fa fa-fw fa-external-link"></i>
-                </a>
-            }
-        }}
+        } else {
+            <a href="@routes.AssessmentController.view(assessment.assessment.id)" class="btn btn-primary">
+                View
+            </a>
+            @assessmentTiming(assessment)
+        }
     </div>
 </div>

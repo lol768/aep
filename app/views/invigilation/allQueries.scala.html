@@ -1,14 +1,13 @@
 @import domain.Assessment
 @import domain.tabula
 @import domain.AnnouncementOrQuery
-@import warwick.sso.User
 @import warwick.sso.UniversityID
 @import views.html.invigilation._
 @import controllers.invigilation.AnnouncementAndQueriesController.AnnouncementData
 @(
         assessment: Assessment,
         announcementsAndQueries: Seq[AnnouncementOrQuery],
-        students: Map[UniversityID, User],
+        students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
         form: Form[AnnouncementData]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)

@@ -1,10 +1,9 @@
 @import tags._
 @import domain.StudentAssessmentMetadata
-@import domain.Assessment
-@import warwick.sso.User
+@import domain.tabula
 @import warwick.sso.UniversityID
 @import org.apache.commons.lang3.time.DurationFormatUtils
-@(metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, User], studentsWithQueries: Option[Seq[UniversityID]] = None)(implicit context: RequestContext)
+@(metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, tabula.SitsProfile], studentsWithQueries: Option[Seq[UniversityID]] = None)(implicit context: RequestContext)
 
 @if(metadata.nonEmpty) {
   @studentsWithQueries.map { sWQ =>
@@ -34,9 +33,9 @@
     <tbody>
       @metadata.map { md =>
         <tr>
-          @userMap.get(md.studentId).map { user =>
-            <td>@user.name.full.getOrElse("Unknown name") <span class="text-muted">(@md.studentId.string)</span></td>
-            <td>@user.department.flatMap(_.name).getOrElse("Unknown department")</td>
+          @userMap.get(md.studentId).map { profile =>
+            <td>@profile.fullName <span class="text-muted">(@md.studentId.string)</span></td>
+            <td>@profile.department.name</td>
           }.getOrElse {
             <td>Unknown name <span class="text-muted">(@md.studentId.string)</span></td>
             <td>Unknown department</td>

@@ -14,6 +14,7 @@ sealed trait JobResult
 object JobResult {
   case object quiet extends JobResult
   case class success(summary: String) extends JobResult
+  val FailedJobKeyName = "jobFailed"
 }
 
 @PersistJobDataAfterExecution
@@ -37,18 +38,18 @@ abstract class AbstractJob(scheduler: Scheduler) extends Job with Logging {
     try {
       if (doLog) logger.info(s"Starting job: $description")
       val result = Await.result(run(context, audit), timeout)
-      if (doFailureTracking) context.getJobDetail.getJobDataMap.put("jobFailed", false)
+      if (doFailureTracking) context.getJobDetail.getJobDataMap.put(JobResult.FailedJobKeyName, false)
       if (doLog) logger.info(s"Completed job: $description with result: $result")
     } catch {
       // We log errors regardless of doLog
       case e: TimeoutException =>
         // NOTE - although we timed out waiting, the Future might still be executing.
         logger.error(s"Job timed out after ${timeout.toCoarsest}: $description")
-        if (doFailureTracking) context.getJobDetail.getJobDataMap.put("jobFailed", true)
+        if (doFailureTracking) context.getJobDetail.getJobDataMap.put(JobResult.FailedJobKeyName, true)
         throw new JobExecutionException(e)
       case e: Exception =>
         logger.error(s"Error in job: $description", e)
-        if (doFailureTracking) context.getJobDetail.getJobDataMap.put("jobFailed", true)
+        if (doFailureTracking) context.getJobDetail.getJobDataMap.put(JobResult.FailedJobKeyName, true)
         throw new JobExecutionException(e)
     }
   }
