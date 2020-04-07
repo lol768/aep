@@ -43,7 +43,7 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
     GroupName
   )
 
-  implicit val test: JdbcType[List[Platform]] = MappedColumnType.base[List[Platform], String](
+  implicit val platformListTypeMapper: JdbcType[List[Platform]] = MappedColumnType.base[List[Platform], String](
     r => r.map(_.entryName).mkString(","),
     s => s.split(",").map(Platform.withName).toList
   )
@@ -54,7 +54,6 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
   implicit val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)
   implicit val uploadedFileOwnerMapper: JdbcType[UploadedFileOwner] = mappedColumnTypeForEnum(UploadedFileOwner)
   implicit val platformTypeMapper: JdbcType[Platform] = mappedColumnTypeForEnum(Platform)
-  //implicit val platformListTypeMapper: JdbcType[List[Platform]] = test(List[Platform])
   implicit val stateTypeMapper: JdbcType[State] = mappedColumnTypeForEnum(State)
   implicit val assessmentTypeTypeMapper: JdbcType[AssessmentType] = mappedColumnTypeForEnum(AssessmentType)
   implicit val messageSenderMapper: JdbcType[MessageSender] = mappedColumnTypeForEnum(MessageSender)
