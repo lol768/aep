@@ -27,7 +27,6 @@ object AssessmentsTables {
     title: String,
     startTime: Option[OffsetDateTime],
     duration: Option[Duration],
-    platform: Platform,
     platform: Set[Platform],
     assessmentType: AssessmentType,
     storedBrief: StoredBrief,

@@ -29,13 +29,3 @@ create index idx_declarations_version on declarations_version (id, version_utc);
 
 drop table declarations;
 drop table declarations_version;
-
-# --- !Ups
-
-alter table  assessment alter column duration drop not null;
-alter table  assessment_version alter column duration drop not null;
-
-# --- !Downs
-
-alter table  assessment alter column duration set not null;
-alter table  assessment_version alter column duration set not null;
