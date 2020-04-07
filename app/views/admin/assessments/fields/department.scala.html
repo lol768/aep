@@ -4,7 +4,7 @@
 @import domain.Department
 @(existing: Option[Assessment], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
 
-@if(existing.nonEmpty) {
+@if(existing.nonEmpty && existing.exists(_.tabulaAssessmentId)) {
   @b3.select(form("departmentCode"), options = ("", "") +: departments.map(d => d.code.string -> d.name), Symbol("_label") -> "Department", Symbol("readonly") -> true)
 } else {
   @b3.select(form("departmentCode"), options = ("", "") +: departments.map(d => d.code.string -> d.name), Symbol("_label") -> "Department")
