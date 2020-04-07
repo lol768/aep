@@ -2,14 +2,12 @@ package controllers
 
 import java.util.UUID
 
-import domain.UploadedFileOwner
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.{SecurityService, StudentAssessmentService, UploadedFileService}
-import warwick.core.helpers.ServiceResults
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 
@@ -63,8 +61,13 @@ class AssessmentController @Inject()(
     AssessmentController.finishExamForm.bindFromRequest().fold(
       form => Future.successful(BadRequest(views.html.exam.index(request.studentAssessmentWithAssessment, form, uploadedFileControllerHelper.supportedMimeTypes))),
       _ => {
-        studentAssessmentService.finishAssessment(request.studentAssessmentWithAssessment.studentAssessment).successMap { _ =>
-          redirectToAssessment(assessmentId)
+        if (!request.studentAssessmentWithAssessment.canFinalise) {
+          val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
+          Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
+        } else {
+          studentAssessmentService.finishAssessment(request.studentAssessmentWithAssessment.studentAssessment).successMap { _ =>
+            redirectToAssessment(assessmentId)
+          }
         }
       })
   }
