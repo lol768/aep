@@ -36,8 +36,6 @@ object AssessmentsController {
     val invigilatorsFieldMapping: Mapping[Set[Usercode]] = set(text)
       .transform[Set[Usercode]](codes => codes.filter(_.nonEmpty).map(Usercode), _.map(_.string))
 
-    val durationFieldMapping: Mapping[Long] = longNumber.verifying(Seq(120, 180).contains(_))
-
     val departmentCodeFieldMapping: Mapping[DepartmentCode] = nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string)
 
     val startTimeFieldMapping: Mapping[Option[LocalDateTime]] =
@@ -70,11 +68,21 @@ object AssessmentsController {
     title: String,
     platform: Set[Platform],
     assessmentType: AssessmentType,
-    durationMinutes: Long,
+    durationMinutes: Option[Long],
     url: Option[String],
     description: Option[String],
     invigilators: Set[Usercode],
   )
+
+  val durationConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
+    val validDuration = assessmentForm.durationMinutes
+      .map(d => assessmentForm.assessmentType.validDurations.contains(d))
+      .getOrElse(assessmentForm.assessmentType.validDurations.isEmpty)
+    if(validDuration)
+      Valid
+    else
+      Invalid(Seq(ValidationError("error.assessment.duration-not-valid", assessmentForm.assessmentType.label)))
+  }
 
   def formMapping(existing: Option[Assessment], ready: Boolean = false)(implicit studentInformationService: TabulaStudentInformationService, ec: ExecutionContext, t: TimingContext): Form[AssessmentFormData] = {
     val baseMapping = mapping(
@@ -88,14 +96,16 @@ object AssessmentsController {
       "title" -> nonEmptyText,
       "platform" -> set(Platform.formField),
       "assessmentType" -> AssessmentType.formField,
-      "durationMinutes" -> durationFieldMapping,
+      "durationMinutes" -> optional(longNumber),
       "url" -> optional(text),
       "description" -> optional(text),
       "invigilators" -> invigilatorsFieldMapping,
     )(AssessmentFormData.apply)(AssessmentFormData.unapply)
 
     Form(
-      if (ready) baseMapping.verifying("error.assessment.url-not-specified", data => data.platform == Set(Platform.OnlineExams) || data.url.exists(_.nonEmpty))
+      if (ready) baseMapping
+        .verifying("error.assessment.url-not-specified", data => data.platform == Set(Platform.OnlineExams) || data.url.exists(_.nonEmpty))
+        .verifying(durationConstraint)
       else baseMapping
     )
   }
@@ -166,7 +176,7 @@ class AssessmentsController @Inject()(
               section = data.section,
               title = data.title,
               startTime = data.startTime.map(_.asOffsetDateTime),
-              duration = Duration.ofMinutes(data.durationMinutes),
+              duration = data.durationMinutes.map(Duration.ofMinutes),
               platform = data.platform,
               assessmentType = data.assessmentType,
               brief = Brief(
@@ -214,7 +224,7 @@ class AssessmentsController @Inject()(
         title = assessment.title,
         platform = assessment.platform,
         assessmentType = assessment.assessmentType,
-        durationMinutes = assessment.duration.toMinutes,
+        durationMinutes = assessment.duration.map(_.toMinutes),
         url = assessment.brief.url,
         description = assessment.brief.text,
         invigilators = assessment.invigilators,
@@ -283,7 +293,7 @@ class AssessmentsController @Inject()(
           updateStudents,
           assessmentService.update(updatedIfAdHoc.copy(
             title = data.title,
-            duration = Duration.ofMinutes(data.durationMinutes),
+            duration = data.durationMinutes.map(Duration.ofMinutes),
             platform = data.platform,
             assessmentType = data.assessmentType,
             invigilators = data.invigilators,

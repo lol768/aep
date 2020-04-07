@@ -24,4 +24,15 @@ $(() => {
       $('#OnlineExams').prop('disabled', false);
     }
   }).trigger('change');
+
+  const $durationField = $('select[name=durationMinutes]');
+  $('input[name=assessmentType]').on('change', () => {
+    const validDurations = $('input[name=assessmentType]:checked').data('valid-durations');
+    $durationField.closest('.form-group').toggle(validDurations.length > 0);
+    $durationField.find('option').each((_, option) => {
+      const $option = $(option);
+      const isValidOption = validDurations.includes(Number.parseInt($option.val(), 10));
+      $option.toggle(isValidOption).prop('disabled', !isValidOption);
+    });
+  }).filter(':checked').trigger('change');
 });

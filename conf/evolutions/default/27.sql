@@ -29,4 +29,3 @@ create index idx_declarations_version on declarations_version (id, version_utc);
 
 drop table declarations;
 drop table declarations_version;
-

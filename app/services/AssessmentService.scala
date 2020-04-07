@@ -101,7 +101,7 @@ class AssessmentServiceImpl @Inject()(
   def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
     withFiles(
       dao.getByIdAndInvigilator(id, usercodes),
-      s"Could not find Assessment with ID ${id} with invigilators ${usercodes.map(_.string).mkString(",")}"
+      s"Could not find Assessment with ID $id with invigilators ${usercodes.map(_.string).mkString(",")}"
     )
   }
 
@@ -124,7 +124,7 @@ class AssessmentServiceImpl @Inject()(
             todaysAssessments.filter { a => longestAdjustments.get(a.id).exists { adjustment =>
               a.startTime.exists {
                 st => st
-                  .plus(a.duration)
+                  .plus(a.duration.getOrElse(Duration.ZERO))
                   .plus(Assessment.lateSubmissionPeriod)
                   .plus(adjustment)
                   .isAfter(now)
