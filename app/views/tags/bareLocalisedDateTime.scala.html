@@ -1,0 +1,11 @@
+@import java.time.OffsetDateTime
+@import warwick.core.helpers.JavaTime
+@import java.util.TimeZone
+@(datetime: OffsetDateTime, includeFullStop: Boolean = false)
+
+@JavaTime.Relative(datetime, false)<span class="jddt"
+data-format="shortLocalBare"
+data-millis="@datetime.toInstant.toEpochMilli"
+data-server-timezone-offset="@{TimeZone.getTimeZone(JavaTime.timeZone).getOffset(datetime.toInstant.toEpochMilli)}"
+data-server-timezone-name="@JavaTime.timeZone"
+></span>@if(includeFullStop){.}

@@ -321,6 +321,13 @@ export default class JDDT {
   }
 
   /**
+   * Generates short-format string of local datetime without junk
+   */
+  shortLocalBare() {
+    return ` (${stringify(this.jsDateLocal, this.localTimezoneName, true).replace(`${iconString} `, '')})`;
+  }
+
+  /**
    * Takes an element of the format <span class="jddt" millis="[milliseconds]"
    * format="[validFormat]"></span> and populates its innerHTML with the JDDT
    * @static
