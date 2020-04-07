@@ -105,7 +105,7 @@
             <blockquote>@sitting.assessment.brief.text</blockquote>
           }
           <ul class="list-unstyled">
-            @if(sitting.assessment.platform == Platform.OnlineExams && sitting.assessment.brief.url.isDefined) {
+            @if(sitting.assessment.platform == Set(Platform.OnlineExams) && sitting.assessment.brief.url.isDefined) {
               <li>
                 <a href="@sitting.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
               </li>
@@ -118,6 +118,47 @@
           </ul>
         </div>
       </div>
+
+      @if(sitting.assessment.platform.exists(_ != Platform.OnlineExams)) {
+        <div class="panel panel-default">
+          <div class="brand-stripe"></div>
+          <div class="panel-body">
+            <h2>Submit your assessment</h2>
+
+            <p class="lead">
+              @sitting.assessment.platform.map {
+                case Platform.Moodle => {
+                  <a href="@sitting.assessment.brief.url" target="_blank">
+                    View your assessment in Moodle
+                    <i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.QuestionmarkPerception => {
+                  <a href="@sitting.assessment.brief.url" target="_blank">
+                    Take your assessment in Perception
+                    <i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.TabulaAssignment => {
+                  <a href="@sitting.assessment.brief.url" target="_blank">
+                    Submit your assessment on Tabula
+                    <i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.MyWBS => {
+                  <a href="@sitting.assessment.brief.url" target="_blank">
+                    Submit your assessment on MyWBS
+                    <i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.OnlineExams => {
+                  @* Do nothing here, handled below *@
+                }
+              }
+            </p>
+          </div>
+        </div>
+      }
 
       @if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
         <div class="panel panel-default">
@@ -250,42 +291,6 @@
             </div>
           </div>
         }
-      } else {
-        <div class="panel panel-default">
-          <div class="brand-stripe"></div>
-          <div class="panel-body">
-            <h2>Submit your assessment</h2>
-
-            <p class="lead">
-              @sitting.assessment.platform.map{ p => @p match {
-                case Platform.Moodle => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    View your assessment in Moodle<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-                case Platform.QuestionmarkPerception => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    Take your assessment in Perception<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-                case Platform.TabulaAssignment => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    Submit your assessment on Tabula<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-                case Platform.MyWBS => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    Submit your assessment on MyWBS<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-                case Platform.OnlineExams => {
-                  @* This should be impossible *@
-                  Please call the IT Services help desk on 024 765 73737.
-                }
-              }}
-            </p>
-          </div>
-        </div>
       }
     }
   }
