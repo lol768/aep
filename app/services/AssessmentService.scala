@@ -229,8 +229,8 @@ class AssessmentServiceImpl @Inject()(
         moduleCode = assessment.moduleCode,
         departmentCode = assessment.departmentCode,
         sequence = assessment.sequence,
-        created = OffsetDateTime.now,
-        version = OffsetDateTime.now,
+        created = JavaTime.offsetDateTime,
+        version = JavaTime.offsetDateTime,
       ))
       inserted <- dao.loadByIdWithUploadedFiles(assessment.id)
     } yield inserted).map { r =>

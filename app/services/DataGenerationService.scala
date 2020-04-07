@@ -144,8 +144,10 @@ object DataGenerationService {
   ): StoredStudentAssessment = {
 
     val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
-    val twentyPercentChance = Random.nextInt(5) == 0
-    val extraTimeAdjustment = if (twentyPercentChance) Some(Duration.ofMinutes(extraTimeAdjustmentDurations(Random.nextInt(extraTimeAdjustmentDurations.length)))) else None
+    // Random but deterministic for a given student
+    val r = new Random(studentId.string.toLong)
+    val twentyPercentChance = r.nextInt(5) == 0
+    val extraTimeAdjustment = Option.when(twentyPercentChance)(Duration.ofMinutes(extraTimeAdjustmentDurations(r.nextInt(extraTimeAdjustmentDurations.length))))
 
     StoredStudentAssessment(
       id = studentAssessmentId,
