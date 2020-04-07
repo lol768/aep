@@ -3,7 +3,7 @@ package domain.messaging
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import domain.{DatabaseOperation, StoredVersion, Versioned}
+import domain.{AnnouncementOrQuery, DatabaseOperation, StoredVersion, Versioned}
 import enumeratum.{EnumEntry, PlayEnum}
 import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
@@ -42,6 +42,13 @@ case class Message (
     text = text,
     sender = sender,
     created = created
+  )
+
+
+  def asAnnouncementOrQuery = AnnouncementOrQuery(
+    sender = Right(client),
+    text = text,
+    date = created,
   )
 }
 

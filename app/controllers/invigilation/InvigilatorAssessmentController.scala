@@ -3,25 +3,24 @@ package controllers.invigilation
 import java.util.UUID
 
 import controllers.BaseController
-import domain.tabula
 import javax.inject.Inject
 import play.api.mvc.{Action, AnyContent}
-import services.refiners.ActionRefiners
-import services.tabula.TabulaDepartmentService
-import services.{AssessmentService, ReportingService, SecurityService, StudentAssessmentService}
+import services.messaging.MessageService
+import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
+import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
+import services.{ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
-import warwick.sso.{Name, UniversityID, User, UserLookupService, Usercode}
+import warwick.sso.{User, UserLookupService, Usercode}
 
 import scala.concurrent.ExecutionContext
 
 class InvigilatorAssessmentController @Inject()(
   security: SecurityService,
-  actionRefiners: ActionRefiners,
-  assessmentService: AssessmentService,
   reportingService: ReportingService,
   userLookup: UserLookupService,
-  studentAssessmentService: StudentAssessmentService,
+  studentInformationService: TabulaStudentInformationService,
   tabulaDepartmentService: TabulaDepartmentService,
+  messageService: MessageService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -36,25 +35,29 @@ class InvigilatorAssessmentController @Inject()(
 
     ServiceResults.zip(
       tabulaDepartmentService.getDepartments,
-      reportingService.expectedSittings(assessmentId)
-    ).successMap {
-      case (departments, studentAssessments) =>
-        Ok(views.html.invigilation.assessment(
-          assessment = assessment,
-          studentAssessments = studentAssessments,
-          invigilators = userLookup
-            .getUsers(assessment.invigilators.toSeq)
-            .getOrElse(Nil)
-            .map {
-              case (_, user) => user
-            }
-            .map(makeUserNameMap)
-            .toMap,
-          students = userLookup
-            .getUsers(studentAssessments.map(_.studentId))
-            .getOrElse(Map.empty[UniversityID, User]),
-          department = departments.find(_.code == assessment.departmentCode.string),
-        ))
+      reportingService.expectedSittings(assessmentId),
+      messageService.findByAssessment(assessmentId)
+    ).successFlatMap {
+      case (departments, studentAssessments, queries) =>
+        studentInformationService
+          .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
+          .successMap { students =>
+            Ok(views.html.invigilation.assessment(
+              assessment = assessment,
+              studentAssessments = studentAssessments,
+              invigilators = userLookup
+                .getUsers(assessment.invigilators.toSeq)
+                .getOrElse(Nil)
+                .map {
+                  case (_, user) => user
+                }
+                .map(makeUserNameMap)
+                .toMap,
+              students = students,
+              department = departments.find(_.code == assessment.departmentCode.string),
+              studentsWithQueries = queries.map(_.client).distinct
+            ))
+          }
     }
   }
 

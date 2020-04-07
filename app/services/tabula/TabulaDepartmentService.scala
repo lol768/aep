@@ -40,11 +40,11 @@ class CachingTabulaDepartmentService @Inject()(
 
   private lazy val wrappedCache = VariableTtlCacheHelper.async[DepartmentsReturn](cache, logger, ttlStrategy, timing)
 
-  override def getDepartments()(implicit t: TimingContext): Future[DepartmentsReturn] = timing.time(TimingCategories.TabulaRead) {
+  override def getDepartments()(implicit t: TimingContext): Future[DepartmentsReturn] =
     wrappedCache.getOrElseUpdate(s"TabulaDepartmentService:getDepartments") {
       impl.getDepartments()
     }
-  }
+
 }
 
 
@@ -54,11 +54,12 @@ class TabulaDepartmentServiceImpl @Inject()(
   config: TabulaConfiguration,
   trustedApplicationsManager: TrustedApplicationsManager,
   tabulaHttp: TabulaHttp,
+  timing: TimingService,
 )(implicit ec: ExecutionContext) extends TabulaDepartmentService with Logging {
 
   import tabulaHttp._
 
-  override def getDepartments()(implicit t: TimingContext): Future[DepartmentsReturn] = {
+  override def getDepartments()(implicit t: TimingContext): Future[DepartmentsReturn] = timing.time(TimingCategories.TabulaRead) {
     val url = config.getDepartmentsUrl
     val req = ws.url(url)
 

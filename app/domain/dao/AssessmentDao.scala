@@ -39,7 +39,7 @@ object AssessmentsTables {
     sequence: String, //MAB sequence
     created: OffsetDateTime,
     version: OffsetDateTime,
-  ) extends Versioned[StoredAssessment] {
+  ) extends Versioned[StoredAssessment] with DefinesStartWindow {
 
     def asAssessment(fileMap: Map[UUID, UploadedFile]): Assessment =
       Assessment(
