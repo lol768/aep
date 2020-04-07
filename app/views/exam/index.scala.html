@@ -44,7 +44,7 @@
             <div class="right">
               <h1>@bareLocalisedDateTime(startTime) You started the assessment</h1>
               <p>
-                This is a @sitting.duration.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(sitting.duration).plus(sitting.uploadGraceDuration), true)</p>
+                This is a @sitting.duration.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(sitting.duration), true)</p>
               <p>Please plan your time accordingly.</p>
             </div>
           </div>
