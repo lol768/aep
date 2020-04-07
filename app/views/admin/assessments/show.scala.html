@@ -1,4 +1,4 @@
-@import controllers.admin.AssessmentsController.{AbstractAssessmentFormData, AssessmentFormData}
+@import controllers.admin.AssessmentsController.AssessmentFormData
 @import domain.{Assessment, Department, StudentAssessment}
 @import domain.tabula.SitsProfile
 @import warwick.core.helpers.JavaTime
@@ -13,7 +13,7 @@
   departments: Seq[Department],
 )(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
-@defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
+@defining(form.asInstanceOf[Form[AssessmentFormData]]) { implicit implicitForm =>
   @adminLayout(title = s"Assessment for ${assessment.title} (${assessment.moduleCode})", extraClasses = Seq("grey-nopad")) {
     @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.update(assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>
       @views.html.tags.formHasErrors(form)
@@ -36,7 +36,7 @@
             </div>
           </div>
 
-          @fields.students(studentAssessments, studentInformation)
+          @fields.students(Some(assessment), studentAssessments, studentInformation)
         </div>
       </fieldset>
 
