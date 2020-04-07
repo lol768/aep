@@ -4,8 +4,8 @@ import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
-import domain._
-import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
+import domain.{StoredVersion, _}
+import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -16,6 +16,7 @@ import warwick.sso.{UniversityID, Usercode}
 import scala.concurrent.ExecutionContext
 
 object StudentAssessmentsTables {
+
   case class StoredStudentAssessment(
     id: UUID,
     assessmentId: UUID,
@@ -86,6 +87,51 @@ object StudentAssessmentsTables {
     timestamp: OffsetDateTime,
     auditUser: Option[Usercode]
   ) extends StoredVersion[StoredStudentAssessment]
+
+
+  case class StoredDeclarations(
+    studentAssessmentId: UUID,
+    acceptsAuthorship: Boolean,
+    selfDeclaredRA: Boolean,
+    completedRA: Boolean,
+    created: OffsetDateTime,
+    version: OffsetDateTime
+  ) extends Versioned[StoredDeclarations] {
+    def asDeclarations: Declarations =
+      Declarations(
+        studentAssessmentId,
+        acceptsAuthorship,
+        selfDeclaredRA,
+        completedRA
+      )
+
+    override def atVersion(at: OffsetDateTime): StoredDeclarations = copy(version = at)
+
+    override def storedVersion[B <: StoredVersion[StoredDeclarations]](operation: DatabaseOperation, timestamp: OffsetDateTime)(implicit ac: AuditLogContext): B =
+      StoredDeclarationsVersion(
+        studentAssessmentId,
+        acceptsAuthorship,
+        selfDeclaredRA,
+        completedRA,
+        created,
+        version,
+        operation,
+        timestamp,
+        ac.usercode
+      ).asInstanceOf[B]
+  }
+
+  case class StoredDeclarationsVersion(
+    studentAssessmentId: UUID,
+    acceptsAuthorship: Boolean,
+    selfDeclaredRA: Boolean,
+    completedRA: Boolean,
+    created: OffsetDateTime,
+    version: OffsetDateTime,
+    operation: DatabaseOperation,
+    timestamp: OffsetDateTime,
+    auditUser: Option[Usercode]
+  ) extends StoredVersion[StoredDeclarations]
 }
 
 
@@ -106,8 +152,13 @@ trait StudentAssessmentDao {
   def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def get(studentId: UniversityID, assessmentId: UUID): DBIO[Option[StoredStudentAssessment]]
   def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Option[(StoredStudentAssessment, Set[StoredUploadedFile])]]
-
   def delete(studentId: UniversityID, assessmentId: UUID): DBIO[Int]
+
+  def insert(declarations: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations]
+  def update(declarations: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations]
+  def getDeclarations(declarationsId: UUID): DBIO[Option[StoredDeclarations]]
+  def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]]
+  def deleteDeclarations(declarationsId: UUID): DBIO[Int]
 }
 
 @Singleton
@@ -170,4 +221,23 @@ class StudentAssessmentDaoImpl @Inject()(
 
   override def delete(studentId: UniversityID, assessmentId: UUID): DBIO[Int] =
     getQuery(studentId, assessmentId).delete
+
+  override def insert(decs: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations] =
+    declarations.insert(decs)
+
+  override def update(decs: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations] =
+    declarations.update(decs)
+
+  private def getDeclarationsQuery(declarationsId: UUID): Query[Declarations, StoredDeclarations, Seq] =
+    declarations.table.filter(_.studentAssessmentId === declarationsId)
+
+  override def getDeclarations(declarationsId: UUID): DBIO[Option[StoredDeclarations]] =
+    getDeclarationsQuery(declarationsId).result.headOption
+
+  override def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]] =
+    declarations.table.filter(_.studentAssessmentId inSet declarationsIds).result
+
+  override def deleteDeclarations(declarationsId: UUID): DBIO[Int] =
+    getDeclarationsQuery(declarationsId).delete
+
 }

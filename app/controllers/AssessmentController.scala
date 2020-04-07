@@ -2,11 +2,13 @@ package controllers
 
 import java.util.UUID
 
+import domain.StudentAssessment
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
+import services.refiners.StudentAssessmentSpecificRequest
 import services.{SecurityService, StudentAssessmentService, UploadedFileService}
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
@@ -15,22 +17,40 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object AssessmentController {
 
+  case class AuthorshipDeclarationFormData(
+    agreeAuthorship: Boolean
+  )
+
+  case class ReasonableAdjustmentsDeclarationFormData(
+    reasonableAdjustments: String
+  ) {
+    def hasDeclaredRA: Boolean =
+      reasonableAdjustments == "hasRA"
+  }
+
+  case class UploadFilesFormData(
+    xhr: Boolean
+  )
+
   case class FinishExamFormData(
     agreeDisclaimer: Boolean
   )
+
+  val authorshipDeclarationForm: Form[AuthorshipDeclarationFormData] = Form(mapping(
+    "agreeAuthorship" -> checked("flash.assessment.declaration.must-check-box")
+  )(AuthorshipDeclarationFormData.apply)(AuthorshipDeclarationFormData.unapply))
+
+  val reasonableAdjustmentsDeclarationForm: Form[ReasonableAdjustmentsDeclarationFormData] = Form(mapping(
+    "reasonableAdjustments" -> text.verifying(error="flash.assessment.declaration.must-choose-radio", constraint = Seq("hasRA", "hasNoRA").contains(_))
+  )(ReasonableAdjustmentsDeclarationFormData.apply)(ReasonableAdjustmentsDeclarationFormData.unapply))
 
   val attachFilesToAssessmentForm: Form[UploadFilesFormData] = Form(mapping(
     "xhr" -> boolean
   )(UploadFilesFormData.apply)(UploadFilesFormData.unapply))
 
   val finishExamForm: Form[FinishExamFormData] = Form(mapping(
-    "agreeDisclaimer" -> boolean.verifying(error = "flash.assessment.finish.must-check-box", constraint = Predef.identity[Boolean])
+    "agreeDisclaimer" -> checked("flash.assessment.finish.must-check-box")
   )(FinishExamFormData.apply)(FinishExamFormData.unapply))
-
-  case class UploadFilesFormData(
-    xhr: Boolean
-  )
-
 }
 
 @Singleton
@@ -47,46 +67,84 @@ class AssessmentController @Inject()(
 
   private val redirectToAssessment = (id: UUID) => Redirect(controllers.routes.AssessmentController.view(id))
 
+  private def doStart(studentAssessment: StudentAssessment)(implicit request: StudentAssessmentSpecificRequest[AnyContent]): Future[Result] = {
+    studentAssessmentService.getOrDefaultDeclarations(studentAssessment.id).successFlatMap { declarations =>
+      if (declarations.acceptable) {
+        studentAssessmentService.startAssessment(request.sitting.studentAssessment).successMap { _ =>
+          redirectToAssessment(studentAssessment.assessmentId).flashing("success" -> Messages("flash.assessment.started"))
+        }
+      } else if (!declarations.acceptsAuthorship) {
+        Future.successful(Ok(views.html.exam.authorshipDeclaration(studentAssessment.assessmentId, AssessmentController.authorshipDeclarationForm)))
+      } else if (!declarations.completedRA) {
+        Future.successful(Ok(views.html.exam.reasonableAdjustmentsDeclaration(studentAssessment.assessmentId, AssessmentController.reasonableAdjustmentsDeclarationForm)))
+      } else {
+        Future.failed(throw new IllegalStateException("Unexpected declarations state"))
+      }
+    }
+  }
+
+
   def view(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId) { implicit request =>
-    Ok(views.html.exam.index(request.studentAssessmentWithAssessment, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes))
+    Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes))
+  }
+
+  def authorshipDeclaration(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
+    AssessmentController.authorshipDeclarationForm.bindFromRequest().fold(
+      form => Future.successful(BadRequest(views.html.exam.authorshipDeclaration(assessmentId, form))),
+      formData => {
+        studentAssessmentService.upsert(request.sitting.declarations.copy(acceptsAuthorship = formData.agreeAuthorship)).successFlatMap { _ =>
+          doStart(request.sitting.studentAssessment)
+        }
+      }
+    )
+  }
+
+  def reasonableAdjustmentsDeclaration(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
+    AssessmentController.reasonableAdjustmentsDeclarationForm.bindFromRequest().fold(
+      form => Future.successful(BadRequest(views.html.exam.reasonableAdjustmentsDeclaration(assessmentId, form))),
+      formData => {
+        studentAssessmentService.upsert(request.sitting.declarations.copy(selfDeclaredRA = formData.hasDeclaredRA, completedRA = true)).successFlatMap { _ =>
+          doStart(request.sitting.studentAssessment)
+        }
+      }
+    )
   }
 
   def start(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
-    studentAssessmentService.startAssessment(request.studentAssessmentWithAssessment.studentAssessment).successMap { _ =>
-      redirectToAssessment(assessmentId).flashing("success" -> Messages("flash.assessment.started"))
-    }
+    doStart(request.sitting.studentAssessment)
   }
 
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
     AssessmentController.finishExamForm.bindFromRequest().fold(
-      form => Future.successful(BadRequest(views.html.exam.index(request.studentAssessmentWithAssessment, form, uploadedFileControllerHelper.supportedMimeTypes))),
+      form => Future.successful(BadRequest(views.html.exam.index(request.sitting, form, uploadedFileControllerHelper.supportedMimeTypes))),
       _ => {
-        if (request.studentAssessmentWithAssessment.finalised) {
+        if (request.sitting.finalised) {
           val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
-        } else if (!request.studentAssessmentWithAssessment.canFinalise) {
+        } else if (!request.sitting.canFinalise) {
           val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
         } else {
-          studentAssessmentService.finishAssessment(request.studentAssessmentWithAssessment.studentAssessment).successMap { _ =>
+          studentAssessmentService.finishAssessment(request.sitting.studentAssessment).successMap { _ =>
             redirectToAssessment(assessmentId)
           }
         }
-      })
+      }
+    )
   }
 
   def uploadFiles(assessmentId: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = StudentAssessmentInProgressAction(assessmentId)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val files = request.body.files.map(_.ref)
     AssessmentController.attachFilesToAssessmentForm.bindFromRequest().fold(
-      _ => Future.successful(BadRequest(views.html.exam.index(request.studentAssessmentWithAssessment, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes))),
+      _ => Future.successful(BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes))),
       form => {
-        val existingUploadedFiles = request.studentAssessmentWithAssessment.studentAssessment.uploadedFiles
+        val existingUploadedFiles = request.sitting.studentAssessment.uploadedFiles
         val intersection = existingUploadedFiles.map(uf => uf.fileName.toLowerCase).intersect(files.map(f => f.metadata.fileName.toLowerCase))
         if (intersection.nonEmpty) {
           val flashMessage = "error" -> Messages("flash.assessment.filesDuplicates", intersection.head)
           Future.successful(redirectOrReturn200(assessmentId, form, flashMessage))
         } else {
-          studentAssessmentService.attachFilesToAssessment(request.studentAssessmentWithAssessment.studentAssessment, files.map(f => (f.in, f.metadata))).successMap { _ =>
+          studentAssessmentService.attachFilesToAssessment(request.sitting.studentAssessment, files.map(f => (f.in, f.metadata))).successMap { _ =>
             val flashMessage = "success" -> Messages("flash.assessment.filesUploaded")
             redirectOrReturn200(assessmentId, form, flashMessage)
           }
@@ -104,7 +162,7 @@ class AssessmentController @Inject()(
   }
 
   def deleteFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
-    studentAssessmentService.deleteAttachedFile(request.studentAssessmentWithAssessment.studentAssessment, fileId)
+    studentAssessmentService.deleteAttachedFile(request.sitting.studentAssessment, fileId)
     Future.successful(redirectToAssessment(assessmentId).flashing("success" -> Messages("flash.assessment.fileDeleted")))
   }
 
@@ -112,7 +170,7 @@ class AssessmentController @Inject()(
     def notFound: Future[Result] =
       Future.successful(NotFound(views.html.errors.notFound()))
 
-    request.studentAssessmentWithAssessment.studentAssessment.uploadedFiles
+    request.sitting.studentAssessment.uploadedFiles
       .find(_.id == fileId)
       .fold(notFound)(uploadedFileControllerHelper.serveFile)
   }
@@ -121,7 +179,7 @@ class AssessmentController @Inject()(
     def notFound: Future[Result] =
       Future.successful(NotFound(views.html.errors.notFound()))
 
-    request.studentAssessmentWithAssessment.assessment.brief.files
+    request.sitting.assessment.brief.files
       .find(_.id == fileId)
       .fold(notFound)(uploadedFileControllerHelper.serveFile)
   }

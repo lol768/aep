@@ -1,8 +1,8 @@
 package services.refiners
 
-import domain.StudentAssessmentWithAssessment
+import domain.Sitting
 import warwick.sso.AuthenticatedRequest
 
-class StudentAssessmentSpecificRequest[A](val studentAssessmentWithAssessment: StudentAssessmentWithAssessment, request: AuthenticatedRequest[A])
+class StudentAssessmentSpecificRequest[A](val sitting: Sitting, request: AuthenticatedRequest[A])
   extends AuthenticatedRequest[A](request.context, request.request) {
 }

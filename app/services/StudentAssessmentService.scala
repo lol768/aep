@@ -9,7 +9,7 @@ import domain._
 import StudentAssessmentService._
 import akka.Done
 import domain.dao.AssessmentsTables.StoredAssessment
-import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
+import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
@@ -29,17 +29,21 @@ trait StudentAssessmentService {
   def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessment]]]
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
-  def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]]
-  def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessmentWithAssessment]]]
+  def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
+  def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
   def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]]
-  def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]]
-  def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]]
+  def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]]
+  def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]]
+
+  def getOrDefaultDeclarations(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Declarations]]
+  def getDeclarations(studentAssessmentIds: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Declarations]]]
+  def upsert(declarations: Declarations)(implicit ctx: AuditLogContext): Future[ServiceResult[Declarations]]
 }
 
 @Singleton
@@ -80,61 +84,70 @@ class StudentAssessmentServiceImpl @Inject()(
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
 
-  override def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessment]]] = {
+  override def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
     daoRunner.run(dao.loadByUniversityIdWithUploadedFiles(universityId))
       .map(inflateRowsWithUploadedFiles)
       .flatMap { studentAssessments =>
-        assessmentService.getByIds(studentAssessments.map(_.assessmentId)).successMapTo { assessments =>
-          val assessmentsMap = assessments.map(a => a.id -> a).toMap
-          studentAssessments.map(sa => StudentAssessmentWithAssessment(sa, assessmentsMap(sa.assessmentId)))
-        }
+        val saIds = studentAssessments.map(_.assessmentId)
+        ServiceResults.zip(
+          assessmentService.getByIds(saIds).successMapTo(_.map(a => a.id -> a).toMap),
+          getDeclarations(saIds).successMapTo(_.map(d => d.studentAssessmentId -> d).toMap)
+        ).map(_.map { case (assessmentsMap, declarationsMap) =>
+          studentAssessments.map(sa => Sitting(sa, assessmentsMap(sa.assessmentId), declarationsMap.getOrElse(sa.id, Declarations(sa.id))))
+        })
       }
   }
 
-  override def getWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessmentWithAssessment]]] = {
+  override def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]] = {
     daoRunner.run(
       for {
         studentAssessmentRows <- dao.loadWithUploadedFiles(universityId, assessmentId)
         assessmentRows <- assessmentDao.loadByIdWithUploadedFiles(assessmentId)
       } yield (inflateRowWithUploadedFiles(studentAssessmentRows), AssessmentService.inflateRowWithUploadedFiles(assessmentRows))
-    ).map {
+    ).flatMap {
       case (Some(studentAssessment), Some(assessment)) =>
-        Some(StudentAssessmentWithAssessment(studentAssessment, assessment))
-
-      case _ => None
-    }.map(ServiceResults.success)
+        getOrDefaultDeclarations(studentAssessment.id).successMapTo(declarations =>
+          Some(Sitting(studentAssessment, assessment, declarations))
+        )
+      case _ =>
+        Future.successful(ServiceResults.success(None))
+    }
   }
 
   override def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]] =
     daoRunner.run(dao.get(universityId, assessmentId)).map(_.getOrElse(noStudentAssessmentFound(assessmentId, universityId)).asStudentAssessmentMetadata).map(ServiceResults.success)
 
-  override def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentWithAssessmentMetadata]] =
+  override def getMetadataWithAssessment(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]] =
     daoRunner.run(
       for {
         studentAssessment <- dao.get(universityId, assessmentId)
         assessment <- assessmentDao.getById(assessmentId)
-      } yield StudentAssessmentWithAssessmentMetadata(
+      } yield SittingMetadata(
         studentAssessment.getOrElse(noStudentAssessmentFound(assessmentId, universityId))
           .asStudentAssessmentMetadata,
         assessment.getOrElse(noAssessmentFound(assessmentId))
           .asAssessmentMetadata)
     ).map(ServiceResults.success)
 
-  override def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessmentWithAssessmentMetadata]]] = {
+  override def getMetadataWithAssessment(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]] = {
     daoRunner.run(
       for {
         studentAssessments <- dao.getByUniversityId(universityId)
         assessments <- assessmentDao.getByIds(studentAssessments.map(_.assessmentId))
       } yield {
         val assessmentsMap = assessments.map(a => a.id -> a.asAssessmentMetadata).toMap
-        studentAssessments.map(sA => StudentAssessmentWithAssessmentMetadata(sA.asStudentAssessmentMetadata, assessmentsMap(sA.assessmentId)))
+        studentAssessments.map(sA => SittingMetadata(sA.asStudentAssessmentMetadata, assessmentsMap(sA.assessmentId)))
       }
     ).map(ServiceResults.success)
   }
 
-  private def canStart(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
-    require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot start assessment, too early")
-    require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot start assessment, too late")
+  private def assertTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
+    require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot do assessment, too early")
+    require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot do assessment, too late")
+  }
+
+  private def hasAcceptedDeclarations(storedDeclarations: Option[StoredDeclarations]): Future[Unit] = Future.successful {
+    require(storedDeclarations.exists(_.asDeclarations.acceptable), "Cannot start assessment, declarations not made")
   }
 
   private def startedNotFinalised(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
@@ -148,10 +161,12 @@ class StudentAssessmentServiceImpl @Inject()(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessmentOption <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(canStart(
+          storedDeclarationsOption <- dao.getDeclarations(studentAssessment.id)
+          _ <- DBIO.from(assertTimeInRange(
             storedAssessmentOption.getOrElse(noAssessmentFound(studentAssessment.assessmentId)),
             storedStudentAssessmentOption.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId))
           ))
+          _ <- DBIO.from(hasAcceptedDeclarations(storedDeclarationsOption))
           _ <- {
             storedStudentAssessmentOption.map { storedStudentAssessment =>
               if (storedStudentAssessment.startTime.isEmpty) {
@@ -175,7 +190,7 @@ class StudentAssessmentServiceImpl @Inject()(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessmentOption <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(canStart(
+          _ <- DBIO.from(assertTimeInRange(
             storedAssessmentOption.getOrElse {
               noAssessmentFound(studentAssessment.assessmentId)
             },
@@ -277,7 +292,7 @@ class StudentAssessmentServiceImpl @Inject()(
           created = timestamp,
           version = timestamp,
         )))
-      }.flatMap(inflateWithUploadedFiles)
+      }.flatMap(ssa => inflateWithUploadedFiles(ssa))
         .map(ServiceResults.success)
     }
   }
@@ -285,6 +300,43 @@ class StudentAssessmentServiceImpl @Inject()(
   override def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] =
     daoRunner.run(dao.delete(studentAssessment.studentId, studentAssessment.assessmentId))
       .map(_ => ServiceResults.success(Done))
+
+  override def getOrDefaultDeclarations(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Declarations]] =
+    daoRunner.run(dao.getDeclarations(studentAssessmentId))
+      .map(_.map(_.asDeclarations).getOrElse(Declarations(studentAssessmentId)))
+      .map(ServiceResults.success)
+
+  override def getDeclarations(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Declarations]]] =
+    daoRunner.run(dao.getDeclarations(ids))
+      .map(_.map(_.asDeclarations))
+      .map(ServiceResults.success)
+
+  override def upsert(decs: Declarations)(implicit ctx: AuditLogContext): Future[ServiceResult[Declarations]] = {
+    audit.audit(Operation.Assessment.MakeDeclarations, decs.studentAssessmentId.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
+      daoRunner.run(dao.getDeclarations(decs.studentAssessmentId)).flatMap { result =>
+        result.map { existingDeclaration =>
+          daoRunner.run(dao.update(existingDeclaration.copy(
+            acceptsAuthorship = decs.acceptsAuthorship,
+            selfDeclaredRA = decs.selfDeclaredRA,
+            completedRA = decs.completedRA
+          )))
+        }.getOrElse {
+          val timestamp = JavaTime.offsetDateTime
+          daoRunner.run(dao.insert(StoredDeclarations(
+            studentAssessmentId = decs.studentAssessmentId,
+            acceptsAuthorship = decs.acceptsAuthorship,
+            selfDeclaredRA = decs.selfDeclaredRA,
+            completedRA = decs.completedRA,
+            created = timestamp,
+            version = timestamp
+          )))
+        }
+          .map(_.asDeclarations)
+          .map(ServiceResults.success)
+      }
+    }
+  }
+
 
   private def noAssessmentFound(id: UUID) =
     throw new NoSuchElementException(s"Could not find an assessment with id ${id.toString}")
