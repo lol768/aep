@@ -13,12 +13,15 @@
 
   <p>If the problem persists, please contact the <a href="mailto:webteam@@warwick.ac.uk">ITS Web Team</a>.</p>
 
-  <p><button type="button" class="btn btn-danger" data-toggle="collapse" data-target="#dev">
-    Show technical details about this error
-  </button></p>
-
-  <pre id="dev" class="collapse error-stack-trace">@for(error <- errors.filter(_.cause.nonEmpty)) {
-@error.message
-@error.cause.map { e =>@views.html.errors.stacktrace(e) }}</pre>
-
+  <details class="details">
+    <summary class="btn btn-danger">
+      Show technical details about this error
+    </summary>
+    <pre class="error-stack-trace">
+    @for(error <- errors.filter(_.cause.nonEmpty)) {
+      @error.message
+      @error.cause.map { e => @views.html.errors.stacktrace(e) }
+    }
+    </pre>
+  </details>
 }
