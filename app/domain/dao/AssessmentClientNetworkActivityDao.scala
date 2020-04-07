@@ -56,11 +56,19 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
     clientActivityForQuery(assessments, startDateOpt, endDateOpt).length.result
   }
 
+//  Distinct on doesn't work correctly on slick https://github.com/slick/slick/issues/1340
+//  Followed https://gist.github.com/missingfaktor/aa6c264c5b7411fa48a6a5b654dd0917
   override def getLatestActivityFor(studentAssessmentIds: Seq[UUID]): profile.api.DBIO[Seq[AssessmentClientNetworkActivity]] = {
     assessmentClientNetworkActivities
       .filter(assessmentFilter(studentAssessmentIds, _))
-      .sortBy(e => (e.studentAssessmentId, e.timestamp))
-      .distinctOn(_.studentAssessmentId)
+      .join {
+        assessmentClientNetworkActivities
+          .filter(assessmentFilter(studentAssessmentIds, _))
+          .groupBy(e => (e.studentAssessmentId))
+          .map { case (key, values) => (key, values.map(_.timestamp).max)}
+      }
+      .on { case (record, (key, timestamp)) => record.studentAssessmentId === key && record.timestamp === timestamp}
+      .map { case (record, _) => record }
       .result
   }
 

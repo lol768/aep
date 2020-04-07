@@ -3,17 +3,17 @@ package controllers.admin
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import controllers.{BaseController, FormMappings}
 import controllers.admin.ViewStudentActivityController.{StudentActivityData, studentActivityForm}
+import controllers.{BaseController, FormMappings}
 import domain.{Assessment, AssessmentClientNetworkActivity, Pagination}
 import javax.inject.{Inject, Singleton}
-import services.{AssessmentClientNetworkActivityService, SecurityService, StudentAssessmentService}
-
-import scala.concurrent.{ExecutionContext, Future}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc.{Action, AnyContent, Result}
+import services.{AssessmentClientNetworkActivityService, SecurityService, StudentAssessmentService}
 import warwick.sso.{AuthenticatedRequest, UniversityID}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 object ViewStudentActivityController {
 
