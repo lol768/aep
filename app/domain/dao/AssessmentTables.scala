@@ -30,7 +30,7 @@ class AssessmentTables @Inject()(
     def title = column[String]("title")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
     def duration = column[Duration]("duration")
-    def platform = column[Platform]("platform")
+    def platform = column[Set[Platform]]("platform")
     def assessmentType = column[AssessmentType]("type")
     def storedBrief = column[StoredBrief]("brief")
     def invigilators = column[List[String]]("invigilators")

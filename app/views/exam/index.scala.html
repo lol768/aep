@@ -40,7 +40,7 @@
         </div>
       </div>
 
-      @if(sitting.assessment.platform == Platform.OnlineExams) {
+      @if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
         <div class="panel panel-default">
           <div class="brand-stripe"></div>
           <div class="panel-body">
@@ -178,7 +178,7 @@
             <h2>Submit your assessment</h2>
 
             <p class="lead">
-              @sitting.assessment.platform match {
+              @sitting.assessment.platform.map{ p => @p match {
                 case Platform.Moodle => {
                   <a href="@sitting.assessment.brief.url" target="_blank">
                     View your assessment in Moodle<i class="fa fa-fw fa-external-link"></i>
@@ -203,7 +203,7 @@
                   @* This should be impossible *@
                   Please call the IT Services help desk on 024 765 73737.
                 }
-              }
+              }}
             </p>
           </div>
         </div>
