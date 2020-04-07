@@ -145,6 +145,7 @@ trait StudentAssessmentDao {
   def all: DBIO[Seq[StoredStudentAssessment]]
   def loadAllWithUploadedFiles: DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def insert(assessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
+  def insertAll(assessments: Set[StoredStudentAssessment])(implicit ac: AuditLogContext): DBIO[Seq[StoredStudentAssessment]]
   def update(studentAssessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment]
   def getByAssessmentId(assessmentId: UUID): DBIO[Seq[StoredStudentAssessment]]
   def getByAssessmentIds(assessmentIds: Seq[UUID]): DBIO[Seq[StoredStudentAssessment]]
@@ -183,6 +184,9 @@ class StudentAssessmentDaoImpl @Inject()(
 
   override def insert(assessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment] =
     studentAssessments.insert(assessment)
+
+  override def insertAll(assessments: Set[StoredStudentAssessment])(implicit ac: AuditLogContext): DBIO[Seq[StoredStudentAssessment]] =
+    studentAssessments.insertAll(assessments.toSeq)
 
   override def update(studentAssessment: StoredStudentAssessment)(implicit ac: AuditLogContext): DBIO[StoredStudentAssessment] =
     studentAssessments.update(studentAssessment)
