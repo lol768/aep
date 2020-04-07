@@ -312,26 +312,28 @@ class StudentAssessmentServiceImpl @Inject()(
       .map(ServiceResults.success)
 
   override def upsert(decs: Declarations)(implicit ctx: AuditLogContext): Future[ServiceResult[Declarations]] = {
-    daoRunner.run(dao.getDeclarations(decs.id)).flatMap { result =>
-      result.map { existingDeclaration =>
-        daoRunner.run(dao.update(existingDeclaration.copy(
-          acceptsAuthorship = decs.acceptsAuthorship,
-          selfDeclaredRA = decs.selfDeclaredRA,
-          completedRA = decs.completedRA
-        )))
-      }.getOrElse {
-        val timestamp = JavaTime.offsetDateTime
-        daoRunner.run(dao.insert(StoredDeclarations(
-          id = decs.id,
-          acceptsAuthorship = decs.acceptsAuthorship,
-          selfDeclaredRA = decs.selfDeclaredRA,
-          completedRA = decs.completedRA,
-          created = timestamp,
-          version = timestamp
-        )))
+    audit.audit(Operation.Assessment.MakeDeclarations, decs.id.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
+      daoRunner.run(dao.getDeclarations(decs.id)).flatMap { result =>
+        result.map { existingDeclaration =>
+          daoRunner.run(dao.update(existingDeclaration.copy(
+            acceptsAuthorship = decs.acceptsAuthorship,
+            selfDeclaredRA = decs.selfDeclaredRA,
+            completedRA = decs.completedRA
+          )))
+        }.getOrElse {
+          val timestamp = JavaTime.offsetDateTime
+          daoRunner.run(dao.insert(StoredDeclarations(
+            id = decs.id,
+            acceptsAuthorship = decs.acceptsAuthorship,
+            selfDeclaredRA = decs.selfDeclaredRA,
+            completedRA = decs.completedRA,
+            created = timestamp,
+            version = timestamp
+          )))
+        }
+          .map(_.asDeclarations)
+          .map(ServiceResults.success)
       }
-      .map(_.asDeclarations)
-      .map(ServiceResults.success)
     }
   }
 

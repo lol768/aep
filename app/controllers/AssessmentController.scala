@@ -78,8 +78,7 @@ class AssessmentController @Inject()(
       } else if (!declarations.completedRA) {
         Future.successful(Ok(views.html.exam.reasonableAdjustmentsDeclaration(studentAssessment.assessmentId, AssessmentController.reasonableAdjustmentsDeclarationForm)))
       } else {
-        // Oops, oh no
-        Future.successful(InternalServerError("Unexpected failure in capturing declarations"))
+        Future.failed(throw new IllegalStateException("Unexpected declarations state"))
       }
     }
   }
