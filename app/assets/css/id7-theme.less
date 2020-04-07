@@ -6,9 +6,27 @@ html.no-js, html.no-webp {
 
 // Override the app footer to be white
 .id7-page-footer .id7-app-footer {
-  background: white;
-  color: @text-color;
-  .link-colour(@text-color);
+  background: #5b3069;
+  color: #fff;
+}
+
+.id7-page-footer.id7-footer-coloured .id7-site-footer {
+  background: #fff;
+}
+
+.id7-page-footer.id7-footer-coloured .id7-app-footer .id7-logo-bleed::before, .id7-page-footer.id7-footer-coloured .id7-app-footer .id7-logo-bleed::after {
+  border-top-color: #fff;
+}
+
+
+.grey-nopad {
+  .id7-page-footer.id7-footer-coloured .id7-site-footer {
+    background: #f7f6f4;
+  }
+
+  .id7-page-footer.id7-footer-coloured .id7-app-footer .id7-logo-bleed::before, .id7-page-footer.id7-footer-coloured .id7-app-footer .id7-logo-bleed::after {
+    border-top-color: #f7f6f4;
+  }
 }
 
 .id7-utility-bar > ul > li {
