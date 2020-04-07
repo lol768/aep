@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import domain.StudentAssessment
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -21,8 +22,11 @@ object AssessmentController {
   )
 
   case class ReasonableAdjustmentsDeclarationFormData(
-    selfDeclare: Boolean
-  )
+    reasonableAdjustments: String
+  ) {
+    def hasDeclaredRA: Boolean =
+      reasonableAdjustments == "hasRA"
+  }
 
   case class UploadFilesFormData(
     xhr: Boolean
@@ -37,7 +41,7 @@ object AssessmentController {
   )(AuthorshipDeclarationFormData.apply)(AuthorshipDeclarationFormData.unapply))
 
   val reasonableAdjustmentsDeclarationForm: Form[ReasonableAdjustmentsDeclarationFormData] = Form(mapping(
-    "selfDeclare" -> boolean
+    "reasonableAdjustments" -> text.verifying(error="flash.assessment.declaration.must-choose-radio", constraint = Seq("hasRA", "hasNoRA").contains(_))
   )(ReasonableAdjustmentsDeclarationFormData.apply)(ReasonableAdjustmentsDeclarationFormData.unapply))
 
   val attachFilesToAssessmentForm: Form[UploadFilesFormData] = Form(mapping(
@@ -63,21 +67,21 @@ class AssessmentController @Inject()(
 
   private val redirectToAssessment = (id: UUID) => Redirect(controllers.routes.AssessmentController.view(id))
 
-  private def doStart(assessmentId: UUID)(implicit request: StudentAssessmentSpecificRequest[AnyContent]): Future[Result] = {
-    val declarations = request.sitting.declarations
-
-    if (declarations.acceptable) {
-      studentAssessmentService.startAssessment(request.sitting.studentAssessment).successMap { _ =>
-        redirectToAssessment(assessmentId).flashing("success" -> Messages("flash.assessment.started"))
+  private def doStart(studentAssessment: StudentAssessment)(implicit request: StudentAssessmentSpecificRequest[AnyContent]): Future[Result] = {
+    studentAssessmentService.getDeclarations(studentAssessment.id).successFlatMap { declarations =>
+      if (declarations.acceptable) {
+        studentAssessmentService.startAssessment(request.sitting.studentAssessment).successMap { _ =>
+          redirectToAssessment(studentAssessment.assessmentId).flashing("success" -> Messages("flash.assessment.started"))
+        }
+      } else if (!declarations.acceptsAuthorship) {
+        Future.successful(Ok(views.html.exam.authorshipDeclaration(studentAssessment.assessmentId, AssessmentController.authorshipDeclarationForm)))
+      } else if (!declarations.completedRA) {
+        Future.successful(Ok(views.html.exam.reasonableAdjustmentsDeclaration(studentAssessment.assessmentId, AssessmentController.reasonableAdjustmentsDeclarationForm)))
+      } else {
+        // Oops, oh no
+        Future.successful(InternalServerError("Unexpected failure in capturing declarations"))
       }
-    } else if (!declarations.acceptsAuthorship) {
-      Future.successful(Ok(views.html.exam.authorshipDeclaration(assessmentId, AssessmentController.authorshipDeclarationForm)))
-    } else if (!declarations.completedRA) {
-      Future.successful(Ok(views.html.exam.reasonableAdjustmentsDeclaration(assessmentId, AssessmentController.reasonableAdjustmentsDeclarationForm)))
     }
-
-    // Oops, oh no
-    Future.successful(InternalServerError)
   }
 
 
@@ -88,25 +92,27 @@ class AssessmentController @Inject()(
   def authorshipDeclaration(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     AssessmentController.authorshipDeclarationForm.bindFromRequest().fold(
       form => Future.successful(BadRequest(views.html.exam.authorshipDeclaration(assessmentId, form))),
-      _ => {
-        studentAssessmentService.upsert(request.sitting.declarations.copy(acceptsAuthorship = true)).successFlatMap { _ =>
-          doStart(assessmentId)
+      form => {
+        studentAssessmentService.upsert(request.sitting.declarations.copy(acceptsAuthorship = form.agreeAuthorship)).successFlatMap { _ =>
+          doStart(request.sitting.studentAssessment)
         }
-      })
+      }
+    )
   }
 
   def reasonableAdjustmentsDeclaration(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     AssessmentController.reasonableAdjustmentsDeclarationForm.bindFromRequest().fold(
       form => Future.successful(BadRequest(views.html.exam.reasonableAdjustmentsDeclaration(assessmentId, form))),
       form => {
-        studentAssessmentService.upsert(request.sitting.declarations.copy(selfDeclaredRA = form.selfDeclare, completedRA = true)).successFlatMap { _ =>
-          doStart(assessmentId)
+        studentAssessmentService.upsert(request.sitting.declarations.copy(selfDeclaredRA = form.hasDeclaredRA, completedRA = true)).successFlatMap { _ =>
+          doStart(request.sitting.studentAssessment)
         }
-      })
+      }
+    )
   }
 
   def start(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
-    doStart(assessmentId)
+    doStart(request.sitting.studentAssessment)
   }
 
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>

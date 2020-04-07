@@ -8,13 +8,21 @@
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @frontend("Reasonable Adjustments") {
+  <div class="well">
+    <p>When taking assessments on the @{context.appFullName}, students are automatically given extra time for upload.</p>
 
-  @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(assessmentId)) { implicit fc =>
-    @b3.checkbox(
-      form("selfDeclare"),
-      Symbol("_text") -> "By ticking this box I declare that I have agreed reasonable adjustments logged with my academic department. Leave unticked and continue if you have not agreed reasonable adjustments",
+    <p>Additional <i>reasonable adjustments</i> may also be provided for students with a long term condition or temporary disability that is known far enough in advance.</p>
+  </div>
+
+  @b3.vertical.formCSRF(controllers.routes.AssessmentController.reasonableAdjustmentsDeclaration(assessmentId)) { implicit fc =>
+    @b3.radio(
+      form("reasonableAdjustments"),
+      Seq(
+        "hasRA" -> "I have already agreed reasonable adjustments with my academic department.",
+        "hasNoRA" -> "I have no agreed reasonable adjustments."),
+      Symbol("data-undisable-selector") -> ".ra-declaration-btn",
       Symbol("class") -> "undisable-with-checkbox",
     )
-    @b3.submit(Symbol("class") -> "btn btn-default authorship-declaration-btn"){ <i class="fad fa-badge-check fa-fw"></i> Make declaration }
+    @b3.submit(Symbol("class") -> "btn btn-default ra-declaration-btn"){ <i class="fad fa-badge-check fa-fw fa-lg"></i> Continue }
   }
 }
