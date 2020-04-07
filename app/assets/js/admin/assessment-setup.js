@@ -11,8 +11,7 @@ $(() => {
   const $durationField = $('select[name=durationMinutes]');
   $('input[name=assessmentType]').on('change', () => {
     const validDurations = $('input[name=assessmentType]:checked').data('valid-durations');
-    const hasOptions = validDurations.length > 0;
-    $durationField.closest('.form-group').toggle(hasOptions);
+    $durationField.closest('.form-group').toggle(validDurations.length > 0);
     $durationField.prop('disabled', !hasOptions);
     $durationField.find('option').each((_, option) => {
       const $option = $(option);
