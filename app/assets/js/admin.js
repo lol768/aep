@@ -7,6 +7,7 @@ import './polyfills';
 
 import $ from 'jquery';
 import Tablesort from 'tablesort';
+import JDDT from './jddt';
 import * as flexiPicker from './flexi-picker';
 import * as dateTimePicker from './date-time-picker';
 
@@ -33,6 +34,8 @@ function bindTo($scope) {
     Tablesort(table);
   });
 }
+
+JDDT.initialise(document);
 
 $(() => {
   const $html = $('html');

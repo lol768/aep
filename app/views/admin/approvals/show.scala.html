@@ -31,25 +31,23 @@
       }
     }
 
-    @if(assessment.platform == Platform.OnlineExams) {
-      <dt>Files</dt>
-      @if(assessment.brief.files.isEmpty) {
-        <dd >
-          No files attached.
-        </dd>
-      } else {
-        <dd>
-          <ul>
-          @assessment.brief.files.map { file =>
-            <li>
-              @*<a href="@controllers.admin.routes.ApprovalsController.getFile(assessment.id, file.id)" target="_blank">
-                <i class="fad fa-file fa-fw"></i>@file.fileName
-              </a>*@
-            </li>
-          }
-          </ul>
-        </dd>
-      }
+    <dt>Files</dt>
+    @if(assessment.brief.files.isEmpty) {
+      <dd >
+        No files attached.
+      </dd>
+    } else {
+      <dd>
+        <ul>
+        @assessment.brief.files.map { file =>
+          <li>
+            @*<a href="@controllers.admin.routes.ApprovalsController.getFile(assessment.id, file.id)" target="_blank">
+              <i class="fad fa-file fa-fw"></i>@file.fileName
+            </a>*@
+          </li>
+        }
+        </ul>
+      </dd>
     }
   </dl>
 

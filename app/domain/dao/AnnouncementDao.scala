@@ -69,6 +69,7 @@ object AnnouncementsTables {
         id,
         assessmentId,
         text,
+        created,
       )
     override def atVersion(at: OffsetDateTime): StoredAnnouncement = copy(version = at)
 
