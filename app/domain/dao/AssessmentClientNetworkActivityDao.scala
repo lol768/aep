@@ -19,6 +19,7 @@ trait AssessmentClientNetworkActivityDao {
   def getClientActivities(offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
   def getClientActivityFor(assessments: Seq[StudentAssessment], startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime], offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
   def countClientActivityFor(assessments: Seq[StudentAssessment],startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime]): DBIO[Int]
+  def getLatestActivityFor(studentAssessmentIds: Seq[UUID]): DBIO[Seq[AssessmentClientNetworkActivity]]
 }
 
 @Singleton
@@ -55,14 +56,31 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
     clientActivityForQuery(assessments, startDateOpt, endDateOpt).length.result
   }
 
+//  Distinct on doesn't work correctly on slick https://github.com/slick/slick/issues/1340
+//  Followed https://gist.github.com/missingfaktor/aa6c264c5b7411fa48a6a5b654dd0917
+  override def getLatestActivityFor(studentAssessmentIds: Seq[UUID]): profile.api.DBIO[Seq[AssessmentClientNetworkActivity]] = {
+    assessmentClientNetworkActivities
+      .filter(assessmentFilter(studentAssessmentIds, _))
+      .join {
+        assessmentClientNetworkActivities
+          .filter(assessmentFilter(studentAssessmentIds, _))
+          .groupBy(e => (e.studentAssessmentId))
+          .map { case (key, values) => (key, values.map(_.timestamp).max)}
+      }
+      .on { case (record, (key, timestamp)) => record.studentAssessmentId === key && record.timestamp === timestamp}
+      .map { case (record, _) => record }
+      .result
+  }
+
+  private def assessmentFilter(studentAssessmentIds: Seq[UUID], e: AssessmentClientNetworkActivities) =
+    if (studentAssessmentIds.nonEmpty) { e.studentAssessmentId.inSet(studentAssessmentIds) } else { LiteralColumn(true) }
+
   private def clientActivityForQuery(assessments: Seq[StudentAssessment],startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime]) = {
     assessmentClientNetworkActivities
-      .filter{e =>
-        val assessmentFilter = if (assessments.nonEmpty) { e.studentAssessmentId.inSet(assessments.map(_.id)) } else { LiteralColumn(true) }
-
+      .filter{ e =>
         startDateOpt.map { startDate => e.timestamp >= startDate}.getOrElse(LiteralColumn(true)) &&
         endDateOpt.map { endDate => e.timestamp <= endDate}.getOrElse(LiteralColumn(true)) &&
-        assessmentFilter
+        assessmentFilter(assessments.map(_.id), e)
       }
   }
 }

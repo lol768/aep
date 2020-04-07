@@ -9,7 +9,7 @@ import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
-import services.{AssessmentService, ReportingService, SecurityService}
+import services.{AssessmentClientNetworkActivityService, AssessmentService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.sso.{AuthenticatedRequest, UniversityID, User, UserLookupService}
@@ -24,6 +24,7 @@ class ReportingController @Inject()(
   reportingService: ReportingService,
   studentInformationService: TabulaStudentInformationService,
   messageService: MessageService,
+  networkActivityService: AssessmentClientNetworkActivityService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -73,11 +74,12 @@ class ReportingController @Inject()(
       messageService.findByAssessment(assessmentId)
     ).successFlatMap {
       case (sittings, queries) =>
-        studentInformationService
-          .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId)))
-          .successMap { profiles =>
+        ServiceResults.zip(
+          studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId))),
+          networkActivityService.getLatestActivityFor(sittings.map(_.studentAssessmentId))
+        ).successMap { case (profiles, latestActivities) =>
             val sorted = sittings.sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
-            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct)))
+            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct), latestActivities))
           }
     }
   }
