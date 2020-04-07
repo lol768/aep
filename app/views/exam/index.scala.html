@@ -40,7 +40,7 @@
         </div>
       </div>
 
-      @if(assessment.assessment.platform == Platform.OnlineExams) {
+      @if(assessment.assessment.platform.contains(Platform.OnlineExams)) {
         <div class="panel panel-default">
           <div class="brand-stripe"></div>
           <div class="panel-body">
