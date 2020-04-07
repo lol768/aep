@@ -30,6 +30,7 @@ case class StudentAssessment(
 
 case class StudentAssessmentMetadata(
   assessmentId: UUID,
+  studentAssessmentId: UUID,
   studentId: UniversityID,
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],

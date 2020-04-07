@@ -3,9 +3,10 @@
 @import system.routes.Types.Usercode
 @import domain.tabula
 @import domain.StudentAssessmentMetadata
+@import domain.AssessmentClientNetworkActivity
 @import warwick.sso.UniversityID
-@import warwick.sso.User
 @import views.html.invigilation._
+@import java.util.UUID
 
 @(
         assessment: Assessment,
@@ -13,7 +14,8 @@
         invigilators: Map[Usercode, String],
         students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
-        studentsWithQueries: Seq[UniversityID]
+        studentsWithQueries: Seq[UniversityID],
+        latestActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout(s"Invigilation for assessment ${assessment.moduleCode}") {
     <div class="id7-main-content">
@@ -47,7 +49,7 @@
             <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
         </div>
         <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="expected">
-            @studentAssessmentInfo(studentAssessments, students, Some(studentsWithQueries))
+            @studentAssessmentInfo(studentAssessments, students, Some(studentsWithQueries), latestActivities)
         </div>
     </div>
 }

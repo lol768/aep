@@ -43,6 +43,7 @@ object StudentAssessmentsTables {
     def asStudentAssessmentMetadata: StudentAssessmentMetadata =
       StudentAssessmentMetadata(
         assessmentId,
+        id,
         studentId,
         inSeat,
         startTime,
