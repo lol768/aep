@@ -1,7 +1,7 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
 @import controllers.admin.AssessmentsController.AssessmentFormData
 @import domain.Assessment
-@(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+@(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 @b3.text(form("moduleCode"), Symbol("_label") -> "Module code", Symbol("readonly") -> existing.exists(_.tabulaAssessmentId))
 
