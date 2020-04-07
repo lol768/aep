@@ -41,7 +41,7 @@ trait StudentAssessmentService {
   def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]]
 
-  def getDeclarations(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Declarations]]
+  def getOrDefaultDeclarations(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Declarations]]
   def getDeclarations(studentAssessmentIds: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[Declarations]]]
   def upsert(declarations: Declarations)(implicit ctx: AuditLogContext): Future[ServiceResult[Declarations]]
 }
@@ -91,7 +91,7 @@ class StudentAssessmentServiceImpl @Inject()(
         val saIds = studentAssessments.map(_.assessmentId)
         ServiceResults.zip(
           assessmentService.getByIds(saIds).successMapTo(_.map(a => a.id -> a).toMap),
-          getDeclarations(saIds).successMapTo(_.map(d => d.id -> d).toMap)
+          getDeclarations(saIds).successMapTo(_.map(d => d.studentAssessmentId -> d).toMap)
         ).map(_.map { case (assessmentsMap, declarationsMap) =>
           studentAssessments.map(sa => Sitting(sa, assessmentsMap(sa.assessmentId), declarationsMap.getOrElse(sa.id, Declarations(sa.id))))
         })
@@ -106,7 +106,7 @@ class StudentAssessmentServiceImpl @Inject()(
       } yield (inflateRowWithUploadedFiles(studentAssessmentRows), AssessmentService.inflateRowWithUploadedFiles(assessmentRows))
     ).flatMap {
       case (Some(studentAssessment), Some(assessment)) =>
-        getDeclarations(studentAssessment.id).successMapTo(declarations =>
+        getOrDefaultDeclarations(studentAssessment.id).successMapTo(declarations =>
           Some(Sitting(studentAssessment, assessment, declarations))
         )
       case _ =>
@@ -141,7 +141,7 @@ class StudentAssessmentServiceImpl @Inject()(
     ).map(ServiceResults.success)
   }
 
-  private def isTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
+  private def assertTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
     require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot do assessment, too early")
     require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot do assessment, too late")
   }
@@ -162,7 +162,7 @@ class StudentAssessmentServiceImpl @Inject()(
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessmentOption <- assessmentDao.getById(studentAssessment.assessmentId)
           storedDeclarationsOption <- dao.getDeclarations(studentAssessment.id)
-          _ <- DBIO.from(isTimeInRange(
+          _ <- DBIO.from(assertTimeInRange(
             storedAssessmentOption.getOrElse(noAssessmentFound(studentAssessment.assessmentId)),
             storedStudentAssessmentOption.getOrElse(noStudentAssessmentFound(studentAssessment.assessmentId, studentAssessment.studentId))
           ))
@@ -190,7 +190,7 @@ class StudentAssessmentServiceImpl @Inject()(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
           storedAssessmentOption <- assessmentDao.getById(studentAssessment.assessmentId)
-          _ <- DBIO.from(isTimeInRange(
+          _ <- DBIO.from(assertTimeInRange(
             storedAssessmentOption.getOrElse {
               noAssessmentFound(studentAssessment.assessmentId)
             },
@@ -301,7 +301,7 @@ class StudentAssessmentServiceImpl @Inject()(
     daoRunner.run(dao.delete(studentAssessment.studentId, studentAssessment.assessmentId))
       .map(_ => ServiceResults.success(Done))
 
-  override def getDeclarations(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Declarations]] =
+  override def getOrDefaultDeclarations(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Declarations]] =
     daoRunner.run(dao.getDeclarations(studentAssessmentId))
       .map(_.map(_.asDeclarations).getOrElse(Declarations(studentAssessmentId)))
       .map(ServiceResults.success)
@@ -312,8 +312,8 @@ class StudentAssessmentServiceImpl @Inject()(
       .map(ServiceResults.success)
 
   override def upsert(decs: Declarations)(implicit ctx: AuditLogContext): Future[ServiceResult[Declarations]] = {
-    audit.audit(Operation.Assessment.MakeDeclarations, decs.id.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
-      daoRunner.run(dao.getDeclarations(decs.id)).flatMap { result =>
+    audit.audit(Operation.Assessment.MakeDeclarations, decs.studentAssessmentId.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
+      daoRunner.run(dao.getDeclarations(decs.studentAssessmentId)).flatMap { result =>
         result.map { existingDeclaration =>
           daoRunner.run(dao.update(existingDeclaration.copy(
             acceptsAuthorship = decs.acceptsAuthorship,
@@ -323,7 +323,7 @@ class StudentAssessmentServiceImpl @Inject()(
         }.getOrElse {
           val timestamp = JavaTime.offsetDateTime
           daoRunner.run(dao.insert(StoredDeclarations(
-            id = decs.id,
+            studentAssessmentId = decs.studentAssessmentId,
             acceptsAuthorship = decs.acceptsAuthorship,
             selfDeclaredRA = decs.selfDeclaredRA,
             completedRA = decs.completedRA,

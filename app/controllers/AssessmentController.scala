@@ -37,7 +37,7 @@ object AssessmentController {
   )
 
   val authorshipDeclarationForm: Form[AuthorshipDeclarationFormData] = Form(mapping(
-    "agreeAuthorship" -> boolean.verifying(error = "flash.assessment.declaration.must-check-box", constraint = Predef.identity[Boolean])
+    "agreeAuthorship" -> checked("flash.assessment.declaration.must-check-box")
   )(AuthorshipDeclarationFormData.apply)(AuthorshipDeclarationFormData.unapply))
 
   val reasonableAdjustmentsDeclarationForm: Form[ReasonableAdjustmentsDeclarationFormData] = Form(mapping(
@@ -49,7 +49,7 @@ object AssessmentController {
   )(UploadFilesFormData.apply)(UploadFilesFormData.unapply))
 
   val finishExamForm: Form[FinishExamFormData] = Form(mapping(
-    "agreeDisclaimer" -> boolean.verifying(error = "flash.assessment.finish.must-check-box", constraint = Predef.identity[Boolean])
+    "agreeDisclaimer" -> checked("flash.assessment.finish.must-check-box")
   )(FinishExamFormData.apply)(FinishExamFormData.unapply))
 }
 
@@ -68,7 +68,7 @@ class AssessmentController @Inject()(
   private val redirectToAssessment = (id: UUID) => Redirect(controllers.routes.AssessmentController.view(id))
 
   private def doStart(studentAssessment: StudentAssessment)(implicit request: StudentAssessmentSpecificRequest[AnyContent]): Future[Result] = {
-    studentAssessmentService.getDeclarations(studentAssessment.id).successFlatMap { declarations =>
+    studentAssessmentService.getOrDefaultDeclarations(studentAssessment.id).successFlatMap { declarations =>
       if (declarations.acceptable) {
         studentAssessmentService.startAssessment(request.sitting.studentAssessment).successMap { _ =>
           redirectToAssessment(studentAssessment.assessmentId).flashing("success" -> Messages("flash.assessment.started"))
@@ -91,8 +91,8 @@ class AssessmentController @Inject()(
   def authorshipDeclaration(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     AssessmentController.authorshipDeclarationForm.bindFromRequest().fold(
       form => Future.successful(BadRequest(views.html.exam.authorshipDeclaration(assessmentId, form))),
-      form => {
-        studentAssessmentService.upsert(request.sitting.declarations.copy(acceptsAuthorship = form.agreeAuthorship)).successFlatMap { _ =>
+      formData => {
+        studentAssessmentService.upsert(request.sitting.declarations.copy(acceptsAuthorship = formData.agreeAuthorship)).successFlatMap { _ =>
           doStart(request.sitting.studentAssessment)
         }
       }
@@ -102,8 +102,8 @@ class AssessmentController @Inject()(
   def reasonableAdjustmentsDeclaration(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     AssessmentController.reasonableAdjustmentsDeclarationForm.bindFromRequest().fold(
       form => Future.successful(BadRequest(views.html.exam.reasonableAdjustmentsDeclaration(assessmentId, form))),
-      form => {
-        studentAssessmentService.upsert(request.sitting.declarations.copy(selfDeclaredRA = form.hasDeclaredRA, completedRA = true)).successFlatMap { _ =>
+      formData => {
+        studentAssessmentService.upsert(request.sitting.declarations.copy(selfDeclaredRA = formData.hasDeclaredRA, completedRA = true)).successFlatMap { _ =>
           doStart(request.sitting.studentAssessment)
         }
       }
@@ -118,18 +118,15 @@ class AssessmentController @Inject()(
     AssessmentController.finishExamForm.bindFromRequest().fold(
       form => Future.successful(BadRequest(views.html.exam.index(request.sitting, form, uploadedFileControllerHelper.supportedMimeTypes))),
       _ => {
-        studentAssessmentService.finishAssessment(request.sitting.studentAssessment).successFlatMap { _ =>
-          redirectToAssessment(assessmentId)
-          if (request.sitting.finalised) {
-            val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
-            Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
-          } else if (!request.sitting.canFinalise) {
-            val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
-            Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
-          } else {
-            studentAssessmentService.finishAssessment(request.sitting.studentAssessment).successMap { _ =>
-              redirectToAssessment(assessmentId)
-            }
+        if (request.sitting.finalised) {
+          val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
+          Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
+        } else if (!request.sitting.canFinalise) {
+          val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
+          Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
+        } else {
+          studentAssessmentService.finishAssessment(request.sitting.studentAssessment).successMap { _ =>
+            redirectToAssessment(assessmentId)
           }
         }
       }

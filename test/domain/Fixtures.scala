@@ -129,7 +129,7 @@ object Fixtures {
       val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
 
       StoredDeclarations(
-        id = id,
+        studentAssessmentId = id,
         acceptsAuthorship = true,
         selfDeclaredRA = false,
         completedRA = true,

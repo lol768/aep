@@ -90,7 +90,7 @@ object StudentAssessmentsTables {
 
 
   case class StoredDeclarations(
-    id: UUID,
+    studentAssessmentId: UUID,
     acceptsAuthorship: Boolean,
     selfDeclaredRA: Boolean,
     completedRA: Boolean,
@@ -99,7 +99,7 @@ object StudentAssessmentsTables {
   ) extends Versioned[StoredDeclarations] {
     def asDeclarations: Declarations =
       Declarations(
-        id,
+        studentAssessmentId,
         acceptsAuthorship,
         selfDeclaredRA,
         completedRA
@@ -109,7 +109,7 @@ object StudentAssessmentsTables {
 
     override def storedVersion[B <: StoredVersion[StoredDeclarations]](operation: DatabaseOperation, timestamp: OffsetDateTime)(implicit ac: AuditLogContext): B =
       StoredDeclarationsVersion(
-        id,
+        studentAssessmentId,
         acceptsAuthorship,
         selfDeclaredRA,
         completedRA,
@@ -122,7 +122,7 @@ object StudentAssessmentsTables {
   }
 
   case class StoredDeclarationsVersion(
-    id: UUID,
+    studentAssessmentId: UUID,
     acceptsAuthorship: Boolean,
     selfDeclaredRA: Boolean,
     completedRA: Boolean,
@@ -229,13 +229,13 @@ class StudentAssessmentDaoImpl @Inject()(
     declarations.update(decs)
 
   private def getDeclarationsQuery(declarationsId: UUID): Query[Declarations, StoredDeclarations, Seq] =
-    declarations.table.filter(_.id === declarationsId)
+    declarations.table.filter(_.studentAssessmentId === declarationsId)
 
   override def getDeclarations(declarationsId: UUID): DBIO[Option[StoredDeclarations]] =
     getDeclarationsQuery(declarationsId).result.headOption
 
   override def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]] =
-    declarations.table.filter(_.id inSet declarationsIds).result
+    declarations.table.filter(_.studentAssessmentId inSet declarationsIds).result
 
   override def deleteDeclarations(declarationsId: UUID): DBIO[Int] =
     getDeclarationsQuery(declarationsId).delete

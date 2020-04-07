@@ -130,7 +130,7 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
 
       service.upsert(newDeclarations.asDeclarations).serviceValue
 
-      val declarationsFromDB = service.getDeclarations(newDeclarations.id).serviceValue
+      val declarationsFromDB = service.getOrDefaultDeclarations(newDeclarations.studentAssessmentId).serviceValue
       declarationsFromDB.acceptable mustBe true
 
       val finaliseTime = JavaTime.offsetDateTime
@@ -140,7 +140,7 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
 
       service.upsert(updatedDeclarations).serviceValue
 
-      service.getDeclarations(newDeclarations.id).serviceValue.selfDeclaredRA mustBe true
+      service.getOrDefaultDeclarations(newDeclarations.studentAssessmentId).serviceValue.selfDeclaredRA mustBe true
     }
   }
 }

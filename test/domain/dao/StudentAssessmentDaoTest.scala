@@ -137,7 +137,7 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
         _ <- DBIO.from(Future.successful {
           inserted.created.toInstant mustBe declaration.created.toInstant
           inserted.version.toInstant mustBe earlier
-          inserted.id mustEqual declaration.id
+          inserted.studentAssessmentId mustEqual declaration.studentAssessmentId
           inserted.acceptsAuthorship mustEqual declaration.acceptsAuthorship
           inserted.selfDeclaredRA mustEqual declaration.selfDeclaredRA
           inserted.completedRA mustEqual declaration.completedRA
@@ -148,7 +148,7 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
         _ <- DBIO.from(Future.successful {
           updated.created.toInstant mustBe declaration.created.toInstant
           updated.version.toInstant mustBe now
-          updated.id mustEqual sa.id
+          updated.studentAssessmentId mustEqual sa.id
           updated.selfDeclaredRA mustBe true
         })
       } yield updated

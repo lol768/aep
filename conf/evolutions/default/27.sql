@@ -7,7 +7,6 @@ create table declarations (
     completed_ra boolean not null,
     created_utc timestamp(3) not null,
     version_utc timestamp(3) not null,
-    version_user varchar,
     constraint pk_declarations primary key (id)
 );
 

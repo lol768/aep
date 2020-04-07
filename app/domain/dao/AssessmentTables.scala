@@ -195,26 +195,26 @@ class AssessmentTables @Inject()(
   class Declarations(tag: Tag) extends Table[StoredDeclarations](tag, "declarations")
     with VersionedTable[StoredDeclarations]
     with DeclarationsCommonProperties {
-    override def matchesPrimaryKey(other: StoredDeclarations): Rep[Boolean] = id === other.id
-    def id = column[UUID]("id", O.PrimaryKey)
+    override def matchesPrimaryKey(other: StoredDeclarations): Rep[Boolean] = studentAssessmentId === other.studentAssessmentId
+    def studentAssessmentId = column[UUID]("id", O.PrimaryKey)
 
-    def pk = primaryKey("pk_declaration", id)
+    def pk = primaryKey("pk_declaration", studentAssessmentId)
 
     override def * : ProvenShape[StoredDeclarations] =
-      (id, acceptsAuthorship, selfDeclaredRA, completedRADeclaration, created, version).mapTo[StoredDeclarations]
+      (studentAssessmentId, acceptsAuthorship, selfDeclaredRA, completedRADeclaration, created, version).mapTo[StoredDeclarations]
   }
 
   class DeclarationsVersions(tag: Tag) extends Table[StoredDeclarationsVersion](tag, "declarations_version")
     with StoredVersionTable[StoredDeclarations]
     with DeclarationsCommonProperties {
-    def id = column[UUID]("id")
+    def studentAssessmentId = column[UUID]("id")
     def operation = column[DatabaseOperation]("version_operation")
     def timestamp = column[OffsetDateTime]("version_timestamp_utc")
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredDeclarationsVersion] =
-      (id, acceptsAuthorship, selfDeclaredRA, completedRADeclaration, created, version, operation, timestamp, auditUser).mapTo[StoredDeclarationsVersion]
-    def pk = primaryKey("pk_declarations_version", (id, timestamp))
+      (studentAssessmentId, acceptsAuthorship, selfDeclaredRA, completedRADeclaration, created, version, operation, timestamp, auditUser).mapTo[StoredDeclarationsVersion]
+    def pk = primaryKey("pk_declarations_version", (studentAssessmentId, timestamp))
   }
 
   val declarations: VersionedTableQuery[StoredDeclarations, StoredDeclarationsVersion, Declarations, DeclarationsVersions] =
