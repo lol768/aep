@@ -15,7 +15,7 @@
         @multiCheckbox(
             "platform[]",
             Platform.values.map(p => (p.label, p.entryName)),
-            form.get.platform.map(_.entryName)
+            form.value.map(_.platform.map(_.entryName)).getOrElse(List.empty)
         )
         </div>
     </div>

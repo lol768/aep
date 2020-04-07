@@ -4,13 +4,13 @@
 @import warwick.core.helpers.JavaTime
 @import warwick.sso.UniversityID
 @import views.html.admin.assessments.fields
-@import views.html.tags._
 @(
   assessment: Assessment,
   studentAssessments: Seq[StudentAssessment],
   studentInformation: Map[UniversityID, SitsProfile],
   form: Form[AssessmentFormData],
   departments: Seq[Department],
+  numberOfPlatforms: Int = 2
 )(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
@@ -81,10 +81,6 @@
 
       @fields.submit(Some(assessment))
     }
-
-    @modal(
-      id = "platformModal",
-      title = "Warning!"
-    )
+    @fields.platformModal(2)
   }
 }
