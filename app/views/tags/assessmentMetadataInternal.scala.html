@@ -1,5 +1,5 @@
 @import domain.Assessment
-@import org.apache.commons.lang3.time.DurationFormatUtils
+@import views.html.tags.durationWords
 
 @(assessment: Assessment)(implicit context: RequestContext)
 
@@ -14,6 +14,6 @@
 
 <dt>Duration</dt>
 <dd>
-    <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
+    <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@durationWords(assessment)
 </dd>
 

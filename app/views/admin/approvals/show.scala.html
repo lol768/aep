@@ -1,7 +1,7 @@
 @import domain.Assessment
 @import domain.Assessment.Platform
-@import org.apache.commons.lang3.time.DurationFormatUtils
 @import controllers.admin.ApprovalsController.ApprovalFormData
+@import views.html.tags.durationWords
 
 @(assessment: Assessment, form: Form[ApprovalFormData])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
@@ -17,7 +17,7 @@
     <dd>@assessment.platform.label</dd>
 
     <dt>Duration</dt>
-    <dd>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)</dd>
+    <dd>@durationWords(assessment)</dd>
 
     @assessment.brief.text.map { text =>
       <dt>Description</dt>

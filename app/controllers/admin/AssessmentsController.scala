@@ -10,6 +10,7 @@ import domain.{Assessment, Department, DepartmentCode}
 import javax.inject.{Inject, Singleton}
 import play.api.data.{Form, Mapping}
 import play.api.data.Forms._
+import play.api.data.validation.{Constraint, Invalid, Valid, ValidationError}
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
@@ -48,7 +49,7 @@ object AssessmentsController {
 
     val description: Option[String]
 
-    val durationMinutes: Long
+    val durationMinutes: Option[Long]
 
     val platform: Platform
 
@@ -63,8 +64,6 @@ object AssessmentsController {
     val invigilatorsFieldMapping: Mapping[Set[Usercode]] = set(text)
       .transform[Set[Usercode]](codes => codes.filter(_.nonEmpty).map(Usercode), _.map(_.string))
 
-    val durationFieldMapping: Mapping[Long] = longNumber.verifying(Seq(120, 180).contains(_))
-
     val departmentCodeFieldMapping: Mapping[DepartmentCode] = nonEmptyText.transform(DepartmentCode(_), (u: DepartmentCode) => u.string)
   }
 
@@ -78,12 +77,22 @@ object AssessmentsController {
     invigilators: Set[Usercode],
     title: String,
     description: Option[String],
-    durationMinutes: Long,
+    durationMinutes: Option[Long],
     platform: Platform,
     assessmentType: AssessmentType,
     url: Option[String],
     operation: State
   ) extends AbstractAssessmentFormData
+
+  val durationConstraint: Constraint[AbstractAssessmentFormData] = Constraint { assessmentForm =>
+    val validDuration = assessmentForm.durationMinutes
+      .map(d => assessmentForm.assessmentType.validDurations.contains(d))
+      .getOrElse(assessmentForm.assessmentType.validDurations.isEmpty)
+    if(validDuration)
+      Valid
+    else
+      Invalid(Seq(ValidationError("error.assessment.duration-not-valid", assessmentForm.assessmentType.label)))
+  }
 
   val form: Form[AssessmentFormData] = Form(mapping(
     "moduleCode" -> nonEmptyText,
@@ -94,13 +103,14 @@ object AssessmentsController {
     "invigilators" -> invigilatorsFieldMapping,
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
-    "durationMinutes" -> durationFieldMapping,
+    "durationMinutes" -> optional(longNumber),
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText),
     "operation" -> State.formField
   )(AssessmentFormData.apply)(AssessmentFormData.unapply)
     .verifying("error.assessment.url-not-specified", data => data.operation == State.Draft || data.platform == Platform.OnlineExams || data.url.exists(_.nonEmpty))
+    .verifying(durationConstraint)
   )
 
   case class AdHocAssessmentFormData(
@@ -113,7 +123,7 @@ object AssessmentsController {
     invigilators: Set[Usercode],
     title: String,
     description: Option[String],
-    durationMinutes: Long,
+    durationMinutes: Option[Long],
     platform: Platform,
     assessmentType: AssessmentType,
     url: Option[String],
@@ -132,13 +142,14 @@ object AssessmentsController {
     "invigilators" -> invigilatorsFieldMapping,
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
-    "durationMinutes" -> durationFieldMapping,
+    "durationMinutes" -> optional(longNumber),
     "platform" -> Platform.formField,
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(nonEmptyText),
     "operation" -> State.formField
   )(AdHocAssessmentFormData.apply)(AdHocAssessmentFormData.unapply)
     .verifying("error.assessment.url-not-specified", data => data.operation == State.Draft || data.platform == Platform.OnlineExams || data.url.exists(_.nonEmpty))
+    .verifying(durationConstraint)
   )
 }
 
@@ -184,7 +195,7 @@ class AssessmentsController @Inject()(
       invigilators = assessment.invigilators,
       title = assessment.title,
       description = assessment.brief.text,
-      durationMinutes = assessment.duration.toMinutes,
+      durationMinutes = assessment.duration.map(_.toMinutes),
       platform = assessment.platform,
       assessmentType = assessment.assessmentType,
       url = assessment.brief.url,
@@ -220,7 +231,7 @@ class AssessmentsController @Inject()(
                 section = data.section,
                 title = data.title,
                 startTime = data.startTime.map(_.asOffsetDateTime),
-                duration = Duration.ofMinutes(data.durationMinutes),
+                duration = data.durationMinutes.map(Duration.ofMinutes),
                 platform = data.platform,
                 assessmentType = data.assessmentType,
                 brief = Brief(
@@ -261,7 +272,7 @@ class AssessmentsController @Inject()(
         } else {
           assessmentService.update(assessment.copy(
             title = data.title,
-            duration = Duration.ofMinutes(data.durationMinutes),
+            duration = data.durationMinutes.map(Duration.ofMinutes),
             platform = data.platform,
             assessmentType = data.assessmentType,
             invigilators = data.invigilators,

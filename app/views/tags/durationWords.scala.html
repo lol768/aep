@@ -1,0 +1,5 @@
+@import domain.Assessment
+@import org.apache.commons.lang3.time.DurationFormatUtils
+
+@(assessment: Assessment)
+@assessment.duration.map(d => DurationFormatUtils.formatDurationWords(d.toMillis, true, true)).getOrElse(<span class="muted">N/A</span>)

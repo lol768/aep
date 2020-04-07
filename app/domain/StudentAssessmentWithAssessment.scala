@@ -19,11 +19,12 @@ sealed trait BaseStudentAssessmentWithAssessment {
     assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
 
   // How long the student has to submit without being counted late
-  lazy val duration = assessment.duration
-    .plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
+  lazy val duration: Option[Duration] = assessment.duration.map { d =>
+    d.plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
+  }
 
   // Hard limit for student submitting, though they may be counted late.
-  lazy val durationIncludingLate = duration.plus(Assessment.lateSubmissionPeriod)
+  lazy val durationIncludingLate: Option[Duration] = duration.map { d => d.plus(Assessment.lateSubmissionPeriod) }
 
   def getTimingInfo: AssessmentTimingUpdate = {
     AssessmentTimingUpdate(

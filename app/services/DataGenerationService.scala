@@ -121,7 +121,7 @@ object DataGenerationService {
       section = None,
       title = DataGeneration.fakeTitle,
       startTime = Some(startTime),
-      duration = Duration.ofHours(3),
+      duration = Some(Duration.ofHours(3)),
       platform = platform,
       assessmentType = assType,
       storedBrief = makeStoredBrief,
