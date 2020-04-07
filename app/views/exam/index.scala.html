@@ -15,7 +15,11 @@
   @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className)) {
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
-      @sitting.studentAssessment.startTime.map { startTime =>
+      @for(
+        startTime <- sitting.studentAssessment.startTime ;
+        duration <- sitting.duration;
+        durationIncludingLate <- sitting.durationIncludingLate
+      ) {
         <div class="timeline">
           <div class="block turqoise">
             <div class="left">
@@ -44,9 +48,9 @@
             <div class="right">
               <h1>@bareLocalisedDateTime(startTime) You started the assessment</h1>
               <p>
-                This is a @sitting.duration.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(sitting.duration), true)</p>
+                This is a @duration.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(duration), true)</p>
               <p>Please plan your time accordingly.</p>
-              @if(sitting.duration.toHours==3) {
+              @if(duration.toHours==3) {
                 <div class="duration-3-spacer"></div>
               }
             </div>
@@ -60,8 +64,8 @@
               <div class="peg"></div>
             </div>
             <div class="right">
-              <h1 class="mb-1">@bareLocalisedDateTime(startTime.plus(sitting.duration))
-                You have @sitting.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(sitting.duration).plus(sitting.uploadGraceDuration)) to upload your answers</h1>
+              <h1 class="mb-1">@bareLocalisedDateTime(startTime.plus(duration))
+                You have @sitting.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(duration).plus(sitting.uploadGraceDuration)) to upload your answers</h1>
             </div>
           </div>
           <div class="block pink">
@@ -73,7 +77,7 @@
               <div class="peg"></div>
             </div>
             <div class="right">
-              <h1>@bareLocalisedDateTime(startTime.plus(sitting.duration).plus(sitting.uploadGraceDuration))
+              <h1>@bareLocalisedDateTime(startTime.plus(duration).plus(sitting.uploadGraceDuration))
                 Your assessment is now late</h1>
               <p>
                 You can still upload your answers but you may be subject to late penalties, unless you have reasonable adjustments.</p>
@@ -88,7 +92,7 @@
               <div class="peg"></div>
             </div>
             <div class="right">
-              <h1>@bareLocalisedDateTime(startTime.plus(sitting.durationIncludingLate).plus(sitting.uploadGraceDuration)) You can't upload answers at all after this point</h1>
+              <h1>@bareLocalisedDateTime(startTime.plus(durationIncludingLate).plus(sitting.uploadGraceDuration)) You can't upload answers at all after this point</h1>
             </div>
           </div>
         </div>

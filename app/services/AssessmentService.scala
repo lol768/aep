@@ -121,10 +121,10 @@ class AssessmentServiceImpl @Inject()(
           }.toMap
           val now = JavaTime.offsetDateTime
           ServiceResults.success {
-            todaysAssessments.filter { a => a.duration.isDefined && longestAdjustments.get(a.id).exists { adjustment =>
+            todaysAssessments.filter { a => longestAdjustments.get(a.id).exists { adjustment =>
               a.startTime.exists {
                 st => st
-                  .plus(a.duration.get)
+                  .plus(a.duration.getOrElse(Duration.ZERO))
                   .plus(Assessment.lateSubmissionPeriod)
                   .plus(adjustment)
                   .isAfter(now)

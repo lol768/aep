@@ -29,7 +29,6 @@ $(() => {
   $('input[name=assessmentType]').on('change', () => {
     const validDurations = $('input[name=assessmentType]:checked').data('valid-durations');
     $durationField.closest('.form-group').toggle(validDurations.length > 0);
-    $durationField.prop('disabled', !hasOptions);
     $durationField.find('option').each((_, option) => {
       const $option = $(option);
       const isValidOption = validDurations.includes(Number.parseInt($option.val(), 10));

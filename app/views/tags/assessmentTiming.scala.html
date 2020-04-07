@@ -6,7 +6,7 @@
 @import play.api.libs.json.JsNull
 @(sitting: Sitting, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
 
-@for(startTime <- studentAssessmentWithAssessment.assessment.startTime; duration <- sitting.duration) {
+@for(startTime <- sitting.assessment.startTime; duration <- sitting.duration) {
     <span>
         <i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i>
         <span
