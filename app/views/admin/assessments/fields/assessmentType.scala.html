@@ -7,22 +7,25 @@
 @()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 <div class="row">
-    <div class="col-sm-6">
-        @b3.radio(form("assessmentType"), Symbol("_label") -> "Type") { implicit extraInfo =>
-            @AssessmentType.values.map { t => @b3.radioOption(
-                t.entryName,
-                t.label,
-                Symbol("data-valid-durations") -> t.validDurations.mkString("[", ",", "]")
-            )}
-        }
-    </div>
-    <div class="col-sm-6">
-        <div class="form-group  " id="platform_field">
-        @multiCheckbox(
-            "platform[]",
-            Platform.values.map(p => (p.label, p.entryName)),
-            form.value.map(_.platform.map(_.entryName)).getOrElse(Set.empty).toSeq
+  <div class="col-sm-6">
+      @b3.radio(form("assessmentType"), Symbol("_label") -> "Type") { implicit extraInfo =>
+          @AssessmentType.values.map { t => @b3.radioOption(
+              t.entryName,
+              t.label,
+              Symbol("data-valid-durations") -> t.validDurations.mkString("[", ",", "]")
+          )}
+      }
+  </div>
+  <div class="col-sm-6">
+    @b3.multiCheckbox(
+      Platform.values.map { p =>
+        form("platform[]") -> Seq(
+          Symbol("id") -> s"platform_${p.entryName}",
+          Symbol("_text") -> p.label,
+          Symbol("value") -> p.entryName,
+          Symbol("checked") -> form.value.map(_.platform).getOrElse(Set.empty).contains(p)
         )
-        </div>
-    </div>
+      }: _*
+    )(Symbol("_id") -> "platform_field", Symbol("_label") -> "Platform", Symbol("class") -> "multi-checkbox-list")
+  </div>
 </div>

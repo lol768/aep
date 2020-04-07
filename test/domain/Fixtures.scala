@@ -105,9 +105,7 @@ object Fixtures {
 
   object assessments {
 
-    def storedBrief: StoredBrief = DataGenerationService.makeStoredBrief
-
-    def storedAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None): StoredAssessment =
+    def storedAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None)(implicit dataGeneration: DataGeneration): StoredAssessment =
       DataGenerationService.makeStoredAssessment(uuid, platformOption)
 
     // If you just need any old assessment that's assigned to philosophy to test with...
@@ -142,9 +140,10 @@ object Fixtures {
   object announcements {
     import helpers.DateConversion._
 
-    def storedAnnouncement(assId: UUID): StoredAnnouncement = {
+    def storedAnnouncement(assId: UUID)(implicit dataGeneration: DataGeneration): StoredAnnouncement = {
+      import dataGeneration.random
       val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
-      val text = DataGeneration.dummyWords(Random.between(6,30))
+      val text = dataGeneration.dummyWords(random.between(6,30))
 
       StoredAnnouncement(
         id = UUID.randomUUID(),

@@ -33,12 +33,12 @@ class IndexController @Inject()(
     // (if both admin and invigilator then we go to admin)
 
     // nesting nightmare because of mix of bools, futures and serviceresults
-    if (isAdmin) {
-      Future.successful(Redirect(controllers.admin.routes.IndexController.home()))
-    } else {
-      checkRedirectToAssessmentsView.successFlatMap {
-        case true => Future.successful(Redirect(controllers.routes.AssessmentsController.index()))
-        case _ =>
+    checkRedirectToAssessmentsView.successFlatMap {
+      case true => Future.successful(Redirect(controllers.routes.AssessmentsController.index()))
+      case _ =>
+        if (isAdmin) {
+          Future.successful(Redirect(controllers.admin.routes.IndexController.home()))
+        } else {
           isInvigilator.successMap { invigilator =>
             if (invigilator) {
               Redirect(controllers.invigilation.routes.InvigilatorListController.list())
@@ -46,7 +46,7 @@ class IndexController @Inject()(
               Ok(views.html.homeNoRoles(userRoles))
             }
           }
-      }
+        }
     }
   }
 

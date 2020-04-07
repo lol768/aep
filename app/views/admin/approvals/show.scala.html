@@ -24,7 +24,7 @@
       <dd>@text</dd>
     }
 
-    @if(assessment.platform != Platform.OnlineExams) {
+    @if(assessment.platform.exists(_ != Platform.OnlineExams)) {
       @assessment.brief.url.map { url =>
         <dt>URL to assessment</dt>
         <dd>@url</dd>

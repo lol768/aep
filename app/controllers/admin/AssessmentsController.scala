@@ -1,8 +1,10 @@
 package controllers.admin
 
+import java.time.{Duration, LocalDateTime}
+import java.util.UUID
+
 import akka.Done
 import controllers.BaseController
-import controllers.admin.AssessmentsController.AbstractAssessmentFormData
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import domain.tabula.SitsProfile
 import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
@@ -94,17 +96,15 @@ object AssessmentsController {
       "title" -> nonEmptyText,
       "platform" -> set(Platform.formField),
       "assessmentType" -> AssessmentType.formField,
-      "durationMinutes" -> durationFieldMapping,
+      "durationMinutes" -> optional(longNumber),
       "url" -> optional(text),
       "description" -> optional(text),
       "invigilators" -> invigilatorsFieldMapping,
     )(AssessmentFormData.apply)(AssessmentFormData.unapply)
 
     Form(
-      (
-        if (ready) baseMapping.verifying("error.assessment.url-not-specified", data => data.platform == Platform.OnlineExams || data.url.exists(_.nonEmpty))
-        else baseMapping
-      ).verifying(durationConstraint)
+      if (ready) baseMapping.verifying("error.assessment.url-not-specified", data => data.platform == Set(Platform.OnlineExams) || data.url.exists(_.nonEmpty)).verifying(durationConstraint)
+      else baseMapping
     )
   }
 }
@@ -222,7 +222,7 @@ class AssessmentsController @Inject()(
         title = assessment.title,
         platform = assessment.platform,
         assessmentType = assessment.assessmentType,
-        durationMinutes = assessment.duration.toMinutes,
+        durationMinutes = assessment.duration.map(_.toMinutes),
         url = assessment.brief.url,
         description = assessment.brief.text,
         invigilators = assessment.invigilators,

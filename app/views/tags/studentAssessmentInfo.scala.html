@@ -1,9 +1,17 @@
 @import tags._
 @import domain.StudentAssessmentMetadata
+@import domain.AssessmentClientNetworkActivity
 @import domain.tabula
 @import warwick.sso.UniversityID
 @import org.apache.commons.lang3.time.DurationFormatUtils
-@(metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, tabula.SitsProfile], studentsWithQueries: Option[Seq[UniversityID]] = None)(implicit context: RequestContext)
+@import java.util.UUID
+
+@(
+        metadata: Seq[StudentAssessmentMetadata],
+        userMap: Map[UniversityID, tabula.SitsProfile],
+        studentsWithQueries: Option[Seq[UniversityID]] = None,
+        latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty
+)(implicit context: RequestContext)
 
 @if(metadata.nonEmpty) {
   @studentsWithQueries.map { sWQ =>
@@ -24,6 +32,7 @@
         <th>Start time</th>
         <th>Finalised time</th>
         <th>Adjustments</th>
+        <th>Connection</th>
         @studentsWithQueries.map { sWQ =>
           <th><i class="fad themed-duotone fa-comment-alt-lines mr-half"></i></th>
         }
@@ -54,6 +63,17 @@
             }
           </td>
           <td>@md.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
+          <td>
+            @latestActivities.get(md.studentAssessmentId).map { a =>
+              @if(a.isOnline) {
+                <i class="fad fa-signal themed-duotone"></i> Online now
+              } else {
+                <i class="fad fa-signal-slash themed-duotone"></i> Offline
+              }
+            }.getOrElse {
+              <span class="text-muted">No information</span>
+            }
+          </td>
           @studentsWithQueries.map { sWQ =>
             <td>
               @if(sWQ.contains(md.studentId)) {

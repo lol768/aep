@@ -1,8 +1,7 @@
 package domain
 
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
-import warwick.core.helpers.JavaTime
 
 case class AssessmentClientNetworkActivity (
   downlink: Option[Double], // mbps
@@ -11,5 +10,7 @@ case class AssessmentClientNetworkActivity (
   rtt: Option[Int], // rounded to nearest 25ms
   `type`: Option[String], // bluetooth, cellular, ethernet, none, wifi, wimax, other, unknown
   studentAssessmentId: UUID,
-  timestamp: OffsetDateTime = JavaTime.offsetDateTime,
-)
+  timestamp: OffsetDateTime = OffsetDateTime.now,
+) {
+  def isOnline = Duration.between(timestamp, OffsetDateTime.now).compareTo(Duration.ofMinutes(2L)) < 0;
+}

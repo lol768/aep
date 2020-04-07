@@ -18,6 +18,7 @@ trait AssessmentClientNetworkActivityService {
   def record(assessmentClientNetworkActivity: AssessmentClientNetworkActivity)(implicit t: TimingContext): Future[ServiceResult[Done]]
   def findByStudentAssessmentId(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentClientNetworkActivity]]]
   def getClientActivityFor(assessments: Seq[StudentAssessment], startDate:Option[OffsetDateTime], endDate: Option[OffsetDateTime], page: Page)(implicit t: TimingContext): Future[ServiceResult[(Int,Seq[AssessmentClientNetworkActivity])]]
+  def getLatestActivityFor(studentAssessmentIds: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Map[UUID, AssessmentClientNetworkActivity]]]
 }
 
 @Singleton
@@ -42,5 +43,11 @@ class AssessmentClientNetworkActivityServiceImpl @Inject()(
     } yield (total,activities)
 
     daoRunner.run(activitiesWithFiler.map(ServiceResults.success))
+  }
+
+  override def getLatestActivityFor(studentAssessmentIds: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Map[UUID, AssessmentClientNetworkActivity]]] = {
+    daoRunner.run(dao.getLatestActivityFor(studentAssessmentIds)).map { activities =>
+      ServiceResults.success(activities.map(a => a.studentAssessmentId -> a).toMap)
+    }
   }
 }

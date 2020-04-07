@@ -21,7 +21,7 @@
                 "hasStarted" -> JsBoolean(sitting.studentAssessment.startTime.nonEmpty),
                 "hasFinalised" -> JsBoolean(sitting.studentAssessment.finaliseTime.nonEmpty),
                 "extraTimeAdjustment" -> sitting.studentAssessment.extraTimeAdjustment.map(et => JsNumber(et.toMillis)).getOrElse(JsNull),
-                "showTimeRemaining" -> JsBoolean(sitting.assessment.platform == Platform.OnlineExams),
+                "showTimeRemaining" -> JsBoolean(sitting.assessment.platform.contains(Platform.OnlineExams)),
             )))
         }"
         ></span>
