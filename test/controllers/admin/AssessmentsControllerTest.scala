@@ -124,7 +124,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       title = "bonk",
       description = None,
       durationMinutes = 120L,
-      platform = List(Platform.OnlineExams),
+      platform = Set(Platform.OnlineExams),
       assessmentType = AssessmentType.OpenBook,
       url = None,
     )

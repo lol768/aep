@@ -50,7 +50,7 @@ object AssessmentsController {
 
     val durationMinutes: Long
 
-    val platform: Seq[Platform]
+    val platform: Set[Platform]
 
     val assessmentType: AssessmentType
 
@@ -77,7 +77,7 @@ object AssessmentsController {
     title: String,
     description: Option[String],
     durationMinutes: Long,
-    platform: List[Platform],
+    platform: Set[Platform],
     assessmentType: AssessmentType,
     url: Option[String],
   ) extends AbstractAssessmentFormData
@@ -92,7 +92,7 @@ object AssessmentsController {
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
     "durationMinutes" -> durationFieldMapping,
-    "platform" -> list(Platform.formField),
+    "platform" -> set(Platform.formField),
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(text),
   )(AssessmentFormData.apply)(AssessmentFormData.unapply)
@@ -111,7 +111,7 @@ object AssessmentsController {
     title: String,
     description: Option[String],
     durationMinutes: Long,
-    platform: List[Platform],
+    platform: Set[Platform],
     assessmentType: AssessmentType,
     url: Option[String],
   ) extends AbstractAssessmentFormData
@@ -129,7 +129,7 @@ object AssessmentsController {
     "title" -> nonEmptyText,
     "description" -> optional(nonEmptyText),
     "durationMinutes" -> durationFieldMapping,
-    "platform" -> list(Platform.formField),
+    "platform" -> set(Platform.formField),
     "assessmentType" -> AssessmentType.formField,
     "url" -> optional(text),
   )(AdHocAssessmentFormData.apply)(AdHocAssessmentFormData.unapply)

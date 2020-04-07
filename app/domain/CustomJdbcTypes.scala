@@ -43,9 +43,9 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
     GroupName
   )
 
-  implicit val platformListTypeMapper: JdbcType[List[Platform]] = MappedColumnType.base[List[Platform], String](
+  implicit val platformListTypeMapper: JdbcType[Set[Platform]] = MappedColumnType.base[Set[Platform], String](
     r => r.map(_.entryName).mkString(","),
-    s => s.split(",").map(Platform.withName).toList
+    s => s.split(",").map(Platform.withName).toSet
   )
 
   implicit val symbolTypeMapper: JdbcType[Symbol] = MappedColumnType.base[Symbol, String](_.name, Symbol.apply)

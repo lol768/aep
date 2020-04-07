@@ -57,6 +57,14 @@ package object tabula {
     def asAssessment(existingAssessment: Option[Assessment], schedule: ExamPaperSchedule): Assessment = {
       val paper = examPaper.get
 
+      val locationNameAsPlatform = schedule.locationName.map {
+        case "Assignment" => Platform.TabulaAssignment
+        case "Open book assessment" | "Files-based open book assessment" => Platform.OnlineExams
+        case "Multiple Choice Questions" => Platform.QuestionmarkPerception
+        case "Spoken exam under time conditions" | "Controlled online exam" => Platform.Moodle
+        case _ => Platform.OnlineExams
+      }.getOrElse(Platform.OnlineExams)
+
       Assessment(
         id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
         paperCode = paper.code,
@@ -64,13 +72,7 @@ package object tabula {
         title = paper.title.getOrElse(name),
         startTime = Some(schedule.startTime),
         duration = paper.duration.get,
-        platform = existingAssessment.map(_.platform).getOrElse(schedule.locationName.map {
-          case "Assignment" => List(Platform.TabulaAssignment)
-          case "Open book assessment" | "Files-based open book assessment" => List(Platform.OnlineExams)
-          case "Multiple Choice Questions" => List(Platform.QuestionmarkPerception)
-          case "Spoken exam under time conditions" | "Controlled online exam" => List(Platform.Moodle)
-          case _ => List(Platform.OnlineExams)
-        }.getOrElse(List(Platform.OnlineExams))),
+        platform = existingAssessment.map(_.platform).getOrElse(List(locationNameAsPlatform).toSet),
         assessmentType = existingAssessment.map(_.assessmentType).getOrElse(schedule.locationName.map {
           case "Assignment" | "Open book assessment" => AssessmentType.OpenBook
           case "Open Book Assessment, files based" | "Files-based open book assessment" => AssessmentType.OpenBookFileBased
