@@ -22,7 +22,7 @@
   @b3.vertical.formCSRF(controllers.routes.AssessmentController.authorshipDeclaration(assessmentId)) { implicit fc =>
     @b3.checkbox(
       form("agreeAuthorship"),
-      Symbol("_text") -> "I declare I will comply with this statement",
+      Symbol("_text") -> "I declare I will comply with this statement.",
       Symbol("data-undisable-selector") -> ".authorship-declaration-btn",
       Symbol("class") -> "undisable-with-checkbox",
     )
