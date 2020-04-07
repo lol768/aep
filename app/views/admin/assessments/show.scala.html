@@ -4,7 +4,7 @@
 @import warwick.core.helpers.JavaTime
 @import warwick.sso.UniversityID
 @import views.html.admin.assessments.fields
-
+@import views.html.tags._
 @(
   assessment: Assessment,
   studentAssessments: Seq[StudentAssessment],
@@ -81,5 +81,10 @@
 
       @fields.submit(Some(assessment))
     }
+
+    @modal(
+      id = "platformModal",
+      title = "Warning!"
+    )
   }
 }

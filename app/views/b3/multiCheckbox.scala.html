@@ -4,7 +4,7 @@
   <label class="control-label">Platform</label>
   @values.map{ case (label, value)  =>
     <div class="radio">
-      <input type="checkbox" id="@field@value" name="@field" value="@value" @if(checked.contains(value)){checked}>@label</input>
+      <input type="checkbox" id="@value" name="@field" value="@value" @if(checked.contains(value)){checked}>@label</input>
     </div>
   }
 

@@ -1,6 +1,7 @@
 @import controllers.admin.AssessmentsController.{AbstractAssessmentFormData, AdHocAssessmentFormData}
 @import views.html.admin.assessments.fields
 @import domain.Department
+@import views.html.tags.modal
 @(form: Form[AdHocAssessmentFormData], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 @defining(form.asInstanceOf[Form[AbstractAssessmentFormData]]) { implicit abstractForm =>
     @adminLayout(title = s"Create mock (non-SITS) assessment", extraClasses = Seq("grey-nopad")) {
@@ -75,5 +76,10 @@
 
             @fields.submit(None)
         }
+        @modal(
+            id = "platformModal",
+            title = "Warning!"
+        )
     }
 }
+
