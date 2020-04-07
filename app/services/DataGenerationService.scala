@@ -59,7 +59,7 @@ class DataGenerationServiceImpl @Inject()(
       (1 to howManyAssessments).map { _ =>
         assessmentService.upsert(makeStoredAssessment().asAssessment(Map.empty)).flatMap { result =>
           result.toOption.map { insertedAssessment =>
-            if (insertedAssessment.platform == OnlineExams) { // Guard against calling this for other platforms
+            if (insertedAssessment.platform.contains(OnlineExams)) { // Guard against calling this for other platforms
               addRandomStudentAssessmentsToAssessment(insertedAssessment.id)
             }
           }.getOrElse {

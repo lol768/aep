@@ -95,7 +95,7 @@ object AssessmentsController {
     )(AssessmentFormData.apply)(AssessmentFormData.unapply)
 
     Form(
-      if (ready) baseMapping.verifying("error.assessment.url-not-specified", data => data.platform == Platform.OnlineExams || data.url.exists(_.nonEmpty))
+      if (ready) baseMapping.verifying("error.assessment.url-not-specified", data => data.platform == Set(Platform.OnlineExams) || data.url.exists(_.nonEmpty))
       else baseMapping
     )
   }
