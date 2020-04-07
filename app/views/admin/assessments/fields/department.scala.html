@@ -1,8 +1,8 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
-@import controllers.admin.AssessmentsController.AbstractAssessmentFormData
+@import controllers.admin.AssessmentsController.AssessmentFormData
 @import domain.Assessment
 @import domain.Department
-@(existing: Option[Assessment], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AbstractAssessmentFormData])
+@(existing: Option[Assessment], departments: Seq[Department])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 @b3.select(form("departmentCode"), options = ("", "") +: departments.map(d => d.code.string -> d.name), Symbol("_label") -> "Department", Symbol("readonly") -> existing.exists(_.tabulaAssessmentId))
 

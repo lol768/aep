@@ -1,16 +1,24 @@
-@import domain.StudentAssessment
+@import controllers.admin.AssessmentsController.AssessmentFormData
+@import domain.{Assessment, StudentAssessment}
 @import domain.tabula.SitsProfile
+@import org.apache.commons.lang3.time.DurationFormatUtils
 @import warwick.core.views.utils._
 @import warwick.sso.UniversityID
+@import views.html.b3.vertical.VerticalFieldConstructor
 
-@import org.apache.commons.lang3.time.DurationFormatUtils
 @(
+  existing: Option[Assessment],
   students: Seq[StudentAssessment],
   studentInformation: Map[UniversityID, SitsProfile],
-)(implicit context: RequestContext)
+)(implicit context: RequestContext, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 <details class="panel panel-default">
   <summary class="panel-heading">@students.size @pl(students.size, "student")()</summary>
+  @if(existing.forall(_.tabulaAssessmentId.isEmpty)) {
+    <div class="panel-body">
+      @b3.textarea(form("students"), Symbol("_label") -> "Student IDs", Symbol("rows") -> 20, Symbol("_help") -> "Enter 7-digit student Univeristy IDs for this assessment, one per line.")
+    </div>
+  }
   <table class="table table-striped table-sortable">
     <thead>
       <tr>
