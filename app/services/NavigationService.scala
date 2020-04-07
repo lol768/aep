@@ -4,7 +4,7 @@ import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.mvc.Call
-import system.Roles.{Admin, Sysadmin}
+import system.Roles._
 import warwick.core.timing.TimingContext
 import warwick.sso.{GroupService, LoginContext}
 
@@ -85,9 +85,11 @@ class NavigationServiceImpl @Inject()(
   private lazy val sysadmin =
     NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), navigationItems)
 
-  private def sysadminMenu(loginContext: LoginContext): Seq[Navigation] =
+  private def sysadminMenuOrMasquerade(loginContext: LoginContext): Seq[Navigation] =
     if (loginContext.actualUserHasRole(Sysadmin))
       Seq(sysadmin)
+    else if (loginContext.actualUserHasRole(Masquerader))
+      Seq(masquerade)
     else
       Nil
 
@@ -118,7 +120,7 @@ class NavigationServiceImpl @Inject()(
   override def getNavigation(loginContext: LoginContext): Seq[Navigation] =
     invigilatorMenu(loginContext) ++
     adminMenu(loginContext) ++
-    sysadminMenu(loginContext)
+    sysadminMenuOrMasquerade(loginContext)
 
   private def isAdmin(ctx: LoginContext): Boolean =
     ctx.user.exists { user =>
