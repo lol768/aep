@@ -3,13 +3,16 @@ package controllers.admin
 import java.time.{Duration, LocalDateTime}
 import java.util.UUID
 
+import akka.Done
 import controllers.BaseController
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import domain.tabula.SitsProfile
-import domain.{Assessment, Department, DepartmentCode}
+import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
+import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
-import play.api.data.{Form, FormError, Mapping}
 import play.api.data.Forms._
+import play.api.data.validation.{Constraint, Invalid, Valid, ValidationError}
+import play.api.data.{Form, FormError, Mapping}
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
@@ -29,28 +32,7 @@ object AssessmentsController {
 
   import controllers.admin.AssessmentsController.AssessmentFormData._
 
-    val departmentCode: DepartmentCode
-
-    val sequence: String
-
-    val startTime: Option[LocalDateTime] = None
-
-    val invigilators: Set[Usercode]
-
-    val title: String
-
-    val description: Option[String]
-
-    val durationMinutes: Long
-
-    val platform: Set[Platform]
-
-    val assessmentType: AssessmentType
-
-    val url: Option[String]
-  }
-
-  object AbstractAssessmentFormData {
+  object AssessmentFormData {
     val invigilatorsFieldMapping: Mapping[Set[Usercode]] = set(text)
       .transform[Set[Usercode]](codes => codes.filter(_.nonEmpty).map(Usercode), _.map(_.string))
 
@@ -86,44 +68,9 @@ object AssessmentsController {
     startTime: Option[LocalDateTime],
     students: Set[UniversityID],
     title: String,
-    description: Option[String],
-    durationMinutes: Long,
-    platform: Platform,
+    platform: Set[Platform],
     assessmentType: AssessmentType,
-    url: Option[String],
-  ) extends AbstractAssessmentFormData
-
-  val formMapping: Mapping[AssessmentFormData] = mapping(
-    "moduleCode" -> nonEmptyText,
-    "paperCode" -> nonEmptyText,
-    "section" -> optional(text),
-    "departmentCode" -> departmentCodeFieldMapping,
-    "sequence" -> nonEmptyText,
-    "invigilators" -> invigilatorsFieldMapping,
-    "title" -> nonEmptyText,
-    "description" -> optional(nonEmptyText),
-    "durationMinutes" -> durationFieldMapping,
-    "platform" -> set(Platform.formField),
-    "assessmentType" -> AssessmentType.formField,
-    "url" -> optional(text),
-  )(AssessmentFormData.apply)(AssessmentFormData.unapply)
-
-  val form: Form[AssessmentFormData] = Form(formMapping)
-  val readyForm: Form[AssessmentFormData] = Form(readyMapping(formMapping))
-
-  case class AdHocAssessmentFormData(
-    moduleCode: String,
-    paperCode: String,
-    section: Option[String],
-    departmentCode: DepartmentCode,
-    sequence: String,
-    override val startTime: Option[LocalDateTime],
-    invigilators: Set[Usercode],
-    title: String,
-    description: Option[String],
     durationMinutes: Long,
-    platform: Platform,
-    assessmentType: AssessmentType,
     url: Option[String],
     description: Option[String],
     invigilators: Set[Usercode],
