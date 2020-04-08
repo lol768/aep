@@ -132,7 +132,7 @@ describe('calculateTimingInfo', () => {
     });
   });
 
-  it('warns but does not show time remaining for a "missed" deadline if showTimeRemaining = false', () => {
+  it('does not warn for a "missed" deadline if showTimeRemaining = false', () => {
     const data = {
       start: BASE_TIME - 125*MINUTE,
       end: BASE_TIME - 5*MINUTE,
@@ -143,7 +143,7 @@ describe('calculateTimingInfo', () => {
     };
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
-      warning: true,
+      warning: false,
       text: "You started this assessment, but missed the deadline to upload your answers.",
       allowStart: false
     });

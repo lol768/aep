@@ -117,8 +117,8 @@ export function calculateTimingInfo(data, now) {
       text = 'You started this assessment, but missed the deadline to upload your answers.';
       if (showTimeRemaining) {
         text += `\nExceeded deadline by ${msToHumanReadable(-timeRemaining)}.`;
+        warning = true;
       }
-      warning = true;
     }
   } else if (timeUntilStart > 0) {
     text = `You can start in ${msToHumanReadable(timeUntilStart)}.`;
