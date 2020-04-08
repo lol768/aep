@@ -34,7 +34,7 @@ sealed trait BaseSitting {
     d.plus(Assessment.lateSubmissionPeriod)
   }
 
-  def canFinalise: Boolean = studentAssessment.startTime.exists(startTime =>
+  def canModify: Boolean = studentAssessment.startTime.exists(startTime =>
     durationIncludingLate.exists { d =>
       !finalised &&
         startTime.plus(d).isAfter(JavaTime.offsetDateTime) &&
