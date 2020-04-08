@@ -114,9 +114,9 @@ class WebSocketActor @Inject() (
 
           // Get single assessment or all user's assessments, depending on what was requested
           val getAssessments: Future[ServiceResult[Seq[SittingMetadata]]] = requestedAssessmentId.map { id =>
-            studentAssessmentService.getMetadataWithAssessment(universityID, id)(TimingContext.none).successMapTo(a => Seq(a))
+            studentAssessmentService.getSittingsMetadata(universityID, id)(TimingContext.none).successMapTo(a => Seq(a))
           }.getOrElse {
-            studentAssessmentService.getMetadataWithAssessment(universityID)(TimingContext.none)
+            studentAssessmentService.getSittingsMetadata(universityID)(TimingContext.none)
           }
 
           getAssessments.successMapTo { assessments =>

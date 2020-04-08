@@ -1,6 +1,6 @@
-@import controllers.admin.SittingMetadata
+@import controllers.admin.ReportingMetadata
 @import tags._
-@(sittings: SittingMetadata)(implicit context: RequestContext)
+@(sittings: ReportingMetadata)(implicit context: RequestContext)
 
 @frontend(sittings.assessment.title) {
   @assessmentMetadata(sittings.assessment)
