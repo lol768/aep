@@ -58,7 +58,7 @@ object AssessmentsController {
 
     // Somewhere a string of a single empty space is creeping in...
     val platformsMapping: Mapping[Set[Platform]] =
-      set(text).verifying ("error.assessment.platformNumber", !_.forall(p => Platform.namesToValuesMap.get(p).nonEmpty))
+      set(text).verifying ("error.assessment.platformNumber", theSet => theSet.nonEmpty && theSet.forall(p => Platform.namesToValuesMap.get(p).nonEmpty))
         .transform[Set[Platform]](_.map(Platform.withName), _.map(_.entryName))
 
   }

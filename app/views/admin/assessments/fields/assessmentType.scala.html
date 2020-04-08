@@ -27,13 +27,13 @@
             Symbol("id") -> s"platform_${p.entryName}",
             Symbol("_text") -> p.label,
             Symbol("value") -> p.entryName,
-            Symbol("checked") -> form.value.map(_.platform).getOrElse(Set.empty).contains(p)
+            Symbol("checked") -> form.data.filter(_._1.contains("platform")).values.toSeq.contains(p.entryName)
           )
         }: _*
       )(
         Symbol("_id") -> "platform_field",
         Symbol("_label") -> "Platform",
-        Symbol("class") -> s"multi-checkbox-list"
+        Symbol("class") -> "multi-checkbox-list"
       )
       @if(errors.nonEmpty) {
         </div>
