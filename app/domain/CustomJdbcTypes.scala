@@ -4,6 +4,7 @@ import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.StoredBrief
 import domain.messaging.MessageSender
 import enumeratum.SlickEnumSupport
+import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json.{Format, JsValue, Json, OFormat}
@@ -45,7 +46,7 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
 
   implicit val platformListTypeMapper: JdbcType[Set[Platform]] = MappedColumnType.base[Set[Platform], String](
     r => r.map(_.entryName).mkString(","),
-    s => s.split(",").map(Platform.withName).toSet
+    s => s.split(',').filter(_.hasText).map(Platform.withName).toSet
   )
 
   implicit val symbolTypeMapper: JdbcType[Symbol] = MappedColumnType.base[Symbol, String](_.name, Symbol.apply)
