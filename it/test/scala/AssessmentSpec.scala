@@ -132,8 +132,7 @@ class AssessmentSpec extends BrowserFeatureSpec {
       Then.the_ra_declaration_button_is_enabled()
 
       When.i_click_to_confirm_the_ra_declaration()
-      Then i_should_see_the_text "The assessment has begun."
-      And i_should_see_the_text "Started a moment ago"
+      Then i_should_see_the_text "Started"
       And i_should_see_the_text "View your assessment in Moodle"
     }
   }

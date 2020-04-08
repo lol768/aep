@@ -5,9 +5,10 @@
 @import warwick.sso.UniversityID
 @import org.apache.commons.lang3.time.DurationFormatUtils
 @import java.util.UUID
+@import domain.SittingMetadata
 
 @(
-        metadata: Seq[StudentAssessmentMetadata],
+        metadata: Seq[SittingMetadata],
         userMap: Map[UniversityID, tabula.SitsProfile],
         studentsWithQueries: Option[Seq[UniversityID]] = None,
         latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty
@@ -18,7 +19,7 @@
     <div class="alert alert-info">
       <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
       @sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.
-      <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessmentId)">
+      <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
       View all queries.
     </a>
     </div>
@@ -42,29 +43,29 @@
     <tbody>
       @metadata.map { md =>
         <tr>
-          @userMap.get(md.studentId).map { profile =>
-            <td>@profile.fullName <span class="text-muted">(@md.studentId.string)</span></td>
+          @userMap.get(md.studentAssessment.studentId).map { profile =>
+            <td>@profile.fullName <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
             <td>@profile.department.name</td>
           }.getOrElse {
-            <td>Unknown name <span class="text-muted">(@md.studentId.string)</span></td>
+            <td>Unknown name <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
             <td>Unknown department</td>
           }
           <td>
-              @* TODO Add a getState function, when window/nowindow is sorted            *@
+            @md.getProgressState.map(_.label)
           </td>
           <td>
-            @md.startTime.map {time =>
+            @md.studentAssessment.startTime.map {time =>
               @localisedDatetime(time)
             }
           </td>
           <td>
-            @md.finaliseTime.map {time =>
+            @md.studentAssessment.finaliseTime.map {time =>
               @localisedDatetime(time)
             }
           </td>
-          <td>@md.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
+          <td>@md.studentAssessment.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
           <td>
-            @latestActivities.get(md.studentAssessmentId).map { a =>
+            @latestActivities.get(md.studentAssessment.studentAssessmentId).map { a =>
               @if(a.isOnline) {
                 <i class="fad fa-signal themed-duotone"></i> Online now
               } else {
@@ -76,8 +77,8 @@
           </td>
           @studentsWithQueries.map { sWQ =>
             <td>
-              @if(sWQ.contains(md.studentId)) {
-                <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.view(md.assessmentId, md.studentId)" title="View queries">
+              @if(sWQ.contains(md.studentAssessment.studentId)) {
+                <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.view(md.studentAssessment.assessmentId, md.studentAssessment.studentId)" title="View queries">
                   <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
                 </a>
               }

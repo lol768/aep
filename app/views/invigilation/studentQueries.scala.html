@@ -2,8 +2,8 @@
 @import domain.Assessment
 @import domain.tabula
 @import domain.StudentAssessmentMetadata
+@import domain.SittingMetadata
 @import warwick.sso.UniversityID
-@import views.html.invigilation._
 @import domain.AnnouncementOrQuery
 @(
         assessment: Assessment,
@@ -14,7 +14,7 @@
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout("Queries from " + student.get(studentAssessment.studentId).map(_.fullName).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode) {
     <div class="id7-main-content">
-        @studentAssessmentInfo(Seq(studentAssessment), student)
+        @studentAssessmentInfo(Seq(SittingMetadata(studentAssessment, assessment.asAssessmentMetadata)), student)
         <div class="row">
             <div class="col-md-6">
                 <h3>Announcements</h3>
