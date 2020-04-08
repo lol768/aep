@@ -99,7 +99,9 @@ object AssessmentsController {
   }
 
   def notStarted(existing: Option[Assessment]): Constraint[AssessmentFormData] = Constraint { _ =>
-    if (existing.exists(_.hasStartTimePassed))
+    if (existing.forall(_.tabulaAssessmentId.isEmpty))
+      Valid
+    else if (existing.exists(_.hasStartTimePassed))
       Invalid(Seq(ValidationError("error.assessment.started")))
     else
       Valid
