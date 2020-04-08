@@ -1,5 +1,6 @@
 @import domain.Assessment.Platform
 @import domain.Sitting
+@import domain.BaseSitting.ProgressState._
 @import tags._
 
 @(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
@@ -8,8 +9,8 @@
     durationInfo <- sitting.durationInfo
     if sitting.assessment.platform.contains(Platform.OnlineExams)
 ) {
-    <div class="timeline">
-        <div class="block turqoise">
+    <div class="timeline" data-id="@sitting.assessment.id">
+        <div class="block turqoise @if(sitting.getProgressState.contains(AssessmentOpenNotStarted)) { active } else {}" data-state="@AssessmentOpenNotStarted.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-2x fa-clock"></i></div>
                 <div class="stick"></div>
@@ -25,7 +26,7 @@
                 }
             </div>
         </div>
-        <div class="block green active">
+        <div class="block green @if(sitting.getProgressState.contains(InProgress)) { active } else {}" data-state="@InProgress.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-2x fa-stopwatch"></i></div>
                 <div class="stick"></div>
@@ -43,7 +44,7 @@
                 }
             </div>
         </div>
-        <div class="block orange">
+        <div class="block orange @if(sitting.getProgressState.contains(OnGracePeriod)) { active } else {}" data-state="@OnGracePeriod.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-cloud-upload fa-2x"></i></div>
                 <div class="stick"></div>
@@ -56,7 +57,7 @@
                     You have @sitting.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(durationInfo.onTimeDuration)) to upload your answers</h1>
             </div>
         </div>
-        <div class="block pink">
+        <div class="block pink @if(sitting.getProgressState.contains(Late)) { active } else {}" data-state="@Late.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-exclamation-triangle fa-2x"></i></div>
                 <div class="stick"></div>
@@ -72,7 +73,7 @@
                 <div class="vert-space"></div>
             </div>
         </div>
-        <div class="block red">
+        <div class="block red @if(sitting.getProgressState.contains(DeadlineMissed)) { active } else {}" data-state="@DeadlineMissed.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-ban fa-2x"></i></div>
             </div>
