@@ -58,7 +58,7 @@ object AssessmentsController {
 
     // Somewhere a string of a single empty space is creeping in...
     val platformsMapping: Mapping[Set[Platform]] =
-      set(text).verifying ("error.assessment.platformNumber", theSet => theSet.nonEmpty && theSet.forall(p => Platform.namesToValuesMap.get(p).nonEmpty))
+      set(text).verifying ("error.assessment.platformNumber", theSet => theSet.nonEmpty && theSet.forall(p => Platform.namesToValuesMap.contains(p)))
         .transform[Set[Platform]](_.map(Platform.withName), _.map(_.entryName))
 
   }
@@ -73,7 +73,7 @@ object AssessmentsController {
     students: Set[UniversityID],
     title: String,
     platform: Set[Platform],
-    assessmentType: AssessmentType,
+    assessmentType: Option[AssessmentType],
     durationMinutes: Option[Long],
     url: Option[String],
     description: Option[String],
@@ -81,13 +81,13 @@ object AssessmentsController {
   )
 
   val durationConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
-    val validDuration = assessmentForm.durationMinutes
-      .map(d => assessmentForm.assessmentType.validDurations.contains(d))
-      .getOrElse(assessmentForm.assessmentType.validDurations.isEmpty)
-    if(validDuration)
-      Valid
-    else
-      Invalid(Seq(ValidationError("error.assessment.duration-not-valid", assessmentForm.assessmentType.label)))
+    assessmentForm.assessmentType.map { at =>
+      val validDuration = assessmentForm.durationMinutes
+        .map(d => at.validDurations.contains(d))
+        .getOrElse(at.validDurations.isEmpty)
+      if (validDuration) Valid
+      else Invalid(Seq(ValidationError("error.assessment.duration-not-valid", at.label)))
+    }.getOrElse(Valid) // if assessment type isn't defined don't validate on duration
   }
 
   val platformConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
@@ -118,7 +118,7 @@ object AssessmentsController {
       "students" -> studentsFieldMapping,
       "title" -> nonEmptyText,
       "platform" -> platformsMapping,
-      "assessmentType" -> AssessmentType.formField,
+      "assessmentType" -> optional(AssessmentType.formField),
       "durationMinutes" -> optional(longNumber),
       "url" -> optional(text),
       "description" -> optional(text),
@@ -128,6 +128,7 @@ object AssessmentsController {
 
     Form(
       if (ready) baseMapping
+        .verifying("error.assessment.assessment-type-not-specified", data => data.assessmentType.isDefined)
         .verifying("error.assessment.url-not-specified", data => data.platform == Set(Platform.OnlineExams) || data.url.exists(_.nonEmpty))
         .verifying(durationConstraint)
         .verifying(platformConstraint)

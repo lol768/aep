@@ -113,7 +113,7 @@ object DataGenerationService {
     val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
     val paperCode = s"$stemModuleCode${Random.between(1, 9)}"
     val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
-    val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
+    val assType = Some(AssessmentType.values(Random.nextInt(AssessmentType.values.size)))
     val moduleCode =  s"$stemModuleCode-$cats"
     val sequence = f"E${dataGeneration.random.between(1, 9)}%02d"
 

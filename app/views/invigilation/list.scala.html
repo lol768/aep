@@ -29,7 +29,7 @@
                     @durationWords(assessment)
                 </td>
                 <td>
-                    @assessment.assessmentType.label
+                    @assessment.assessmentType.map(_.label).getOrElse("")
                 </td>
                 <td class="text-right">
                     <a href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)" class="btn btn-default btn-sm">View</a>
