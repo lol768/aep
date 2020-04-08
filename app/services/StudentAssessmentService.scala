@@ -38,6 +38,7 @@ trait StudentAssessmentService {
   def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
+  def insert(studentAssessments: Set[StudentAssessment])(implicit ctx: AuditLogContext): Future[ServiceResult[Set[StudentAssessment]]]
   def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
   def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]]
 
@@ -267,6 +268,23 @@ class StudentAssessmentServiceImpl @Inject()(
         } yield updatedStudentAssessmentRows
       ).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
     }
+  }
+
+  override def insert(studentAssessments: Set[StudentAssessment])(implicit ctx: AuditLogContext): Future[ServiceResult[Set[StudentAssessment]]] = {
+    val timestamp = JavaTime.offsetDateTime
+    daoRunner.run(dao.insertAll(studentAssessments.map(studentAssessment => StoredStudentAssessment(
+      id = studentAssessment.id,
+      assessmentId = studentAssessment.assessmentId,
+      studentId = studentAssessment.studentId,
+      inSeat = studentAssessment.inSeat,
+      startTime = studentAssessment.startTime,
+      extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+      finaliseTime = studentAssessment.finaliseTime,
+      uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+      created = timestamp,
+      version = timestamp,
+    )))).flatMap(ssa => inflateWithUploadedFiles(ssa))
+      .map(r => ServiceResults.success(r.toSet))
   }
 
   override def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {

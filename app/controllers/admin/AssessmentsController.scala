@@ -194,14 +194,27 @@ class AssessmentsController @Inject()(
               id = UUID.randomUUID()
             ),
             files = request.body.files.map(_.ref).map(f => (f.in, f.metadata)),
-          ).successMap { _ =>
+          ).successFlatMapTo(newAssessment =>
+            studentAssessmentService.insert(data.students.map(universityID =>
+              StudentAssessment(
+                id = UUID.randomUUID(),
+                assessmentId = newAssessment.id,
+                studentId = universityID,
+                inSeat = false,
+                startTime = None,
+                extraTimeAdjustment = None,
+                finaliseTime = None,
+                uploadedFiles = Nil,
+              )
+            ))
+          ).successMap(_ =>
             Redirect(routes.AssessmentsController.index()).flashing {
               if (newState == State.Approved)
                 "success" -> Messages("flash.assessment.created", data.title)
               else
                 "warning" -> Messages("flash.assessment.created.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args))).mkString("; "))
             }
-          }
+          )
         } else { // User is not an admin for the supplied department
           Future.successful(Redirect(
             controllers.admin.routes.AssessmentsController.create()
