@@ -2,7 +2,7 @@
 
 update assessment
     set duration = null, type = null, platform = null
-    where tabula_assessment_id is not null and brief = '{"fileIds": []}'; -- Assume brief will have changed if edited by department
+    where tabula_assessment_id is not null and brief = '{"fileIds": []}' and exam_profile_code in ('EXMAY20', 'EXJUN20_V2');
 
 # --- !Downs
 -- nope
