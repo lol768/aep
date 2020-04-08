@@ -98,6 +98,15 @@ object AssessmentsController {
     }
   }
 
+  def notStarted(existing: Option[Assessment]): Constraint[AssessmentFormData] = Constraint { _ =>
+    if (existing.forall(_.tabulaAssessmentId.isEmpty))
+      Valid
+    else if (existing.exists(_.hasStartTimePassed))
+      Invalid(Seq(ValidationError("error.assessment.started")))
+    else
+      Valid
+  }
+
   def formMapping(existing: Option[Assessment], ready: Boolean = false)(implicit studentInformationService: TabulaStudentInformationService, ec: ExecutionContext, t: TimingContext): Form[AssessmentFormData] = {
     val baseMapping = mapping(
       "moduleCode" -> nonEmptyText,
@@ -115,6 +124,7 @@ object AssessmentsController {
       "description" -> optional(text),
       "invigilators" -> invigilatorsFieldMapping,
     )(AssessmentFormData.apply)(AssessmentFormData.unapply)
+      .verifying(notStarted(existing))
 
     Form(
       if (ready) baseMapping

@@ -216,7 +216,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       Given("I have an assessment in progress")
 
       val assessmentId: UUID = UUID.randomUUID()
-      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId)
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId, startTime = Some(OffsetDateTime.now().minusMinutes(10)))
       val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get).copy(
         startTime = Some(OffsetDateTime.now().minusMinutes(5))
       )

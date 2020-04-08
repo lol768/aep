@@ -111,7 +111,7 @@ object DataGenerationService {
     val localStartTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
     val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
     val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
-    val paperCode = s"$stemModuleCode${Random.between(1, 9)}" //papercode
+    val paperCode = s"$stemModuleCode${Random.between(1, 9)}"
     val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
     val assType = AssessmentType.values(Random.nextInt(AssessmentType.values.size))
     val moduleCode =  s"$stemModuleCode-$cats"

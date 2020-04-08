@@ -46,7 +46,7 @@ sealed trait BaseSitting {
 
   lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
 
-  def canFinalise: Boolean = studentAssessment.startTime.exists(startTime =>
+  def canModify: Boolean = studentAssessment.startTime.exists(startTime =>
     lateDuration.exists { d =>
       !finalised &&
         startTime.plus(d).isAfter(JavaTime.offsetDateTime) &&

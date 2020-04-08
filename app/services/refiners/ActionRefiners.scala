@@ -1,6 +1,6 @@
 package services.refiners
 
-import controllers.{ControllerHelper, ServiceResultErrorRendering}
+import controllers.ServiceResultErrorRendering
 import domain.tabula.Department
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
@@ -10,7 +10,7 @@ import services.{AssessmentService, StudentAssessmentService}
 import system.Roles
 import system.routes.Types.UUID
 import warwick.core.helpers.ServiceResults.Implicits._
-import warwick.sso.{AuthenticatedRequest, GroupName, GroupService, UniversityID, User, Usercode}
+import warwick.sso._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -115,7 +115,7 @@ class ActionRefiners @Inject() (
         }
     }
 
-  val IsStudentAssessmentNotFinished: Filter[StudentAssessmentSpecificRequest] =
+  val IsStudentAssessmentNotFinalised: Filter[StudentAssessmentSpecificRequest] =
     new Filter[StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
@@ -125,6 +125,18 @@ class ActionRefiners @Inject() (
             None
         }
     }
+
+  val StudentCanModifySubmission: Filter[StudentAssessmentSpecificRequest] =
+    new Filter[StudentAssessmentSpecificRequest] {
+      override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
+        Future.successful {
+          if (!request.sitting.canModify)
+            Some(Forbidden(views.html.errors.studentCannotModifySubmission(request.sitting)))
+          else
+            None
+        }
+    }
+
 
   val IsInvigilatorOrAdmin: Filter[AssessmentSpecificRequest] =
     new Filter[AssessmentSpecificRequest] {

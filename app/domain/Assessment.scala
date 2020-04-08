@@ -36,6 +36,8 @@ trait DefinesStartWindow {
   def lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
   def hasLastAllowedStartTimePassed: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime))
+
+  def hasStartTimePassed: Boolean = startTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
