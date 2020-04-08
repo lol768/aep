@@ -115,7 +115,7 @@ class ActionRefiners @Inject() (
         }
     }
 
-  val IsStudentAssessmentNotFinished: Filter[StudentAssessmentSpecificRequest] =
+  val IsStudentAssessmentNotFinalised: Filter[StudentAssessmentSpecificRequest] =
     new Filter[StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
@@ -125,6 +125,18 @@ class ActionRefiners @Inject() (
             None
         }
     }
+
+  val StudentCanModifySubmission: Filter[StudentAssessmentSpecificRequest] =
+    new Filter[StudentAssessmentSpecificRequest] {
+      override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
+        Future.successful {
+          if (!request.sitting.canModify)
+            Some(Forbidden(views.html.errors.studentCannotModifySubmission(request.sitting)))
+          else
+            None
+        }
+    }
+
 
   val IsInvigilatorOrAdmin: Filter[AssessmentSpecificRequest] =
     new Filter[AssessmentSpecificRequest] {

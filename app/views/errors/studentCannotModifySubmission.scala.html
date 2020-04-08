@@ -1,0 +1,10 @@
+@import domain.Sitting
+
+@(assessment: Sitting)(implicit context: RequestContext)
+
+@frontend(s"${assessment.assessment.title} - Assessment ended") {
+  <p>
+    You can no longer modify your submission. The latest time you could make changes has passed.
+  </p>
+}
+
