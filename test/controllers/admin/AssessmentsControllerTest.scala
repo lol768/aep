@@ -101,6 +101,12 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       }
     }
 
+    "Properly validate cases where no platform has been selected during creation" in scenario(new NoPlatformDataCreateScenario()) { s =>
+      val resCreate = reqCreate(phAdminUser, s.badData)
+      status(resCreate) mustBe OK
+      htmlErrors(resCreate) mustNot be(empty)
+    }
+
   }
 
   class PhilosophyAssessmentScenario extends Scenario(scenarioCtx) {
@@ -124,7 +130,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       description = None,
       durationMinutes = Some(120L),
       platform = Set(Platform.OnlineExams),
-      assessmentType = AssessmentType.OpenBook,
+      assessmentType = Some(AssessmentType.OpenBook),
       students = Set.empty,
       url = None,
     )
@@ -148,6 +154,10 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       students = Set.empty,
       invigilators = Set.empty,
     )
+  }
+
+  class NoPlatformDataCreateScenario extends CreatingPhilosophyAssessmentScenario {
+    val badData: AssessmentFormData = data.copy(platform = Set.empty)
   }
 
   private val controllerRoute = controllers.admin.routes.AssessmentsController
@@ -185,7 +195,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       "description" -> data.description.getOrElse(""),
       "durationMinutes" -> data.durationMinutes.map(_.toString).getOrElse(""),
       "platform[]" -> data.platform.mkString(","),
-      "assessmentType" -> data.assessmentType.toString,
+      "assessmentType" -> data.assessmentType.map(_.toString).getOrElse(""),
       "students" -> data.students.toSeq.map(_.string).sorted.mkString("\n"),
       "url" -> data.url.getOrElse(""),
     ) ++ data.invigilators.zipWithIndex.map { case (invigilator, index) =>

@@ -7,10 +7,11 @@
 @import warwick.sso.UniversityID
 @import views.html.invigilation._
 @import java.util.UUID
+@import domain.SittingMetadata
 
 @(
         assessment: Assessment,
-        studentAssessments: Seq[StudentAssessmentMetadata],
+        sittingMetadata: Seq[SittingMetadata],
         invigilators: Map[Usercode, String],
         students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
@@ -49,7 +50,7 @@
             <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
         </div>
         <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="expected">
-            @studentAssessmentInfo(studentAssessments, students, Some(studentsWithQueries), latestActivities)
+            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), latestActivities)
         </div>
     </div>
 }

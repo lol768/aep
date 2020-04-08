@@ -1,12 +1,9 @@
 @import tags._
-@import domain.StudentAssessmentMetadata
+@import domain.SittingMetadata
 @import domain.Assessment
 @import domain.tabula
-@import warwick.sso.User
 @import warwick.sso.UniversityID
-@import org.apache.commons.lang3.time.DurationFormatUtils
-@import tags._
-@(assessment: Assessment, metadata: Seq[StudentAssessmentMetadata], userMap: Map[UniversityID, tabula.SitsProfile], title: String, route: String, studentsWithQueries: Seq[UniversityID])(implicit context: RequestContext)
+@(assessment: Assessment, metadata: Seq[SittingMetadata], userMap: Map[UniversityID, tabula.SitsProfile], title: String, route: String, studentsWithQueries: Seq[UniversityID])(implicit context: RequestContext)
 
 @frontend(assessment.title) {
   @assessmentMetadata(assessment)

@@ -121,7 +121,7 @@ class AssessmentController @Inject()(
         if (request.sitting.finalised) {
           val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
-        } else if (!request.sitting.canFinalise) {
+        } else if (!request.sitting.canModify) {
           val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
         } else {
@@ -140,7 +140,10 @@ class AssessmentController @Inject()(
       form => {
         val existingUploadedFiles = request.sitting.studentAssessment.uploadedFiles
         val intersection = existingUploadedFiles.map(uf => uf.fileName.toLowerCase).intersect(files.map(f => f.metadata.fileName.toLowerCase))
-        if (intersection.nonEmpty) {
+        if (files.isEmpty) {
+          val flashMessage = "error" -> Messages("error.assessment.fileMissing")
+          Future.successful(redirectOrReturn200(assessmentId, form, flashMessage))
+        } else if (intersection.nonEmpty) {
           val flashMessage = "error" -> Messages("flash.assessment.filesDuplicates", intersection.head)
           Future.successful(redirectOrReturn200(assessmentId, form, flashMessage))
         } else {

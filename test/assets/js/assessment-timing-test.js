@@ -100,7 +100,7 @@ describe('calculateTimingInfo', () => {
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'Assessment complete.',
+      text: 'You completed this assessment.',
       allowStart: false
     });
   });
