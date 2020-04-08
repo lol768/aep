@@ -1,6 +1,6 @@
 package services.refiners
 
-import controllers.{ControllerHelper, ServiceResultErrorRendering}
+import controllers.ServiceResultErrorRendering
 import domain.tabula.Department
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
@@ -10,7 +10,7 @@ import services.{AssessmentService, StudentAssessmentService}
 import system.Roles
 import system.routes.Types.UUID
 import warwick.core.helpers.ServiceResults.Implicits._
-import warwick.sso.{AuthenticatedRequest, GroupName, GroupService, UniversityID, User, Usercode}
+import warwick.sso._
 
 import scala.concurrent.{ExecutionContext, Future}
 
