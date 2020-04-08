@@ -6,7 +6,7 @@
 @import play.api.libs.json.JsNull
 @(sitting: Sitting, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
 
-@for(startTime <- sitting.assessment.startTime; duration <- sitting.duration) {
+@for(startTime <- sitting.assessment.startTime; onTimeDuration <- sitting.onTimeDuration) {
     <span>
         <i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i>
         <span
@@ -17,7 +17,7 @@
                 "windowStart" -> JsNumber(startTime.toInstant.toEpochMilli),
                 "windowEnd" -> JsNumber(sitting.assessment.lastAllowedStartTime.get.toInstant.toEpochMilli),
                 "start" -> sitting.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli)).getOrElse(JsNull),
-                "end" -> sitting.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli + duration.toMillis)).getOrElse(JsNull),
+                "end" -> sitting.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli + onTimeDuration.toMillis)).getOrElse(JsNull),
                 "hasStarted" -> JsBoolean(sitting.studentAssessment.startTime.nonEmpty),
                 "hasFinalised" -> JsBoolean(sitting.studentAssessment.finaliseTime.nonEmpty),
                 "extraTimeAdjustment" -> sitting.studentAssessment.extraTimeAdjustment.map(et => JsNumber(et.toMillis)).getOrElse(JsNull),

@@ -20,15 +20,24 @@ sealed trait BaseSitting {
     assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
     assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
 
-  // How long the student has to submit without being counted late
+  case class DurationInfo(durationWithExtraAdjustment:Option[Duration], onTimeDuration: Option[Duration], lateDuration: Option[Duration])
+
+  // How long the student has to complete the assessment (excludes upload grace duration)
   lazy val duration: Option[Duration] = assessment.duration.map { d =>
     d.plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
   }
 
+  // How long the student has to complete the assessment including submission uploads
+  lazy val onTimeDuration: Option[Duration] = duration.map{ d =>
+    d.plus(uploadGraceDuration)
+  }
+
   // Hard limit for student submitting, though they may be counted late.
-  lazy val durationIncludingLate: Option[Duration] = duration.map { d =>
+  lazy val durationIncludingLate: Option[Duration] = onTimeDuration.map { d =>
     d.plus(Assessment.lateSubmissionPeriod)
   }
+
+  lazy val durationInfo:DurationInfo = DurationInfo(duration, onTimeDuration, durationIncludingLate)
 
   def canFinalise: Boolean = studentAssessment.startTime.exists(startTime =>
     durationIncludingLate.exists { d =>
