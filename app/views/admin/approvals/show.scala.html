@@ -10,8 +10,10 @@
     <dt>Title</dt>
     <dd>@assessment.title</dd>
 
-    <dt>Type</dt>
-    <dd>@assessment.assessmentType.map(_.label).getOrElse("")</dd>
+    @assessment.assessmentType.map { at =>
+      <dt>Type</dt>
+      <dd>@at.label</dd>
+    }
 
     <dt>Platforms</dt>
     <dd>@assessment.platform.map(_.label).mkString(",")</dd>

@@ -9,8 +9,10 @@
     @assessment.section.map(s => s"(Section $s)")
 </dd>
 
-<dt>Type</dt>
-<dd>@assessment.assessmentType.map(_.label).getOrElse("")</dd>
+@assessment.assessmentType.map { at =>
+    <dt>Type</dt>
+    <dd>@at.label</dd>
+}
 
 @assessment.brief.text.map { description =>
     <dt>Details</dt>
