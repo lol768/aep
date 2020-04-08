@@ -8,14 +8,17 @@ import views.assessment.AssessmentTimingUpdate
 import warwick.core.helpers.JavaTime
 
 sealed trait BaseSitting {
+
   import domain.BaseSitting.ProgressState._
 
   def studentAssessment: BaseStudentAssessment
+
   def assessment: BaseAssessment
 
   def inProgress: Boolean = started && !finalised
 
   def started: Boolean = studentAssessment.startTime.nonEmpty
+
   def finalised: Boolean = studentAssessment.hasFinalised
 
   def uploadGraceDuration: Duration = Duration.ofMinutes(45)
@@ -24,7 +27,7 @@ sealed trait BaseSitting {
     assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
     assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
 
-  case class DurationInfo(durationWithExtraAdjustment:Duration, onTimeDuration: Duration, lateDuration: Duration)
+  case class DurationInfo(durationWithExtraAdjustment: Duration, onTimeDuration: Duration, lateDuration: Duration)
 
   // How long the student has to complete the assessment (excludes upload grace duration)
   lazy val duration: Option[Duration] = assessment.duration.map { d =>
@@ -32,7 +35,7 @@ sealed trait BaseSitting {
   }
 
   // How long the student has to complete the assessment including submission uploads
-  lazy val onTimeDuration: Option[Duration] = duration.map{ d =>
+  lazy val onTimeDuration: Option[Duration] = duration.map { d =>
     d.plus(uploadGraceDuration)
   }
 
@@ -41,7 +44,7 @@ sealed trait BaseSitting {
     d.plus(Assessment.lateSubmissionPeriod)
   }
 
-  lazy val durationInfo:Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get)}
+  lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
 
   def canFinalise: Boolean = studentAssessment.startTime.exists(startTime =>
     lateDuration.exists { d =>
@@ -63,7 +66,7 @@ sealed trait BaseSitting {
   def getProgressState: Option[ProgressState] = {
     val now = JavaTime.offsetDateTime
     assessment.startTime.map { assessmentStartTime =>
-      if(assessmentStartTime.isAfter(now)) {
+      if (assessmentStartTime.isAfter(now)) {
         AssessmentNotYetOpen
       } else if (studentAssessment.startTime.isEmpty) {
         if (assessment.hasLastAllowedStartTimePassed) {
@@ -90,11 +93,13 @@ sealed trait BaseSitting {
 }
 
 object BaseSitting {
+
   sealed trait ProgressState extends EnumEntry {
     val label: String
   }
 
   object ProgressState extends PlayEnum[ProgressState] {
+
     case object AssessmentNotYetOpen extends ProgressState {
       val label = "Assessment is not open yet"
     }
@@ -129,6 +134,7 @@ object BaseSitting {
 
     val values: IndexedSeq[ProgressState] = findValues
   }
+
 }
 
 case class Sitting(
