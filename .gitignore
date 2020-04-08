@@ -3,7 +3,6 @@
 /conf/ehcache.properties
 /conf/*secret*
 /conf/worker.conf
-/conf/local-dev.conf
 /logs
 /classes
 /.idea_modules
