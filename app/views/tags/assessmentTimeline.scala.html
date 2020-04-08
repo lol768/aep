@@ -5,9 +5,7 @@
 @(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
 @for(
     startTime <- sitting.studentAssessment.startTime;
-    //duration <- sitting.duration;
     durationInfo <- sitting.durationInfo
-    //lateDuration <- sitting.lateDuration
     if sitting.assessment.platform.contains(Platform.OnlineExams)
 ) {
     <div class="timeline">
