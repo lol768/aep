@@ -29,7 +29,7 @@
         <dd>@assessment.platform.map(_.label).mkString(",")</dd>
 
         <dt>Type</dt>
-        <dd>@assessment.assessmentType.label</dd>
+        <dd>@assessment.assessmentType.map(_.label).getOrElse("")</dd>
 
         <dt>Starts at</dt>
         <dd>@assessment.startTime.map { t => @localisedDatetime(t) }</dd>

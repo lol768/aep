@@ -57,30 +57,15 @@ package object tabula {
     def asAssessment(existingAssessment: Option[Assessment], schedule: ExamPaperSchedule): Assessment = {
       val paper = examPaper.get
 
-      val locationNameAsPlatform = schedule.locationName.map {
-        case "Assignment" => Platform.TabulaAssignment
-        case "Open book assessment" | "Files-based open book assessment" => Platform.OnlineExams
-        case "Multiple Choice Questions" => Platform.QuestionmarkPerception
-        case "Spoken exam under time conditions" | "Controlled online exam" => Platform.Moodle
-        case _ => Platform.OnlineExams
-      }.getOrElse(Platform.OnlineExams)
-
       Assessment(
         id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
         paperCode = paper.code,
         section = paper.section.filterNot(_ == "n/a"),
         title = paper.title.getOrElse(name),
         startTime = Some(schedule.startTime),
-        duration = paper.duration,
-        platform = existingAssessment.map(_.platform).getOrElse(List(locationNameAsPlatform).toSet),
-        assessmentType = existingAssessment.map(_.assessmentType).getOrElse(schedule.locationName.map {
-          case "Assignment" | "Open book assessment" => AssessmentType.OpenBook
-          case "Open Book Assessment, files based" | "Files-based open book assessment" => AssessmentType.OpenBookFileBased
-          case "MCQ" | "Multiple Choice Questions" => AssessmentType.MultipleChoice
-          case "Spoken exam under time conditions" | "Spoken Open Book Assessment" => AssessmentType.Spoken
-          case "Bespoke Option (only if previously agreed) " => AssessmentType.Bespoke
-          case _ => AssessmentType.OpenBook
-        }.getOrElse(AssessmentType.OpenBook)),
+        duration = existingAssessment.flatMap(_.duration),
+        platform = existingAssessment.map(_.platform).getOrElse(Set[Platform]()),
+        assessmentType = existingAssessment.flatMap(_.assessmentType),
         brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
         state = existingAssessment.map(_.state).getOrElse(Imported),

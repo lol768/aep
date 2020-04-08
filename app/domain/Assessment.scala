@@ -18,7 +18,7 @@ sealed trait BaseAssessment extends DefinesStartWindow {
   def startTime: Option[OffsetDateTime]
   def duration: Option[Duration]
   def platform: Set[Platform]
-  def assessmentType: AssessmentType
+  def assessmentType: Option[AssessmentType]
   def state: State
   def tabulaAssessmentId: Option[UUID]
   def examProfileCode: String
@@ -48,7 +48,7 @@ case class Assessment(
   startTime: Option[OffsetDateTime],
   duration: Option[Duration],
   platform: Set[Platform],
-  assessmentType: AssessmentType,
+  assessmentType: Option[AssessmentType],
   brief: Brief,
   invigilators: Set[Usercode],
   state: State,
@@ -91,7 +91,7 @@ case class AssessmentMetadata(
   startTime: Option[OffsetDateTime],
   duration: Option[Duration],
   platform: Set[Platform],
-  assessmentType: AssessmentType,
+  assessmentType: Option[AssessmentType],
   state: State,
   tabulaAssessmentId: Option[UUID],
   examProfileCode: String,

@@ -10,7 +10,7 @@
 </dd>
 
 <dt>Type</dt>
-<dd>@assessment.assessmentType.label</dd>
+<dd>@assessment.assessmentType.map(_.label).getOrElse("")</dd>
 
 @assessment.brief.text.map { description =>
     <dt>Details</dt>

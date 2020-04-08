@@ -31,6 +31,7 @@ flash.messages.sentToInvigilator=Message sent to invigilator
 
 error.required=This field is required.
 error.approval.must-check-box=You must tick the box to approve the assessment.
+error.assessment.assessment-type-not-specified=You must specify the type of this assessment.
 error.assessment.url-not-specified=You must specify the URL to assessment for the selected platform
 error.assessment.files-not-provided=You must upload at least one file for an assessment
 error.assessment.duration-not-valid=You must pick a valid duration for assessments of type: {0}.
