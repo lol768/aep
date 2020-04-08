@@ -3,7 +3,7 @@ package controllers.admin
 import java.util.UUID
 
 import controllers.{BaseController, RequestContext}
-import domain.{Assessment, StudentAssessmentMetadata}
+import domain.{Assessment, SittingMetadata, StudentAssessmentMetadata}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
@@ -48,8 +48,8 @@ class ReportingController @Inject()(
       reportingService.submittedSittings(id),
       reportingService.finalisedSittings(id)
     ).successMap { case (assessment, expected, started, notStarted, submitted, finalised) =>
-      val sittingMetadata = SittingMetadata(assessment, expected, started, notStarted, submitted, finalised)
-      Ok(views.html.admin.reporting.assessment(sittingMetadata))
+      val reportingMetadata = ReportingMetadata(assessment, expected, started, notStarted, submitted, finalised)
+      Ok(views.html.admin.reporting.assessment(reportingMetadata))
     }
   }
 
@@ -62,7 +62,9 @@ class ReportingController @Inject()(
       studentInformationService
         .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId)))
         .successMap { profiles =>
-          val sorted = sittings.sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+          val sorted = sittings
+            .sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+            .map(SittingMetadata(_, assessment.asAssessmentMetadata))
           Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.client).distinct))
         }
     }
@@ -70,15 +72,18 @@ class ReportingController @Inject()(
 
   def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]], assessmentId: UUID)(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
     ServiceResults.zip(
+      assessmentService.get(assessmentId),
       getSittings,
       messageService.findByAssessment(assessmentId)
     ).successFlatMap {
-      case (sittings, queries) =>
+      case (assessment, sittings, queries) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId))),
           networkActivityService.getLatestActivityFor(sittings.map(_.studentAssessmentId))
         ).successMap { case (profiles, latestActivities) =>
-            val sorted = sittings.sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+            val sorted = sittings
+              .sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+              .map(SittingMetadata(_, assessment.asAssessmentMetadata))
             Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct), latestActivities))
           }
     }
@@ -125,7 +130,7 @@ class ReportingController @Inject()(
   }
 }
 
-case class SittingMetadata(
+case class ReportingMetadata(
   assessment: Assessment,
   expected: Seq[StudentAssessmentMetadata],
   started: Seq[StudentAssessmentMetadata],
