@@ -67,6 +67,7 @@ class localisedDatetimeRangeTest extends BaseSpec {
       result must include("Tue 24th Mar")
       result must include("10:30")
       result mustNot include("Between 10:30 and 11:30")
+      result mustNot include("Between")
       result must include("Europe/London")
       result must include("class=\"jddt-range\"")
       result must include("data-from-millis=\"1585045800000\"")
