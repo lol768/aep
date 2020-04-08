@@ -62,11 +62,13 @@ class CachingTabulaStudentInformationService @Inject() (
   }
 
   override def getMultipleStudentInformation(options: GetMultipleStudentInformationOptions)(implicit t: TimingContext): Future[MultipleStudentInformationReturn] =
-    ServiceResults.futureSequence(
+    Future.sequence(
       options.universityIDs.map { universityID =>
         getStudentInformation(GetStudentInformationOptions(universityID))
       }
-    ).map(_.map(_.map(p => p.universityID -> p).toMap))
+    ).map(results =>
+      ServiceResults.success(results.flatMap(_.toOption).map(profile => profile.universityID -> profile).toMap)
+    )
 }
 
 @Singleton

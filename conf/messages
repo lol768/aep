@@ -36,5 +36,5 @@ error.assessment.files-not-provided=You must upload at least one file for an ass
 error.assessment.duration-not-valid=You must pick a valid duration for assessments of type: {0}.
 error.permissions.notDepartmentAdminForSelected=You are not an administrator for the selected department code: {0}.
 error.dataGeneration.production=Data generation is disabled on production.
-error.students.error=There was an error validating the University IDs: {0}.
+error.students.error=There was an error validating the University IDs.
 error.students.invalid=The University ID {0} was not found.
