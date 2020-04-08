@@ -47,7 +47,8 @@ sealed trait BaseSitting {
       id = assessment.id,
       startTime = studentAssessment.startTime.map(_.toInstant.toEpochMilli),
       hasStarted = studentAssessment.startTime.nonEmpty,
-      hasFinalised = studentAssessment.hasFinalised
+      hasFinalised = studentAssessment.hasFinalised,
+      progressState = getProgressState,
     )
   }
 
