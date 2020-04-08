@@ -73,7 +73,7 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
     }
 
     "get, insert and update a student assessment" in new Fixture {
-      val newStudentAssessment = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("HONK"))
+      val newStudentAssessment = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("0000007"))
 
       service.upsert(newStudentAssessment.asStudentAssessment(Map.empty)).serviceValue
 
@@ -125,7 +125,7 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
     }
 
     "get, insert and update declarations" in new Fixture {
-      val newStudentAssessment = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("HONK"))
+      val newStudentAssessment = Fixtures.studentAssessments.storedStudentAssessment(storedAssessment.id, UniversityID("0000007"))
       val newDeclarations = Fixtures.studentAssessments.storedDeclarations(newStudentAssessment.id)
 
       service.upsert(newDeclarations.asDeclarations).serviceValue

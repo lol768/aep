@@ -9,6 +9,7 @@ import helpers.CleanUpDatabaseAfterEachTest
 import uk.ac.warwick.util.core.DateTimeUtils
 
 import scala.concurrent.Future
+import scala.util.Random
 
 class AnnouncementDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 

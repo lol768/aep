@@ -17,7 +17,7 @@ class localisedDatetimeRangeTest extends BaseSpec {
     "output a correctly formatted localised date time and element for JDDT to populate" in {
       val result = localisedDatetimeRange(march24_1030, march24_1130).body.replaceAll("\\s+", " ")
       result must include("Tue 24th Mar")
-      result must include("10:30 to 11:30")
+      result must include("Between 10:30 and 11:30")
       result must include("Europe/London")
       result must include("class=\"jddt-range\"")
       result must include("data-from-millis=\"1585045800000\"")
@@ -66,7 +66,8 @@ class localisedDatetimeRangeTest extends BaseSpec {
         .body.replaceAll("\\s+", " ")
       result must include("Tue 24th Mar")
       result must include("10:30")
-      result mustNot include("10:30 to 11:30")
+      result mustNot include("Between 10:30 and 11:30")
+      result mustNot include("Between")
       result must include("Europe/London")
       result must include("class=\"jddt-range\"")
       result must include("data-from-millis=\"1585045800000\"")

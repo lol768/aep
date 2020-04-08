@@ -1,7 +1,7 @@
 @import tags._
-@import org.apache.commons.lang3.time.DurationFormatUtils
 @import domain.Assessment
 @import domain.tabula
+@import views.html.tags.durationWords
 
 @(
     assessment: Assessment,
@@ -35,6 +35,6 @@
         <dd>@assessment.startTime.map { t => @localisedDatetime(t) }</dd>
 
         <dt>Duration</dt>
-        <dd>@DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)</dd>
+        <dd>@durationWords(assessment)</dd>
     </div>
 </dl>

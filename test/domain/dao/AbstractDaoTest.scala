@@ -6,10 +6,14 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import play.api.db.slick.DatabaseConfigProvider
+import play.api.inject.guice.GuiceApplicationBuilder
+import services.sandbox.DataGeneration
 import services.{AuditLoggingDeclarations, NoAuditLogging}
 import slick.basic.DatabaseConfig
 import slick.dbio.{DBIO, DBIOAction}
 import slick.jdbc.{JdbcBackend, JdbcProfile}
+import system.BindingOverrides
+import warwick.sso.User
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -28,6 +32,13 @@ trait DaoTestTrait
     with DaoRunning
     with NoAuditLogging
     with FutureServiceMixins { this: TestSuite =>
+
+  override def fakeApplicationBuilder(user: Option[User]): GuiceApplicationBuilder = super.fakeApplicationBuilder(user)
+    .overrides(
+      BindingOverrides.fixedDataGeneration
+    )
+
+  implicit lazy val dataGeneration: DataGeneration = get[DataGeneration]
 
   protected lazy val dbConfigProvider: DatabaseConfigProvider = get[DatabaseConfigProvider]
   lazy val dbConfig: DatabaseConfig[JdbcProfile] = dbConfigProvider.get[JdbcProfile]

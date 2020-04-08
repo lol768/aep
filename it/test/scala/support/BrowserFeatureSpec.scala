@@ -24,6 +24,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.{Call, Result}
 import services._
+import services.sandbox.DataGeneration
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import warwick.functional._
@@ -31,6 +32,7 @@ import warwick.html._
 import warwick.sso._
 
 import scala.concurrent.Future
+import scala.util.Random
 
 case class ServerInfo(
   port: Int,
@@ -51,6 +53,9 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
   with HasApplicationGet
   with FailureScreenshots
   with NoAuditLogging {
+
+  // Use random data generation with a random seed
+  implicit val dataGeneration: DataGeneration = new DataGeneration(Random)
 
   protected lazy val dbConfigProvider: DatabaseConfigProvider = get[DatabaseConfigProvider]
   lazy val dbConfig: DatabaseConfig[JdbcProfile] = dbConfigProvider.get[JdbcProfile]

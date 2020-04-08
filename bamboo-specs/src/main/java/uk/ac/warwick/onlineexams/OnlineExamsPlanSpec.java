@@ -72,7 +72,7 @@ public class OnlineExamsPlanSpec extends AbstractWarwickBuildSpec {
               .createForVcsBranch()
               .delete(
                 new BranchCleanup()
-                  .whenRemovedFromRepositoryAfterDays(30)
+                  .whenRemovedFromRepositoryAfterDays(1)
                   .whenInactiveInRepositoryAfterDays(180)
               )
               .notificationDisabled()

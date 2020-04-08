@@ -1,17 +1,19 @@
 package controllers.admin
 
 import java.time.OffsetDateTime
+import java.util.UUID
 
-import controllers.{BaseController, FormMappings}
 import controllers.admin.ViewStudentActivityController.{StudentActivityData, studentActivityForm}
-import domain.{AssessmentClientNetworkActivity, Pagination}
+import controllers.{BaseController, FormMappings}
+import domain.{Assessment, AssessmentClientNetworkActivity, Pagination}
 import javax.inject.{Inject, Singleton}
-import services.{AssessmentClientNetworkActivityService, SecurityService, StudentAssessmentService}
-import scala.concurrent.{ExecutionContext, Future}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc.{Action, AnyContent, Result}
+import services.{AssessmentClientNetworkActivityService, SecurityService, StudentAssessmentService}
 import warwick.sso.{AuthenticatedRequest, UniversityID}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 object ViewStudentActivityController {
 
@@ -48,7 +50,10 @@ class ViewStudentActivityController  @Inject()(
       data => {
         studentAssessmentService.byUniversityId(UniversityID(data.universityId)).successFlatMap { assessments =>
           assessmentClientNetworkActivityService.getClientActivityFor(assessments.map(_.studentAssessment), data.startDate, data.endDate, Pagination.asPage(page, activityPerPage)).successFlatMap { case (total, activities) =>
-            renderForm(studentActivityForm.bindFromRequest, activities, total, page, true)
+            renderForm(
+              studentActivityForm.bindFromRequest,
+              assessments.map(a => a.studentAssessment.id -> a.assessment).toMap,
+              activities, total, page, true)
           }
         }
       }
@@ -57,12 +62,13 @@ class ViewStudentActivityController  @Inject()(
 
   private def renderForm(
     form: Form[StudentActivityData],
+    assessments: Map[UUID, Assessment] = Map.empty,
     results: Seq[AssessmentClientNetworkActivity] = Seq.empty,
     total: Int = 0,
     page: Int = 0,
     showResults: Boolean = false
   )(implicit req: AuthenticatedRequest[_]): Future[Result] = {
     val pagination = Pagination(total, page, controllers.admin.routes.ViewStudentActivityController.filter(), activityPerPage)
-    Future.successful(Ok(views.html.admin.studentActivity.activityForm(form, pagination, results, showResults)))
+    Future.successful(Ok(views.html.admin.studentActivity.activityForm(form, pagination, assessments, results, showResults)))
   }
 }

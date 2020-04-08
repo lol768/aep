@@ -15,6 +15,89 @@
   @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className)) {
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
+      @for(
+        startTime <- sitting.studentAssessment.startTime ;
+        duration <- sitting.duration;
+        durationIncludingLate <- sitting.durationIncludingLate
+      ) {
+        <div class="timeline">
+          <div class="block turqoise">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-2x fa-clock"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(sitting.assessment.startTime.get) Assessment opened</h1>
+              @sitting.assessment.lastAllowedStartTime.map { end =>
+                <p>
+                  The assessment can be started any time between @bareLocalisedDateTime(sitting.assessment.startTime.get) and @bareLocalisedDateTime(end, true)</p>
+              }
+            </div>
+          </div>
+          <div class="block green active">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-2x fa-stopwatch"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(startTime) You started the assessment</h1>
+              <p>
+                This is a @duration.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(duration), true)</p>
+              <p>Please plan your time accordingly.</p>
+              @if(duration.toHours==3) {
+                <div class="duration-3-spacer"></div>
+              }
+            </div>
+          </div>
+          <div class="block orange">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-cloud-upload fa-2x"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1 class="mb-1">@bareLocalisedDateTime(startTime.plus(duration))
+                You have @sitting.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(duration).plus(sitting.uploadGraceDuration)) to upload your answers</h1>
+            </div>
+          </div>
+          <div class="block pink">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-exclamation-triangle fa-2x"></i></div>
+              <div class="stick"></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(startTime.plus(duration).plus(sitting.uploadGraceDuration))
+                Your assessment is now late</h1>
+              <p>
+                You can still upload your answers but you may be subject to late penalties, unless you have reasonable adjustments.</p>
+              <div class="vert-space"></div>
+            </div>
+          </div>
+          <div class="block red">
+            <div class="left">
+              <div class="bubble"><i class="fal fa-ban fa-2x"></i></div>
+            </div>
+            <div class="middle">
+              <div class="peg"></div>
+            </div>
+            <div class="right">
+              <h1>@bareLocalisedDateTime(startTime.plus(durationIncludingLate).plus(sitting.uploadGraceDuration)) You can't upload answers at all after this point</h1>
+            </div>
+          </div>
+        </div>
+      }
+
       <div class="panel panel-default">
         <div class="brand-stripe"></div>
         <div class="panel-body">
@@ -26,7 +109,7 @@
             <blockquote>@sitting.assessment.brief.text</blockquote>
           }
           <ul class="list-unstyled">
-            @if(sitting.assessment.platform == Platform.OnlineExams && sitting.assessment.brief.url.isDefined) {
+            @if(sitting.assessment.platform == Set(Platform.OnlineExams) && sitting.assessment.brief.url.isDefined) {
               <li>
                 <a href="@sitting.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
               </li>
@@ -39,6 +122,47 @@
           </ul>
         </div>
       </div>
+
+      @if(sitting.assessment.platform.exists(_ != Platform.OnlineExams)) {
+        <div class="panel panel-default">
+          <div class="brand-stripe"></div>
+          <div class="panel-body">
+            <h2>Submit your assessment</h2>
+
+            <p class="lead">
+              @sitting.assessment.platform.map {
+                case Platform.Moodle => {
+                  <a href="@sitting.assessment.brief.url" target="_blank">
+                    View your assessment in Moodle
+                    <i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.QuestionmarkPerception => {
+                  <a href="@sitting.assessment.brief.url" target="_blank">
+                    Take your assessment in Perception
+                    <i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.TabulaAssignment => {
+                  <a href="@sitting.assessment.brief.url" target="_blank">
+                    Submit your assessment on Tabula
+                    <i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.MyWBS => {
+                  <a href="@sitting.assessment.brief.url" target="_blank">
+                    Submit your assessment on MyWBS
+                    <i class="fa fa-fw fa-external-link"></i>
+                  </a>
+                }
+                case Platform.OnlineExams => {
+                  @* Do nothing here, handled below *@
+                }
+              }
+            </p>
+          </div>
+        </div>
+      }
 
       @if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
         <div class="panel panel-default">
@@ -171,42 +295,6 @@
             </div>
           </div>
         }
-      } else {
-        <div class="panel panel-default">
-          <div class="brand-stripe"></div>
-          <div class="panel-body">
-            <h2>Submit your assessment</h2>
-
-            <p class="lead">
-              @sitting.assessment.platform.map{ p => @p match {
-                case Platform.Moodle => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    View your assessment in Moodle<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-                case Platform.QuestionmarkPerception => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    Take your assessment in Perception<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-                case Platform.TabulaAssignment => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    Submit your assessment on Tabula<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-                case Platform.MyWBS => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    Submit your assessment on MyWBS<i class="fa fa-fw fa-external-link"></i>
-                  </a>
-                }
-                case Platform.OnlineExams => {
-                  @* This should be impossible *@
-                  Please call the IT Services help desk on 024 765 73737.
-                }
-              }}
-            </p>
-          </div>
-        </div>
       }
     }
   }

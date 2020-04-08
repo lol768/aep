@@ -9,8 +9,12 @@ import domain.dao.{AbstractDaoTest, AssessmentDao, StudentAssessmentDao}
 import helpers.{CleanUpDatabaseAfterEachTest, DaoPatience}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.inject.guice.GuiceApplicationBuilder
+import services.sandbox.DataGeneration
+import system.BindingOverrides
 import uk.ac.warwick.util.core.DateTimeUtils
 import warwick.core.helpers.JavaTime
+import warwick.sso.User
 
 class ReportingServiceTest
   extends AbstractDaoTest
@@ -29,7 +33,9 @@ class ReportingServiceTest
   private trait Fixture {
     import helpers.DateConversion._
 
-    val now = baseTime.plusHours(10).plusMinutes(30)
+    // 10:25am, not on the half-hour else you hit sittings with almost exactly the same end time, and flappiness ensues.
+    // This time ensures it will include any sittings that might complete at 10:30am
+    val now = baseTime.plusHours(10).plusMinutes(25)
 
     DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(baseTime.asInstant, JavaTime.timeZone)
 
@@ -71,11 +77,14 @@ class ReportingServiceTest
         DateTimeUtils.useMockDateTime(now, () => {
           val todayResults = service.todayAssessments.serviceValue
           todayResults.length mustBe 24
+          // one starting at every hour, on the hour
+          todayResults.map(_.startTime.value.getMinute).distinct mustEqual Seq(0)
+          todayResults.map(_.startTime.value.getHour) mustEqual (0 to 23)
 
           // Not sure what makes sense in this section following new approach to timings (OE-116)
-          //val startedAndSubmittableResults = service.startedAndSubmittableAssessments.serviceValue
-          //startedAndSubmittableResults.length mustBe 8
-          //startedAndSubmittableResults.map(_.startTime.get.getHour) mustEqual (3 to 10)
+          val startedAndSubmittableResults = service.startedAndSubmittableAssessments.serviceValue
+          startedAndSubmittableResults must have size 20
+          startedAndSubmittableResults.map(_.startTime.value.getHour) mustEqual (4 to 23)
 
           val expectedResults = service.expectedSittings(sampleAssessment).serviceValue
           expectedResults.length mustBe 20

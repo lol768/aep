@@ -71,7 +71,7 @@ package object tabula {
         section = paper.section.filterNot(_ == "n/a"),
         title = paper.title.getOrElse(name),
         startTime = Some(schedule.startTime),
-        duration = paper.duration.get,
+        duration = paper.duration,
         platform = existingAssessment.map(_.platform).getOrElse(List(locationNameAsPlatform).toSet),
         assessmentType = existingAssessment.map(_.assessmentType).getOrElse(schedule.locationName.map {
           case "Assignment" | "Open book assessment" => AssessmentType.OpenBook

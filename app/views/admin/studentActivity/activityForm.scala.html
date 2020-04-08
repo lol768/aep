@@ -2,9 +2,12 @@
 @import domain.Pagination
 @import domain.AssessmentClientNetworkActivity
 @import views.tags.formatDate
+@import java.util.UUID
+@import domain.Assessment
 @(
     form: Form[StudentActivityData],
     pagination: Pagination,
+    assessments: Map[UUID, Assessment],
     activities: Seq[AssessmentClientNetworkActivity],
     showResults: Boolean,
 )(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
@@ -51,6 +54,7 @@
                         <th>Connection</th>
                         <th>RTT</th>
                         <th>Type</th>
+                        <th>Assessment</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -62,6 +66,7 @@
                         <td>@activity.effectiveType.getOrElse("-")</td>
                         <td>@activity.rtt.getOrElse("-")</td>
                         <td>@{activity.`type`.getOrElse("-")}</td>
+                        <td>@{assessments.get(activity.studentAssessmentId).map(_.moduleCode)}</td>
                     </tr>
                     }
                 </tbody>

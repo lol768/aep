@@ -1,6 +1,6 @@
 @import domain.Assessment
 @import warwick.core.helpers.JavaTime
-@import org.apache.commons.lang3.time.DurationFormatUtils
+@import views.html.tags.durationWords
 
 @(assessments: Seq[Assessment])(implicit context: RequestContext)
 
@@ -26,8 +26,8 @@
           <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
             @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)
           </td>
-          <td data-sort="@assessment.duration.toMillis">
-            @DurationFormatUtils.formatDurationWords(assessment.duration.toMillis, true, true)
+          <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
+            @durationWords(assessment)
           </td>
           <td>
             @assessment.assessmentType.label

@@ -26,6 +26,9 @@
       @defining(sameYear && sameMonth && fromDatetime.getDayOfMonth == toDatetime.getDayOfMonth) { sameDate =>
         @defining(JavaTime.offsetDateTime) { now =>
           <i class="fad themed-duotone fa-clock fa-fw"></i>
+          @if(!hideLatter) {
+            Between
+          }
           @fromDatetime.format(DateTimeFormatter.ofPattern("HH:mm"))
           @if(!sameDate) {
             @titleCase3Chars(fromDatetime.getDayOfWeek) @th(fromDatetime.getDayOfMonth)
@@ -37,7 +40,7 @@
             '@fromDatetime.getYear.toString.substring(2, 4)
           }
           @if(!hideLatter) {
-            to
+            and
             @toDatetime.format(DateTimeFormatter.ofPattern("HH:mm")),
             @if(sameDate && toDatetime.getYear == now.getYear && toDatetime.getMonth == now.getMonth && toDatetime.getDayOfMonth == now.getDayOfMonth) {
               Today

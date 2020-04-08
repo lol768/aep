@@ -8,7 +8,7 @@ import play.api.mvc.{Action, AnyContent}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
-import services.{ReportingService, SecurityService}
+import services.{AssessmentClientNetworkActivityService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
 import warwick.sso.{User, UserLookupService, Usercode}
 
@@ -21,6 +21,7 @@ class InvigilatorAssessmentController @Inject()(
   studentInformationService: TabulaStudentInformationService,
   tabulaDepartmentService: TabulaDepartmentService,
   messageService: MessageService,
+  networkActivityService: AssessmentClientNetworkActivityService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -36,12 +37,13 @@ class InvigilatorAssessmentController @Inject()(
     ServiceResults.zip(
       tabulaDepartmentService.getDepartments,
       reportingService.expectedSittings(assessmentId),
-      messageService.findByAssessment(assessmentId)
+      messageService.findByAssessment(assessmentId),
     ).successFlatMap {
       case (departments, studentAssessments, queries) =>
-        studentInformationService
-          .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
-          .successMap { students =>
+        ServiceResults.zip(
+          studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId))),
+          networkActivityService.getLatestActivityFor(studentAssessments.map(_.studentAssessmentId))
+        ).successMap { case (students, latestActivities) =>
             Ok(views.html.invigilation.assessment(
               assessment = assessment,
               studentAssessments = studentAssessments,
@@ -55,7 +57,8 @@ class InvigilatorAssessmentController @Inject()(
                 .toMap,
               students = students,
               department = departments.find(_.code == assessment.departmentCode.string),
-              studentsWithQueries = queries.map(_.client).distinct
+              studentsWithQueries = queries.map(_.client).distinct,
+              latestActivities = latestActivities,
             ))
           }
     }

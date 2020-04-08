@@ -1,0 +1,133 @@
+@bubble-size: 50px;
+
+.timeline h1 {
+  font-size: 100%;
+  border: none;
+  margin: calc(@bubble-size / 2 - 9px) 0 1rem;
+}
+
+.timeline i.fal {
+  font-size: 25.7px;
+  flex-grow: 0;
+  text-align: center;
+  width: 1.25em;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2rem;
+}
+
+.timeline .block {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 3px;
+}
+
+.timeline .block.active {
+  background: #fff;
+  margin-left: -20px;
+  margin-right: -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+
+  h1 {
+    font-weight: 600;
+  }
+
+  h1::before {
+    content: "\F0A9";
+    font-family: 'Font Awesome 5 Pro';
+    font-weight: 900;
+    margin-right: 0.5rem;
+    margin-left: 0.5rem;
+  }
+}
+
+.vert-space {
+  height: 33px;
+}
+
+.duration-3-spacer {
+  height: 26px;
+}
+
+.block .left {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.block .middle {
+  width: 20px;
+  position: relative;
+  margin-right: 5px;
+}
+
+.middle .peg {
+  background: blue;
+  height: 2px;
+  width: 100%;
+  margin-top: calc(@bubble-size/2);
+}
+
+.bubble {
+  border-radius: 100%;
+  background: blue;
+  z-index: 5;
+  position: relative;
+  width: @bubble-size;
+  height: @bubble-size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  flex-shrink: 0;
+  color: white;
+}
+
+.stick {
+  width: 10px;
+  height: 100%;
+  background: blue;
+  margin-top: -2px;
+}
+
+.block.turqoise {
+  .stick, .peg, .bubble {
+    background: #5DCACF;
+  }
+}
+
+.block.green {
+  .stick, .peg, .bubble {
+    background: #33BC8A;
+  }
+}
+
+.block.orange {
+  .stick, .peg, .bubble {
+    background: #FAA833;
+  }
+}
+
+.block.pink {
+  .stick, .peg, .bubble {
+    background: #F47F6B;
+  }
+}
+
+.block.red {
+  .stick, .peg, .bubble {
+    background: #CE0F22;
+  }
+}
+
+h1.mb-1 {
+  margin-bottom: 2em;
+}
