@@ -1,0 +1,33 @@
+@import views.html.b3.vertical.VerticalFieldConstructor
+@import controllers.admin.AssessmentsController.AssessmentFormData
+@import domain.Assessment.Platform
+@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
+
+@selectedPlatforms = @{form("platform").indexes.flatMap { index => form(s"platform[$index]").value }}
+
+@url(platform: Platform, label: String) = {
+  @b3.text(form(s"urls.${platform.entryName}"),
+    Symbol("_label") -> label,
+    Symbol("disabled") -> !selectedPlatforms.contains(platform.entryName),
+    Symbol("_class") -> (if (!selectedPlatforms.contains(platform.entryName)) "hidden" else ""),
+    Symbol("data-platform") -> platform.entryName
+  )
+}
+
+@Platform.values.map {
+  case Platform.Moodle => {
+    @url(Platform.Moodle, "URL to Moodle assessment")
+  }
+  case Platform.QuestionmarkPerception => {
+    @url(Platform.QuestionmarkPerception, "URL to QMP assessment")
+  }
+  case Platform.TabulaAssignment => {
+    @url(Platform.TabulaAssignment, "URL to Tabula assignment")
+  }
+  case Platform.MyWBS => {
+    @url(Platform.MyWBS, "URL to My WBS assessment")
+  }
+  case _ => {}
+}
+
+

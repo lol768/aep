@@ -94,11 +94,11 @@ object DataGenerationService {
 
   private val extraTimeAdjustmentDurations = Seq(20, 30, 45, 60, 90, 120).map(_.toLong)
 
-  def makeStoredBrief(implicit dataGeneration: DataGeneration): StoredBrief =
+  def makeStoredBrief(platforms: Set[Platform])(implicit dataGeneration: DataGeneration): StoredBrief =
     StoredBrief(
       Some(dataGeneration.dummyWords(dataGeneration.random.between(6,30))),
       Seq.empty,
-      Some(dataGeneration.fakePath)
+      platforms.filter(_.requiresUrl).map(p => p -> dataGeneration.fakePath).toMap
     )
 
   def makeStoredAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None)(implicit dataGeneration: DataGeneration): StoredAssessment = {
@@ -126,7 +126,7 @@ object DataGenerationService {
       duration = Some(Duration.ofHours(3)),
       platform = Set(platform),
       assessmentType = assType,
-      storedBrief = makeStoredBrief,
+      storedBrief = makeStoredBrief(Set(platform)),
       invigilators = List(invigilator1, invigilator2),
       state = Assessment.State.Draft,
       tabulaAssessmentId = None,

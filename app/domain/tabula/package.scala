@@ -66,7 +66,7 @@ package object tabula {
         duration = existingAssessment.flatMap(_.duration),
         platform = existingAssessment.map(_.platform).getOrElse(Set[Platform]()),
         assessmentType = existingAssessment.flatMap(_.assessmentType),
-        brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, None)),
+        brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, Map.empty)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
         state = existingAssessment.map(_.state).getOrElse(Imported),
         tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(id)),

@@ -26,11 +26,14 @@
       <dd>@formattedBriefText(text)</dd>
     }
 
-    @if(assessment.platform.exists(_ != Platform.OnlineExams)) {
-      @assessment.brief.url.map { url =>
-        <dt>URL to assessment</dt>
-        <dd>@url</dd>
-      }
+    @if(assessment.platform.exists(_.requiresUrl)) {
+      <dt>URLs to assessments</dt>
+      <dd>@assessment.platform.filter(_.requiresUrl).toSeq.zipWithIndex.map { case (platform, index) =>
+        @platform.label: @assessment.brief.urls(platform)
+        @if(index < assessment.platform.count(_.requiresUrl)) {
+          <br />
+        }
+      }</dt>
     }
 
     <dt>Files</dt>

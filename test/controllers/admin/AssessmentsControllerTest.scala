@@ -132,7 +132,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       platform = Set(Platform.OnlineExams),
       assessmentType = Some(AssessmentType.OpenBook),
       students = Set.empty,
-      url = None,
+      urls = Map.empty,
     )
   }
 
@@ -150,7 +150,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       durationMinutes = a.duration.map(_.toMinutes),
       platform = a.platform,
       assessmentType = a.assessmentType,
-      url = Some("https://www.warwick.ac.uk"),
+      urls = a.platform.map(p => p -> "https://www.warwick.ac.uk").toMap,
       students = Set.empty,
       invigilators = Set.empty,
     )
@@ -197,8 +197,9 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       "platform[]" -> data.platform.mkString(","),
       "assessmentType" -> data.assessmentType.map(_.toString).getOrElse(""),
       "students" -> data.students.toSeq.map(_.string).sorted.mkString("\n"),
-      "url" -> data.url.getOrElse(""),
-    ) ++ data.invigilators.zipWithIndex.map { case (invigilator, index) =>
+    ) ++ data.urls.map { case (platform, url) =>
+      s"urls.${platform.entryName}" -> url
+    } ++ data.invigilators.zipWithIndex.map { case (invigilator, index) =>
       s"invigilators[$index]" -> invigilator.string
     }.toSeq
 
