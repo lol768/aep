@@ -102,7 +102,7 @@ export function calculateTimingInfo(data, now) {
   let text;
   let warning = false;
   if (hasFinalised) {
-    text = 'Assessment complete.';
+    text = 'You completed this assessment.';
   } else if (hasStarted) {
     text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
     if (showTimeRemaining) {
