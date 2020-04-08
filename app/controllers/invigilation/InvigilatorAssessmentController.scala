@@ -3,6 +3,7 @@ package controllers.invigilation
 import java.util.UUID
 
 import controllers.BaseController
+import domain.SittingMetadata
 import javax.inject.Inject
 import play.api.mvc.{Action, AnyContent}
 import services.messaging.MessageService
@@ -46,7 +47,7 @@ class InvigilatorAssessmentController @Inject()(
         ).successMap { case (students, latestActivities) =>
             Ok(views.html.invigilation.assessment(
               assessment = assessment,
-              studentAssessments = studentAssessments,
+              sittingMetadata = studentAssessments.map(SittingMetadata(_, assessment.asAssessmentMetadata)),
               invigilators = userLookup
                 .getUsers(assessment.invigilators.toSeq)
                 .getOrElse(Nil)
