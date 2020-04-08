@@ -55,6 +55,12 @@ object AssessmentsController {
                 }
               )
           })
+
+    // Somewhere a string of a single empty space is creeping in...
+    val platformsMapping: Mapping[Set[Platform]] =
+      set(text).verifying ("error.assessment.platformNumber", !_.forall(p => Platform.namesToValuesMap.get(p).nonEmpty))
+        .transform[Set[Platform]](_.map(Platform.withName), _.map(_.entryName))
+
   }
 
   case class AssessmentFormData(
@@ -84,6 +90,14 @@ object AssessmentsController {
       Invalid(Seq(ValidationError("error.assessment.duration-not-valid", assessmentForm.assessmentType.label)))
   }
 
+  val platformConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
+    if (assessmentForm.platform.isEmpty || assessmentForm.platform.size > 2) {
+      Invalid(Seq(ValidationError("error.assessment.platformNumber")))
+    } else {
+      Valid
+    }
+  }
+
   def formMapping(existing: Option[Assessment], ready: Boolean = false)(implicit studentInformationService: TabulaStudentInformationService, ec: ExecutionContext, t: TimingContext): Form[AssessmentFormData] = {
     val baseMapping = mapping(
       "moduleCode" -> nonEmptyText,
@@ -94,7 +108,7 @@ object AssessmentsController {
       "startTime" -> startTimeFieldMapping,
       "students" -> studentsFieldMapping,
       "title" -> nonEmptyText,
-      "platform" -> set(Platform.formField),
+      "platform" -> platformsMapping,
       "assessmentType" -> AssessmentType.formField,
       "durationMinutes" -> optional(longNumber),
       "url" -> optional(text),
@@ -106,6 +120,7 @@ object AssessmentsController {
       if (ready) baseMapping
         .verifying("error.assessment.url-not-specified", data => data.platform == Set(Platform.OnlineExams) || data.url.exists(_.nonEmpty))
         .verifying(durationConstraint)
+        .verifying(platformConstraint)
       else baseMapping
     )
   }

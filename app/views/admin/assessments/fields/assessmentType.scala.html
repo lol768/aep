@@ -17,15 +17,30 @@
       }
   </div>
   <div class="col-sm-6">
-    @b3.multiCheckbox(
-      Platform.values.map { p =>
-        form("platform[]") -> Seq(
-          Symbol("id") -> s"platform_${p.entryName}",
-          Symbol("_text") -> p.label,
-          Symbol("value") -> p.entryName,
-          Symbol("checked") -> form.value.map(_.platform).getOrElse(Set.empty).contains(p)
-        )
-      }: _*
-    )(Symbol("_id") -> "platform_field", Symbol("_label") -> "Platform", Symbol("class") -> "multi-checkbox-list")
+    @defining(form.errors("platform")) { errors =>
+      @if(errors.nonEmpty) {
+        <div class="has-error">
+      }
+      @b3.multiCheckbox(
+        Platform.values.map { p =>
+          form("platform[]") -> Seq(
+            Symbol("id") -> s"platform_${p.entryName}",
+            Symbol("_text") -> p.label,
+            Symbol("value") -> p.entryName,
+            Symbol("checked") -> form.value.map(_.platform).getOrElse(Set.empty).contains(p)
+          )
+        }: _*
+      )(
+        Symbol("_id") -> "platform_field",
+        Symbol("_label") -> "Platform",
+        Symbol("class") -> s"multi-checkbox-list"
+      )
+      @if(errors.nonEmpty) {
+        </div>
+      }
+      @errors.map { error =>
+        <div class="text-danger">@error.format</div>
+      }
+    }
   </div>
 </div>
