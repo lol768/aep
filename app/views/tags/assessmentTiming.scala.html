@@ -4,26 +4,29 @@
 @import play.api.libs.json.JsNumber
 @import play.api.libs.json.JsBoolean
 @import play.api.libs.json.JsNull
-@(sitting: Sitting, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
-
-@for(startTime <- sitting.assessment.startTime; duration <- sitting.duration) {
-    <span>
-        <i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i>
-        <span
-        class="timing-information"
-        data-id="@sitting.assessment.id"
-        data-rendering="@{
-            Json.stringify(Json.toJson(Map(
-                "windowStart" -> JsNumber(startTime.toInstant.toEpochMilli),
-                "windowEnd" -> JsNumber(sitting.assessment.lastAllowedStartTime.get.toInstant.toEpochMilli),
-                "start" -> sitting.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli)).getOrElse(JsNull),
-                "end" -> sitting.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli + duration.toMillis)).getOrElse(JsNull),
-                "hasStarted" -> JsBoolean(sitting.studentAssessment.startTime.nonEmpty),
-                "hasFinalised" -> JsBoolean(sitting.studentAssessment.finaliseTime.nonEmpty),
-                "extraTimeAdjustment" -> sitting.studentAssessment.extraTimeAdjustment.map(et => JsNumber(et.toMillis)).getOrElse(JsNull),
-                "showTimeRemaining" -> JsBoolean(sitting.assessment.platform.contains(Platform.OnlineExams)),
-            )))
-        }"
-        ></span>
-    </span>
+@(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
+@if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
+    @sitting.assessment.startTime.map { startTime =>
+        <span>
+            <i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i>
+            <span
+            class="timing-information"
+            data-id="@sitting.assessment.id"
+            data-rendering="@{
+                Json.stringify(Json.toJson(Map(
+                    "windowStart" -> JsNumber(startTime.toInstant.toEpochMilli),
+                    "windowEnd" -> JsNumber(sitting.assessment.lastAllowedStartTime.get.toInstant.toEpochMilli),
+                    "start" -> sitting.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli)).getOrElse(JsNull),
+                    "end" -> (for(st <- sitting.studentAssessment.startTime; duration <- sitting.duration) yield {
+                        JsNumber(st.toInstant.toEpochMilli + duration.toMillis)
+                    }).getOrElse(JsNull),
+                    "hasStarted" -> JsBoolean(sitting.studentAssessment.startTime.nonEmpty),
+                    "hasFinalised" -> JsBoolean(sitting.studentAssessment.finaliseTime.nonEmpty),
+                    "extraTimeAdjustment" -> sitting.studentAssessment.extraTimeAdjustment.map(et => JsNumber(et.toMillis)).getOrElse(JsNull),
+                    "showTimeRemaining" -> JsBoolean(sitting.duration.isDefined),
+                )))
+            }"
+            ></span>
+        </span>
+    }
 }
