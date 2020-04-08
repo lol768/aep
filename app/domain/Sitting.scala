@@ -17,6 +17,8 @@ sealed trait BaseSitting {
 
   def inProgress: Boolean = started && !finalised
 
+  def inProgressAndWithinDeadline: Boolean = inProgress && !getProgressState.contains(DeadlineMissed)
+
   def started: Boolean = studentAssessment.startTime.nonEmpty
 
   def finalised: Boolean = studentAssessment.hasFinalised
