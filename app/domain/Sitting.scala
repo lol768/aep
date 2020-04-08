@@ -1,9 +1,8 @@
 package domain
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.Duration
 
 import domain.BaseSitting.ProgressState
-
 import enumeratum.{EnumEntry, PlayEnum}
 import views.assessment.AssessmentTimingUpdate
 import warwick.core.helpers.JavaTime
@@ -53,7 +52,7 @@ sealed trait BaseSitting {
   }
 
   def getProgressState: Option[ProgressState] = {
-    val now = OffsetDateTime.now
+    val now = JavaTime.offsetDateTime
     assessment.startTime.map { assessmentStartTime =>
       if(assessmentStartTime.isAfter(now)) {
         AssessmentNotYetOpen
