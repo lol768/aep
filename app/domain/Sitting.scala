@@ -24,7 +24,7 @@ sealed trait BaseSitting {
     assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
     assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
 
-  case class DurationInfo(durationWithExtraAdjustment:Option[Duration], onTimeDuration: Option[Duration], lateDuration: Option[Duration])
+  case class DurationInfo(durationWithExtraAdjustment:Duration, onTimeDuration: Duration, lateDuration: Duration)
 
   // How long the student has to complete the assessment (excludes upload grace duration)
   lazy val duration: Option[Duration] = assessment.duration.map { d =>
@@ -37,14 +37,14 @@ sealed trait BaseSitting {
   }
 
   // Hard limit for student submitting, though they may be counted late.
-  lazy val durationIncludingLate: Option[Duration] = onTimeDuration.map { d =>
+  lazy val lateDuration: Option[Duration] = onTimeDuration.map { d =>
     d.plus(Assessment.lateSubmissionPeriod)
   }
 
-  lazy val durationInfo:DurationInfo = DurationInfo(duration, onTimeDuration, durationIncludingLate)
+  lazy val durationInfo:Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get)}
 
   def canFinalise: Boolean = studentAssessment.startTime.exists(startTime =>
-    durationIncludingLate.exists { d =>
+    lateDuration.exists { d =>
       !finalised &&
         startTime.plus(d).isAfter(JavaTime.offsetDateTime) &&
         !assessment.hasLastAllowedStartTimePassed
@@ -77,7 +77,7 @@ sealed trait BaseSitting {
           InProgress
         } else if (studentStartTime.plus(duration.get).isAfter(now)) {
           OnGracePeriod
-        } else if (studentStartTime.plus(durationIncludingLate.get).isAfter(now)) {
+        } else if (studentStartTime.plus(lateDuration.get).isAfter(now)) {
           Late
         } else {
           DeadlineMissed
