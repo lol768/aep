@@ -8,7 +8,7 @@ $(() => {
       e.target.checked = false;
     } else {
       const isOnlineExams = $('#platform_OnlineExams').is(':checked');
-      const hideUrlField = isOnlineExams && count <= 1;
+      const hideUrlField = isOnlineExams && count === 1;
 
       $('#url_field').toggleClass('hide', hideUrlField)
         .find('input').prop('disabled', hideUrlField);
