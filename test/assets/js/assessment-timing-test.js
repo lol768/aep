@@ -87,7 +87,7 @@ describe('calculateTimingInfo', () => {
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: true,
-      text: "Started 2 hours and 5 minutes ago.\nExceeded deadline by 5 minutes.",
+      text: "You started this assessment, but missed the deadline to upload your answers.\nExceeded deadline by 5 minutes.",
       allowStart: false
     });
   });
@@ -144,7 +144,7 @@ describe('calculateTimingInfo', () => {
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: "Started 2 hours and 5 minutes ago.",
+      text: "You started this assessment, but missed the deadline to upload your answers.",
       allowStart: false
     });
   });
