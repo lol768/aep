@@ -15,15 +15,20 @@ export default function initAnnouncements(websocket) {
       const messageList = document.querySelector('.message-list');
       if (messageList && d.type === 'announcement') {
         const el = document.createElement('div');
-        el.classList.add('alert', 'alert-info');
+        el.classList.add('alert', 'alert-info', 'media');
         const icon = document.createElement('i');
         icon.setAttribute('aria-hidden', 'true');
         const iconName = 'bullhorn';
         icon.classList.add('fad', `fa-${iconName}`);
+        const mediaLeft = document.createElement('div');
+        mediaLeft.classList.add('media-left');
+        const mediaBody = document.createElement('div');
+        mediaBody.classList.add('media-body');
         const data = document.createTextNode(d.message);
-        el.appendChild(icon);
-        el.appendChild(document.createTextNode(' '));
-        el.appendChild(data);
+        mediaLeft.appendChild(icon);
+        mediaBody.appendChild(data);
+        el.appendChild(mediaLeft);
+        el.appendChild(mediaBody);
         messageList.appendChild(el);
 
         if ('Notification' in window && Notification.permission === 'granted') {
