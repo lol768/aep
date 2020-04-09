@@ -1,5 +1,7 @@
 // John Dale Datetime (JDDT)
 
+import stringToArray from "lodash-es/_stringToArray";
+
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TODAY = 'Today ';
@@ -161,6 +163,20 @@ function stringify(date, timezoneName, short) {
   }
   const dateTimeString = `${dateName.trim()}, ${stringifyTime(date).trim()}`;
   return `${iconString} ${dateTimeString.trim()} <span class="text-muted">${timezoneName}</span>`;
+}
+
+function stringifyToPlainText(date, timezoneName, short) {
+  const currentYear = new Date(Date.now()).getFullYear();
+  let dateName = relativeDateName(date);
+  if (dateName === '') {
+    let yearString = '';
+    if (date.getFullYear() !== currentYear) {
+      yearString = stringifyYear(date.getFullYear());
+    }
+    dateName = `${stringifyDay(date.getDay(), short)} ${th(date.getDate())} ${stringifyMonth(date.getMonth(), short)} ${yearString}`;
+  }
+  const dateTimeString = `${dateName.trim()}, ${stringifyTime(date).trim()}`;
+  return timezoneName ? `${dateTimeString.trim()} ${timezoneName}` : dateTimeString.trim();
 }
 
 /**
@@ -325,6 +341,18 @@ export default class JDDT {
    */
   shortLocalBare() {
     return ` (${stringify(this.jsDateLocal, this.localTimezoneName, true).replace(`${iconString} `, '')})`;
+  }
+
+  /**
+   * pure plain string
+   *
+   * @returns {string}
+   * @param includeTimezoneName
+   */
+  localString(includeTimezoneName = false) {
+    return includeTimezoneName ?
+      stringifyToPlainText(this.jsDateLocal, this.localTimezoneName, true) :
+      stringifyToPlainText(this.jsDateLocal, null, true);
   }
 
   /**

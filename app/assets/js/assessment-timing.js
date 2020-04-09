@@ -1,4 +1,5 @@
 import msToHumanReadable from './time-helper';
+import JDDT from './jddt';
 
 /**
  * @typedef {number} unix_timestamp
@@ -99,6 +100,9 @@ export function calculateTimingInfo(data, now) {
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
 
+  const jdWindowStart = new JDDT(windowStart);
+  const jdWindowEnd = new JDDT(windowEnd);
+
   let text;
   let warning = false;
   if (hasFinalised) {
@@ -118,10 +122,10 @@ export function calculateTimingInfo(data, now) {
       }
     }
   } else if (timeUntilStart > 0) {
-    text = `You can start in ${msToHumanReadable(timeUntilStart)}.`;
+    text = `You can start between ${jdWindowStart.localString()} and ${jdWindowEnd.localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
     warning = true;
   } else if (timeUntilEndOfWindow > 0) {
-    text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    text = `This assessment opened at  ${jdWindowStart.localString()}, and closes at ${jdWindowEnd.localString()}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start it.`;
     warning = true;
   } else {
     text = 'The assessment window has now passed.';
