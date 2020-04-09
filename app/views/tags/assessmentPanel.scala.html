@@ -8,7 +8,10 @@
         <div class="brand-stripe"></div>
     }
     <div class="panel-body">
-        @if(!isAssessmentPage) {
+        @if(isAssessmentPage) {
+            <div class="row">
+                <div class="col-lg-6">
+        } else {
             <h4>
                 @if(sitting.finalised) {
                     <i class="fad themed-duotone fa-check fa-fw"></i>
@@ -30,6 +33,11 @@
                 }
                 @assessmentTiming(sitting)
             }
+            </div>
+            <div class="col-lg-6">
+                @assessmentTimeline(sitting)
+            </div>
+        </div>
         } else {
             <a href="@routes.AssessmentController.view(sitting.assessment.id)" class="btn btn-primary">
                 View
