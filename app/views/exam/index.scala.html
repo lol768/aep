@@ -14,7 +14,7 @@
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @defining(if (sitting.canModify) "beforeunload" else "") { className =>
-  @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className)) {
+  @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className), existingMessages = announcements) {
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
 
