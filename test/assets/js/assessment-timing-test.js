@@ -62,7 +62,7 @@ describe('calculateTimingInfo', () => {
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining.',
+      text: 'You started 10 minutes ago. You have 1 hour and 5 minutes remaining until you should upload your answers.',
       allowStart: false
     });
 
@@ -70,7 +70,7 @@ describe('calculateTimingInfo', () => {
     data.extraTimeAdjustment = 21*MINUTE;
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining (including 21 minutes additional time).',
+      text: 'You started 10 minutes ago. You have 1 hour and 5 minutes remaining until you should upload your answers (including 21 minutes additional time).',
       allowStart: false
     });
   });
@@ -119,7 +119,7 @@ describe('calculateTimingInfo', () => {
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'Started 10 minutes ago.',
+      text: 'You started 10 minutes ago.',
       allowStart: false
     });
 
@@ -127,7 +127,7 @@ describe('calculateTimingInfo', () => {
     data.extraTimeAdjustment = 21*MINUTE;
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'Started 10 minutes ago.',
+      text: 'You started 10 minutes ago.',
       allowStart: false
     });
   });
