@@ -159,7 +159,7 @@ function stringify(date, timezoneName, short) {
     }
     dateName = `${stringifyDay(date.getDay(), short)} ${th(date.getDate())} ${stringifyMonth(date.getMonth(), short)} ${yearString}`;
   }
-  const dateTimeString = `${stringifyTime(date).trim()}, ${dateName.trim()}`;
+  const dateTimeString = `${dateName.trim()}, ${stringifyTime(date).trim()}`;
   return `${iconString} ${dateTimeString.trim()} <span class="text-muted">${timezoneName}</span>`;
 }
 
