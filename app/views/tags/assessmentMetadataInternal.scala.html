@@ -23,8 +23,9 @@
     </dd>
 }
 
-<dt>Duration</dt>
-<dd>
-    <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@durationWords(assessment)
-</dd>
-
+@if(assessment.duration.nonEmpty) {
+    <dt>Duration</dt>
+    <dd>
+        <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@durationWords(assessment)
+    </dd>
+}
