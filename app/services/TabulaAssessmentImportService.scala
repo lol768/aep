@@ -42,6 +42,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
   private[this] lazy val importStudentExtraTime = configuration.get[Boolean]("app.importStudentExtraTime")
+  private[this] lazy val overwriteAssessmentTypeOnImport = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
 
   private def traverseSerial[A, B](in: Seq[A])(fn: A => Future[ServiceResult[B]]): Future[ServiceResult[Seq[B]]] =
     in.foldLeft(Future.successful(Seq.empty[ServiceResult[B]])) { (future, item) =>
@@ -100,14 +101,14 @@ class TabulaAssessmentImportServiceImpl @Inject()(
             assessmentService.delete(existingAssessment).successMapTo(_ => None)
 
           case Some(existingAssessment) =>
-            val updated = ac.asAssessment(Some(existingAssessment), schedule)
+            val updated = ac.asAssessment(Some(existingAssessment), schedule, overwriteAssessmentTypeOnImport)
             if (updated == existingAssessment)
               Future.successful(ServiceResults.success(Some(existingAssessment)))
             else
               assessmentService.update(updated, Nil).successMapTo(Some(_))
 
           case _ =>
-            val newAssessment = ac.asAssessment(None, schedule)
+            val newAssessment = ac.asAssessment(None, schedule, overwriteAssessmentTypeOnImport)
             assessmentService.insert(newAssessment, Nil).successMapTo(Some(_))
         }.successFlatMapTo {
           case None => Future.successful(ServiceResults.success(None))
