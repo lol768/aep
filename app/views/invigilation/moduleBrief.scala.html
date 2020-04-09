@@ -1,4 +1,5 @@
 @import domain.Assessment
+@import tags._
 
 @(
     assessment: Assessment,
@@ -7,7 +8,7 @@
     <div class="panel-body">
         <dt>Brief</dt>
         @assessment.brief.text.map { text =>
-            <dd>@text</dd>
+            <dd>@formattedBriefText(text)</dd>
         }
 
         @assessment.brief.url.map { url =>
