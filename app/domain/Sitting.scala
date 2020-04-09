@@ -57,9 +57,14 @@ sealed trait BaseSitting {
   def getTimingInfo: AssessmentTimingUpdate = {
     AssessmentTimingUpdate(
       id = assessment.id,
-      startTime = studentAssessment.startTime.map(_.toInstant.toEpochMilli),
+      windowStart = assessment.startTime,
+      windowEnd = assessment.lastAllowedStartTime,
+      start = studentAssessment.startTime,
+      end = studentAssessment.startTime.flatMap(startTime => onTimeDuration.map(duration => startTime.plus(duration))),
       hasStarted = studentAssessment.startTime.nonEmpty,
-      hasFinalised = studentAssessment.hasFinalised,
+      hasFinalised = studentAssessment.finaliseTime.nonEmpty,
+      extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+      showTimeRemaining = duration.isDefined,
       progressState = getProgressState,
     )
   }
@@ -77,15 +82,18 @@ sealed trait BaseSitting {
         }
       } else if (inProgress) {
         val studentStartTime = studentAssessment.startTime.get
-        if (studentStartTime.plus(assessment.duration.get).isAfter(now)) {
-          InProgress
-        } else if (studentStartTime.plus(duration.get).isAfter(now)) {
-          OnGracePeriod
-        } else if (studentStartTime.plus(lateDuration.get).isAfter(now)) {
-          Late
-        } else {
-          DeadlineMissed
+        val inProgressState = for(ad <- assessment.duration; d <- duration; ld <- lateDuration) yield {
+          if (studentStartTime.plus(ad).isAfter(now)) {
+            InProgress
+          } else if (studentStartTime.plus(d).isAfter(now)) {
+            OnGracePeriod
+          } else if (studentStartTime.plus(ld).isAfter(now)) {
+            Late
+          } else {
+            DeadlineMissed
+          }
         }
+        inProgressState.getOrElse(Started)
       } else {
         Finalised
       }
@@ -107,6 +115,11 @@ object BaseSitting {
 
     case object AssessmentOpenNotStarted extends ProgressState {
       val label = "Not started"
+    }
+
+    // OE-241 for bespoke assessments we don't have a duration so we only know if a student started
+    case object Started extends ProgressState {
+      val label = "Started"
     }
 
     case object InProgress extends ProgressState {

@@ -1,5 +1,6 @@
 package actors
 
+import java.time.OffsetDateTime
 import java.util.UUID
 
 import akka.actor._
@@ -29,7 +30,7 @@ object WebSocketActor {
   )(implicit ec: ExecutionContext, t: TimingContext): Props =
     Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, additionalTopics))
 
-  case class AssessmentAnnouncement(message: String)
+  case class AssessmentAnnouncement(message: String, timestamp: OffsetDateTime)
 
   case class ClientMessage(
     `type`: String,
@@ -75,9 +76,10 @@ class WebSocketActor @Inject() (
   }
 
   override def receive: Receive = {
-    case AssessmentAnnouncement(announcement) => out ! Json.obj(
+    case AssessmentAnnouncement(announcement, timestamp) => out ! Json.obj(
       "type" -> "announcement",
       "message" -> announcement,
+      "timestamp" -> views.html.tags.localisedDatetime(timestamp).toString,
       "user" -> JsString(loginContext.user.map(u => u.usercode.string).getOrElse("Anonymous"))
     )
 

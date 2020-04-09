@@ -9,7 +9,7 @@ import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.StudentAssessmentSpecificRequest
-import services.{SecurityService, StudentAssessmentService, UploadedFileService}
+import services.{AnnouncementService, SecurityService, StudentAssessmentService, UploadedFileService}
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 
@@ -58,7 +58,8 @@ class AssessmentController @Inject()(
   security: SecurityService,
   studentAssessmentService: StudentAssessmentService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
-  uploadedFileService: UploadedFileService
+  uploadedFileService: UploadedFileService,
+  announcementService: AnnouncementService,
 )(implicit
   ec: ExecutionContext,
 ) extends BaseController {
@@ -84,8 +85,10 @@ class AssessmentController @Inject()(
   }
 
 
-  def view(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId) { implicit request =>
-    Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes))
+  def view(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
+    announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
+      Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes, announcements))
+    )
   }
 
   def authorshipDeclaration(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
@@ -116,7 +119,9 @@ class AssessmentController @Inject()(
 
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
     AssessmentController.finishExamForm.bindFromRequest().fold(
-      form => Future.successful(BadRequest(views.html.exam.index(request.sitting, form, uploadedFileControllerHelper.supportedMimeTypes))),
+      form => announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
+        BadRequest(views.html.exam.index(request.sitting, form, uploadedFileControllerHelper.supportedMimeTypes, announcements))
+      ),
       _ => {
         if (request.sitting.finalised) {
           val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
@@ -136,7 +141,9 @@ class AssessmentController @Inject()(
   def uploadFiles(assessmentId: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = StudentAssessmentInProgressAction(assessmentId)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val files = request.body.files.map(_.ref)
     AssessmentController.attachFilesToAssessmentForm.bindFromRequest().fold(
-      _ => Future.successful(BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes))),
+      _ => announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
+        BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes, announcements))
+      ),
       form => {
         val existingUploadedFiles = request.sitting.studentAssessment.uploadedFiles
         val intersection = existingUploadedFiles.map(uf => uf.fileName.toLowerCase).intersect(files.map(f => f.metadata.fileName.toLowerCase))
