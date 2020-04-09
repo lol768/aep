@@ -9,11 +9,11 @@ import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc._
 import services.refiners.{ActionRefiners, AssessmentSpecificRequest, DepartmentAdminAssessmentRequest, DepartmentAdminRequest, StudentAssessmentSpecificRequest}
+import system.Roles._
 import system.{ImplicitRequestContext, Roles}
 import warwick.sso._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 @ImplementedBy(classOf[SecurityServiceImpl])
 trait SecurityService {
@@ -51,6 +51,7 @@ trait SecurityService {
   def SecureWebsocket[A](request: play.api.mvc.RequestHeader)(block: warwick.sso.LoginContext => TryAccept[A]): TryAccept[A]
 
   def isOriginSafe(origin: String): Boolean
+  def isAdmin(context: LoginContext): Boolean
 }
 
 @Singleton
@@ -64,6 +65,8 @@ class SecurityServiceImpl @Inject()(
 
   import actionRefiners._
 
+  private val assessmentManagerGroup: String = configuration.get[String]("app.assessmentManagerGroup")
+
   private def defaultParser: BodyParser[AnyContent] = parse.default
 
   override def SigninAwareAction: AuthActionBuilder = sso.Lenient(defaultParser)
@@ -72,11 +75,11 @@ class SecurityServiceImpl @Inject()(
   override def RequiredRoleAction(role: RoleName): AuthActionBuilder = sso.RequireRole(role, forbidden)(defaultParser)
   override def RequiredActualUserRoleAction(role: RoleName): AuthActionBuilder = sso.RequireActualUserRole(role, forbidden)(defaultParser)
 
-  val RequireAdmin: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Admin)
-  val RequireSysadmin: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Sysadmin)
-  val RequireApprover: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Approver)
-  val RequireMasquerader: AuthActionBuilder = RequiredActualUserRoleAction(Roles.Masquerader)
-  val RequireDepartmentAssessmentManager: AuthActionBuilder = RequireDeptWebGroup(configuration.get[String]("app.assessmentManagerGroup"), forbidden)(defaultParser)
+  val RequireAdmin: AuthActionBuilder = RequiredActualUserRoleAction(Admin)
+  val RequireSysadmin: AuthActionBuilder = RequiredActualUserRoleAction(Sysadmin)
+  val RequireApprover: AuthActionBuilder = RequiredActualUserRoleAction(Approver)
+  val RequireMasquerader: AuthActionBuilder = RequiredActualUserRoleAction(Masquerader)
+  val RequireDepartmentAssessmentManager: AuthActionBuilder = RequireDeptWebGroup(assessmentManagerGroup, forbidden)(defaultParser)
 
   def RequireDeptWebGroup[C](group: String, otherwise: AuthenticatedRequest[_] => Result)(parser: BodyParser[C]): ActionBuilder[AuthenticatedRequest, C] =
     (sso.Strict(parser) andThen requireCondition(requireGroup(_, group), otherwise))
@@ -160,4 +163,15 @@ class SecurityServiceImpl @Inject()(
     val uri = new java.net.URI(origin)
     uri.getHost == configuration.get[String]("domain") && uri.getScheme == "https"
   }
+
+  def isAdmin(ctx: LoginContext): Boolean =
+    ctx.user.exists { user =>
+      if (ctx.userHasRole(Admin) || ctx.userHasRole(Sysadmin)) {
+        true
+      } else {
+        groupService.getGroupsForUser(user.usercode).map { groups =>
+          groups.exists(_.name.string.endsWith(assessmentManagerGroup))
+        }.getOrElse(false)
+      }
+    }
 }

@@ -1,3 +1,5 @@
+import JDDT from './jddt';
+
 function checkNotificationPromise() {
   // https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API
   try {
@@ -20,15 +22,21 @@ export default function initAnnouncements(websocket) {
         icon.setAttribute('aria-hidden', 'true');
         const iconName = 'bullhorn';
         icon.classList.add('fad', `fa-${iconName}`);
+        const data = document.createTextNode(d.message);
+        const timestamp = document.createElement('div');
+        timestamp.classList.add('query-time');
+        timestamp.innerHTML = d.timestamp;
         const mediaLeft = document.createElement('div');
         mediaLeft.classList.add('media-left');
         const mediaBody = document.createElement('div');
         mediaBody.classList.add('media-body');
         mediaLeft.appendChild(icon);
         mediaBody.innerHTML = d.message.replace(/\n/, '<br>');
+        mediaBody.appendChild(timestamp);
         el.appendChild(mediaLeft);
         el.appendChild(mediaBody);
         messageList.appendChild(el);
+        JDDT.initialise(messageList);
 
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Assessment announcement', { // eslint-disable-line no-new

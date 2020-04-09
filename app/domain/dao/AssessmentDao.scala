@@ -3,6 +3,7 @@ package domain.dao
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
+import akka.Done
 import com.google.inject.ImplementedBy
 import domain.Assessment._
 import domain._
@@ -191,6 +192,8 @@ trait AssessmentDao {
 
   def update(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment]
 
+  def delete(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[Done]
+
   def getById(id: UUID): DBIO[Option[StoredAssessment]]
 
   def loadByTabulaAssessmentIdWithUploadedFiles(id: UUID, examProfileCode: String): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
@@ -248,6 +251,9 @@ class AssessmentDaoImpl @Inject()(
 
   override def update(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[StoredAssessment] =
     assessments.update(assessment)
+
+  override def delete(assessment: StoredAssessment)(implicit ac: AuditLogContext): DBIO[Done] =
+    assessments.delete(assessment)
 
   private def getByIdQuery(id: UUID): Query[Assessments, StoredAssessment, Seq] =
     assessments.table.filter(_.id === id)
