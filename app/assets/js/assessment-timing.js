@@ -104,15 +104,18 @@ export function calculateTimingInfo(data, now) {
   if (hasFinalised) {
     text = 'You completed this assessment.';
   } else if (hasStarted) {
-    text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
-    if (showTimeRemaining) {
-      if (timeRemaining > 0) {
+    if (timeRemaining > 0) {
+      text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
+      if (showTimeRemaining) {
         text += ` ${msToHumanReadable(timeRemaining)} remaining`;
         if (extraTimeAdjustment) {
           text += ` (including ${msToHumanReadable(extraTimeAdjustment)} additional time)`;
         }
         text += '.';
-      } else {
+      }
+    } else {
+      text = 'You started this assessment, but missed the deadline to upload your answers.';
+      if (showTimeRemaining) {
         text += `\nExceeded deadline by ${msToHumanReadable(-timeRemaining)}.`;
         warning = true;
       }
