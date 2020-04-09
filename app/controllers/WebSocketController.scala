@@ -15,6 +15,7 @@ import play.api.libs.json.JsValue
 import play.api.libs.streams.ActorFlow
 import play.api.mvc.{Action, AnyContent, Results, WebSocket}
 import services._
+import warwick.core.helpers.JavaTime
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, Usercode}
 
@@ -26,7 +27,7 @@ object WebSocketController {
     message: String
   ) {
     def toAnnouncement: AssessmentAnnouncement = {
-      AssessmentAnnouncement(message)
+      AssessmentAnnouncement(message, JavaTime.offsetDateTime)
     }
   }
 
@@ -121,7 +122,7 @@ class WebSocketController @Inject()(
       data => {
         pubSub.publish(
           data.assessment.toString,
-          AssessmentAnnouncement(data.message),
+          AssessmentAnnouncement(data.message, JavaTime.offsetDateTime),
         )
         Redirect(controllers.routes.WebSocketController.sendBroadcast())
           .flashing("success" -> Messages("flash.websocket.published"))

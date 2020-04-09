@@ -47,7 +47,7 @@ class AnnouncementServiceImpl @Inject()(
     )
     pubSubService.publish(
       topic = announcement.assessment.toString,
-      AssessmentAnnouncement(announcement.text)
+      AssessmentAnnouncement(announcement.text, announcement.created)
     )
     daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
   }
