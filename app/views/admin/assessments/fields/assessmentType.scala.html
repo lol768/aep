@@ -1,17 +1,20 @@
 @import controllers.admin.AssessmentsController.AssessmentFormData
+@import domain.Assessment
 @import domain.Assessment.{AssessmentType, Platform}
 @import views.html.b3.vertical.VerticalFieldConstructor
-@()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
+@(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 <div class="row">
   <div class="col-sm-6">
-      @b3.radio(form("assessmentType"), Symbol("_label") -> "Type") { implicit extraInfo =>
-          @AssessmentType.values.map { t => @b3.radioOption(
-              t.entryName,
-              t.label,
-              Symbol("data-valid-durations") -> t.validDurations.mkString("[", ",", "]")
-          )}
-      }
+    @b3.radio(form("assessmentType"), Symbol("_label") -> "Type") { implicit extraInfo =>
+      @AssessmentType.values.map { t => @b3.radioOption(
+        t.entryName,
+        t.label,
+        Symbol("data-valid-durations") -> t.validDurations.mkString("[", ",", "]"),
+        /* Intentionally disabled, not readonly here - radio buttons don't support readonly */
+        Symbol("disabled") -> existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty)
+      )}
+    }
   </div>
   <div class="col-sm-6">
     @defining(form.errors("platform")) { errors =>

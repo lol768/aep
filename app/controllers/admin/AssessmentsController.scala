@@ -326,6 +326,7 @@ class AssessmentsController @Inject()(
               departmentCode = data.departmentCode,
               sequence = data.sequence,
               startTime = data.startTime.map(_.asOffsetDateTime),
+              assessmentType = data.assessmentType,
             )
           } else assessment
 
@@ -364,7 +365,6 @@ class AssessmentsController @Inject()(
             title = data.title,
             duration = data.durationMinutes.map(Duration.ofMinutes),
             platform = data.platform,
-            assessmentType = data.assessmentType,
             invigilators = data.invigilators,
             brief = assessment.brief.copy(
               text = data.description,

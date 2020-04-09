@@ -65,7 +65,14 @@ package object tabula {
         startTime = Some(schedule.startTime),
         duration = existingAssessment.flatMap(_.duration),
         platform = existingAssessment.map(_.platform).getOrElse(Set[Platform]()),
-        assessmentType = existingAssessment.flatMap(_.assessmentType),
+        assessmentType = schedule.locationName.flatMap {
+          case "Assignment" | "Open book assessment" => Some(AssessmentType.OpenBook)
+          case "Open Book Assessment, files based" | "Files-based open book assessment" => Some(AssessmentType.OpenBookFileBased)
+          case "MCQ" | "Multiple Choice Questions" => Some(AssessmentType.MultipleChoice)
+          case "Spoken exam under time conditions" | "Spoken Open Book Assessment" => Some(AssessmentType.Spoken)
+          case "Bespoke Option (only if previously agreed) " | "Bespoke Option" => Some(AssessmentType.Bespoke)
+          case _ => existingAssessment.flatMap(_.assessmentType)
+        },
         brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, Map.empty)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
         state = existingAssessment.map(_.state).getOrElse(Imported),
