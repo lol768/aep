@@ -26,19 +26,22 @@
 
     <div class="row">
         <div class="col-sm-6">
-            @b3.vertical.formCSRF(controllers.routes.MessageController.submitForm(assessment.id)) { implicit fc =>
-                @b3.textarea(form("messageText"),
-                    Symbol("_label") -> "Enter your message for the invigilator")
+            <p>
+                @b3.vertical.formCSRF(controllers.routes.MessageController.submitForm(assessment.id)) { implicit fc =>
+                    @b3.textarea(form("messageText"),
+                        Symbol("_label") -> "Enter your message for the invigilator")
 
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i> Send
-                </button>
-            }
-            <br>
-            <a class="btn btn-default" href="@controllers.routes.AssessmentController.view(assessment.id)">
-                <i class="fas fa-arrow-left"></i>
-                Return to assessment
-            </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                }
+            </p>
+            <p>
+                <a class="btn btn-default" href="@controllers.routes.AssessmentController.view(assessment.id)">
+                    <i class="fas fa-arrow-left"></i>
+                    Return to assessment
+                </a>
+            </p>
         </div>
         <div class="col-sm-6">
             <h3>My queries</h3>
