@@ -98,7 +98,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
         assessmentService.getByTabulaAssessmentId(ac.id, examProfileCode).successFlatMapTo {
           case Some(existingAssessment) if schedule.locationName.contains("Assignment") =>
             assessmentService.delete(existingAssessment).successMapTo(_ => None)
-            
+
           case Some(existingAssessment) =>
             val updated = ac.asAssessment(Some(existingAssessment), schedule)
             if (updated == existingAssessment)
