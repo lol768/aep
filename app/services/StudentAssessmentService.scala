@@ -143,7 +143,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   private def assertTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
-    require(storedAssessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)), "Cannot do assessment, too early")
+    require(storedAssessment.hasStartTimePassed, "Cannot do assessment, too early")
     require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot do assessment, too late")
   }
 
