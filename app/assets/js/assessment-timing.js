@@ -196,6 +196,7 @@ export function receiveSocketData(d) {
       if (node) {
         const data = nodeData[id];
         // partial update of properties
+        // TODO as of OE-253 the socket sends all data so no point doing a partial update here.
         nodeData[id] = {
           ...data,
           ...assessment,
