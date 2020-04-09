@@ -4,17 +4,18 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import akka.actor._
-import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck, Unsubscribe}
+import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
+import domain.messaging.MessageSender
+import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
 import javax.inject.Inject
 import play.api.libs.json._
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
+import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
+import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
-import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
-import warwick.core.helpers.JavaTime
-import warwick.core.helpers.ServiceResults.ServiceResult
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -26,11 +27,13 @@ object WebSocketActor {
     out: ActorRef,
     studentAssessmentService: StudentAssessmentService,
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
-    additionalTopics: Seq[String],
+    additionalTopics: Set[String],
   )(implicit ec: ExecutionContext, t: TimingContext): Props =
     Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, additionalTopics))
 
   case class AssessmentAnnouncement(message: String, timestamp: OffsetDateTime)
+
+  case class AssessmentMessage(message: String, sender: MessageSender, client: String, timestamp: OffsetDateTime)
 
   case class ClientMessage(
     `type`: String,
@@ -62,7 +65,7 @@ class WebSocketActor @Inject() (
   loginContext: LoginContext,
   @Assisted studentAssessmentService: StudentAssessmentService,
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
-  additionalTopics: Seq[String],
+  additionalTopics: Set[String],
 )(implicit
   ec: ExecutionContext
 ) extends Actor with ActorLogging {
@@ -81,6 +84,14 @@ class WebSocketActor @Inject() (
       "message" -> announcement,
       "timestamp" -> views.html.tags.localisedDatetime(timestamp).toString,
       "user" -> JsString(loginContext.user.map(u => u.usercode.string).getOrElse("Anonymous"))
+    )
+
+    case AssessmentMessage(message, sender, client, timestamp) => out ! Json.obj(
+      "type" -> "assessmentMessage",
+      "message" -> message,
+      "timestamp" -> views.html.tags.localisedDatetime(timestamp).toString,
+      "sender" -> sender.entryName,
+      "client" -> client
     )
 
     case SubscribeAck(Subscribe(topic, _, _)) =>

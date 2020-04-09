@@ -14,8 +14,6 @@ import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
-import warwick.core.helpers.ServiceResults.Implicits._
-import warwick.sso.UniversityID
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -47,7 +45,7 @@ class AnnouncementServiceImpl @Inject()(
     )
     pubSubService.publish(
       topic = announcement.assessment.toString,
-      AssessmentAnnouncement(announcement.text, announcement.created)
+      AssessmentAnnouncement(warwick.core.views.utils.nl2br(announcement.text).body, announcement.created)
     )
     daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
   }
