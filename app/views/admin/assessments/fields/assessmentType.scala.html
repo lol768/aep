@@ -2,20 +2,22 @@
 @import domain.Assessment
 @import domain.Assessment.{AssessmentType, Platform}
 @import views.html.b3.vertical.VerticalFieldConstructor
-@(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
+@(existing: Option[Assessment], allowAssessmentTypeChangesOnImportedAssessments: Boolean)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 <div class="row">
   <div class="col-sm-6">
-    @if(existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty)) {
+    @if(!allowAssessmentTypeChangesOnImportedAssessments && existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty)) {
       @b3.hidden(form("assessmentType"))
     }
     @b3.radio(form("assessmentType"), Symbol("_label") -> "Type") { implicit extraInfo =>
       @AssessmentType.values.map { t => @b3.radioOption(
         t.entryName,
         t.label,
-        Symbol("data-valid-durations") -> t.validDurations.mkString("[", ",", "]"),
-        /* Intentionally disabled, not readonly here - radio buttons don't support readonly */
-        Symbol("disabled") -> existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty)
+        Seq(
+          Some(Symbol("data-valid-durations") -> t.validDurations.mkString("[", ",", "]")),
+          /* Intentionally disabled, not readonly here - radio buttons don't support readonly. Bug in b3.radioOption prevents us doing 'disabled -> booleanfunc */
+          Some(Symbol("disabled") -> true).filter(_ => !allowAssessmentTypeChangesOnImportedAssessments && existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty))
+        ).flatten: _*
       )}
     }
   </div>

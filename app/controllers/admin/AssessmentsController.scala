@@ -10,6 +10,7 @@ import domain.tabula.SitsProfile
 import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import play.api.data.Forms._
 import play.api.data.validation.{Constraint, Invalid, Valid, ValidationError}
 import play.api.data.{Form, FormError, Mapping}
@@ -174,6 +175,7 @@ class AssessmentsController @Inject()(
   studentAssessmentService: StudentAssessmentService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   departmentService: TabulaDepartmentService,
+  configuration: Configuration,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
   ec: ExecutionContext
@@ -181,6 +183,8 @@ class AssessmentsController @Inject()(
 
   import AssessmentsController._
   import security._
+
+  private[this] lazy val overwriteAssessmentTypeOnImport = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
 
   def index: Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     assessmentService.findByStates(Seq(State.Draft, State.Imported, State.Approved)).successMap { assessments =>
@@ -196,7 +200,7 @@ class AssessmentsController @Inject()(
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
-          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments))
+          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport))
         }
     }
 
@@ -328,6 +332,8 @@ class AssessmentsController @Inject()(
               startTime = data.startTime.map(_.asOffsetDateTime),
               assessmentType = data.assessmentType,
             )
+          } else if (!overwriteAssessmentTypeOnImport) {
+            assessment.copy(assessmentType = data.assessmentType)
           } else assessment
 
         val updateStudents: Future[ServiceResult[Done]] =
