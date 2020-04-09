@@ -1,5 +1,5 @@
 @import domain.Assessment
-@import warwick.core.views.utils.nl2br
+@import tags._
 
 @(
     assessment: Assessment,
@@ -8,7 +8,7 @@
     <div class="panel-body">
         <dt>Brief</dt>
         @assessment.brief.text.map { text =>
-            <dd>@nl2br(text)</dd>
+            <dd>@formattedBriefText(text)</dd>
         }
 
         @assessment.brief.url.map { url =>
