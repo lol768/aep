@@ -85,7 +85,6 @@ class TabulaAssessmentImportServiceImpl @Inject()(
           else {
             // Some information _must_ match, otherwise we need to change our approach
             require(schedules.forall(_.slotId == schedules.head.slotId))
-            require(schedules.forall(_.sequence == schedules.head.sequence))
             require(schedules.forall(_.startTime == schedules.head.startTime))
 
             // We allow locationSequence and location to differ, but we treat them as one assessment
