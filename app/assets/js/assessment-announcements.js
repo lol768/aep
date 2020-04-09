@@ -24,9 +24,8 @@ export default function initAnnouncements(websocket) {
         mediaLeft.classList.add('media-left');
         const mediaBody = document.createElement('div');
         mediaBody.classList.add('media-body');
-        const data = document.createTextNode(d.message);
         mediaLeft.appendChild(icon);
-        mediaBody.appendChild(data);
+        mediaBody.innerHTML = d.message.replace(/\n/, '<br>');
         el.appendChild(mediaLeft);
         el.appendChild(mediaBody);
         messageList.appendChild(el);
