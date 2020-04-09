@@ -304,10 +304,7 @@ class AssessmentsController @Inject()(
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val assessment = request.assessment
     formMapping(existing = Some(assessment)).bindFromRequest().fold(
-      formWithErrors => {
-        println(formWithErrors)
-        showForm(assessment, formWithErrors)
-      },
+      formWithErrors => showForm(assessment, formWithErrors),
       data => {
         val files = request.body.files.map(_.ref)
         val fileErrors: Seq[FormError] =
