@@ -102,7 +102,7 @@ export function calculateTimingInfo(data, now) {
   let text;
   let warning = false;
   if (hasFinalised) {
-    text = 'Assessment complete.';
+    text = 'You completed this assessment.';
   } else if (hasStarted) {
     text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
     if (showTimeRemaining) {
@@ -189,7 +189,7 @@ export function receiveSocketData(d) {
     const { now, assessments } = d;
     assessments.forEach((assessment) => {
       const { id } = assessment;
-      const node = document.querySelector(`.timing-information[data-id="${id}"]`);
+      let node = document.querySelector(`.timing-information[data-id="${id}"]`);
       if (node) {
         const data = nodeData[id];
         // partial update of properties
@@ -198,6 +198,15 @@ export function receiveSocketData(d) {
           ...assessment,
         };
         domRefresh(node, now);
+      }
+
+      node = document.querySelector(`.timeline[data-id="${id}"]`);
+      if (node) {
+        const { progressState } = assessment;
+        if (progressState) {
+          node.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
+          node.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
+        }
       }
     });
   }

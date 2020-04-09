@@ -136,7 +136,7 @@ class SecurityServiceImpl @Inject()(
     StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted
 
   override def StudentAssessmentInProgressAction(assessmentId: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
-    StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted andThen IsStudentAssessmentNotFinished
+    StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted andThen IsStudentAssessmentNotFinalised andThen StudentCanModifySubmission
 
   override def InvigilatorAssessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
     SigninRequiredAction andThen WithAssessment(id) andThen IsInvigilatorOrAdmin

@@ -110,8 +110,8 @@ object Fixtures {
 
     // If you just need any old assessment that's assigned to philosophy to test with...
     lazy val philosophyAssessment: Assessment = Assessment(
-      UUID.randomUUID, "ph-assessment", None, "Philosophy Assessment", Some(JavaTime.offsetDateTime),  Some(Duration.ofHours(3)), Set(Platform.OnlineExams),
-      AssessmentType.OpenBook, Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, "meh", "ph101", DepartmentCode("ph"),
+      UUID.randomUUID, "ph-assessment", None, "Philosophy Assessment", Some(JavaTime.offsetDateTime.plusHours(1)),  Some(Duration.ofHours(3)), Set(Platform.OnlineExams),
+      Some(AssessmentType.OpenBook), Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, "meh", "ph101", DepartmentCode("ph"),
       "sequence"
     )
   }

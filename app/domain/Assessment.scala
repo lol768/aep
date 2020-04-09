@@ -18,7 +18,7 @@ sealed trait BaseAssessment extends DefinesStartWindow {
   def startTime: Option[OffsetDateTime]
   def duration: Option[Duration]
   def platform: Set[Platform]
-  def assessmentType: AssessmentType
+  def assessmentType: Option[AssessmentType]
   def state: State
   def tabulaAssessmentId: Option[UUID]
   def examProfileCode: String
@@ -36,6 +36,8 @@ trait DefinesStartWindow {
   def lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
   def hasLastAllowedStartTimePassed: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime))
+
+  def hasStartTimePassed: Boolean = startTime.exists(_.isBefore(JavaTime.offsetDateTime))
 }
 
 case class Assessment(
@@ -46,7 +48,7 @@ case class Assessment(
   startTime: Option[OffsetDateTime],
   duration: Option[Duration],
   platform: Set[Platform],
-  assessmentType: AssessmentType,
+  assessmentType: Option[AssessmentType],
   brief: Brief,
   invigilators: Set[Usercode],
   state: State,
@@ -89,7 +91,7 @@ case class AssessmentMetadata(
   startTime: Option[OffsetDateTime],
   duration: Option[Duration],
   platform: Set[Platform],
-  assessmentType: AssessmentType,
+  assessmentType: Option[AssessmentType],
   state: State,
   tabulaAssessmentId: Option[UUID],
   examProfileCode: String,

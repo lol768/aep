@@ -1,16 +1,16 @@
 @import domain.Assessment.Platform
 @import domain.Sitting
+@import domain.BaseSitting.ProgressState._
 @import tags._
 
 @(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
 @for(
     startTime <- sitting.studentAssessment.startTime;
-    duration <- sitting.duration;
-    durationIncludingLate <- sitting.durationIncludingLate
+    durationInfo <- sitting.durationInfo
     if sitting.assessment.platform.contains(Platform.OnlineExams)
 ) {
-    <div class="timeline">
-        <div class="block turqoise">
+    <div class="timeline" data-id="@sitting.assessment.id">
+        <div class="block turqoise @if(sitting.getProgressState.contains(AssessmentOpenNotStarted)) { active } else {}" data-state="@AssessmentOpenNotStarted.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-2x fa-clock"></i></div>
                 <div class="stick"></div>
@@ -26,7 +26,7 @@
                 }
             </div>
         </div>
-        <div class="block green active">
+        <div class="block green @if(sitting.getProgressState.contains(InProgress)) { active } else {}" data-state="@InProgress.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-2x fa-stopwatch"></i></div>
                 <div class="stick"></div>
@@ -37,14 +37,14 @@
             <div class="right">
                 <h1>@localisedDatetime(startTime) You started the assessment</h1>
                 <p>
-                This is a @duration.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(duration), includeFullStop = true)</p>
+                This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(durationInfo.durationWithExtraAdjustment), includeFullStop = true)</p>
                 <p>Please plan your time accordingly.</p>
-                @if(duration.toHours==3) {
+                @if(durationInfo.durationWithExtraAdjustment.toHours==3) {
                     <div class="duration-3-spacer"></div>
                 }
             </div>
         </div>
-        <div class="block orange">
+        <div class="block orange @if(sitting.getProgressState.contains(OnGracePeriod)) { active } else {}" data-state="@OnGracePeriod.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-cloud-upload fa-2x"></i></div>
                 <div class="stick"></div>
@@ -53,11 +53,11 @@
                 <div class="peg"></div>
             </div>
             <div class="right">
-                <h1 class="mb-1">@localisedDatetime(startTime.plus(duration))
-                    You have @sitting.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(duration).plus(sitting.uploadGraceDuration)) to upload your answers</h1>
+                <h1 class="mb-1">@localisedDatetime(startTime.plus(durationInfo.durationWithExtraAdjustment))
+                    You have @sitting.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(durationInfo.onTimeDuration)) to upload your answers</h1>
             </div>
         </div>
-        <div class="block pink">
+        <div class="block pink @if(sitting.getProgressState.contains(Late)) { active } else {}" data-state="@Late.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-exclamation-triangle fa-2x"></i></div>
                 <div class="stick"></div>
@@ -66,14 +66,14 @@
                 <div class="peg"></div>
             </div>
             <div class="right">
-                <h1>@localisedDatetime(startTime.plus(duration).plus(sitting.uploadGraceDuration))
+                <h1>@localisedDatetime(startTime.plus(durationInfo.onTimeDuration))
                     Your assessment is now late</h1>
                 <p>
                 You can still upload your answers but you may be subject to late penalties, unless you have reasonable adjustments.</p>
                 <div class="vert-space"></div>
             </div>
         </div>
-        <div class="block red">
+        <div class="block red @if(sitting.getProgressState.contains(DeadlineMissed)) { active } else {}" data-state="@DeadlineMissed.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-ban fa-2x"></i></div>
             </div>
@@ -81,7 +81,7 @@
                 <div class="peg"></div>
             </div>
             <div class="right">
-                <h1>@localisedDatetime(startTime.plus(durationIncludingLate).plus(sitting.uploadGraceDuration)) You can't upload answers at all after this point</h1>
+                <h1>@localisedDatetime(startTime.plus(durationInfo.lateDuration)) You can't upload answers at all after this point</h1>
             </div>
         </div>
     </div>

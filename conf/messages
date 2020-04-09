@@ -31,9 +31,12 @@ flash.messages.sentToInvigilator=Message sent to invigilator
 
 error.required=This field is required.
 error.approval.must-check-box=You must tick the box to approve the assessment.
+error.assessment.assessment-type-not-specified=You must specify the type of this assessment.
 error.assessment.url-not-specified=You must specify the URL to assessment for the selected platform
 error.assessment.files-not-provided=You must upload at least one file for an assessment
+error.assessment.fileMissing=Please attach a file.
 error.assessment.duration-not-valid=You must pick a valid duration for assessments of type: {0}.
+error.assessment.started=You cannot change anything about this assessment because it has already started.
 error.assessment.platformNumber=You must pick 1 or 2 platforms for this assessment.
 error.permissions.notDepartmentAdminForSelected=You are not an administrator for the selected department code: {0}.
 error.dataGeneration.production=Data generation is disabled on production.
