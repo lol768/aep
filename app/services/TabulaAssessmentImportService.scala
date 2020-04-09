@@ -76,74 +76,81 @@ class TabulaAssessmentImportServiceImpl @Inject()(
 
   private def generateAssessment(ac: AssessmentComponent, examProfileCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[Option[Assessment]]] = {
     // Only return where there is a matching schedule for that exam profile
-    ac.examPaper.toSeq.flatMap(_.schedule).groupBy(_.examProfileCode).get(examProfileCode).map(_.sortBy(_.locationSequence)).map { schedules =>
-      val schedule: ExamPaperSchedule =
-        if (schedules.size == 1) schedules.head
-        else {
-          // Some information _must_ match, otherwise we need to change our approach
-          require(schedules.forall(_.slotId == schedules.head.slotId))
-          require(schedules.forall(_.sequence == schedules.head.sequence))
-          require(schedules.forall(_.startTime == schedules.head.startTime))
+    ac.examPaper.toSeq.flatMap(_.schedule).groupBy(_.examProfileCode).get(examProfileCode)
+      .map(_.sortBy(_.locationSequence))
+      .map { schedules =>
+        val schedule: ExamPaperSchedule =
+          if (schedules.size == 1) schedules.head
+          else {
+            // Some information _must_ match, otherwise we need to change our approach
+            require(schedules.forall(_.slotId == schedules.head.slotId))
+            require(schedules.forall(_.sequence == schedules.head.sequence))
+            require(schedules.forall(_.startTime == schedules.head.startTime))
 
-          // We allow locationSequence and location to differ, but we treat them as one assessment
-          schedules.head.copy(
-            locationSequence = "", // Not to be used
-            locationName = schedules.flatMap(_.locationName).headOption, // Just pick the first by locationSequence
-            students = schedules.flatMap(_.students)
-          )
+            // We allow locationSequence and location to differ, but we treat them as one assessment
+            schedules.head.copy(
+              locationSequence = "", // Not to be used
+              locationName = schedules.flatMap(_.locationName).headOption, // Just pick the first by locationSequence
+              students = schedules.flatMap(_.students)
+            )
+          }
+
+        assessmentService.getByTabulaAssessmentId(ac.id, examProfileCode).successFlatMapTo {
+          case Some(existingAssessment) if schedule.locationName.contains("Assignment") =>
+            assessmentService.delete(existingAssessment).successMapTo(_ => None)
+            
+          case Some(existingAssessment) =>
+            val updated = ac.asAssessment(Some(existingAssessment), schedule)
+            if (updated == existingAssessment)
+              Future.successful(ServiceResults.success(Some(existingAssessment)))
+            else
+              assessmentService.update(updated, Nil).successMapTo(Some(_))
+
+          case _ =>
+            val newAssessment = ac.asAssessment(None, schedule)
+            assessmentService.insert(newAssessment, Nil).successMapTo(Some(_))
+        }.successFlatMapTo {
+          case None => Future.successful(ServiceResults.success(None))
+          case Some(assessment) =>
+            studentAssessmentService.byAssessmentId(assessment.id).successFlatMapTo { studentAssessments =>
+              val deletions: Seq[StudentAssessment] =
+                studentAssessments.filterNot(sa => schedule.students.exists(_.universityID == sa.studentId))
+
+              val additions: Seq[StudentAssessment] =
+                schedule.students.filterNot(s => studentAssessments.exists(_.studentId == s.universityID))
+                  .map { scheduleStudent =>
+                    val extraTimeAdjustment = if (importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                    StudentAssessment(
+                      id = UUID.randomUUID(),
+                      assessmentId = assessment.id,
+                      studentId = scheduleStudent.universityID,
+                      inSeat = false,
+                      startTime = None,
+                      extraTimeAdjustment = extraTimeAdjustment,
+                      finaliseTime = None,
+                      uploadedFiles = Nil,
+                    )
+                  }
+
+              val modifications: Seq[StudentAssessment] =
+                schedule.students.flatMap { scheduleStudent =>
+                  val extraTimeAdjustment = if (importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                  studentAssessments.find(_.studentId == scheduleStudent.universityID).flatMap { studentAssessment =>
+                    val updated = studentAssessment.copy(
+                      extraTimeAdjustment = extraTimeAdjustment,
+                    )
+
+                    // Don't return no-ops
+                    Some(updated).filterNot(_ == studentAssessment)
+                  }
+                }
+
+              ServiceResults.futureSequence(
+                deletions.map(studentAssessmentService.delete) ++
+                (additions ++ modifications).map(studentAssessmentService.upsert)
+              ).successMapTo(_ => Some(assessment))
+          }
         }
-
-      assessmentService.getByTabulaAssessmentId(ac.id, examProfileCode).successFlatMapTo {
-        case Some(existingAssessment) =>
-          val updated = ac.asAssessment(Some(existingAssessment), schedule)
-          if (updated == existingAssessment)
-            Future.successful(ServiceResults.success(existingAssessment))
-          else
-            assessmentService.update(updated, Nil)
-
-        case _ =>
-          val newAssessment = ac.asAssessment(None, schedule)
-          assessmentService.insert(newAssessment, Nil)
-      }.successFlatMapTo { assessment =>
-        studentAssessmentService.byAssessmentId(assessment.id).successFlatMapTo { studentAssessments =>
-          val deletions: Seq[StudentAssessment] =
-            studentAssessments.filterNot(sa => schedule.students.exists(_.universityID == sa.studentId))
-
-          val additions: Seq[StudentAssessment] =
-            schedule.students.filterNot(s => studentAssessments.exists(_.studentId == s.universityID))
-              .map { scheduleStudent =>
-                val extraTimeAdjustment = if (importStudentExtraTime) scheduleStudent.extraTimePerHour else None
-                StudentAssessment(
-                  id = UUID.randomUUID(),
-                  assessmentId = assessment.id,
-                  studentId = scheduleStudent.universityID,
-                  inSeat = false,
-                  startTime = None,
-                  extraTimeAdjustment = extraTimeAdjustment,
-                  finaliseTime = None,
-                  uploadedFiles = Nil,
-                )
-              }
-
-          val modifications: Seq[StudentAssessment] =
-            schedule.students.flatMap { scheduleStudent =>
-              val extraTimeAdjustment = if (importStudentExtraTime) scheduleStudent.extraTimePerHour else None
-              studentAssessments.find(_.studentId == scheduleStudent.universityID).flatMap { studentAssessment =>
-                val updated = studentAssessment.copy(
-                  extraTimeAdjustment = extraTimeAdjustment,
-                )
-
-                // Don't return no-ops
-                Some(updated).filterNot(_ == studentAssessment)
-              }
-            }
-
-          ServiceResults.futureSequence(
-            deletions.map(studentAssessmentService.delete) ++
-            (additions ++ modifications).map(studentAssessmentService.upsert)
-          ).successMapTo(_ => Some(assessment))
-        }
-      }
     }.getOrElse(Future.successful(ServiceResults.success(None)))
   }
 }
