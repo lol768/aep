@@ -75,7 +75,7 @@ object AssessmentsController {
     platform: Set[Platform],
     assessmentType: Option[AssessmentType],
     durationMinutes: Option[Long],
-    url: Option[String],
+    urls: Map[Platform, String],
     description: Option[String],
     invigilators: Set[Usercode],
   )
@@ -96,6 +96,16 @@ object AssessmentsController {
     } else {
       Valid
     }
+  }
+
+  val urlConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
+    val missingUrls = assessmentForm.platform.filter(_.requiresUrl).filter(platform =>
+      assessmentForm.urls.get(platform).isEmpty
+    )
+    if (missingUrls.isEmpty)
+      Valid
+    else
+      Invalid(Seq(ValidationError("error.assessment.url-not-specified", missingUrls.map(_.label).mkString(", "))))
   }
 
   def notStarted(existing: Option[Assessment]): Constraint[AssessmentFormData] = Constraint { _ =>
@@ -120,7 +130,27 @@ object AssessmentsController {
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
       "durationMinutes" -> optional(longNumber),
-      "url" -> optional(text),
+      "urls" -> mapping[Map[Platform, String], Option[String], Option[String], Option[String], Option[String], Option[String]](
+        Platform.OnlineExams.entryName -> optional(text),
+        Platform.Moodle.entryName -> optional(text),
+        Platform.QuestionmarkPerception.entryName -> optional(text),
+        Platform.TabulaAssignment.entryName -> optional(text),
+        Platform.MyWBS.entryName -> optional(text),
+      )(
+        (onlineExamsUrl, moodleUrl, qmpUrl, tabulaUrl, myWBSUrl) => Map(
+          Platform.OnlineExams -> onlineExamsUrl,
+          Platform.Moodle -> moodleUrl,
+          Platform.QuestionmarkPerception -> qmpUrl,
+          Platform.TabulaAssignment -> tabulaUrl,
+          Platform.MyWBS -> myWBSUrl
+        ).filter { case (_, url) => url.exists(_.nonEmpty)}.map { case (k, v) => k -> v.get }
+      )(urls => Some((
+        urls.get(Platform.OnlineExams),
+        urls.get(Platform.Moodle),
+        urls.get(Platform.QuestionmarkPerception),
+        urls.get(Platform.TabulaAssignment),
+        urls.get(Platform.MyWBS)
+      ))),
       "description" -> optional(text),
       "invigilators" -> invigilatorsFieldMapping,
     )(AssessmentFormData.apply)(AssessmentFormData.unapply)
@@ -129,7 +159,7 @@ object AssessmentsController {
     Form(
       if (ready) baseMapping
         .verifying("error.assessment.assessment-type-not-specified", data => data.assessmentType.isDefined)
-        .verifying("error.assessment.url-not-specified", data => data.platform == Set(Platform.OnlineExams) || data.url.exists(_.nonEmpty))
+        .verifying(urlConstraint)
         .verifying(durationConstraint)
         .verifying(platformConstraint)
       else baseMapping
@@ -207,7 +237,7 @@ class AssessmentsController @Inject()(
               assessmentType = data.assessmentType,
               brief = Brief(
                 text = data.description,
-                url = data.url,
+                urls = data.urls,
                 files = Nil,
               ),
               invigilators = data.invigilators,
@@ -238,7 +268,7 @@ class AssessmentsController @Inject()(
               if (newState == State.Approved)
                 "success" -> Messages("flash.assessment.created", data.title)
               else
-                "warning" -> Messages("flash.assessment.created.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args))).mkString("; "))
+                "warning" -> Messages("flash.assessment.created.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args:_*))).mkString("; "))
             }
           )
         } else { // User is not an admin for the supplied department
@@ -264,7 +294,7 @@ class AssessmentsController @Inject()(
         platform = assessment.platform,
         assessmentType = assessment.assessmentType,
         durationMinutes = assessment.duration.map(_.toMinutes),
-        url = assessment.brief.url,
+        urls = assessment.brief.urls,
         description = assessment.brief.text,
         invigilators = assessment.invigilators,
       )))
@@ -338,7 +368,7 @@ class AssessmentsController @Inject()(
             invigilators = data.invigilators,
             brief = assessment.brief.copy(
               text = data.description,
-              url = data.url
+              urls = data.urls
             ),
             state = newState
           ), files = files.map(f => (f.in, f.metadata)))
@@ -347,7 +377,7 @@ class AssessmentsController @Inject()(
             if (newState == State.Approved)
               "success" -> Messages("flash.assessment.updated", data.title)
             else
-              "warning" -> Messages("flash.assessment.updated.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args))).mkString("; "))
+              "warning" -> Messages("flash.assessment.updated.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args:_*))).mkString("; "))
           }
         }
       })

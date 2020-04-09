@@ -16,18 +16,18 @@
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
 
-      @if(sitting.assessment.brief.url.isDefined || sitting.assessment.brief.files.nonEmpty) {
-      <div class="panel panel-default">
-        <div class="brand-stripe"></div>
-        <div class="panel-body">
-          <h2>Assessment brief</h2>
-          <span class="in-progress-assessment-data" data-id="@sitting.studentAssessment.id"></span>
+      @if((sitting.assessment.platform == Set(Platform.OnlineExams) && sitting.assessment.brief.urls.get(Platform.OnlineExams).isDefined) || sitting.assessment.brief.files.nonEmpty) {
+        <div class="panel panel-default">
+          <div class="brand-stripe"></div>
+          <div class="panel-body">
+            <h2>Assessment brief</h2>
+            <span class="in-progress-assessment-data" data-id="@sitting.studentAssessment.id"></span>
 
             <p>Your department has provided the following information:</p>
             <ul class="list-unstyled">
-              @if(sitting.assessment.platform == Set(Platform.OnlineExams) && sitting.assessment.brief.url.isDefined) {
+              @if(sitting.assessment.platform == Set(Platform.OnlineExams) && sitting.assessment.brief.urls.get(Platform.OnlineExams).isDefined) {
                 <li>
-                  <a href="@sitting.assessment.brief.url" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
+                  <a href="@sitting.assessment.brief.urls(Platform.OnlineExams)" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
                 </li>
               }
               @sitting.assessment.brief.files.map { file =>
@@ -45,38 +45,43 @@
           <div class="brand-stripe"></div>
           <div class="panel-body">
             <h2>Submit your assessment</h2>
-
-            <p class="lead">
               @sitting.assessment.platform.map {
                 case Platform.Moodle => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    View your assessment in Moodle
-                    <i class="fa fa-fw fa-external-link"></i>
-                  </a>
+                  <p class="lead">
+                    <a href="@sitting.assessment.brief.urls(Platform.Moodle)" target="_blank">
+                      View your assessment in Moodle
+                      <i class="fa fa-fw fa-external-link"></i>
+                    </a>
+                  </p>
                 }
                 case Platform.QuestionmarkPerception => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    Take your assessment in Perception
-                    <i class="fa fa-fw fa-external-link"></i>
-                  </a>
+                  <p class="lead">
+                    <a href="@sitting.assessment.brief.urls(Platform.QuestionmarkPerception)" target="_blank">
+                      Take your assessment in Perception
+                      <i class="fa fa-fw fa-external-link"></i>
+                    </a>
+                  </p>
                 }
                 case Platform.TabulaAssignment => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    Submit your assessment on Tabula
-                    <i class="fa fa-fw fa-external-link"></i>
-                  </a>
+                  <p class="lead">
+                    <a href="@sitting.assessment.brief.urls(Platform.TabulaAssignment)" target="_blank">
+                      Submit your assessment on Tabula
+                      <i class="fa fa-fw fa-external-link"></i>
+                    </a>
+                  </p>
                 }
                 case Platform.MyWBS => {
-                  <a href="@sitting.assessment.brief.url" target="_blank">
-                    Submit your assessment on MyWBS
-                    <i class="fa fa-fw fa-external-link"></i>
-                  </a>
+                  <p class="lead">
+                    <a href="@sitting.assessment.brief.urls(Platform.MyWBS)" target="_blank">
+                      Submit your assessment on MyWBS
+                      <i class="fa fa-fw fa-external-link"></i>
+                    </a>
+                  </p>
                 }
                 case Platform.OnlineExams => {
                   @* Do nothing here, handled below *@
                 }
               }
-            </p>
           </div>
         </div>
       }

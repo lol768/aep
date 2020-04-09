@@ -10,7 +10,7 @@ import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{Format, JsObject, JsString, JsValue, Json, Reads, Writes}
 import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
@@ -51,7 +51,7 @@ object AssessmentsTables {
         duration,
         platform,
         assessmentType,
-        storedBrief.asBrief(fileMap),
+        storedBrief.asBrief(fileMap, platform),
         invigilators.map(Usercode).toSet,
         state,
         tabulaAssessmentId,
@@ -140,20 +140,34 @@ object AssessmentsTables {
   case class StoredBrief(
     text: Option[String],
     fileIds: Seq[UUID],
-    url: Option[String],
+    url: Option[String], // No longer in use; retained for existing data
+    urls: Option[Map[Platform, String]], // Not really optional, but used to handle legacy data
   ) {
-    def asBrief(fileMap: Map[UUID, UploadedFile]): Brief =
+    def asBrief(fileMap: Map[UUID, UploadedFile], platforms: Set[Platform]): Brief =
       Brief(
         text,
         fileIds.map(fileMap),
-        url
+        urls.getOrElse(
+          // If the Map is missing (rather than empty) then handle the legacy url field
+          // No real way to know which platform that required a URL this one if for,
+          // so set it for all the selected platforms
+          // If there are platforms that require a URL but a legacy URL doesn't exist, add empty string
+          // This should be caught be validation when saving an assessment
+          platforms.filter(_.requiresUrl).map(p => p -> url.getOrElse("")).toMap
+        )
       )
   }
 
   object StoredBrief {
+    implicit private val platformMapFormat: Format[Map[Platform, String]] = Format(
+      Reads.map[String].map(_.map { case (k, v) => Platform.namesToValuesMap(k) -> v }),
+      (o: Map[Platform, String]) => JsObject(o.map { case (k, v) => k.entryName -> JsString(v) }.toSeq)
+    )
     implicit val format: Format[StoredBrief] = Json.format[StoredBrief]
 
-    def empty: StoredBrief = StoredBrief(None, Seq.empty, None)
+    def empty: StoredBrief = StoredBrief(None, Seq.empty, None, Some(Map.empty))
+
+    def apply(text: Option[String], fileIds: Seq[UUID], urls: Map[Platform, String]): StoredBrief = StoredBrief(text, fileIds, None, Some(urls))
   }
 
 }

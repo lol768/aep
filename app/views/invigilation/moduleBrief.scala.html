@@ -11,9 +11,21 @@
             <dd>@formattedBriefText(text)</dd>
         }
 
-        @assessment.brief.url.map { url =>
-            <dt>Url</dt>
-            <dd>@url</dd>
+        @if(assessment.platform.exists(_.requiresUrl)) {
+            <dt>URLs</dt>
+            <dd>
+                @if(assessment.platform.count(_.requiresUrl) > 1) {
+                    <ul>
+                        @assessment.platform.filter(_.requiresUrl).toSeq.map { platform =>
+                            <li>@platform.label: @assessment.brief.urls(platform)</li>
+                        }
+                    </ul>
+                } else {
+                    @assessment.platform.find(_.requiresUrl).map { platform =>
+                        @platform.label: @assessment.brief.urls(platform)
+                    }
+                }
+            </dd>
         }
 
         @if(assessment.brief.files.nonEmpty) {

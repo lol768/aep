@@ -179,7 +179,7 @@ class AssessmentServiceImpl @Inject()(
         storedBrief = StoredBrief(
           text = assessment.brief.text,
           fileIds = fileIds,
-          url = assessment.brief.url
+          urls = assessment.brief.urls
         ),
         invigilators = sortedInvigilators(assessment),
         state = assessment.state,
@@ -220,7 +220,7 @@ class AssessmentServiceImpl @Inject()(
         storedBrief = StoredBrief(
           text = assessment.brief.text,
           fileIds = fileIds,
-          url = assessment.brief.url
+          urls = assessment.brief.urls
         ),
         invigilators = sortedInvigilators(assessment),
         state = assessment.state,
