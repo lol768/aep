@@ -8,7 +8,7 @@
 @if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
     @sitting.assessment.startTime.map { startTime =>
         <span>
-            <i class="fad fa-fw fa-hourglass @if(sitting.canModify || sitting.isCurrentForStudent || sitting.assessment.isInFuture) {fa-hourglass-spin}"></i>
+            <i class="fad fa-fw fa-hourglass @if(sitting.inProgress || sitting.isCurrentForStudent || sitting.assessment.isInFuture) {fa-hourglass-spin}"></i>
             <span
             class="timing-information"
             data-id="@sitting.assessment.id"
