@@ -6,6 +6,9 @@
 
 <div class="row">
   <div class="col-sm-6">
+    @if(existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty)) {
+      @b3.hidden(form("assessmentType"))
+    }
     @b3.radio(form("assessmentType"), Symbol("_label") -> "Type") { implicit extraInfo =>
       @AssessmentType.values.map { t => @b3.radioOption(
         t.entryName,

@@ -58,7 +58,7 @@ object AssessmentsController {
 
     // Somewhere a string of a single empty space is creeping in...
     val platformsMapping: Mapping[Set[Platform]] =
-      set(text).verifying ("error.assessment.platformNumber", theSet => theSet.nonEmpty && theSet.forall(p => Platform.namesToValuesMap.contains(p)))
+      set(text).verifying ("error.assessment.platformNumber", theSet => theSet.forall(p => Platform.namesToValuesMap.contains(p)))
         .transform[Set[Platform]](_.map(Platform.withName), _.map(_.entryName))
 
   }
@@ -125,7 +125,7 @@ object AssessmentsController {
       "departmentCode" -> departmentCodeFieldMapping,
       "sequence" -> nonEmptyText,
       "startTime" -> startTimeFieldMapping,
-      "students" -> studentsFieldMapping,
+      "students" -> existing.map(_ => ignored(Set.empty[UniversityID])).getOrElse(studentsFieldMapping),
       "title" -> nonEmptyText,
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
@@ -304,7 +304,10 @@ class AssessmentsController @Inject()(
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val assessment = request.assessment
     formMapping(existing = Some(assessment)).bindFromRequest().fold(
-      formWithErrors => showForm(assessment, formWithErrors),
+      formWithErrors => {
+        println(formWithErrors)
+        showForm(assessment, formWithErrors)
+      },
       data => {
         val files = request.body.files.map(_.ref)
         val fileErrors: Seq[FormError] =
