@@ -26,10 +26,10 @@
             </div>
             <div class="col-md-6">
                 @moduleBrief(assessment)
-                <dl class="panel panel-default">
+                <div class="panel panel-default">
                     <div class="panel-body">
-                        <dt>Invigilators</dt>
-                        <dd>
+                        <details>
+                            <summary class="text-muted">Invigilators</summary>
                             <ul>
                             @assessment.invigilators.map { usercode =>
                                 <li>
@@ -40,9 +40,9 @@
                                 </li>
                             }
                             </ul>
-                        </dd>
+                        </details>
                     </div>
-                </dl>
+                </div>
             </div>
         </div>
         <h2>Students</h2>
