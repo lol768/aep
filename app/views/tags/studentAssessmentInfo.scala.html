@@ -65,14 +65,18 @@
           </td>
           <td>@md.studentAssessment.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
           <td>
-            @latestActivities.get(md.studentAssessment.studentAssessmentId).map { a =>
-              @if(a.isOnline) {
-                <i class="fad fa-signal themed-duotone"></i> Online now
-              } else {
-                <i class="fad fa-signal-slash themed-duotone"></i> Offline
-              }
-            }.getOrElse {
+            @if(md.studentAssessment.hasFinalised) {
               <span class="text-muted">No information</span>
+            } else {
+              @latestActivities.get(md.studentAssessment.studentAssessmentId).map { a =>
+                @if(a.isOnline) {
+                  <i class="fad fa-signal themed-duotone"></i> Online now
+                } else {
+                  <i class="fad fa-signal-slash themed-duotone"></i> Offline
+                }
+              }.getOrElse {
+                <span class="text-muted">No information</span>
+              }
             }
           </td>
           @studentsWithQueries.map { sWQ =>
