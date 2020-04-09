@@ -68,7 +68,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
     logger.info(s"Processing department $departmentCode")
 
     traverseSerial(examProfileCodes) { examProfileCode =>
-      tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, Some(examProfileCode)))
+      tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, inUseOnly = false, Some(examProfileCode)))
         .successFlatMapTo { assessmentComponents =>
           traverseSerial(assessmentComponents)(generateAssessment(_, examProfileCode))
         }

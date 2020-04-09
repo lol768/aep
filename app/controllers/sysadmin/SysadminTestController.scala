@@ -157,7 +157,7 @@ class SysadminTestController @Inject()(
 
     implicit val writes: Writes[AssessmentComponent] = Json.writes[AssessmentComponent]
 
-    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true, examProfileCode = Some(examProfileCode))).successMap { r =>
+    tabulaAssessments.getAssessments(GetAssessmentsOptions(deptCode = deptCode.string, withExamPapersOnly = true, inUseOnly = false, examProfileCode = Some(examProfileCode))).successMap { r =>
       Ok(Json.toJson(r)(Writes.seq(writes)))
     }
   }
