@@ -5,14 +5,16 @@
 @import tags._
 @import warwick.core.helpers.JavaTime
 
+@import domain.Announcement
 @(
   sitting: Sitting,
   finishExamForm: Form[FinishExamFormData],
-  supportedMimeTypes: Seq[MediaType]
+  supportedMimeTypes: Seq[MediaType],
+  announcements: Seq[Announcement],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @defining(if (sitting.inProgress) "beforeunload" else "") { className =>
-  @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className)) {
+  @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className), existingMessages = announcements) {
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
 
