@@ -57,9 +57,14 @@ sealed trait BaseSitting {
   def getTimingInfo: AssessmentTimingUpdate = {
     AssessmentTimingUpdate(
       id = assessment.id,
-      startTime = studentAssessment.startTime.map(_.toInstant.toEpochMilli),
+      windowStart = assessment.startTime,
+      windowEnd = assessment.lastAllowedStartTime,
+      start = studentAssessment.startTime,
+      end = studentAssessment.startTime.flatMap(startTime => onTimeDuration.map(duration => startTime.plus(duration))),
       hasStarted = studentAssessment.startTime.nonEmpty,
-      hasFinalised = studentAssessment.hasFinalised,
+      hasFinalised = studentAssessment.finaliseTime.nonEmpty,
+      extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+      showTimeRemaining = duration.isDefined,
       progressState = getProgressState,
     )
   }
