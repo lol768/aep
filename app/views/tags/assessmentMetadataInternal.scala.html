@@ -1,5 +1,6 @@
 @import domain.Assessment
 @import views.html.tags.durationWords
+@import warwick.core.views.utils.nl2br
 
 @(assessment: Assessment)(implicit context: RequestContext)
 
@@ -18,7 +19,7 @@
     <dt>Details</dt>
     <dd>
         <blockquote>
-            @description
+            @nl2br(description)
         </blockquote>
     </dd>
 }
