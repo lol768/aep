@@ -18,8 +18,8 @@ class ErrorsController extends BaseController {
       val message = error.get("message").flatMap(_.asOpt[String]).getOrElse("-")
       val entries = StructuredArguments.entries {
         Seq(
-          error.get("column").map("column" -> Json.prettyPrint(_)),
-          error.get("line").map("line" -> Json.prettyPrint(_)),
+          error.get("column").map("column" -> _.as[Int]),
+          error.get("line").map("line" -> _.as[Int]),
           error.get("source").map("source" -> Json.prettyPrint(_)),
           error.get("pageUrl").map("page_url" -> Json.prettyPrint(_)),
           error.get("stack").map("stack_trace" -> Json.prettyPrint(_)),
