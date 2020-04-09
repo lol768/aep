@@ -1,9 +1,6 @@
 @import domain.Assessment.Platform
 @import domain.Sitting
 @import play.api.libs.json.Json
-@import play.api.libs.json.JsNumber
-@import play.api.libs.json.JsBoolean
-@import play.api.libs.json.JsNull
 @(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
 @sitting.assessment.startTime.map { startTime =>
     <span>
@@ -12,18 +9,7 @@
         class="timing-information"
         data-id="@sitting.assessment.id"
         data-rendering="@{
-            Json.stringify(Json.toJson(Map(
-                "windowStart" -> JsNumber(startTime.toInstant.toEpochMilli),
-                "windowEnd" -> JsNumber(sitting.assessment.lastAllowedStartTime.get.toInstant.toEpochMilli),
-                "start" -> sitting.studentAssessment.startTime.map(st => JsNumber(st.toInstant.toEpochMilli)).getOrElse(JsNull),
-                "end" -> (for(st <- sitting.studentAssessment.startTime; duration <- sitting.onTimeDuration) yield {
-                    JsNumber(st.toInstant.toEpochMilli + duration.toMillis)
-                }).getOrElse(JsNull),
-                "hasStarted" -> JsBoolean(sitting.studentAssessment.startTime.nonEmpty),
-                "hasFinalised" -> JsBoolean(sitting.studentAssessment.finaliseTime.nonEmpty),
-                "extraTimeAdjustment" -> sitting.studentAssessment.extraTimeAdjustment.map(et => JsNumber(et.toMillis)).getOrElse(JsNull),
-                "showTimeRemaining" -> JsBoolean(sitting.duration.isDefined),
-            )))
+            Json.stringify(Json.toJson(sitting.getTimingInfo))
         }"
         ></span>
     </span>
