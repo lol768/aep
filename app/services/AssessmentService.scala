@@ -3,6 +3,7 @@ package services
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
+import akka.Done
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
 import domain.Assessment.State
@@ -48,6 +49,8 @@ trait AssessmentService {
   def insert(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]]
 
   def upsert(assessment: Assessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Assessment]]
+
+  def delete(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
 }
 
 @Singleton
@@ -285,6 +288,16 @@ class AssessmentServiceImpl @Inject()(
     }
   }
 
+  override def delete(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] =
+    daoRunner.run(for {
+      stored <- dao.getById(assessment.id)
+      students <- studentAssessmentDao.getByAssessmentId(assessment.id)
+      _ <- DBIO.sequence(students.toList.map(s => studentAssessmentDao.delete(s.studentId, s.assessmentId)))
+      done <- (stored match {
+        case Some(a) => dao.delete(a)
+        case _ => DBIO.successful(Done) // No-op
+      })
+    } yield done).map(ServiceResults.success)
 }
 
 object AssessmentService {
