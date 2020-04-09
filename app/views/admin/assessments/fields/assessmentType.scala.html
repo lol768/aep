@@ -9,7 +9,7 @@
     @if(!allowAssessmentTypeChangesOnImportedAssessments && existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty)) {
       @b3.hidden(form("assessmentType"))
     }
-    @b3.radio(form("assessmentType"), Symbol("_label") -> "Type") { implicit extraInfo =>
+    @b3.radio(form("assessmentType"), Symbol("_label") -> (if (!allowAssessmentTypeChangesOnImportedAssessments && existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty)) "Type (as agreed by FAARG)" else "Type")) { implicit extraInfo =>
       @AssessmentType.values.map { t => @b3.radioOption(
         t.entryName,
         t.label,
