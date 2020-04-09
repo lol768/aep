@@ -13,14 +13,15 @@
 
         <dt>Finished at</dt>
         <dd>@tags.localisedDatetime(assessment.studentAssessment.finaliseTime.get)</dd>
-    }
-    @if(!assessment.assessment.platform.contains(Platform.OnlineExams)){
-        @assessment.assessment.startTime.map { startTime =>
-            @assessment.assessment.lastAllowedStartTime.map { end =>
-                <dt>Can start</dt>
-                <dd>
-                    @localisedDatetimeRange(startTime, end)
-                </dd>
+    } else {
+        @if(!assessment.assessment.platform.contains(Platform.OnlineExams)){
+            @assessment.assessment.startTime.map { startTime =>
+                @assessment.assessment.lastAllowedStartTime.map { end =>
+                    <dt>Can start</dt>
+                    <dd>
+                        @localisedDatetimeRange(startTime, end)
+                    </dd>
+                }
             }
         }
     }
