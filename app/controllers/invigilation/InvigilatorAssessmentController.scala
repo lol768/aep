@@ -47,7 +47,11 @@ class InvigilatorAssessmentController @Inject()(
         ).successMap { case (students, latestActivities) =>
             Ok(views.html.invigilation.assessment(
               assessment = assessment,
-              sittingMetadata = studentAssessments.map(SittingMetadata(_, assessment.asAssessmentMetadata)),
+              sittingMetadata = studentAssessments.map(SittingMetadata(_, assessment.asAssessmentMetadata)).sortBy(metadata =>
+                students.get(metadata.studentAssessment.studentId).map(profile =>
+                  (profile.lastName, profile.firstName, profile.universityID.string)
+                )
+              ),
               invigilators = userLookup
                 .getUsers(assessment.invigilators.toSeq)
                 .getOrElse(Nil)

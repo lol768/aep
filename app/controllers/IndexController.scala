@@ -27,7 +27,7 @@ class IndexController @Inject()(
 
     lazy val isInvigilator = assessmentService.isInvigilator(currentUser().usercode)
 
-    lazy val isAdmin = userRoles.isAdmin || userRoles.isSysAdmin
+    lazy val isAdmin = security.isAdmin(request.context)
 
     // Redirect if admin, invigilator or examinee
     // (if both admin and invigilator then we go to admin)
