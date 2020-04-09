@@ -1,7 +1,9 @@
 @import views.html.tags.connectivityInfo
+@import domain.Announcement
 @(
   title: String = "",
-  extraClasses: Seq[String] = Seq()
+  extraClasses: Seq[String] = Seq(),
+  existingMessages: Seq[Announcement] = Seq(),
 )(content: Html)(implicit context: RequestContext)
 
 <!DOCTYPE html>
@@ -119,7 +121,15 @@
           @context.flash.get("error").map { message =>
             <div class="alert alert-danger">@message</div>
           }
-          <div class="message-list"></div>
+          <div class="message-list">
+            @existingMessages.map { message =>
+              <div class="alert alert-info">
+                <i class="fad fa-bullhorn" aria-hidden="true"></i>
+                @message.text
+              </div>
+
+            }
+          </div>
           @content
         </div>
       </main>

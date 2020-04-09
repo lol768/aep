@@ -5,10 +5,12 @@
 @import tags._
 @import warwick.core.helpers.JavaTime
 
+@import domain.Announcement
 @(
   sitting: Sitting,
   finishExamForm: Form[FinishExamFormData],
-  supportedMimeTypes: Seq[MediaType]
+  supportedMimeTypes: Seq[MediaType],
+  announcements: Seq[Announcement],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @defining(if (sitting.canModify) "beforeunload" else "") { className =>
