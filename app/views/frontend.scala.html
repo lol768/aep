@@ -1,7 +1,9 @@
 @import views.html.tags.connectivityInfo
+@import domain.Announcement
 @(
   title: String = "",
-  extraClasses: Seq[String] = Seq()
+  extraClasses: Seq[String] = Seq(),
+  existingMessages: Seq[Announcement] = Seq(),
 )(content: Html)(implicit context: RequestContext)
 
 <!DOCTYPE html>
@@ -119,7 +121,15 @@
           @context.flash.get("error").map { message =>
             <div class="alert alert-danger">@message</div>
           }
-          <div class="message-list"></div>
+          <div class="message-list">
+            @existingMessages.map { message =>
+              <div class="alert alert-info">
+                <i class="fad fa-bullhorn" aria-hidden="true"></i>
+                @message.text
+              </div>
+
+            }
+          </div>
           @content
         </div>
       </main>
@@ -131,7 +141,7 @@
           <div class="id7-logo-bleed"></div>
           <div class="id7-footer-utility">
             <ul>
-              <li>Powered by <a href="https://warwick.ac.uk/onlineexams">@context.appFullName</a></li>
+              <li>Powered by @context.appFullName</li>
               <li><a href="https://warwick.ac.uk/copyright">© @helpers.romanYear()</a></li>
               <li><a href="https://warwick.ac.uk/terms">Terms</a></li>
               <li><a href="https://warwick.ac.uk/privacy">Privacy</a></li>

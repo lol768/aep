@@ -10,6 +10,7 @@ import domain.tabula.SitsProfile
 import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import play.api.data.Forms._
 import play.api.data.validation.{Constraint, Invalid, Valid, ValidationError}
 import play.api.data.{Form, FormError, Mapping}
@@ -58,7 +59,7 @@ object AssessmentsController {
 
     // Somewhere a string of a single empty space is creeping in...
     val platformsMapping: Mapping[Set[Platform]] =
-      set(text).verifying ("error.assessment.platformNumber", theSet => theSet.nonEmpty && theSet.forall(p => Platform.namesToValuesMap.contains(p)))
+      set(text).verifying ("error.assessment.platformNumber", theSet => theSet.forall(p => Platform.namesToValuesMap.contains(p)))
         .transform[Set[Platform]](_.map(Platform.withName), _.map(_.entryName))
 
   }
@@ -75,7 +76,7 @@ object AssessmentsController {
     platform: Set[Platform],
     assessmentType: Option[AssessmentType],
     durationMinutes: Option[Long],
-    url: Option[String],
+    urls: Map[Platform, String],
     description: Option[String],
     invigilators: Set[Usercode],
   )
@@ -98,6 +99,16 @@ object AssessmentsController {
     }
   }
 
+  val urlConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
+    val missingUrls = assessmentForm.platform.filter(_.requiresUrl).filter(platform =>
+      assessmentForm.urls.get(platform).isEmpty
+    )
+    if (missingUrls.isEmpty)
+      Valid
+    else
+      Invalid(Seq(ValidationError("error.assessment.url-not-specified", missingUrls.map(_.label).mkString(", "))))
+  }
+
   def notStarted(existing: Option[Assessment]): Constraint[AssessmentFormData] = Constraint { _ =>
     if (existing.forall(_.tabulaAssessmentId.isEmpty))
       Valid
@@ -115,12 +126,32 @@ object AssessmentsController {
       "departmentCode" -> departmentCodeFieldMapping,
       "sequence" -> nonEmptyText,
       "startTime" -> startTimeFieldMapping,
-      "students" -> studentsFieldMapping,
+      "students" -> existing.map(_ => ignored(Set.empty[UniversityID])).getOrElse(studentsFieldMapping),
       "title" -> nonEmptyText,
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
       "durationMinutes" -> optional(longNumber),
-      "url" -> optional(text),
+      "urls" -> mapping[Map[Platform, String], Option[String], Option[String], Option[String], Option[String], Option[String]](
+        Platform.OnlineExams.entryName -> optional(text),
+        Platform.Moodle.entryName -> optional(text),
+        Platform.QuestionmarkPerception.entryName -> optional(text),
+        Platform.TabulaAssignment.entryName -> optional(text),
+        Platform.MyWBS.entryName -> optional(text),
+      )(
+        (onlineExamsUrl, moodleUrl, qmpUrl, tabulaUrl, myWBSUrl) => Map(
+          Platform.OnlineExams -> onlineExamsUrl,
+          Platform.Moodle -> moodleUrl,
+          Platform.QuestionmarkPerception -> qmpUrl,
+          Platform.TabulaAssignment -> tabulaUrl,
+          Platform.MyWBS -> myWBSUrl
+        ).filter { case (_, url) => url.exists(_.nonEmpty)}.map { case (k, v) => k -> v.get }
+      )(urls => Some((
+        urls.get(Platform.OnlineExams),
+        urls.get(Platform.Moodle),
+        urls.get(Platform.QuestionmarkPerception),
+        urls.get(Platform.TabulaAssignment),
+        urls.get(Platform.MyWBS)
+      ))),
       "description" -> optional(text),
       "invigilators" -> invigilatorsFieldMapping,
     )(AssessmentFormData.apply)(AssessmentFormData.unapply)
@@ -129,7 +160,7 @@ object AssessmentsController {
     Form(
       if (ready) baseMapping
         .verifying("error.assessment.assessment-type-not-specified", data => data.assessmentType.isDefined)
-        .verifying("error.assessment.url-not-specified", data => data.platform == Set(Platform.OnlineExams) || data.url.exists(_.nonEmpty))
+        .verifying(urlConstraint)
         .verifying(durationConstraint)
         .verifying(platformConstraint)
       else baseMapping
@@ -144,6 +175,7 @@ class AssessmentsController @Inject()(
   studentAssessmentService: StudentAssessmentService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   departmentService: TabulaDepartmentService,
+  configuration: Configuration,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
   ec: ExecutionContext
@@ -151,6 +183,8 @@ class AssessmentsController @Inject()(
 
   import AssessmentsController._
   import security._
+
+  private[this] lazy val overwriteAssessmentTypeOnImport = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
 
   def index: Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     assessmentService.findByStates(Seq(State.Draft, State.Imported, State.Approved)).successMap { assessments =>
@@ -166,7 +200,7 @@ class AssessmentsController @Inject()(
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
-          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments))
+          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport))
         }
     }
 
@@ -207,7 +241,7 @@ class AssessmentsController @Inject()(
               assessmentType = data.assessmentType,
               brief = Brief(
                 text = data.description,
-                url = data.url,
+                urls = data.urls,
                 files = Nil,
               ),
               invigilators = data.invigilators,
@@ -238,7 +272,7 @@ class AssessmentsController @Inject()(
               if (newState == State.Approved)
                 "success" -> Messages("flash.assessment.created", data.title)
               else
-                "warning" -> Messages("flash.assessment.created.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args))).mkString("; "))
+                "warning" -> Messages("flash.assessment.created.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args:_*))).mkString("; "))
             }
           )
         } else { // User is not an admin for the supplied department
@@ -264,7 +298,7 @@ class AssessmentsController @Inject()(
         platform = assessment.platform,
         assessmentType = assessment.assessmentType,
         durationMinutes = assessment.duration.map(_.toMinutes),
-        url = assessment.brief.url,
+        urls = assessment.brief.urls,
         description = assessment.brief.text,
         invigilators = assessment.invigilators,
       )))
@@ -296,7 +330,10 @@ class AssessmentsController @Inject()(
               departmentCode = data.departmentCode,
               sequence = data.sequence,
               startTime = data.startTime.map(_.asOffsetDateTime),
+              assessmentType = data.assessmentType,
             )
+          } else if (!overwriteAssessmentTypeOnImport) {
+            assessment.copy(assessmentType = data.assessmentType)
           } else assessment
 
         val updateStudents: Future[ServiceResult[Done]] =
@@ -334,11 +371,10 @@ class AssessmentsController @Inject()(
             title = data.title,
             duration = data.durationMinutes.map(Duration.ofMinutes),
             platform = data.platform,
-            assessmentType = data.assessmentType,
             invigilators = data.invigilators,
             brief = assessment.brief.copy(
               text = data.description,
-              url = data.url
+              urls = data.urls
             ),
             state = newState
           ), files = files.map(f => (f.in, f.metadata)))
@@ -347,7 +383,7 @@ class AssessmentsController @Inject()(
             if (newState == State.Approved)
               "success" -> Messages("flash.assessment.updated", data.title)
             else
-              "warning" -> Messages("flash.assessment.updated.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args))).mkString("; "))
+              "warning" -> Messages("flash.assessment.updated.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args:_*))).mkString("; "))
           }
         }
       })
