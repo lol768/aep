@@ -7,6 +7,7 @@ import 'core-js/features/string/includes';
 import 'core-js/features/array/iterator';
 import 'core-js/features/array/for-each';
 import 'core-js/features/number';
+import 'core-js/features/object/to-string';
 import 'whatwg-fetch';
 
 // For the upload component:
