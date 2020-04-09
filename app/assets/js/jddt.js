@@ -1,7 +1,5 @@
 // John Dale Datetime (JDDT)
 
-import stringToArray from "lodash-es/_stringToArray";
-
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TODAY = 'Today ';
@@ -350,9 +348,9 @@ export default class JDDT {
    * @param includeTimezoneName
    */
   localString(includeTimezoneName = false) {
-    return includeTimezoneName ?
-      stringifyToPlainText(this.jsDateLocal, this.localTimezoneName, true) :
-      stringifyToPlainText(this.jsDateLocal, null, true);
+    return includeTimezoneName
+      ? stringifyToPlainText(this.jsDateLocal, this.localTimezoneName, true)
+      : stringifyToPlainText(this.jsDateLocal, null, true);
   }
 
   /**
