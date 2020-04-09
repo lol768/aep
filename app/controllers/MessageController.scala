@@ -1,5 +1,6 @@
 package controllers
 
+import java.time.OffsetDateTime
 import java.util.UUID
 
 import domain.messaging.{MessageSave, MessageSender}
@@ -10,21 +11,31 @@ import services.{AssessmentService, SecurityService, StudentAssessmentService}
 import play.api.data.Form
 import play.api.data.Forms._
 import services.messaging.MessageService
+import services.tabula.TabulaStudentInformationService
+import services.tabula.TabulaStudentInformationService.GetStudentInformationOptions
+import warwick.core.helpers.ServiceResults
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class MessageController @Inject()(
   security: SecurityService,
-  assessmentService: AssessmentService,
   messageService: MessageService,
-  studentAssessmentService: StudentAssessmentService,
+  studentInformationService: TabulaStudentInformationService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
   import security._
   import MessageController._
 
-  def showForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId) { implicit request =>
-    Ok(views.html.assessment.messages(request.sitting.assessment, blankForm))
+  def showForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
+    val universityId = request.sitting.studentAssessment.studentId
+    ServiceResults.zip(
+      messageService.findByStudentAssessment(assessmentId, universityId),
+      studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId))
+    ).successMap { case (messages, profile) =>
+      val student = Map(universityId -> profile)
+      val sortedMessages = messages.map(_.asAnnouncementOrQuery).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
+      Ok(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm))
+    }
   }
 
   def submitForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
@@ -35,9 +46,17 @@ class MessageController @Inject()(
       }
 
 
-    def failure(badForm: Form[MessageData]) = Future.successful(
-      BadRequest(views.html.assessment.messages(request.sitting.assessment, badForm))
-    )
+    def failure(badForm: Form[MessageData]) = {
+      val universityId = request.sitting.studentAssessment.studentId
+      ServiceResults.zip(
+        messageService.findByStudentAssessment(assessmentId, universityId),
+        studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId))
+      ).successMap { case (messages, profile) =>
+        val student = Map(universityId -> profile)
+        val sortedMessages = messages.map(_.asAnnouncementOrQuery).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
+        BadRequest(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm))
+      }
+    }
 
     blankForm.bindFromRequest().fold(failure, success)
   }

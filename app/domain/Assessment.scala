@@ -103,27 +103,33 @@ case class AssessmentMetadata(
 object Assessment {
   sealed trait Platform extends EnumEntry {
     val label: String
+    val requiresUrl: Boolean
   }
 
   object Platform extends PlayEnum[Platform] {
     case object OnlineExams extends Platform {
       val label = "Download & Submission through AEP"
+      override val requiresUrl: Boolean = false
     }
 
     case object Moodle extends Platform {
       val label = "Moodle"
+      override val requiresUrl: Boolean = true
     }
 
     case object QuestionmarkPerception extends Platform {
       val label = "QMP"
+      override val requiresUrl: Boolean = true
     }
 
     case object TabulaAssignment extends Platform {
       val label = "Submission through Tabula Assignment Management"
+      override val requiresUrl: Boolean = true
     }
 
     case object MyWBS extends Platform {
       val label = "My WBS"
+      override val requiresUrl: Boolean = true
     }
 
     val values: IndexedSeq[Platform] = findValues
@@ -167,17 +173,17 @@ object Assessment {
   case class Brief(
     text: Option[String],
     files: Seq[UploadedFile],
-    url: Option[String],
+    urls: Map[Platform, String],
   ) {
     def toStoredBrief: StoredBrief = StoredBrief(
       text = text,
       fileIds = files.map(_.id),
-      url = url
+      urls = urls
     )
   }
 
   object Brief {
-    def empty: Brief = Brief(None, Seq.empty, None)
+    def empty: Brief = Brief(None, Seq.empty, Map.empty)
   }
 
   // Students are allowed 2 extra hours after the official finish time of the exam

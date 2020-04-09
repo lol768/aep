@@ -26,7 +26,7 @@
         }
 
         <dt>Platforms</dt>
-        <dd>@assessment.platform.map(_.label).mkString(",")</dd>
+        <dd>@assessment.platform.map(_.label).mkString(", ")</dd>
 
         @assessment.assessmentType.map { at =>
             <dt>Type</dt>

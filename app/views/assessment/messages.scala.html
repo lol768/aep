@@ -1,7 +1,13 @@
+@import tags._
 @import domain.Assessment
 @import controllers.MessageController.MessageData
+@import domain.AnnouncementOrQuery
+@import warwick.sso.UniversityID
+@import domain.tabula
 @(
     assessment: Assessment,
+    messages: Seq[AnnouncementOrQuery],
+    student: Map[UniversityID, tabula.SitsProfile],
     form: Form[MessageData],
 )(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
 
@@ -30,7 +36,8 @@
             }
         </div>
         <div class="col-sm-6">
-            @* Good spot to put responses if we do those *@
+            <h3>My queries</h3>
+            @displayAnnouncementsAndQueries(messages, student)
         </div>
     </div>
 
