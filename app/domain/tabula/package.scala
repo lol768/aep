@@ -63,7 +63,7 @@ package object tabula {
           case "Open Book Assessment, files based" | "Files-based open book assessment" => Some(AssessmentType.OpenBookFileBased)
           case "MCQ" | "Multiple Choice Questions" => Some(AssessmentType.MultipleChoice)
           case "Spoken exam under time conditions" | "Spoken Open Book Assessment" => Some(AssessmentType.Spoken)
-          case "Bespoke Option (only if previously agreed) " | "Bespoke Option" => Some(AssessmentType.Bespoke)
+          case "Bespoke Option (only if previously agreed) " | "Bespoke Option" | "Bespoke Online Assessment" => Some(AssessmentType.Bespoke)
           case _ => None
         }
 
