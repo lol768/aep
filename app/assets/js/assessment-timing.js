@@ -128,7 +128,7 @@ export function calculateTimingInfo(data, now) {
     text = `You can start between ${jdWindowStart.localString()} and ${jdWindowEnd.localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
     warning = true;
   } else if (timeUntilEndOfWindow > 0) {
-    text = `This assessment opened at  ${jdWindowStart.localString()}, and closes at ${jdWindowEnd.localString()}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start it.`;
+    text = `This assessment opened at ${jdWindowStart.localString()}, and closes at ${jdWindowEnd.localString()}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start it.`;
     warning = true;
   } else {
     text = 'The assessment window has now passed.';

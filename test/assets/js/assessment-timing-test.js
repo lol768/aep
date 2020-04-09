@@ -19,7 +19,7 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: 'You can start in 1 hour and 30 minutes.',
+      text: 'You can start between Thu 11th Apr 2019, 18:56 and Thu 11th Apr 2019, 23:26 Europe/London, in 1 hour and 30 minutes.',
       allowStart: false
     })
   });
@@ -31,7 +31,7 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: '5 hours and 50 minutes left to start.',
+      text: 'This assessment opened at Thu 11th Apr 2019, 17:16, and closes at Thu 11th Apr 2019, 23:16. You have 5 hours and 50 minutes left to start it.',
       allowStart: true
     })
   });
