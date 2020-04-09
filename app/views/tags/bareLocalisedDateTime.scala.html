@@ -3,7 +3,7 @@
 @import java.util.TimeZone
 @(datetime: OffsetDateTime, includeFullStop: Boolean = false)
 
-@JavaTime.Relative(datetime, false)<span class="jddt"
+@JavaTime.Relative(datetime, printToday = false)<span class="jddt"
 data-format="shortLocalBare"
 data-millis="@datetime.toInstant.toEpochMilli"
 data-server-timezone-offset="@{TimeZone.getTimeZone(JavaTime.timeZone).getOffset(datetime.toInstant.toEpochMilli)}"

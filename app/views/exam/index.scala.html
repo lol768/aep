@@ -16,14 +16,12 @@
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
 
-      @assessmentTimeline(sitting)
-
       @if(sitting.assessment.brief.url.isDefined || sitting.assessment.brief.files.nonEmpty) {
-        <div class="panel panel-default">
-          <div class="brand-stripe"></div>
-          <div class="panel-body">
-            <h2>Assessment brief</h2>
-            <span class="in-progress-assessment-data" data-id="@sitting.studentAssessment.id" />
+      <div class="panel panel-default">
+        <div class="brand-stripe"></div>
+        <div class="panel-body">
+          <h2>Assessment brief</h2>
+          <span class="in-progress-assessment-data" data-id="@sitting.studentAssessment.id"></span>
 
             <p>Your department has provided the following information:</p>
             <ul class="list-unstyled">
