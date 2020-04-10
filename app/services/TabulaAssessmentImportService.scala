@@ -106,9 +106,11 @@ class TabulaAssessmentImportServiceImpl @Inject()(
             else
               assessmentService.update(updated, Nil).successMapTo(Some(_))
 
-          case _ =>
+          case None if !schedule.locationName.contains("Assignment") =>
             val newAssessment = ac.asAssessment(None, schedule, overwriteAssessmentTypeOnImport)
             assessmentService.insert(newAssessment, Nil).successMapTo(Some(_))
+
+          case _ => Future.successful(ServiceResults.success(None))
         }.successFlatMapTo {
           case None => Future.successful(ServiceResults.success(None))
           case Some(assessment) =>
