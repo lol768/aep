@@ -1,22 +1,23 @@
 package actors
 
-import java.time.OffsetDateTime
+import java.time.{OffsetDateTime, ZoneId}
 import java.util.UUID
 
 import akka.actor._
-import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck, Unsubscribe}
+import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
+import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
 import javax.inject.Inject
 import play.api.libs.json._
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
+import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
+import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
-import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
-import warwick.core.helpers.JavaTime
-import warwick.core.helpers.ServiceResults.ServiceResult
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 object WebSocketActor {
 
@@ -101,7 +102,7 @@ class WebSocketActor @Inject() (
                 rtt = networkInformation.rtt,
                 `type` = networkInformation.`type`,
                 studentAssessmentId = assessmentId,
-                localTimezoneName = networkInformation.localTimezoneName,
+                localTimezoneName = networkInformation.localTimezoneName.flatMap(tz => Try(ZoneId.of(tz)).toOption),
                 timestamp = JavaTime.offsetDateTime,
               )
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
