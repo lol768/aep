@@ -1,6 +1,6 @@
 package domain
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Duration, OffsetDateTime, ZoneId}
 import java.util.UUID
 
 case class AssessmentClientNetworkActivity (
@@ -10,6 +10,7 @@ case class AssessmentClientNetworkActivity (
   rtt: Option[Int], // rounded to nearest 25ms
   `type`: Option[String], // bluetooth, cellular, ethernet, none, wifi, wimax, other, unknown
   studentAssessmentId: UUID,
+  localTimezoneName: Option[ZoneId],
   timestamp: OffsetDateTime = OffsetDateTime.now,
 ) {
   def isOnline = Duration.between(timestamp, OffsetDateTime.now).compareTo(Duration.ofMinutes(2L)) < 0;

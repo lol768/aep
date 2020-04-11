@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Duration, OffsetDateTime, ZoneId}
 import java.util.UUID
 
 import domain.Assessment.{AssessmentType, Platform, State}
@@ -176,10 +176,11 @@ class AssessmentTables @Inject()(
     def rtt = column[Option[Int]]("rtt")
     def `type` = column[Option[String]]("type")
     def studentAssessmentId = column[UUID]("student_assessment_id")
+    def localTimezoneName = column[Option[ZoneId]]("local_timezone_name")
     def timestamp = column[OffsetDateTime]("timestamp_utc")
 
     def * = {
-      (downlink, downlinkMax, effectiveType, rtt, `type`, studentAssessmentId, timestamp).mapTo[AssessmentClientNetworkActivity]
+      (downlink, downlinkMax, effectiveType, rtt, `type`, studentAssessmentId, localTimezoneName, timestamp).mapTo[AssessmentClientNetworkActivity]
     }
   }
 

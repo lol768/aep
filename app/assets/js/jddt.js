@@ -87,7 +87,7 @@ function relativeDateName(date) {
   return SOME_SUNNY_DAY;
 }
 
-function browserLocalTimezoneName() {
+export function browserLocalTimezoneName() {
   if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
     const dtf = Intl.DateTimeFormat();
     if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {

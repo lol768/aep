@@ -101,7 +101,9 @@ class WebSocketActor @Inject() (
                 rtt = networkInformation.rtt,
                 `type` = networkInformation.`type`,
                 studentAssessmentId = assessmentId,
-                JavaTime.offsetDateTime)
+                localTimezoneName = networkInformation.localTimezoneName,
+                timestamp = JavaTime.offsetDateTime,
+              )
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
               .recover {
                 case e: Exception =>

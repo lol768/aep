@@ -71,6 +71,7 @@
               @latestActivities.get(md.studentAssessment.studentAssessmentId).map { a =>
                 @if(a.isOnline) {
                   <i class="fad fa-signal themed-duotone"></i> Online now
+                  @a.localTimezoneName.map { tz => <span class="text-muted">@tz.getId</span> }
                 } else {
                   <i class="fad fa-signal-slash themed-duotone"></i> Offline
                 }

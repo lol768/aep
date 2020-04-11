@@ -1,5 +1,7 @@
 package domain
 
+import java.time.ZoneId
+
 import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.StoredBrief
 import domain.messaging.MessageSender
@@ -50,6 +52,8 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
   )
 
   implicit val symbolTypeMapper: JdbcType[Symbol] = MappedColumnType.base[Symbol, String](_.name, Symbol.apply)
+
+  implicit val zoneIdTypeMapper: JdbcType[ZoneId] = MappedColumnType.base[ZoneId, String](_.getId, ZoneId.of)
 
   // Enum[] mappings
   implicit val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)
