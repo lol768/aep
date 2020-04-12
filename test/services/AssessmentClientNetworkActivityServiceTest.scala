@@ -68,6 +68,6 @@ class AssessmentClientNetworkActivityServiceTest extends AbstractDaoTest with Cl
     rtt = Some(50),
     `type` = Some("Tin-can"),
     studentAssessmentId = studentAssessmentId,
-    localTimezoneName = Some(JavaTime.timeZone),
+    localTimezoneName = Some(Right(JavaTime.timeZone)),
   )
 }
