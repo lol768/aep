@@ -1,10 +1,36 @@
 package controllers
 
+import domain.Sitting
 import javax.inject.{Inject, Singleton}
+import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc.{Action, AnyContent}
 import services.{SecurityService, StudentAssessmentService}
 
 import scala.concurrent.{ExecutionContext, Future}
+
+object AssessmentsController {
+  // We only want to include basic information here
+  val sittingWrites: Writes[Sitting] = sitting => Json.obj(
+    "title" -> sitting.assessment.title,
+    "paperCode" -> sitting.assessment.paperCode,
+    "section" -> sitting.assessment.section,
+    "assessmentType" -> sitting.assessment.assessmentType,
+    "description" -> sitting.assessment.brief.text,
+    "duration" -> sitting.assessment.duration,
+    "startTime" -> sitting.assessment.startTime,
+    "lastAllowedStartTime" -> sitting.assessment.lastAllowedStartTime,
+    "startedTime" -> sitting.studentAssessment.startTime,
+    "finalisedTime" -> sitting.studentAssessment.finaliseTime,
+    "finalised" -> sitting.finalised
+  )
+
+  def toJson(assessments: Seq[Sitting]): JsValue = {
+    implicit val seqSittingWrites: Writes[Seq[Sitting]] = Writes.seq(sittingWrites)
+    implicit val responseWrites: Writes[API.Response[Seq[Sitting]]] = API.Response.writes[Seq[Sitting]]
+
+    Json.toJson(API.Success(data = assessments))
+  }
+}
 
 @Singleton
 class AssessmentsController @Inject()(
@@ -16,7 +42,10 @@ class AssessmentsController @Inject()(
   def index: Action[AnyContent] = SigninRequiredAction.async { implicit request =>
     request.user.flatMap(_.universityId).map { universityId =>
       studentAssessmentService.byUniversityId(universityId).successMap { assessments =>
-        Ok(views.html.exams.index(assessments))
+        render {
+          case Accepts.Json() => Ok(AssessmentsController.toJson(assessments))
+          case _ => Ok(views.html.exams.index(assessments))
+        }
       }
     }.getOrElse {
       Future.successful(Ok(views.html.exams.noUniversityId()))
