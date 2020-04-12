@@ -158,6 +158,6 @@ case class Sitting(
 ) extends BaseSitting
 
 case class SittingMetadata(
-  studentAssessment: StudentAssessmentMetadata,
+  studentAssessment: StudentAssessment,
   assessment: AssessmentMetadata
 ) extends BaseSitting

@@ -1,13 +1,13 @@
 @import tags._
 @import domain.Assessment
 @import domain.tabula
-@import domain.StudentAssessmentMetadata
+@import domain.StudentAssessment
 @import domain.SittingMetadata
 @import warwick.sso.UniversityID
 @import domain.AnnouncementOrQuery
 @(
         assessment: Assessment,
-        studentAssessment: StudentAssessmentMetadata,
+        studentAssessment: StudentAssessment,
         announcementsAndQueries: Seq[AnnouncementOrQuery],
         student: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],

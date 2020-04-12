@@ -43,7 +43,7 @@ class InvigilatorAssessmentController @Inject()(
       case (departments, studentAssessments, queries) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId))),
-          networkActivityService.getLatestActivityFor(studentAssessments.map(_.studentAssessmentId))
+          networkActivityService.getLatestActivityFor(studentAssessments.map(_.id))
         ).successMap { case (students, latestActivities) =>
             Ok(views.html.invigilation.assessment(
               assessment = assessment,

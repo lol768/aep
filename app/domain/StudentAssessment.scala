@@ -26,15 +26,13 @@ case class StudentAssessment(
   extraTimeAdjustment: Option[Duration],
   finaliseTime: Option[OffsetDateTime],
   uploadedFiles: Seq[UploadedFile]
-) extends BaseStudentAssessment
+) extends BaseStudentAssessment {
 
-case class StudentAssessmentMetadata(
-  assessmentId: UUID,
-  studentAssessmentId: UUID,
-  studentId: UniversityID,
-  inSeat: Boolean,
-  startTime: Option[OffsetDateTime],
-  extraTimeAdjustment: Option[Duration],
-  finaliseTime: Option[OffsetDateTime],
-  uploadedFileCount: Int
-) extends BaseStudentAssessment
+  val uploadedFileCount = uploadedFiles.size
+
+  /**
+    * Submission time is the most recent time that an upload was _started_
+    */
+  def submissionTime: Option[OffsetDateTime] = uploadedFiles.view.map(_.uploadStarted).maxOption
+
+}

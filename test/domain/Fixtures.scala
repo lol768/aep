@@ -188,11 +188,11 @@ object Fixtures {
       )
     }
 
-    def storedUploadedStudentAssessmentFile(studentAssessmentId: UUID) = {
+    def storedUploadedStudentAssessmentFile(studentAssessmentId: UUID, id: UUID = UUID.randomUUID()) = {
       val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
 
       StoredUploadedFile(
-        id = UUID.randomUUID(),
+        id = id,
         fileName = specialJPG.uploadedFileSave.fileName,
         contentLength = specialJPG.uploadedFileSave.contentLength,
         contentType = specialJPG.uploadedFileSave.contentType,

@@ -1,5 +1,6 @@
 @import domain.Assessment.Platform
 @import domain.Sitting
+@import domain.StudentAssessment
 @import tags._
 
 @(sitting: Sitting, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
@@ -20,7 +21,6 @@
             </h4>
         }
 
-    @studentAssessmentMetadata(sitting)
 
         @if(isAssessmentPage) {
             @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(sitting.assessment.id)) { implicit fc =>
