@@ -3,6 +3,7 @@ package actors
 import java.time.OffsetDateTime
 import java.util.UUID
 
+import akka.Done
 import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
@@ -11,7 +12,7 @@ import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.json._
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
-import warwick.core.helpers.JavaTime
+import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
@@ -93,24 +94,31 @@ class WebSocketActor @Inject() (
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
-          networkInformation.studentAssessmentId.map(assessmentId => {
-            val assessmentClientNetworkActivity =
-              AssessmentClientNetworkActivity(
-                downlink = networkInformation.downlink,
-                downlinkMax = networkInformation.downlinkMax,
-                effectiveType = networkInformation.effectiveType,
-                rtt = networkInformation.rtt,
-                `type` = networkInformation.`type`,
-                studentAssessmentId = assessmentId,
-                localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
-                timestamp = JavaTime.offsetDateTime,
-              )
+
+          val assessmentClientNetworkActivity =
+            AssessmentClientNetworkActivity(
+              downlink = networkInformation.downlink,
+              downlinkMax = networkInformation.downlinkMax,
+              effectiveType = networkInformation.effectiveType,
+              rtt = networkInformation.rtt,
+              `type` = networkInformation.`type`,
+              studentAssessmentId = networkInformation.studentAssessmentId.orNull,
+              localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
+              timestamp = JavaTime.offsetDateTime,
+            )
+
+          if (networkInformation.studentAssessmentId.nonEmpty) {
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
               .recover {
                 case e: Exception =>
-                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment $assessmentId")
+                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}")
               }
-          })
+          }
+
+          out ! Json.obj(
+            "type" -> "UpdateConnectivityIndicator",
+            "signalStrength" -> assessmentClientNetworkActivity.signalStrength
+          )
 
         case m if m.`type` == "RequestAssessmentTiming" =>
           val universityID: UniversityID = loginContext.user.flatMap(u => u.universityId).get
