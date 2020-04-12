@@ -1,7 +1,9 @@
 package domain
 
-import java.time.{Duration, OffsetDateTime, ZoneId}
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
+
+import helpers.LenientTimezoneNameParsing.LenientZoneId
 
 case class AssessmentClientNetworkActivity (
   downlink: Option[Double], // mbps
@@ -10,7 +12,7 @@ case class AssessmentClientNetworkActivity (
   rtt: Option[Int], // rounded to nearest 25ms
   `type`: Option[String], // bluetooth, cellular, ethernet, none, wifi, wimax, other, unknown
   studentAssessmentId: UUID,
-  localTimezoneName: Option[ZoneId],
+  localTimezoneName: Option[LenientZoneId],
   timestamp: OffsetDateTime = OffsetDateTime.now,
 ) {
   def isOnline = Duration.between(timestamp, OffsetDateTime.now).compareTo(Duration.ofMinutes(2L)) < 0;

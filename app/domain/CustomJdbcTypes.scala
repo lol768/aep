@@ -1,11 +1,10 @@
 package domain
 
-import java.time.ZoneId
-
 import domain.Assessment.{AssessmentType, Platform, State}
 import domain.dao.AssessmentsTables.StoredBrief
 import domain.messaging.MessageSender
 import enumeratum.SlickEnumSupport
+import helpers.LenientTimezoneNameParsing._
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.DatabaseConfigProvider
@@ -53,7 +52,10 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
 
   implicit val symbolTypeMapper: JdbcType[Symbol] = MappedColumnType.base[Symbol, String](_.name, Symbol.apply)
 
-  implicit val zoneIdTypeMapper: JdbcType[ZoneId] = MappedColumnType.base[ZoneId, String](_.getId, ZoneId.of)
+  implicit val lenientZoneIdTypeMapper: JdbcType[LenientZoneId] = MappedColumnType.base[LenientZoneId, String](
+    _.timezoneName,
+    _.maybeZoneId
+  )
 
   // Enum[] mappings
   implicit val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)

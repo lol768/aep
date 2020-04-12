@@ -1,12 +1,13 @@
 package actors
 
-import java.time.{OffsetDateTime, ZoneId}
+import java.time.OffsetDateTime
 import java.util.UUID
 
 import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
 import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
+import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.json._
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
@@ -17,7 +18,6 @@ import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 object WebSocketActor {
 
@@ -102,7 +102,7 @@ class WebSocketActor @Inject() (
                 rtt = networkInformation.rtt,
                 `type` = networkInformation.`type`,
                 studentAssessmentId = assessmentId,
-                localTimezoneName = networkInformation.localTimezoneName.flatMap(tz => Try(ZoneId.of(tz)).toOption),
+                localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
                 timestamp = JavaTime.offsetDateTime,
               )
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
