@@ -157,7 +157,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.StartAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
+    audit.audit(Operation.StudentAssessment.StartAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -186,7 +186,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.FinishAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
+    audit.audit(Operation.StudentAssessment.FinishAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -217,7 +217,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] =
-    audit.audit(Operation.Assessment.AttachFilesToAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "files" -> files.map(_._2.fileName))) {
+    audit.audit(Operation.StudentAssessment.AttachFilesToAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "files" -> files.map(_._2.fileName))) {
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -246,7 +246,7 @@ class StudentAssessmentServiceImpl @Inject()(
     }
 
   override def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.DeleteAttachedAssessmentFile, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "fileId" -> file.toString)) {
+    audit.audit(Operation.StudentAssessment.DeleteAttachedAssessmentFile, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "fileId" -> file.toString)) {
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -330,7 +330,7 @@ class StudentAssessmentServiceImpl @Inject()(
       .map(ServiceResults.success)
 
   override def upsert(decs: Declarations)(implicit ctx: AuditLogContext): Future[ServiceResult[Declarations]] = {
-    audit.audit(Operation.Assessment.MakeDeclarations, decs.studentAssessmentId.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
+    audit.audit(Operation.StudentAssessment.MakeDeclarations, decs.studentAssessmentId.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
       daoRunner.run(dao.getDeclarations(decs.studentAssessmentId)).flatMap { result =>
         result.map { existingDeclaration =>
           daoRunner.run(dao.update(existingDeclaration.copy(
