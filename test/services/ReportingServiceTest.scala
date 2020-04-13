@@ -62,8 +62,6 @@ class ReportingServiceTest
       case unaltered => unaltered
     }
 
-    println(sittings.flatMap(_.uploadedFiles))
-
     execWithCommit(DBIO.sequence(for {
         sitting <- sittings
         fileId <- sitting.uploadedFiles

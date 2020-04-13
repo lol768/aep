@@ -71,6 +71,7 @@ sealed trait BaseSitting {
 
   def getProgressState: Option[ProgressState] = {
     val now = JavaTime.offsetDateTime
+    val submissionTime = studentAssessment.submissionTime.getOrElse(now)
     assessment.startTime.map { assessmentStartTime =>
       if (assessmentStartTime.isAfter(now)) {
         AssessmentNotYetOpen

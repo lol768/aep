@@ -1,16 +1,16 @@
 package helpers
 
-import java.time.{Instant, LocalDateTime, OffsetDateTime, zone}
+import java.time.{Instant, LocalDateTime, OffsetDateTime}
+import warwick.core.helpers.JavaTime.{timeZone => zone}
 
 object DateConversion {
-  import warwick.core.helpers.JavaTime.{timeZone => zone}
 
   implicit class localDateTimeConversion(ldt: LocalDateTime) {
-    def asOffsetDateTime: OffsetDateTime = ldt.atOffset(zone.getRules.getOffset(ldt))
-    def asInstant: Instant = ldt.toInstant(zone.getRules.getOffset(ldt))
+    def asOffsetDateTime: OffsetDateTime = ldt.atZone(zone).toOffsetDateTime
+    def asInstant: Instant = ldt.atZone(zone).toInstant
   }
 
   implicit class instantConversion(instant: Instant) {
-    def asOffsetDateTime: OffsetDateTime = instant.atOffset(zone.getRules.getOffset(instant))
+    def asOffsetDateTime: OffsetDateTime = instant.atZone(zone).toOffsetDateTime
   }
 }

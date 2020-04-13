@@ -15,6 +15,14 @@ sealed trait BaseStudentAssessment {
   val finaliseTime: Option[OffsetDateTime]
 
   val hasFinalised: Boolean = finaliseTime.nonEmpty
+
+  def mostRecentFileUpload: Option[OffsetDateTime]
+
+  /**
+    * The effective time that the user submitted their answers - taken as when the most
+    * recently added file started to be uploaded.
+    */
+  def submissionTime: Option[OffsetDateTime] = mostRecentFileUpload
 }
 
 case class StudentAssessment(
@@ -28,11 +36,6 @@ case class StudentAssessment(
   uploadedFiles: Seq[UploadedFile]
 ) extends BaseStudentAssessment {
 
-  val uploadedFileCount = uploadedFiles.size
-
-  /**
-    * Submission time is the most recent time that an upload was _started_
-    */
-  def submissionTime: Option[OffsetDateTime] = uploadedFiles.view.map(_.uploadStarted).maxOption
+  def mostRecentFileUpload: Option[OffsetDateTime] = uploadedFiles.view.map(_.uploadStarted).maxOption
 
 }

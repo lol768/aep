@@ -35,8 +35,8 @@ object UploadedFilesTables {
       contentLength,
       contentType,
       uploadedBy,
-      uploadStarted,
       created,
+      uploadStarted,
       version
     )
 
