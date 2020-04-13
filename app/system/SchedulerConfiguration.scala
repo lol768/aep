@@ -2,13 +2,14 @@ package system
 
 import java.util.Date
 
+import domain.JobKeys
 import javax.inject.{Inject, Singleton}
 import org.quartz.CronScheduleBuilder._
 import org.quartz.TriggerBuilder._
 import org.quartz._
 import play.api.Configuration
 import play.api.db.evolutions.ApplicationEvolutions
-import services.job.ImportTabulaAssessmentsJob
+import services.job.{ImportTabulaAssessmentsJob, SendAssessmentRemindersJob}
 import warwick.core.Logging
 
 @Singleton
@@ -17,9 +18,15 @@ class SchedulerConfiguration @Inject()(
   configuration: Configuration,
 )(implicit scheduler: Scheduler) extends Logging {
   configureScheduledJob(
-    "ImportAssessment",
+    JobKeys.ImportAssessmentJob.name,
     JobBuilder.newJob(classOf[ImportTabulaAssessmentsJob]),
     CronScheduleBuilder.cronSchedule("0 30 * * * ?") // Every hour, xx:30
+  )
+
+  configureScheduledJob(
+    JobKeys.SendAssessmentRemindersJob.name,
+    JobBuilder.newJob(classOf[SendAssessmentRemindersJob]),
+    CronScheduleBuilder.cronSchedule("0 0 8 * * ?") // 8am every day
   )
 
   logger.info("Starting the scheduler")

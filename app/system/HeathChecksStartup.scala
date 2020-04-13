@@ -1,7 +1,7 @@
 package system
 
 import javax.inject.{Inject, Provider}
-import services.healthcheck.ThreadPoolHealthCheck
+import services.healthcheck.{QuartzJobHealthCheck, ThreadPoolHealthCheck}
 import uk.ac.warwick.util.service.ServiceHealthcheckProvider
 
 /**
@@ -17,6 +17,7 @@ class HeathChecksStartup @Inject()(
     */
   healthchecks.get.foreach {
     case check: ThreadPoolHealthCheck => check.init()
+    case check: QuartzJobHealthCheck => check.init()
     case _ =>
   }
 }
