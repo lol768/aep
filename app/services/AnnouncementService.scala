@@ -14,7 +14,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.core.system.AuditLogContext
+import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
 
 import scala.concurrent.{ExecutionContext, Future}
