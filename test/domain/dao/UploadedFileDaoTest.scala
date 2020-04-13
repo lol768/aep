@@ -1,7 +1,9 @@
 package domain.dao
 
-import java.time.{Clock, ZonedDateTime}
+import java.time.{Clock, Duration, OffsetDateTime, ZonedDateTime}
+import java.util.UUID
 
+import domain.Fixtures
 import domain.Fixtures.{assessments, studentAssessments, uploadedFiles}
 import helpers.CleanUpDatabaseAfterEachTest
 import uk.ac.warwick.util.core.DateTimeUtils
@@ -12,6 +14,21 @@ import scala.concurrent.Future
 class UploadedFileDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
   private val dao = get[UploadedFileDao]
+
+  "StoredUploadedFile" should {
+    "convert to UploadedFile" in {
+      val stored = Fixtures.uploadedFiles.storedUploadedStudentAssessmentFile(
+        studentAssessmentId = UUID.randomUUID()
+      ).copy(
+        created = OffsetDateTime.parse("2020-04-13T13:00:00+01:00"),
+        uploadStarted = OffsetDateTime.parse("2020-04-13T12:55:00+01:00"),
+      )
+
+      val file = stored.asUploadedFile
+      file.created mustBe stored.created
+      file.uploadStarted mustBe stored.uploadStarted
+    }
+  }
 
   "UploadedFileDao" should {
     val now = ZonedDateTime.of(2019, 1, 1, 10, 0, 0, 0, JavaTime.timeZone).toInstant
