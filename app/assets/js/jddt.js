@@ -377,9 +377,26 @@ export default class JDDT {
    * @param includeTimezoneName
    */
   localString(includeTimezoneName = false) {
-    return includeTimezoneName
-      ? stringify(this.jsDateLocal, { timezoneName: this.localTimezoneName, printYear: true, includeIcon: false })
-      : stringify(this.jsDateLocal, { printYear: true, includeIcon: false });
+    const options = {
+      wrapTimezoneName: false,
+      printYear: true,
+      includeIcon: false,
+    };
+    if (includeTimezoneName) {
+      return stringify(
+        this.jsDateLocal,
+        {
+          ...options,
+          timezoneName: this.localTimezoneName,
+        },
+      );
+    }
+    return stringify(
+      this.jsDateLocal,
+      {
+        ...options,
+      },
+    );
   }
 
   /**
