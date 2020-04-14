@@ -69,7 +69,11 @@
             } else {
               @latestActivities.get(md.studentAssessment.studentAssessmentId).map { a =>
                 @if(a.isOnline) {
-                  <i class="fad fa-signal themed-duotone"></i> Online now
+                  @a.signalStrength match {
+                    case Some(i) if i >= 1 && i < 5 => {<i class="fad fa-signal-@i themed-duotone"></i>}
+                    case _ => {<i class="fad fa-signal themed-duotone"></i>}
+                  }
+                  Online now
                   @a.localTimezoneName.map { e => <span class="text-muted">@e.timezoneName</span> }
                 } else {
                   <i class="fad fa-signal-slash themed-duotone"></i> Offline

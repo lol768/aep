@@ -16,7 +16,16 @@ case class AssessmentClientNetworkActivity (
   localTimezoneName: Option[LenientZoneId],
   timestamp: OffsetDateTime = OffsetDateTime.now,
 ) {
-  def isOnline = Duration.between(timestamp, OffsetDateTime.now).compareTo(Duration.ofMinutes(2L)) < 0;
+  def isOnline = Duration.between(timestamp, OffsetDateTime.now).compareTo(Duration.ofMinutes(2L)) < 0
+
+  // Returns an int between 1 and 5 if we can make assertions
+  val signalStrength: Option[Int] =
+    if (effectiveType.contains("slow-2g") || rtt.exists(_ >= 1000) || downlink.exists(_ <= 0.1d)) Some(1)
+    else if (effectiveType.contains("2g") || rtt.exists(_ >= 800) || downlink.exists(_ <= 0.2d)) Some(2)
+    else if (effectiveType.contains("3g") || rtt.exists(_ >= 500) || downlink.exists(_ <= 0.5d)) Some(3)
+    else if (rtt.exists(_ >= 200) || downlink.exists(_ <= 2.0d)) Some(4)
+    else if (rtt.exists(_ < 200 && downlink.exists(_ > 2.0d))) Some(5)
+    else None // We can't make a judgement
 }
 
 object AssessmentClientNetworkActivity {
