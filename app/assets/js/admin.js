@@ -79,4 +79,8 @@ $(() => {
   if (document.querySelectorAll('.studentAssessmentInfo').length > 0) {
     import('./studentAssessmentInfo');
   }
+
+  if (document.body.classList.contains('allAnnouncementsAndQueries')) {
+    import('./admin/assessment-announcements-and-queries');
+  }
 });

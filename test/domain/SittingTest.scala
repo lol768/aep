@@ -5,6 +5,7 @@ import java.util.UUID
 
 import domain.Assessment.{AssessmentType, Brief, Platform}
 import domain.BaseSitting.ProgressState._
+import domain.BaseSitting.SubmissionState
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import warwick.core.helpers.JavaTime
@@ -78,7 +79,7 @@ class SittingTest extends PlaySpec with MockitoSugar {
       sitting.getProgressState mustBe Some(Started)
     }
 
-    "Show as late if you haven't submitted any files" in new Fixture (
+    "Show as Late after the on time duration" in new Fixture (
       assessmentStart = Some(JavaTime.offsetDateTime.minusHours(4)),
       assessmentDuration = Some(Duration.ofHours(3)),
       studentStart = Some(JavaTime.offsetDateTime.minusHours(4))
@@ -87,23 +88,32 @@ class SittingTest extends PlaySpec with MockitoSugar {
       sitting.getProgressState mustBe Some(Late)
     }
 
-    "Not show as late if their last file was submitted on time" in new Fixture (
-      assessmentStart = Some(JavaTime.offsetDateTime.minusHours(4)),
+  }
+
+  "Sitting#getSubmissionState" should {
+    "Be None if there are no files" in new Fixture (
+      assessmentStart = Some(JavaTime.offsetDateTime.minusHours(1)),
+      studentStart = Some(JavaTime.offsetDateTime.minusMinutes(30))
+    ) {
+      sitting.getSubmissionState mustBe SubmissionState.None
+    }
+
+    "Be OnTime if all files on time" in new Fixture (
+      assessmentStart = Some(JavaTime.offsetDateTime.minusHours(1)),
       assessmentDuration = Some(Duration.ofHours(3)),
       studentStart = Some(JavaTime.offsetDateTime.minusHours(4)),
       uploadedFiles = Seq(
-        uploadedFile(
+        uploadedFile( // on time
           uploadStarted = JavaTime.offsetDateTime.minusHours(3),
-          uploadFinished = JavaTime.offsetDateTime.minusMinutes(10) // ignore
+          uploadFinished = JavaTime.offsetDateTime.minusHours(3) // ignore
         )
       )
     ) {
-      // They're in the late time but their last file was on time
-      sitting.getProgressState mustBe Some(InProgress)
+      sitting.getSubmissionState mustBe SubmissionState.OnTime
     }
 
-    "Show as late if their last file was late" in new Fixture (
-      assessmentStart = Some(JavaTime.offsetDateTime.minusHours(4)),
+    "Be Late if there are late files" in new Fixture (
+      assessmentStart = Some(JavaTime.offsetDateTime.minusHours(1)),
       assessmentDuration = Some(Duration.ofHours(3)),
       studentStart = Some(JavaTime.offsetDateTime.minusHours(4)),
       uploadedFiles = Seq(
@@ -117,9 +127,14 @@ class SittingTest extends PlaySpec with MockitoSugar {
         )
       )
     ) {
-      // They're in the late time but their last file was on time
-      sitting.getProgressState mustBe Some(Late)
+      sitting.getSubmissionState mustBe SubmissionState.Late
     }
+
+
+
+
+
+
   }
 
   private def uploadedFile(uploadStarted: OffsetDateTime, uploadFinished: OffsetDateTime) =

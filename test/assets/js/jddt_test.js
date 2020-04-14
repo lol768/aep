@@ -44,15 +44,15 @@ describe('JDDT date formatting', () => {
     const millis = 1585045800000;
     const jddt = new JDDT(millis);
 
-    assert.equal(jddt.longLocal(), `${iconString} Tuesday 24th March, 10:30 ${londonTimeString}`);
-    assert.equal(jddt.shortLocal(), `${iconString} Tue 24th Mar, 10:30 ${londonTimeString}`);
+    assert.equal(jddt.longLocal(), `${iconString} 10:30, Tuesday 24th March ${londonTimeString}`);
+    assert.equal(jddt.shortLocal(), `${iconString} 10:30, Tue 24th Mar ${londonTimeString}`);
   });
 
   it('identifies if the milliseconds provided refer to today\'s date', () => {
     const jddt = new JDDT(Date.now());
 
-    assert.match(jddt.longLocal(), /Today/);
-    assert.match(jddt.shortLocal(), /Today/);
+    assert.match(jddt.longLocal(), /today/);
+    assert.match(jddt.shortLocal(), /today/);
   });
 
   it('handles different timezones properly', () => {
@@ -62,12 +62,12 @@ describe('JDDT date formatting', () => {
 
     jddt.setLocalTimezone(180, "Europe/Moscow");
 
-    assert.equal(jddt.longLocal(), `${iconString} Tuesday 24th March, 13:30 ${moscowTimeString}`);
-    assert.equal(jddt.shortLocal(), `${iconString} Tue 24th Mar, 13:30 ${moscowTimeString}`);
+    assert.equal(jddt.longLocal(), `${iconString} 13:30, Tuesday 24th March ${moscowTimeString}`);
+    assert.equal(jddt.shortLocal(), `${iconString} 13:30, Tue 24th Mar ${moscowTimeString}`);
 
     jddt.setLocalTimezone(-660, 'Pacific/Midway');
-    assert.equal(jddt.longLocal(), `${iconString} Monday 23rd March, 23:30 ${midwayTimeString}`);
-    assert.equal(jddt.shortLocal(), `${iconString} Mon 23rd Mar, 23:30 ${midwayTimeString}`);
+    assert.equal(jddt.longLocal(), `${iconString} 23:30, Monday 23rd March ${midwayTimeString}`);
+    assert.equal(jddt.shortLocal(), `${iconString} 23:30, Mon 23rd Mar ${midwayTimeString}`);
   });
 
   it('shows the year if it\'s not the current year', () => {
@@ -76,7 +76,7 @@ describe('JDDT date formatting', () => {
     const jddt = new JDDT(millis);
 
     assert.match(jddt.longLocal(), /2019/);
-    assert.match(jddt.shortLocal(), /2019/);
+    assert.match(jddt.shortLocal(), /'19/);
   });
 
   it('doesn\'t populate an element with text if supplied server timezone matches local timezone', () => {
@@ -92,7 +92,7 @@ describe('JDDT date formatting', () => {
     JDDT.applyToElement(el);
 
     // Assuming the web browser is on UK time...
-    assert.equal(el.innerHTML, `${iconString} Tue 24th Mar, 10:30 ${londonTimeString}`);
+    assert.equal(el.innerHTML, `${iconString} 10:30, Tue 24th Mar ${londonTimeString}`);
   });
 
   it('doesn\'t apply to a range element if supplied server timezone is the same as local timezone', () => {
@@ -121,7 +121,7 @@ describe('JDDT date formatting', () => {
     const el = makeJDDTRangeElement(true, fromMillis, toMillis, 180, 'Europe/Moscow');
     JDDT.applyToRangeElement(el);
 
-    assert.equal(el.innerHTML, `${iconString} 10:30 to 11:30, Today ${londonTimeString}`);
+    assert.equal(el.innerHTML, `${iconString} 10:30 to 11:30 today ${londonTimeString}`);
   });
 
   it ('shows the from day & date if different to the to date in ranges', () => {
@@ -132,7 +132,7 @@ describe('JDDT date formatting', () => {
     const el = makeJDDTRangeElement(true, fromMillis, toMillis, 180, 'Europe/Moscow');
     JDDT.applyToRangeElement(el);
 
-    assert.equal(el.innerHTML, `${iconString} 11:30 Tue 24th to 11:30, Thu 26th Mar ${londonTimeString}`);
+    assert.equal(el.innerHTML, `${iconString} 11:30, Tue 24th to 11:30, Thu 26th Mar ${londonTimeString}`);
   });
 
   it('shows the from day & date if different to the to date in ranges, taking into account if to date is today', () => {
@@ -143,7 +143,7 @@ describe('JDDT date formatting', () => {
     const el = makeJDDTRangeElement(true, fromMillis, toMillis, 180, 'Europe/Moscow');
     JDDT.applyToRangeElement(el);
 
-    assert.equal(el.innerHTML, `${iconString} 11:30 Tue 24th Mar to 11:30, Today ${londonTimeString}`);
+    assert.equal(el.innerHTML, `${iconString} 11:30, Tue 24th Mar to 11:30 today ${londonTimeString}`);
   });
 
   it('shows the from month, day & date if different to the to date in ranges', () => {
@@ -154,7 +154,7 @@ describe('JDDT date formatting', () => {
     const el = makeJDDTRangeElement(true, fromMillis, toMillis, 180, 'Europe/Moscow');
     JDDT.applyToRangeElement(el);
 
-    assert.equal(el.innerHTML, `${iconString} 11:30 Tue 24th Mar to 11:30, Thu 2nd Apr ${londonTimeString}`);
+    assert.equal(el.innerHTML, `${iconString} 11:30, Tue 24th Mar to 11:30, Thu 2nd Apr ${londonTimeString}`);
   });
 
   it('shows the from year, month, day & date if different to the to date in ranges', () => {
@@ -165,7 +165,7 @@ describe('JDDT date formatting', () => {
     const el = makeJDDTRangeElement(true, fromMillis, toMillis, 180, 'Europe/Moscow');
     JDDT.applyToRangeElement(el);
 
-    assert.equal(el.innerHTML, `${iconString} 11:30 Tue 24th Mar '20 to 11:30, Fri 2nd Apr '21 ${londonTimeString}`);
+    assert.equal(el.innerHTML, `${iconString} 11:30, Tue 24th Mar '20 to 11:30, Fri 2nd Apr '21 ${londonTimeString}`);
   });
 
   it('handles ranges across date boundaries', () => {
@@ -183,7 +183,7 @@ describe('JDDT date formatting', () => {
       const el = makeJDDTRangeElement(true, fromMillis, toMillis, 0, 'Europe/London');
       JDDT.applyToRangeElement(el);
 
-      assert.equal(el.innerHTML, `${iconString} 22:00 Thu 26th Mar to 06:00, Today <span class="text-muted">Asia/Shanghai</span>`);
+      assert.equal(el.innerHTML, `${iconString} 22:00, Thu 26th Mar to 06:00 today <span class="text-muted">Asia/Shanghai</span>`);
     } finally {
       process.env.TZ = 'Europe/London';
       MockDate.set(fakeNow, 0);

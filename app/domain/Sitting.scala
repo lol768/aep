@@ -86,7 +86,8 @@ sealed trait BaseSitting {
 
   def getSubmissionState: SubmissionState =
     studentAssessment.submissionTime match {
-      case Some(submitTime) if onTimeEnd.exists(submitTime.isAfter) => SubmissionState.OnTime
+      case Some(submitTime) if onTimeEnd.exists(submitTime.isBefore) => SubmissionState.OnTime
+      case Some(_) if onTimeEnd.isEmpty => SubmissionState.Submitted
       case None => SubmissionState.None
       case _ => SubmissionState.Late
     }
@@ -181,6 +182,8 @@ object BaseSitting {
   sealed abstract class SubmissionState(val label: String) extends EnumEntry
   object SubmissionState extends PlayEnum[SubmissionState] {
     case object None extends SubmissionState(label = "None")
+    /** Used if we have files but are missing a duration, so we can't be more specific */
+    case object Submitted extends SubmissionState(label = "Submitted")
     case object OnTime extends SubmissionState(label = "On time")
     case object Late extends SubmissionState(label = "Late")
     val values: IndexedSeq[SubmissionState] = findValues

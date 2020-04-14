@@ -1,21 +1,23 @@
 package services
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.Duration
 import java.util.UUID
 
 import akka.Done
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
 import domain.Assessment.State
+import domain.AuditEvent.{Operation, Target}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao._
 import domain.{Assessment, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
+import play.api.libs.json.Json
 import services.AssessmentService._
 import slick.dbio.DBIO
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
-import warwick.core.system.AuditLogContext
+import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileSave
 import warwick.sso.Usercode
@@ -101,7 +103,7 @@ class AssessmentServiceImpl @Inject()(
     daoRunner.run(dao.getByInvigilator(usercodes)).flatMap(inflate)
   }
 
-  def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
+  override def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
     withFiles(
       dao.getByIdAndInvigilator(id, usercodes),
       s"Could not find Assessment with ID $id with invigilators ${usercodes.map(_.string).mkString(",")}"
@@ -156,109 +158,22 @@ class AssessmentServiceImpl @Inject()(
       .map(ServiceResults.success)
   }
 
-  override def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
-    daoRunner.run(for {
-      stored <- dao.getById(assessment.id).map(_.getOrElse(throw new NoSuchElementException(s"Could not find an Assessment with ID ${assessment.id}")))
-      fileIds <- if (files.nonEmpty) {
-        DBIO.sequence(files.toList.map { case (in, metadata) =>
-          uploadedFileService.storeDBIO(
-            in,
-            metadata,
-            ac.usercode.get,
-            assessment.id,
-            UploadedFileOwner.Assessment
-          ).map(_.id)
-        })
-      } else DBIO.successful(assessment.brief.files.map(_.id))
-      _ <- dao.update(StoredAssessment(
-        id = assessment.id,
-        paperCode = assessment.paperCode,
-        section = assessment.section,
-        title = assessment.title,
-        startTime = assessment.startTime,
-        duration = assessment.duration,
-        platform = assessment.platform,
-        assessmentType = assessment.assessmentType,
-        storedBrief = StoredBrief(
-          text = assessment.brief.text,
-          fileIds = fileIds,
-          urls = assessment.brief.urls
-        ),
-        invigilators = sortedInvigilators(assessment),
-        state = assessment.state,
-        tabulaAssessmentId = assessment.tabulaAssessmentId,
-        examProfileCode = assessment.examProfileCode,
-        moduleCode = assessment.moduleCode,
-        departmentCode = assessment.departmentCode,
-        sequence = assessment.sequence,
-        created = stored.created,
-        version = stored.version
-      ))
-      updated <- dao.loadByIdWithUploadedFiles(assessment.id)
-    } yield updated).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
-  }
-
-  override def insert(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] = {
-    daoRunner.run(for {
-      fileIds <- if (files.nonEmpty) {
-        DBIO.sequence(files.toList.map { case (in, metadata) =>
-          uploadedFileService.storeDBIO(
-            in,
-            metadata,
-            ac.usercode.get,
-            assessment.id,
-            UploadedFileOwner.Assessment
-          ).map(_.id)
-        })
-      } else DBIO.successful(assessment.brief.files.map(_.id))
-      assessment <- dao.insert(StoredAssessment(
-        id = assessment.id,
-        paperCode = assessment.paperCode,
-        section = assessment.section,
-        title = assessment.title,
-        startTime = assessment.startTime,
-        duration = assessment.duration,
-        platform = assessment.platform,
-        assessmentType = assessment.assessmentType,
-        storedBrief = StoredBrief(
-          text = assessment.brief.text,
-          fileIds = fileIds,
-          urls = assessment.brief.urls
-        ),
-        invigilators = sortedInvigilators(assessment),
-        state = assessment.state,
-        tabulaAssessmentId = assessment.tabulaAssessmentId,
-        examProfileCode = assessment.examProfileCode,
-        moduleCode = assessment.moduleCode,
-        departmentCode = assessment.departmentCode,
-        sequence = assessment.sequence,
-        created = JavaTime.offsetDateTime,
-        version = JavaTime.offsetDateTime,
-      ))
-      inserted <- dao.loadByIdWithUploadedFiles(assessment.id)
-    } yield inserted).map { r =>
-      inflateRowWithUploadedFiles(r).get
-    }.map(ServiceResults.success)
-  }
-
-  private def sortedInvigilators(assessment: Assessment): List[String] = assessment.invigilators.toSeq.sortBy(_.string).map(_.string).toList
-
-  def upsert(assessment: Assessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Assessment]] = {
-    daoRunner.run(dao.getById(assessment.id)).flatMap { storedAssessmentOption =>
-      storedAssessmentOption.map { existingAssessment =>
-        daoRunner.run(dao.update(existingAssessment.copy(
-          paperCode = assessment.paperCode,
-          section = assessment.section,
-          title = assessment.title,
-          startTime = assessment.startTime,
-          duration = assessment.duration,
-          platform = assessment.platform,
-          assessmentType = assessment.assessmentType,
-          storedBrief = assessment.brief.toStoredBrief,
-        )))
-      }.getOrElse {
-        val timestamp = JavaTime.offsetDateTime
-        daoRunner.run(dao.insert(StoredAssessment(
+  override def update(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] =
+    auditService.audit(Operation.Assessment.UpdateAssessment, assessment.id.toString, Target.Assessment, Json.obj("files" -> files.map(_._2.fileName))) {
+      daoRunner.run(for {
+        stored <- dao.getById(assessment.id).map(_.getOrElse(throw new NoSuchElementException(s"Could not find an Assessment with ID ${assessment.id}")))
+        fileIds <- if (files.nonEmpty) {
+          DBIO.sequence(files.toList.map { case (in, metadata) =>
+            uploadedFileService.storeDBIO(
+              in,
+              metadata,
+              ac.usercode.get,
+              assessment.id,
+              UploadedFileOwner.Assessment
+            ).map(_.id)
+          })
+        } else DBIO.successful(assessment.brief.files.map(_.id))
+        _ <- dao.update(StoredAssessment(
           id = assessment.id,
           paperCode = assessment.paperCode,
           section = assessment.section,
@@ -267,7 +182,11 @@ class AssessmentServiceImpl @Inject()(
           duration = assessment.duration,
           platform = assessment.platform,
           assessmentType = assessment.assessmentType,
-          storedBrief = assessment.brief.toStoredBrief,
+          storedBrief = StoredBrief(
+            text = assessment.brief.text,
+            fileIds = fileIds,
+            urls = assessment.brief.urls
+          ),
           invigilators = sortedInvigilators(assessment),
           state = assessment.state,
           tabulaAssessmentId = assessment.tabulaAssessmentId,
@@ -275,29 +194,117 @@ class AssessmentServiceImpl @Inject()(
           moduleCode = assessment.moduleCode,
           departmentCode = assessment.departmentCode,
           sequence = assessment.sequence,
-          created = timestamp,
-          version = timestamp
-        )))
-      }.flatMap { result =>
-        uploadedFileService.get(result.storedBrief.fileIds).map { files =>
-          ServiceResults.success(result.asAssessment(files.map(f => f.id -> f).toMap))
-        }.recoverWith {
-          case e: Exception => Future.successful(ServiceResults.error(e.getMessage))
+          created = stored.created,
+          version = stored.version
+        ))
+        updated <- dao.loadByIdWithUploadedFiles(assessment.id)
+      } yield updated).map(inflateRowWithUploadedFiles(_).get).map(ServiceResults.success)
+    }
+
+  override def insert(assessment: Assessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ac: AuditLogContext): Future[ServiceResult[Assessment]] =
+    auditService.audit(Operation.Assessment.CreateAssessment, assessment.id.toString, Target.Assessment, Json.obj("files" -> files.map(_._2.fileName))) {
+      daoRunner.run(for {
+        fileIds <- if (files.nonEmpty) {
+          DBIO.sequence(files.toList.map { case (in, metadata) =>
+            uploadedFileService.storeDBIO(
+              in,
+              metadata,
+              ac.usercode.get,
+              assessment.id,
+              UploadedFileOwner.Assessment
+            ).map(_.id)
+          })
+        } else DBIO.successful(assessment.brief.files.map(_.id))
+        assessment <- dao.insert(StoredAssessment(
+          id = assessment.id,
+          paperCode = assessment.paperCode,
+          section = assessment.section,
+          title = assessment.title,
+          startTime = assessment.startTime,
+          duration = assessment.duration,
+          platform = assessment.platform,
+          assessmentType = assessment.assessmentType,
+          storedBrief = StoredBrief(
+            text = assessment.brief.text,
+            fileIds = fileIds,
+            urls = assessment.brief.urls
+          ),
+          invigilators = sortedInvigilators(assessment),
+          state = assessment.state,
+          tabulaAssessmentId = assessment.tabulaAssessmentId,
+          examProfileCode = assessment.examProfileCode,
+          moduleCode = assessment.moduleCode,
+          departmentCode = assessment.departmentCode,
+          sequence = assessment.sequence,
+          created = JavaTime.offsetDateTime,
+          version = JavaTime.offsetDateTime,
+        ))
+        inserted <- dao.loadByIdWithUploadedFiles(assessment.id)
+      } yield inserted).map { r =>
+        inflateRowWithUploadedFiles(r).get
+      }.map(ServiceResults.success)
+    }
+
+  private def sortedInvigilators(assessment: Assessment): List[String] = assessment.invigilators.toSeq.sortBy(_.string).map(_.string).toList
+
+  def upsert(assessment: Assessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
+    auditService.audit(Operation.Assessment.UpdateAssessment, assessment.id.toString, Target.Assessment, Json.obj()) {
+      daoRunner.run(dao.getById(assessment.id)).flatMap { storedAssessmentOption =>
+        storedAssessmentOption.map { existingAssessment =>
+          daoRunner.run(dao.update(existingAssessment.copy(
+            paperCode = assessment.paperCode,
+            section = assessment.section,
+            title = assessment.title,
+            startTime = assessment.startTime,
+            duration = assessment.duration,
+            platform = assessment.platform,
+            assessmentType = assessment.assessmentType,
+            storedBrief = assessment.brief.toStoredBrief,
+          )))
+        }.getOrElse {
+          val timestamp = JavaTime.offsetDateTime
+          daoRunner.run(dao.insert(StoredAssessment(
+            id = assessment.id,
+            paperCode = assessment.paperCode,
+            section = assessment.section,
+            title = assessment.title,
+            startTime = assessment.startTime,
+            duration = assessment.duration,
+            platform = assessment.platform,
+            assessmentType = assessment.assessmentType,
+            storedBrief = assessment.brief.toStoredBrief,
+            invigilators = sortedInvigilators(assessment),
+            state = assessment.state,
+            tabulaAssessmentId = assessment.tabulaAssessmentId,
+            examProfileCode = assessment.examProfileCode,
+            moduleCode = assessment.moduleCode,
+            departmentCode = assessment.departmentCode,
+            sequence = assessment.sequence,
+            created = timestamp,
+            version = timestamp
+          )))
+        }.flatMap { result =>
+          uploadedFileService.get(result.storedBrief.fileIds).map { files =>
+            ServiceResults.success(result.asAssessment(files.map(f => f.id -> f).toMap))
+          }.recoverWith {
+            case e: Exception => Future.successful(ServiceResults.error(e.getMessage))
+          }
         }
       }
     }
-  }
 
   override def delete(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] =
-    daoRunner.run(for {
-      stored <- dao.getById(assessment.id)
-      students <- studentAssessmentDao.getByAssessmentId(assessment.id)
-      _ <- DBIO.sequence(students.toList.map(s => studentAssessmentDao.delete(s.studentId, s.assessmentId)))
-      done <- (stored match {
-        case Some(a) => dao.delete(a)
-        case _ => DBIO.successful(Done) // No-op
-      })
-    } yield done).map(ServiceResults.success)
+    auditService.audit(Operation.Assessment.DeleteAssessment, assessment.id.toString, Target.Assessment, Json.obj()) {
+      daoRunner.run(for {
+        stored <- dao.getById(assessment.id)
+        students <- studentAssessmentDao.getByAssessmentId(assessment.id)
+        _ <- DBIO.sequence(students.toList.map(s => studentAssessmentDao.delete(s.studentId, s.assessmentId)))
+        done <- (stored match {
+          case Some(a) => dao.delete(a)
+          case _ => DBIO.successful(Done) // No-op
+        })
+      } yield done).map(ServiceResults.success)
+    }
 }
 
 object AssessmentService {

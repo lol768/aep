@@ -3,8 +3,9 @@ package services
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
-import domain.{Assessment, StudentAssessment}
 import domain.tabula.{AssessmentComponent, ExamPaperSchedule}
+import domain.{Assessment, StudentAssessment}
+import helpers.ServiceResultUtils.traverseSerial
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import services.TabulaAssessmentImportService.{AssessmentImportResult, DepartmentWithAssessments}
@@ -43,15 +44,6 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
   private[this] lazy val importStudentExtraTime = configuration.get[Boolean]("app.importStudentExtraTime")
   private[this] lazy val overwriteAssessmentTypeOnImport = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
-
-  private def traverseSerial[A, B](in: Seq[A])(fn: A => Future[ServiceResult[B]]): Future[ServiceResult[Seq[B]]] =
-    in.foldLeft(Future.successful(Seq.empty[ServiceResult[B]])) { (future, item) =>
-      future.flatMap(seq =>
-        fn(item).map { result =>
-          seq :+ result
-        }
-      )
-    }.map(ServiceResults.sequence)
 
   def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
     tabulaDepartmentService.getDepartments().successFlatMapTo { departments =>

@@ -25,7 +25,7 @@ class localisedDatetimeTest extends BaseSpec {
     }
 
     "correctly identify when the supplied date is today" in {
-      localisedDatetime(JavaTime.offsetDateTime).body must include("Today")
+      localisedDatetime(JavaTime.offsetDateTime).body must include("today")
     }
 
     "include the year when it's different to the current year" in {
