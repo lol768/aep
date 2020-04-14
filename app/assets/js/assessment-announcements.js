@@ -11,25 +11,39 @@ function checkNotificationPromise() {
   return true;
 }
 
+/**
+ * Separated for testing purposes - takes data and returns it as nice HTML
+ * @param {object} d - as received by the websocket
+ * @returns {HTMLDivElement} - formatted nicely and ready for appending to the document
+ */
+export function formatAnnouncement(d) {
+  const el = document.createElement('div');
+  el.classList.add('alert', 'alert-info', 'media');
+  const icon = document.createElement('i');
+  icon.setAttribute('aria-hidden', 'true');
+  const iconName = 'bullhorn';
+  icon.classList.add('fad', `fa-${iconName}`);
+  const timestamp = document.createElement('div');
+  timestamp.classList.add('query-time');
+  timestamp.innerHTML = d.timestamp;
+  const mediaLeft = document.createElement('div');
+  mediaLeft.classList.add('media-left');
+  const mediaBody = document.createElement('div');
+  mediaBody.classList.add('media-body');
+  mediaLeft.appendChild(icon);
+  mediaBody.innerHTML = d.message.replace(/\n/, '<br>');
+  mediaBody.appendChild(timestamp);
+  el.appendChild(mediaLeft);
+  el.appendChild(mediaBody);
+  return el;
+}
+
 export default function initAnnouncements(websocket) {
   websocket.add({
     onData: (d) => {
       const messageList = document.querySelector('.message-list');
       if (messageList && d.type === 'announcement') {
-        const el = document.createElement('div');
-        el.classList.add('alert', 'alert-info');
-        const icon = document.createElement('i');
-        icon.setAttribute('aria-hidden', 'true');
-        const iconName = 'bullhorn';
-        icon.classList.add('fad', `fa-${iconName}`);
-        const data = document.createTextNode(d.message);
-        const timestamp = document.createElement('div');
-        timestamp.classList.add('query-time');
-        timestamp.innerHTML = d.timestamp;
-        el.appendChild(icon);
-        el.appendChild(document.createTextNode(' '));
-        el.appendChild(data);
-        el.appendChild(timestamp);
+        const el = formatAnnouncement(d);
         messageList.appendChild(el);
         JDDT.initialise(messageList);
 

@@ -110,6 +110,8 @@ POST        /sysadmin/dummy-data-generation         @controllers.sysadmin.DummyD
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()
 POST        /sysadmin/test/upload                   @controllers.sysadmin.SysadminTestController.uploadFile()
+# https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
++nocsp
 GET         /sysadmin/test/:id/download             @controllers.sysadmin.SysadminTestController.downloadFile(id: UUID)
 
 +nocsrf

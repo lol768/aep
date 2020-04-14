@@ -95,7 +95,8 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: false,
       text: 'Started a moment ago. 3 hours and 45 minutes remaining.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
   });
 
