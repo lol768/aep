@@ -126,7 +126,7 @@ object AssessmentsController {
       "departmentCode" -> departmentCodeFieldMapping,
       "sequence" -> nonEmptyText,
       "startTime" -> startTimeFieldMapping,
-      "students" -> existing.map(_ => ignored(Set.empty[UniversityID])).getOrElse(studentsFieldMapping),
+      "students" -> existing.filter(_.tabulaAssessmentId.nonEmpty).map(_ => ignored(Set.empty[UniversityID])).getOrElse(studentsFieldMapping),
       "title" -> nonEmptyText,
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
