@@ -12,9 +12,9 @@ import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{DaoRunner, UploadedFileDao}
 import javax.inject.{Inject, Named, Singleton}
 import play.api.libs.json.Json
-import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.core.system.AuditLogContext
+import warwick.core.helpers.{JavaTime, ServiceResults}
+import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.{TimingCategories, TimingContext, TimingService}
 import warwick.fileuploads.{UploadedFile, UploadedFileSave}
 import warwick.objectstore.ObjectStorageService

@@ -14,6 +14,7 @@ import services.{AssessmentClientNetworkActivityService, StudentAssessmentServic
 import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
 
@@ -112,8 +113,11 @@ class WebSocketActor @Inject() (
                 rtt = networkInformation.rtt,
                 `type` = networkInformation.`type`,
                 studentAssessmentId = assessmentId,
-                JavaTime.offsetDateTime)
-            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
+                localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
+                timestamp = JavaTime.offsetDateTime,
+              )
+
+            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
               .recover {
                 case e: Exception =>
                   log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment $assessmentId")
