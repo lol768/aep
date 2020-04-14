@@ -16,6 +16,8 @@ import msToHumanReadable from './time-helper';
  * @property {boolean} hasFinalised - have answers been submitted and finalised
  * @property {millis} extraTimeAdjustment - any reasonable adjustment the user has
  * @property {boolean} showTimeRemaining - should the time remaining be displayed
+ * @property {string} progressState - the ProgressState value
+ * @property {string} submissionState - the SubmissionState value
  */
 
 /**
@@ -30,6 +32,11 @@ let nodes;
 // Pre-parse data-rendering JSON so it can be easily re-used (or even modified over time)
 let nodeData = {};
 
+export const SubmissionState = {
+  None: Symbol('None'),
+  OnTime: Symbol('OnTime'),
+  Late: Symbol('Late'),
+}
 
 /** */
 function clearWarning({ parentElement }) {
@@ -89,6 +96,7 @@ export function calculateTimingInfo(data, now) {
     hasFinalised,
     extraTimeAdjustment,
     showTimeRemaining,
+    submissionState
   } = data;
 
   const hasWindowPassed = now > windowEnd;
@@ -203,6 +211,9 @@ export function receiveSocketData(d) {
         };
         domRefresh(node, now);
       }
+
+      // TODO tidy up how we manipulate other parts of the page
+      // (may want to manipulate the file upload section to warn about lateness)
 
       node = document.querySelector(`.timeline[data-id="${id}"]`);
       if (node) {

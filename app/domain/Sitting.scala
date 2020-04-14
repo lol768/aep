@@ -2,7 +2,7 @@ package domain
 
 import java.time.{Duration, OffsetDateTime}
 
-import domain.BaseSitting.ProgressState
+import domain.BaseSitting.{ProgressState, SubmissionState}
 import enumeratum.{EnumEntry, PlayEnum}
 import views.assessment.AssessmentTimingUpdate
 import warwick.core.helpers.JavaTime
@@ -44,15 +44,19 @@ sealed trait BaseSitting {
     d.plus(Assessment.lateSubmissionPeriod)
   }
 
-  lazy val onTimeEnd: Option[OffsetDateTime] = for {
-    start <- studentAssessment.startTime
-    duration <- onTimeDuration
-  } yield start.plus(duration)
+  /** The latest that you can submit and still be considered on time */
+  lazy val onTimeEnd: Option[OffsetDateTime] =
+    for {
+      start <- studentAssessment.startTime
+      duration <- onTimeDuration
+    } yield start.plus(duration)
 
-  lazy val lateEnd: Option[OffsetDateTime] = for {
-    start <- studentAssessment.startTime
-    duration <- lateDuration
-  } yield start.plus(duration)
+  /** The latest that you can submit _at all_ */
+  lazy val lateEnd: Option[OffsetDateTime] =
+    for {
+      start <- studentAssessment.startTime
+      duration <- lateDuration
+    } yield start.plus(duration)
 
   lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
 
@@ -76,8 +80,16 @@ sealed trait BaseSitting {
       extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
       showTimeRemaining = duration.isDefined,
       progressState = getProgressState,
+      submissionState = getSubmissionState,
     )
   }
+
+  def getSubmissionState: SubmissionState =
+    studentAssessment.submissionTime match {
+      case Some(submitTime) if onTimeEnd.exists(submitTime.isAfter) => SubmissionState.OnTime
+      case None => SubmissionState.None
+      case _ => SubmissionState.Late
+    }
 
   def getProgressState: Option[ProgressState] = {
     val now = JavaTime.offsetDateTime
@@ -157,6 +169,21 @@ object BaseSitting {
     }
 
     val values: IndexedSeq[ProgressState] = findValues
+  }
+
+  /**
+    * Describes how the student's currently submitted files will be considered,
+    * if they don't upload any further files.
+    *
+    * Unlike progress state, this doesn't change over time - if your files are
+    * on time, they stay like that, unless you upload more files.
+    */
+  sealed abstract class SubmissionState(val label: String) extends EnumEntry
+  object SubmissionState extends PlayEnum[SubmissionState] {
+    case object None extends SubmissionState(label = "None")
+    case object OnTime extends SubmissionState(label = "On time")
+    case object Late extends SubmissionState(label = "Late")
+    val values: IndexedSeq[SubmissionState] = findValues
   }
 
 }
