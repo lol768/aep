@@ -46,15 +46,16 @@ class AnnouncementAndQueriesController @Inject()(
       tabulaDepartmentService.getDepartments,
       messageService.findByStudentAssessment(assessmentId, universityId),
       announcementService.getByAssessmentId(assessmentId),
-      studentAssessmentService.getMetadata(universityId, assessmentId),
+      studentAssessmentService.get(universityId, assessmentId),
       studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId))
     ).successMap {
-      case (departments, queries, announcements, studentAssessmentMetadata, profile) =>
-        val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery)).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
+      case (departments, queries, announcements, studentAssessment, profile) =>
+        val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery))
+          .sortBy(_.date)(Ordering[OffsetDateTime].reverse)
         val student = Map(universityId -> profile)
         Ok(views.html.invigilation.studentQueries(
           req.assessment,
-          studentAssessmentMetadata,
+          studentAssessment,
           announcementsAndQueries,
           student,
           department = departments.find(_.code == req.assessment.departmentCode.string),
