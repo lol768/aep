@@ -3,7 +3,7 @@ package domain
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
-import helpers.LenientTimezoneNameParsing.LenientZoneId
+import helpers.LenientTimezoneNameParsing._
 import play.api.libs.json.{Json, Writes}
 
 case class AssessmentClientNetworkActivity (
