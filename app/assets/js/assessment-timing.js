@@ -153,7 +153,7 @@ export function calculateTimingInfo(data, now) {
     warning = true;
     hourglassSpins = true;
   } else if (timeUntilEndOfWindow > 0) {
-    text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    text = `This assessment opened at ${new JDDT(windowStart).localString(false)}, and closes ${new JDDT(windowEnd).localString(true)}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
     if (timeUntilLastRecommendedStart > 0) {
       text += ` To give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
     }
