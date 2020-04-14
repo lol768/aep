@@ -15,8 +15,8 @@ class ErrorsControllerTest extends PlaySpec with Results {
         "process an error with all properties" in {
             val error = JavaScriptError(
                 message = Option("Error message"),
-                line = Option(12),
-                column = Option(345),
+                column = Option(12),
+                line = Option(345),
                 source = Option("sourcefile.js"),
                 pageUrl = Option("https://example.com/broken-page"),
                 stack = Option("TypeError: beans is not defined\nThere are no beans"),
