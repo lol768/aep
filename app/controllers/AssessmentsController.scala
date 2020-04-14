@@ -23,7 +23,7 @@ object AssessmentsController {
       "startTime" -> sitting.assessment.startTime,
       "lastAllowedStartTime" -> sitting.assessment.lastAllowedStartTime,
       "startedTime" -> sitting.studentAssessment.startTime,
-      "finalisedTime" -> sitting.studentAssessment.finaliseTime,
+      "finalisedTime" -> sitting.finalisedTime,
       "finalised" -> sitting.finalised
     )
 

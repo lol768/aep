@@ -192,6 +192,8 @@ object Assessment {
   // Updated in OE-148
   val lateSubmissionPeriod: Duration = Duration.ofHours(2)
 
+  val uploadGraceDuration: Duration = Duration.ofMinutes(45)
+
   private[domain] val window: Duration = Duration.ofHours(24)
 
   sealed trait State extends EnumEntry {

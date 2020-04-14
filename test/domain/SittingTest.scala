@@ -49,7 +49,7 @@ class SittingTest extends PlaySpec with MockitoSugar {
       inSeat = true,
       startTime = studentStart,
       extraTimeAdjustment = None,
-      finaliseTime = None,
+      explicitFinaliseTime = None,
       uploadedFiles = uploadedFiles
     )
 

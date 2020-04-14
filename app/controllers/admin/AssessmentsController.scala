@@ -263,7 +263,7 @@ class AssessmentsController @Inject()(
                 inSeat = false,
                 startTime = None,
                 extraTimeAdjustment = None,
-                finaliseTime = None,
+                explicitFinaliseTime = None,
                 uploadedFiles = Nil,
               )
             ))
@@ -353,7 +353,7 @@ class AssessmentsController @Inject()(
                       inSeat = false,
                       startTime = None,
                       extraTimeAdjustment = None,
-                      finaliseTime = None,
+                      explicitFinaliseTime = None,
                       uploadedFiles = Nil,
                     )
                   }

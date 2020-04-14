@@ -12,9 +12,9 @@ sealed trait BaseStudentAssessment {
   val inSeat: Boolean
   val startTime: Option[OffsetDateTime]
   val extraTimeAdjustment: Option[Duration]
-  val finaliseTime: Option[OffsetDateTime]
+  val explicitFinaliseTime: Option[OffsetDateTime]
 
-  val hasFinalised: Boolean = finaliseTime.nonEmpty
+  val hasExplicitlyFinalised: Boolean = explicitFinaliseTime.nonEmpty
 
   val mostRecentFileUpload: Option[OffsetDateTime]
 
@@ -32,7 +32,7 @@ case class StudentAssessment(
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],
   extraTimeAdjustment: Option[Duration],
-  finaliseTime: Option[OffsetDateTime],
+  explicitFinaliseTime: Option[OffsetDateTime],
   uploadedFiles: Seq[UploadedFile]
 ) extends BaseStudentAssessment {
 

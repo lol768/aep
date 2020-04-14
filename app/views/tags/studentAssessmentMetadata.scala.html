@@ -11,7 +11,11 @@
         <dd>@tags.localisedDatetime(assessment.studentAssessment.startTime.get)</dd>
 
         <dt>Finished at</dt>
-        <dd>@tags.localisedDatetime(assessment.studentAssessment.finaliseTime.get)</dd>
+        @assessment.studentAssessment.submissionTime.map { time =>
+            <dd>@tags.localisedDatetime(time)</dd>
+        }.getOrElse {
+            <dd><span class="text-danger">(Missing)</span></dd>
+        }
     } else {
         @assessment.assessment.startTime.map { startTime =>
             @assessment.assessment.lastAllowedStartTime.map { end =>

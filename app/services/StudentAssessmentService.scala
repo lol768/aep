@@ -30,6 +30,7 @@ trait StudentAssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
+  def sittingsByAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
   def getSittingsMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]]
   def getSittingsMetadata(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]]
@@ -75,18 +76,25 @@ class StudentAssessmentServiceImpl @Inject()(
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
 
+  override def sittingsByAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] =
+    daoRunner.run(dao.loadByAssessmentIdWithUploadedFiles(assessmentId))
+      .map(inflateRowsWithUploadedFiles)
+      .flatMap(convertToSittings)
+
   override def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
     daoRunner.run(dao.loadByUniversityIdWithUploadedFiles(universityId))
       .map(inflateRowsWithUploadedFiles)
-      .flatMap { studentAssessments =>
-        val saIds = studentAssessments.map(_.assessmentId)
-        ServiceResults.zip(
-          assessmentService.getByIds(saIds).successMapTo(_.map(a => a.id -> a).toMap),
-          getDeclarations(saIds).successMapTo(_.map(d => d.studentAssessmentId -> d).toMap)
-        ).map(_.map { case (assessmentsMap, declarationsMap) =>
-          studentAssessments.map(sa => Sitting(sa, assessmentsMap(sa.assessmentId), declarationsMap.getOrElse(sa.id, Declarations(sa.id))))
-        })
-      }
+      .flatMap(convertToSittings)
+  }
+
+  private def convertToSittings(studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
+    val saIds = studentAssessments.map(_.assessmentId).distinct
+    ServiceResults.zip(
+      assessmentService.getByIds(saIds).successMapTo(_.map(a => a.id -> a).toMap),
+      getDeclarations(saIds).successMapTo(_.map(d => d.studentAssessmentId -> d).toMap)
+    ).map(_.map { case (assessmentsMap, declarationsMap) =>
+      studentAssessments.map(sa => Sitting(sa, assessmentsMap(sa.assessmentId), declarationsMap.getOrElse(sa.id, Declarations(sa.id))))
+    })
   }
 
   override def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]] = {
@@ -270,7 +278,7 @@ class StudentAssessmentServiceImpl @Inject()(
         inSeat = studentAssessment.inSeat,
         startTime = studentAssessment.startTime,
         extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
-        finaliseTime = studentAssessment.finaliseTime,
+        finaliseTime = studentAssessment.explicitFinaliseTime,
         uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
         created = timestamp,
         version = timestamp,
@@ -286,7 +294,7 @@ class StudentAssessmentServiceImpl @Inject()(
             updated <- dao.update(existingSA.copy(
               inSeat = studentAssessment.inSeat,
               startTime = studentAssessment.startTime,
-              finaliseTime = studentAssessment.finaliseTime,
+              finaliseTime = studentAssessment.explicitFinaliseTime,
               uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
             ))
             withUploadedFiles <- dao.loadWithUploadedFiles(updated.studentId, updated.assessmentId)
@@ -300,7 +308,7 @@ class StudentAssessmentServiceImpl @Inject()(
             inSeat = studentAssessment.inSeat,
             startTime = studentAssessment.startTime,
             extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
-            finaliseTime = studentAssessment.finaliseTime,
+            finaliseTime = studentAssessment.explicitFinaliseTime,
             uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
             created = timestamp,
             version = timestamp,
