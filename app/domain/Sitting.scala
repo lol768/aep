@@ -1,6 +1,6 @@
 package domain
 
-import java.time.Duration
+import java.time.{Duration, OffsetDateTime}
 
 import domain.BaseSitting.ProgressState
 import enumeratum.{EnumEntry, PlayEnum}
@@ -46,11 +46,11 @@ sealed trait BaseSitting {
 
   lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
 
-  def canModify: Boolean = studentAssessment.startTime.exists(startTime =>
+  def canModify(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = studentAssessment.startTime.exists(startTime =>
     lateDuration.exists { d =>
       !finalised &&
-        startTime.plus(d).isAfter(JavaTime.offsetDateTime) &&
-        !assessment.hasLastAllowedStartTimePassed
+        startTime.plus(d).isAfter(referenceDate) &&
+        !assessment.hasLastAllowedStartTimePassed(referenceDate)
     }
   )
 
@@ -75,7 +75,7 @@ sealed trait BaseSitting {
       if (assessmentStartTime.isAfter(now)) {
         AssessmentNotYetOpen
       } else if (studentAssessment.startTime.isEmpty) {
-        if (assessment.hasLastAllowedStartTimePassed) {
+        if (assessment.hasLastAllowedStartTimePassed()) {
           NoShow
         } else {
           AssessmentOpenNotStarted

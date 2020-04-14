@@ -130,8 +130,8 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   private def assertTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
-    require(storedAssessment.hasStartTimePassed, "Cannot do assessment, too early")
-    require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot do assessment, too late")
+    require(storedAssessment.hasStartTimePassed(), "Cannot do assessment, too early")
+    require(!storedAssessment.hasLastAllowedStartTimePassed(), "Cannot do assessment, too late")
   }
 
   private def hasAcceptedDeclarations(storedDeclarations: Option[StoredDeclarations]): Future[Unit] = Future.successful {
@@ -280,12 +280,15 @@ class StudentAssessmentServiceImpl @Inject()(
     audit.audit(Operation.StudentAssessment.UpdateStudentAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)) {
       daoRunner.run(dao.get(studentAssessment.studentId, studentAssessment.assessmentId)).flatMap { result =>
         result.map { existingSA =>
-          daoRunner.run(dao.update(existingSA.copy(
-            inSeat = studentAssessment.inSeat,
-            startTime = studentAssessment.startTime,
-            finaliseTime = studentAssessment.finaliseTime,
-            uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
-          )))
+          daoRunner.run(for {
+            updated <- dao.update(existingSA.copy(
+              inSeat = studentAssessment.inSeat,
+              startTime = studentAssessment.startTime,
+              finaliseTime = studentAssessment.finaliseTime,
+              uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+            ))
+            withUploadedFiles <- dao.loadWithUploadedFiles(updated.studentId, updated.assessmentId)
+          } yield inflateRowWithUploadedFiles(withUploadedFiles).get)
         }.getOrElse {
           val timestamp = JavaTime.offsetDateTime
           daoRunner.run(dao.insert(StoredStudentAssessment(
@@ -299,9 +302,8 @@ class StudentAssessmentServiceImpl @Inject()(
             uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
             created = timestamp,
             version = timestamp,
-          )))
-        }.map(_.asStudentAssessment(Map.empty)) // We wouldn't upsert something that was in progress so it won't have files
-          .map(ServiceResults.success)
+          ))).map(_.asStudentAssessment(Map.empty))
+        }.map(ServiceResults.success)
       }
     }
 

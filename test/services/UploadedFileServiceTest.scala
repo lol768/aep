@@ -25,7 +25,7 @@ class UploadedFileServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterE
       uploadedFileService.store(specialJPG.temporaryUploadedFile.in, specialJPG.uploadedFileSave).futureValue
       uploadedFileService.store(homeOfficeStatementPDF.temporaryUploadedFile.in, homeOfficeStatementPDF.uploadedFileSave).futureValue
 
-      val list = uploadedFileService.list.serviceValue
+      val list = uploadedFileService.listWithoutOwner().serviceValue
 
       list must have size(2)
       list.map(_.fileName).toSet mustBe Set(specialJPG.path, homeOfficeStatementPDF.path)
@@ -35,7 +35,7 @@ class UploadedFileServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterE
       val uploadedFile = uploadedFileService.store(specialJPG.temporaryUploadedFile.in, specialJPG.uploadedFileSave).futureValue
       uploadedFileService.delete(uploadedFile.map(_.id).getOrElse(fileLookupFailed)).futureValue
 
-      uploadedFileService.list.futureValue.exists(_.isEmpty) mustBe true
+      uploadedFileService.listWithoutOwner().futureValue.exists(_.isEmpty) mustBe true
     }
   }
 

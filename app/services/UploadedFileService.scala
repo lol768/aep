@@ -24,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[UploadedFileServiceImpl])
 trait UploadedFileService {
-  def list()(implicit t: TimingContext): Future[ServiceResult[Seq[UploadedFile]]]
+  def listWithoutOwner()(implicit t: TimingContext): Future[ServiceResult[Seq[UploadedFile]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[UploadedFile]]
   def get(ids: Seq[UUID])(implicit t: TimingContext): Future[Seq[UploadedFile]]
 
@@ -49,8 +49,8 @@ class UploadedFileServiceImpl @Inject()(
 
   import timing._
 
-  override def list()(implicit t: TimingContext): Future[ServiceResult[Seq[UploadedFile]]] =
-    daoRunner.run(dao.all).map { files => ServiceResults.success(files.map(_.asUploadedFile)) }
+  override def listWithoutOwner()(implicit t: TimingContext): Future[ServiceResult[Seq[UploadedFile]]] =
+    daoRunner.run(dao.allWithoutOwner).map { files => ServiceResults.success(files.map(_.asUploadedFile)) }
 
   override def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[UploadedFile]] =
     daoRunner.run(dao.find(id).map{ _.map { f =>
