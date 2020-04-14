@@ -117,9 +117,8 @@ export function calculateTimingInfo(data, now) {
   const timeSinceStart = inProgress ? Math.max(0, now - start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
-  // eslint-disable-next-line max-len
-  const timeUntilLastRecommendedStart = (!inProgress && !hasFinalised) ? lastRecommendedStart - now : null;
-
+  const timeUntilLastRecommendedStart = (!inProgress && !hasFinalised)
+    ? lastRecommendedStart - now : null;
 
   let text;
   let warning = false;
@@ -129,7 +128,6 @@ export function calculateTimingInfo(data, now) {
   } else if (hasStarted) {
     if (timeRemaining > 0) {
       hourglassSpins = true;
-      // You started 13 minutes ago. You have 1 hour and 46 minutes remaining until you should upload your answers.
       text = `You started ${msToHumanReadable(timeSinceStart)} ago.`;
       if (showTimeRemaining) {
         text += ` You have ${msToHumanReadable(timeRemaining)} remaining until you should upload your answers`;
