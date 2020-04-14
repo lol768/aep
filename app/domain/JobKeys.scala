@@ -2,21 +2,21 @@ package domain
 
 import org.quartz.JobKey
 
-sealed trait ByName {
-  val name: String
-
-  def key: JobKey = new JobKey(name, "DEFAULT")
-
-  def healthCheckJobName: String
-
-}
-
 object JobKeys {
-
-  object ImportAssessmentJob extends ByName {
-    val name = "ImportAssessment"
-    val healthCheckJobName = "import-assessments"
+  sealed trait ByName {
+    val name: String
+    def key: JobKey = new JobKey(name, "DEFAULT")
+    def healthCheckJobName: String
   }
 
+  case object ImportAssessmentJob extends ByName {
+    override val name = "ImportAssessment"
+    override val healthCheckJobName = "import-assessments"
+  }
+
+  case object SendAssessmentRemindersJob extends ByName {
+    override val name = "SendAssessmentReminders"
+    override val healthCheckJobName = "send-assessment-reminders"
+  }
 }
 

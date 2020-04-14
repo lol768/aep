@@ -2,6 +2,8 @@ package services
 
 import domain.dao.AbstractDaoTest
 import helpers.CleanUpDatabaseAfterEachTest
+import org.mockito.Mockito.reset
+import system.BindingOverrides
 import warwick.core.system.AuditLogContext
 import warwick.sso.Usercode
 
@@ -13,6 +15,13 @@ class DataGenerationServiceTest extends AbstractDaoTest with CleanUpDatabaseAfte
   private lazy val dataGenerationService = get[DataGenerationService]
   private lazy val assessmentService = get[AssessmentService]
   private lazy val studentAssessmentService = get[StudentAssessmentService]
+
+  override def afterEach(): Unit = {
+    super.afterEach()
+
+    // Reset the RNG back to how it would be at the start of the test
+    dataGeneration.random.setSeed(BindingOverrides.fixedRandomSeed)
+  }
 
   "DataGenerationService" should {
     "Create the requested number of randomly generated assessments in the database" in {
