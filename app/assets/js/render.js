@@ -56,4 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelectorAll('.studentAssessmentInfo').length > 0) {
     import('./studentAssessmentInfo');
   }
+
+  if (document.querySelector('div.notification-permission')) {
+    import('./notifications');
+  }
 });
