@@ -7,15 +7,15 @@ import actors.WebSocketActor.AssessmentAnnouncement
 import akka.Done
 import com.google.inject.ImplementedBy
 import domain.Announcement
+import domain.AuditEvent.{Operation, Target}
 import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.{AnnouncementDao, DaoRunner}
 import javax.inject.{Inject, Singleton}
+import play.api.libs.json.Json
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.core.system.AuditLogContext
+import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
-import warwick.core.helpers.ServiceResults.Implicits._
-import warwick.sso.UniversityID
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -25,7 +25,6 @@ trait AnnouncementService {
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Announcement]]
   def getByAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
   def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
-  def delete(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Done]]
 }
 
 @Singleton
@@ -37,23 +36,23 @@ class AnnouncementServiceImpl @Inject()(
   studentAssessmentService: StudentAssessmentService,
 )(implicit ec: ExecutionContext) extends AnnouncementService {
 
-  override def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] = {
-    val stored = StoredAnnouncement(
-      id = announcement.id,
-      assessmentId = announcement.assessment,
-      text = announcement.text,
-      created = announcement.created,
-      version = OffsetDateTime.now()
-    )
-    pubSubService.publish(
-      topic = announcement.assessment.toString,
-      AssessmentAnnouncement(announcement.text, announcement.created)
-    )
-    daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
-  }
+  override def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] =
+    auditService.audit(Operation.Assessment.MakeAnnouncement, announcement.assessment.toString, Target.Assessment, Json.obj("text" -> announcement.text)) {
+      val stored = StoredAnnouncement(
+        id = announcement.id,
+        assessmentId = announcement.assessment,
+        text = announcement.text,
+        created = announcement.created,
+        version = OffsetDateTime.now()
+      )
 
-  override def delete(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Done]] =
-    daoRunner.run(dao.delete(id)).map(_ => ServiceResults.success(Done))
+      pubSubService.publish(
+        topic = announcement.assessment.toString,
+        AssessmentAnnouncement(announcement.text, announcement.created)
+      )
+
+      daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
+    }
 
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]] =
     daoRunner.run(dao.all).map(_.map(_.asAnnouncement)).map(ServiceResults.success)
