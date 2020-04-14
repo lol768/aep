@@ -15,7 +15,6 @@ import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
 import JDDT from './jddt';
-import WebSocketConnection from './web-sockets';
 import initAnnouncements from './assessment-announcements';
 import initTiming from './assessment-timing';
 import showWSConnectivity from './ws-connectivity';
@@ -44,7 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
       import('./are-you-sure');
     }
     let websocket;
-    import('./web-sockets').then(() => {
+    import('./web-sockets').then((module) => {
+      const WebSocketConnection = module.default;
       websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`);
 
       initAnnouncements(websocket);

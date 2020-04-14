@@ -6,11 +6,12 @@
 @(
         announcementsAndQueries: Seq[AnnouncementOrQuery],
         students: Map[UniversityID, tabula.SitsProfile],
+        announcementOrQuery: String
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-<div class="query-container">
+<div class="@announcementOrQuery-container">
   @announcementsAndQueries.map { query =>
-    <div class="@if(query.isAnnouncement){announcement} else {query}">
+    <div class="@announcementOrQuery">
       <div class="query-user">
         @query.sender match {
           case Left(sender: String) => { @sender }
@@ -22,10 +23,10 @@
         }
       </div>
       <div class="query-text">
-      @nl2br(query.text)
+        @nl2br(query.text)
       </div>
       <div class="query-time">
-      @localisedDatetime(query.date)
+        @localisedDatetime(query.date)
       </div>
     </div>
   }
