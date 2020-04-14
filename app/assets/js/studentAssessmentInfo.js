@@ -1,9 +1,9 @@
 const INTERVAL_MS = 30 * 1000;
 
 const originalDocumentTitle = document.title;
-function updateDocumentTitle() {
+function updateDocumentTitle(el) {
   let prefix = '';
-  const titlePrefixElement = document.querySelector('[data-document-title-prefix]');
+  const titlePrefixElement = el.getElementsByClassName('sets-document-title-prefix')[0];
   if (titlePrefixElement) {
     prefix = titlePrefixElement.getAttribute('data-document-title-prefix');
   }
@@ -20,10 +20,10 @@ const refreshTable = () => setTimeout(() => {
     .then((response) => response.text())
     .then((responseText) => {
       el.innerHTML = responseText;
-      updateDocumentTitle();
+      updateDocumentTitle(el);
     });
   refreshTable();
 }, INTERVAL_MS);
 
 refreshTable();
-updateDocumentTitle();
+updateDocumentTitle(document);
