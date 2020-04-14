@@ -131,7 +131,6 @@ export function calculateTimingInfo(data, now) {
       }
     }
   } else if (timeUntilStart > 0) {
-    // You can start between 13:30 on Thursday 9th April and 13:30 on Friday 10th April Europe/London, in 23 hours and 35 minutes time.
     text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
     warning = true;
     hourglassSpins = true;
