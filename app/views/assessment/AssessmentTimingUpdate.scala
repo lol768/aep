@@ -3,8 +3,8 @@ package views.assessment
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
-import domain.BaseSitting.ProgressState
-import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue, Json, OWrites, Writes}
+import domain.BaseSitting.{ProgressState, SubmissionState}
+import play.api.libs.json._
 
 /** Message sent by Websocket to be processed by assessment-timing  */
 case class AssessmentTimingUpdate(
@@ -19,6 +19,7 @@ case class AssessmentTimingUpdate(
   extraTimeAdjustment: Option[Duration],
   showTimeRemaining: Boolean,
   progressState: Option[ProgressState],
+  submissionState: SubmissionState
 )
 
 object AssessmentTimingUpdate {

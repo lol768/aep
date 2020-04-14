@@ -5,16 +5,12 @@ import java.util.UUID
 
 import domain.Fixtures
 import domain.Fixtures.{studentAssessments, users}
-import domain.dao.{AbstractDaoTest, AssessmentDao, StudentAssessmentDao}
+import domain.dao.{AbstractDaoTest, AssessmentDao, StudentAssessmentDao, UploadedFileDao}
 import helpers.{CleanUpDatabaseAfterEachTest, DaoPatience}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.inject.guice.GuiceApplicationBuilder
-import services.sandbox.DataGeneration
-import system.BindingOverrides
 import uk.ac.warwick.util.core.DateTimeUtils
 import warwick.core.helpers.JavaTime
-import warwick.sso.User
 
 class ReportingServiceTest
   extends AbstractDaoTest
@@ -26,6 +22,7 @@ class ReportingServiceTest
 
   private lazy val assDao = get[AssessmentDao]
   private lazy val sittingDao = get[StudentAssessmentDao]
+  private lazy val fileDao = get[UploadedFileDao]
   private lazy val service = get[ReportingService]
 
   private val baseTime = LocalDateTime.of(2019, 4, 20, 0, 0, 0, 0)
@@ -64,6 +61,14 @@ class ReportingServiceTest
         sitting.copy(inSeat = true, startTime = Some(now.asOffsetDateTime))
       case unaltered => unaltered
     }
+
+    execWithCommit(DBIO.sequence(for {
+        sitting <- sittings
+        fileId <- sitting.uploadedFiles
+      } yield {
+        fileDao.insert(Fixtures.uploadedFiles.storedUploadedStudentAssessmentFile(sitting.id, fileId))
+      }
+    ))
 
     execWithCommit(DBIO.sequence(assessments.map(assDao.insert)) andThen DBIO.sequence(sittings.map(sittingDao.insert)))
 

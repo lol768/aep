@@ -26,12 +26,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[StudentAssessmentServiceImpl])
 trait StudentAssessmentService {
-  def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessment]]]
+  def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessment]]
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
-  def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]]
   def getSittingsMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]]
   def getSittingsMetadata(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
@@ -57,10 +56,14 @@ class StudentAssessmentServiceImpl @Inject()(
   assessmentDao: AssessmentDao,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
 
-  override def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessment]]] =
+
+  override def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessment]] =
     daoRunner.run(dao.loadWithUploadedFiles(studentId, assessmentId))
       .map(inflateRowWithUploadedFiles)
-      .map(ServiceResults.success)
+      .map {
+        case Some(f) => ServiceResults.success(f)
+        case None => noStudentAssessmentFound(assessmentId, studentId)
+      }
 
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
     daoRunner.run(dao.loadAllWithUploadedFiles)
@@ -102,29 +105,28 @@ class StudentAssessmentServiceImpl @Inject()(
     }
   }
 
-  override def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]] =
-    daoRunner.run(dao.get(universityId, assessmentId)).map(_.getOrElse(noStudentAssessmentFound(assessmentId, universityId)).asStudentAssessmentMetadata).map(ServiceResults.success)
-
   override def getSittingsMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]] =
     daoRunner.run(
       for {
-        studentAssessment <- dao.get(universityId, assessmentId)
+        studentAssessmentRows <- dao.loadWithUploadedFiles(universityId, assessmentId)
+        studentAssessment = inflateRowWithUploadedFiles(studentAssessmentRows)
         assessment <- assessmentDao.getById(assessmentId)
       } yield SittingMetadata(
-        studentAssessment.getOrElse(noStudentAssessmentFound(assessmentId, universityId))
-          .asStudentAssessmentMetadata,
+        studentAssessment.getOrElse(noStudentAssessmentFound(assessmentId, universityId)),
         assessment.getOrElse(noAssessmentFound(assessmentId))
-          .asAssessmentMetadata)
+          .asAssessmentMetadata
+      )
     ).map(ServiceResults.success)
 
   override def getSittingsMetadata(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]] = {
     daoRunner.run(
       for {
-        studentAssessments <- dao.getByUniversityId(universityId)
+        studentAssessmentRows <- dao.loadByUniversityIdWithUploadedFiles(universityId)
+        studentAssessments = StudentAssessmentService.inflateRowsWithUploadedFiles(studentAssessmentRows)
         assessments <- assessmentDao.getByIds(studentAssessments.map(_.assessmentId))
       } yield {
         val assessmentsMap = assessments.map(a => a.id -> a.asAssessmentMetadata).toMap
-        studentAssessments.map(sA => SittingMetadata(sA.asStudentAssessmentMetadata, assessmentsMap(sA.assessmentId)))
+        studentAssessments.map(sA => SittingMetadata(sA, assessmentsMap(sA.assessmentId)))
       }
     ).map(ServiceResults.success)
   }

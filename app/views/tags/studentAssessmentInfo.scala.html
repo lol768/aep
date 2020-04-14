@@ -50,7 +50,7 @@
             <td>Unknown department</td>
           }
           <td>
-            @md.getProgressState.map(_.label)
+            @md.getSummaryStatusLabel
           </td>
           <td>
             @md.studentAssessment.startTime.map {time =>
@@ -67,7 +67,7 @@
             @if(md.studentAssessment.hasFinalised) {
               <span class="text-muted">No information</span>
             } else {
-              @latestActivities.get(md.studentAssessment.studentAssessmentId).map { a =>
+              @latestActivities.get(md.studentAssessment.id).map { a =>
                 @if(a.isOnline) {
                   @a.signalStrength match {
                     case Some(i) if i >= 1 && i < 5 => {<i class="fad fa-signal-@i themed-duotone"></i>}
