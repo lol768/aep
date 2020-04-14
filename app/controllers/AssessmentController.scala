@@ -126,7 +126,7 @@ class AssessmentController @Inject()(
         if (request.sitting.finalised) {
           val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
-        } else if (!request.sitting.canModify) {
+        } else if (!request.sitting.canModify()) {
           val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
         } else {

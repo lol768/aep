@@ -1,4 +1,12 @@
 import log from './log';
+import { browserLocalTimezoneName } from './jddt';
+
+/*
+
+  If you're importing this directly, you probably want to stop, collaborate and instead import
+  central-web-socket which handles connecting a single instance of the connection for you.
+
+ */
 
 const RECONNECT_THRESHOLD = 500;
 
@@ -17,6 +25,8 @@ const defaultHeartbeat = (ws) => {
     studentAssessmentId = inProgressAssessmentElement.getAttribute('data-id');
   }
 
+  const localTimezoneName = browserLocalTimezoneName();
+
   const message = {
     type: 'NetworkInformation',
     data: {
@@ -26,6 +36,7 @@ const defaultHeartbeat = (ws) => {
       rtt,
       type,
       studentAssessmentId,
+      localTimezoneName,
     },
   };
 
@@ -54,6 +65,7 @@ export default class WebSocketConnection {
     this.onClose = onClose ? [onClose] : [];
     this.onData = onData ? [onData] : [];
     this.onHeartbeat = onHeartbeat ? [defaultHeartbeat, onHeartbeat] : [defaultHeartbeat];
+    this.dataLastReceivedAt = null;
   }
 
   add({
@@ -69,6 +81,8 @@ export default class WebSocketConnection {
   connect() {
     this.timeout = undefined;
     this.heartbeatTimeout = undefined;
+    this.dataLastReceivedAt = null;
+
     if (this.ws !== undefined) {
       if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
         // we don't need to reconnect
@@ -82,6 +96,7 @@ export default class WebSocketConnection {
 
     ws.onmessage = (d) => {
       if ('data' in d) {
+        this.dataLastReceivedAt = Date.now();
         this.onData.forEach((onData) => onData(JSON.parse(d.data)));
       }
     };
@@ -131,8 +146,15 @@ export default class WebSocketConnection {
   }
 
   sendHeartbeat() {
+    if (this.dataLastReceivedAt != null
+      && this.dataLastReceivedAt < Date.now() - HEARTBEAT_INTERVAL_MS) {
+      log('No data received in the last heartbeat window');
+      this.ws.dispatchEvent(new Event('error'));
+      return;
+    }
+
+    this.onHeartbeat.forEach((onHeartbeat) => onHeartbeat(this.ws));
     this.heartbeatTimeout = setTimeout(() => {
-      this.onHeartbeat.forEach((onHeartbeat) => onHeartbeat(this.ws));
       this.sendHeartbeat();
     }, HEARTBEAT_INTERVAL_MS);
   }

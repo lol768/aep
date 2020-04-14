@@ -2,23 +2,23 @@ package services
 
 import java.util.UUID
 
+import akka.Done
 import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
 import domain.AuditEvent._
 import domain._
-import StudentAssessmentService._
-import akka.Done
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
+import services.StudentAssessmentService._
 import slick.dbio.DBIO
 import system.routes.Types.UniversityID
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
-import warwick.core.system.AuditLogContext
+import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileSave
 
@@ -26,12 +26,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[StudentAssessmentServiceImpl])
 trait StudentAssessmentService {
-  def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessment]]]
+  def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessment]]
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
-  def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]]
   def getSittingsMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]]
   def getSittingsMetadata(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]]
   def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]]
@@ -57,23 +56,14 @@ class StudentAssessmentServiceImpl @Inject()(
   assessmentDao: AssessmentDao,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
 
-  private def inflateWithUploadedFiles(storedStudentAssessments: Seq[StoredStudentAssessment])(implicit t: TimingContext) =
-    uploadedFileService.get(storedStudentAssessments.flatMap(_.uploadedFiles)).map { uploadedFiles =>
-      storedStudentAssessments.map(_.asStudentAssessment(uploadedFiles.map(f => f.id -> f).toMap))
-    }
 
-  private def inflateWithUploadedFiles(storedStudentAssessment: StoredStudentAssessment)(implicit t: TimingContext) =
-    uploadedFileService.get(storedStudentAssessment.uploadedFiles).map { uploadedFiles =>
-      storedStudentAssessment.asStudentAssessment(uploadedFiles.map(f => f.id -> f).toMap)
-    }
-
-  override def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[StudentAssessment]]] = {
-    daoRunner.run(dao.get(studentId, assessmentId))
-      .flatMap(_.map(inflateWithUploadedFiles) match {
-        case Some(f) => f.map(Some(_))
-        case None => Future.successful(None)
-      }).map(ServiceResults.success)
-  }
+  override def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessment]] =
+    daoRunner.run(dao.loadWithUploadedFiles(studentId, assessmentId))
+      .map(inflateRowWithUploadedFiles)
+      .map {
+        case Some(f) => ServiceResults.success(f)
+        case None => noStudentAssessmentFound(assessmentId, studentId)
+      }
 
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
     daoRunner.run(dao.loadAllWithUploadedFiles)
@@ -115,36 +105,35 @@ class StudentAssessmentServiceImpl @Inject()(
     }
   }
 
-  override def getMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessmentMetadata]] =
-    daoRunner.run(dao.get(universityId, assessmentId)).map(_.getOrElse(noStudentAssessmentFound(assessmentId, universityId)).asStudentAssessmentMetadata).map(ServiceResults.success)
-
   override def getSittingsMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]] =
     daoRunner.run(
       for {
-        studentAssessment <- dao.get(universityId, assessmentId)
+        studentAssessmentRows <- dao.loadWithUploadedFiles(universityId, assessmentId)
+        studentAssessment = inflateRowWithUploadedFiles(studentAssessmentRows)
         assessment <- assessmentDao.getById(assessmentId)
       } yield SittingMetadata(
-        studentAssessment.getOrElse(noStudentAssessmentFound(assessmentId, universityId))
-          .asStudentAssessmentMetadata,
+        studentAssessment.getOrElse(noStudentAssessmentFound(assessmentId, universityId)),
         assessment.getOrElse(noAssessmentFound(assessmentId))
-          .asAssessmentMetadata)
+          .asAssessmentMetadata
+      )
     ).map(ServiceResults.success)
 
   override def getSittingsMetadata(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]] = {
     daoRunner.run(
       for {
-        studentAssessments <- dao.getByUniversityId(universityId)
+        studentAssessmentRows <- dao.loadByUniversityIdWithUploadedFiles(universityId)
+        studentAssessments = StudentAssessmentService.inflateRowsWithUploadedFiles(studentAssessmentRows)
         assessments <- assessmentDao.getByIds(studentAssessments.map(_.assessmentId))
       } yield {
         val assessmentsMap = assessments.map(a => a.id -> a.asAssessmentMetadata).toMap
-        studentAssessments.map(sA => SittingMetadata(sA.asStudentAssessmentMetadata, assessmentsMap(sA.assessmentId)))
+        studentAssessments.map(sA => SittingMetadata(sA, assessmentsMap(sA.assessmentId)))
       }
     ).map(ServiceResults.success)
   }
 
   private def assertTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
-    require(storedAssessment.hasStartTimePassed, "Cannot do assessment, too early")
-    require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot do assessment, too late")
+    require(storedAssessment.hasStartTimePassed(), "Cannot do assessment, too early")
+    require(!storedAssessment.hasLastAllowedStartTimePassed(), "Cannot do assessment, too late")
   }
 
   private def hasAcceptedDeclarations(storedDeclarations: Option[StoredDeclarations]): Future[Unit] = Future.successful {
@@ -157,7 +146,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def startAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.StartAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
+    audit.audit(Operation.StudentAssessment.StartAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -186,7 +175,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def finishAssessment(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.FinishAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
+    audit.audit(Operation.StudentAssessment.FinishAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)){
       daoRunner.run(
         for {
           storedStudentAssessmentOption <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -217,7 +206,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   override def attachFilesToAssessment(studentAssessment: StudentAssessment, files: Seq[(ByteSource, UploadedFileSave)])(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] =
-    audit.audit(Operation.Assessment.AttachFilesToAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "files" -> files.map(_._2.fileName))) {
+    audit.audit(Operation.StudentAssessment.AttachFilesToAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "files" -> files.map(_._2.fileName))) {
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -246,7 +235,7 @@ class StudentAssessmentServiceImpl @Inject()(
     }
 
   override def deleteAttachedFile(studentAssessment: StudentAssessment, file: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    audit.audit(Operation.Assessment.DeleteAttachedAssessmentFile, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "fileId" -> file.toString)) {
+    audit.audit(Operation.StudentAssessment.DeleteAttachedAssessmentFile, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string, "fileId" -> file.toString)) {
       daoRunner.run(
         for {
           storedStudentAssessment <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
@@ -270,54 +259,61 @@ class StudentAssessmentServiceImpl @Inject()(
     }
   }
 
-  override def insert(studentAssessments: Set[StudentAssessment])(implicit ctx: AuditLogContext): Future[ServiceResult[Set[StudentAssessment]]] = {
-    val timestamp = JavaTime.offsetDateTime
-    daoRunner.run(dao.insertAll(studentAssessments.map(studentAssessment => StoredStudentAssessment(
-      id = studentAssessment.id,
-      assessmentId = studentAssessment.assessmentId,
-      studentId = studentAssessment.studentId,
-      inSeat = studentAssessment.inSeat,
-      startTime = studentAssessment.startTime,
-      extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
-      finaliseTime = studentAssessment.finaliseTime,
-      uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
-      created = timestamp,
-      version = timestamp,
-    )))).flatMap(ssa => inflateWithUploadedFiles(ssa))
-      .map(r => ServiceResults.success(r.toSet))
-  }
-
-  override def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] = {
-    daoRunner.run(dao.get(studentAssessment.studentId, studentAssessment.assessmentId)).flatMap { result =>
-      result.map { existingSA =>
-        daoRunner.run(dao.update(existingSA.copy(
-          inSeat = studentAssessment.inSeat,
-          startTime = studentAssessment.startTime,
-          finaliseTime = studentAssessment.finaliseTime,
-          uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
-        )))
-      }.getOrElse {
-        val timestamp = JavaTime.offsetDateTime
-        daoRunner.run(dao.insert(StoredStudentAssessment(
-          id = studentAssessment.id,
-          assessmentId = studentAssessment.assessmentId,
-          studentId = studentAssessment.studentId,
-          inSeat = studentAssessment.inSeat,
-          startTime = studentAssessment.startTime,
-          extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
-          finaliseTime = studentAssessment.finaliseTime,
-          uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
-          created = timestamp,
-          version = timestamp,
-        )))
-      }.flatMap(ssa => inflateWithUploadedFiles(ssa))
-        .map(ServiceResults.success)
+  override def insert(studentAssessments: Set[StudentAssessment])(implicit ctx: AuditLogContext): Future[ServiceResult[Set[StudentAssessment]]] =
+    if (studentAssessments.isEmpty) Future.successful(ServiceResults.success(Set.empty))
+    else audit.audit(Operation.Assessment.CreateStudentAssessments, studentAssessments.head.assessmentId.toString, Target.Assessment, Json.obj("universityId" -> studentAssessments.map(_.studentId.string))) {
+      val timestamp = JavaTime.offsetDateTime
+      daoRunner.run(dao.insertAll(studentAssessments.map(studentAssessment => StoredStudentAssessment(
+        id = studentAssessment.id,
+        assessmentId = studentAssessment.assessmentId,
+        studentId = studentAssessment.studentId,
+        inSeat = studentAssessment.inSeat,
+        startTime = studentAssessment.startTime,
+        extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+        finaliseTime = studentAssessment.finaliseTime,
+        uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+        created = timestamp,
+        version = timestamp,
+      )))).map(_.map(_.asStudentAssessment(Map.empty)))
+        .map(r => ServiceResults.success(r.toSet))
     }
-  }
+
+  override def upsert(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[StudentAssessment]] =
+    audit.audit(Operation.StudentAssessment.UpdateStudentAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)) {
+      daoRunner.run(dao.get(studentAssessment.studentId, studentAssessment.assessmentId)).flatMap { result =>
+        result.map { existingSA =>
+          daoRunner.run(for {
+            updated <- dao.update(existingSA.copy(
+              inSeat = studentAssessment.inSeat,
+              startTime = studentAssessment.startTime,
+              finaliseTime = studentAssessment.finaliseTime,
+              uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+            ))
+            withUploadedFiles <- dao.loadWithUploadedFiles(updated.studentId, updated.assessmentId)
+          } yield inflateRowWithUploadedFiles(withUploadedFiles).get)
+        }.getOrElse {
+          val timestamp = JavaTime.offsetDateTime
+          daoRunner.run(dao.insert(StoredStudentAssessment(
+            id = studentAssessment.id,
+            assessmentId = studentAssessment.assessmentId,
+            studentId = studentAssessment.studentId,
+            inSeat = studentAssessment.inSeat,
+            startTime = studentAssessment.startTime,
+            extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+            finaliseTime = studentAssessment.finaliseTime,
+            uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+            created = timestamp,
+            version = timestamp,
+          ))).map(_.asStudentAssessment(Map.empty))
+        }.map(ServiceResults.success)
+      }
+    }
 
   override def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] =
-    daoRunner.run(dao.delete(studentAssessment.studentId, studentAssessment.assessmentId))
-      .map(_ => ServiceResults.success(Done))
+    audit.audit(Operation.StudentAssessment.DeleteStudentAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)) {
+      daoRunner.run(dao.delete(studentAssessment.studentId, studentAssessment.assessmentId))
+        .map(_ => ServiceResults.success(Done))
+    }
 
   override def getOrDefaultDeclarations(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Declarations]] =
     daoRunner.run(dao.getDeclarations(studentAssessmentId))
@@ -330,7 +326,7 @@ class StudentAssessmentServiceImpl @Inject()(
       .map(ServiceResults.success)
 
   override def upsert(decs: Declarations)(implicit ctx: AuditLogContext): Future[ServiceResult[Declarations]] = {
-    audit.audit(Operation.Assessment.MakeDeclarations, decs.studentAssessmentId.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
+    audit.audit(Operation.StudentAssessment.MakeDeclarations, decs.studentAssessmentId.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
       daoRunner.run(dao.getDeclarations(decs.studentAssessmentId)).flatMap { result =>
         result.map { existingDeclaration =>
           daoRunner.run(dao.update(existingDeclaration.copy(

@@ -15,7 +15,7 @@
 
 @defining(form.asInstanceOf[Form[AssessmentFormData]]) { implicit implicitForm =>
   @adminLayout(title = s"Assessment for ${assessment.title} (${assessment.moduleCode})", extraClasses = Seq("grey-nopad")) {
-    @if(assessment.hasStartTimePassed) {
+    @if(assessment.hasStartTimePassed()) {
       <div class="alert alert-info">@Messages("error.assessment.started")</div>
     }
     @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.update(assessment.id), Symbol("enctype") -> "multipart/form-data") { implicit vfc =>

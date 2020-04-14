@@ -1,13 +1,18 @@
-import { calculateTimingInfo } from 'assessment-timing';
+import { calculateTimingInfo, SubmissionState } from 'assessment-timing';
 
 const MINUTE = 60000;
 
 const BASE_TIME = 1555000000000; // Thu Apr 11 2019 17:26:40
 
+const dataDefaults = {
+  submissionState: SubmissionState.None
+}
+
 describe('calculateTimingInfo', () => {
 
   it('hides start button before window opens', () => {
     const result = calculateTimingInfo({
+      ...dataDefaults,
       windowStart: BASE_TIME + 90*MINUTE,
       windowEnd: BASE_TIME + 360*MINUTE,
       // start: null,
@@ -20,36 +25,42 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: true,
       text: 'You can start in 1 hour and 30 minutes.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     })
   });
 
   it('shows start button inside window', () => {
     const result = calculateTimingInfo({
+      ...dataDefaults,
       windowStart: BASE_TIME - 10*MINUTE,
       windowEnd: BASE_TIME + 350*MINUTE,
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
       text: '5 hours and 50 minutes left to start.',
-      allowStart: true
+      allowStart: true,
+      hourglassSpins: true
     })
   });
 
   it('prevents start after end of last start time', () => {
     const result = calculateTimingInfo({
+      ...dataDefaults,
       windowStart: BASE_TIME - 300*MINUTE,
       windowEnd: BASE_TIME - 10*MINUTE,
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
       text: 'The assessment window has now passed.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     })
   });
 
   it('shows time remaining', () => {
     const data = {
+      ...dataDefaults,
       windowStart: BASE_TIME + 90*MINUTE,
       windowEnd: BASE_TIME + 360*MINUTE,
       start: BASE_TIME - 10*MINUTE,
@@ -63,7 +74,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
 
     // extraTimeAdjustment used only for formatting - it's already included in the end date.
@@ -71,13 +83,15 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining (including 21 minutes additional time).',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
   });
 
   it('shows time remaining now is slightly before start', () => {
     const now = 1586461491323;
     const result = calculateTimingInfo({
+        ...dataDefaults,
         windowStart : 1586461200000,
         windowEnd : 1586547600000,
         start : 1586461491324,
@@ -90,12 +104,57 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: false,
       text: 'Started a moment ago. 3 hours and 45 minutes remaining.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
+    });
+  });
+
+  it('explains when you submitted on-time but currently in the Late period', () => {
+    const data = {
+      ...dataDefaults,
+      start: BASE_TIME - 125*MINUTE,
+      end: BASE_TIME - 5*MINUTE,
+      hasStarted: true,
+      hasFinalised: false,
+      extraTimeAdjustment: null,
+      showTimeRemaining: true,
+      submissionState: SubmissionState.OnTime,
+      progressState: 'Late',
+    }
+    const result = calculateTimingInfo(data, BASE_TIME);
+    expect(result).to.deep.equal({
+      warning: false,
+      text: 'You uploaded your answers on time. If you upload any more answers you may be counted as late.',
+      allowStart: false,
+      hourglassSpins: true,
+    });
+  });
+
+  // TODO this (and a bunch of other stuff) will change with OE-279 where finalising becomes optional
+  it('explains when you submitted on-time but currently in the DeadlineMissed period', () => {
+    const data = {
+      ...dataDefaults,
+      start: BASE_TIME - 125*MINUTE,
+      end: BASE_TIME - 5*MINUTE,
+      hasStarted: true,
+      hasFinalised: false,
+      extraTimeAdjustment: null,
+      showTimeRemaining: true,
+      submissionState: SubmissionState.OnTime,
+      progressState: 'DeadlineMissed',
+    }
+    const result = calculateTimingInfo(data, BASE_TIME);
+    expect(result).to.deep.equal({
+      warning: true,
+      text: "You started this assessment, but missed the deadline to finalise your submission.\nExceeded deadline by 5 minutes.",
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 
   it('shows a missed deadline', () => {
     const data = {
+      ...dataDefaults,
       start: BASE_TIME - 125*MINUTE,
       end: BASE_TIME - 5*MINUTE,
       hasStarted: true,
@@ -107,12 +166,14 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: true,
       text: "You started this assessment, but missed the deadline to upload your answers.\nExceeded deadline by 5 minutes.",
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 
   it('shows message when finalised', () => {
     const data = {
+      ...dataDefaults,
       hasStarted: true,
       hasFinalised: true,
     };
@@ -120,12 +181,14 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'You completed this assessment.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 
   it('optionally hides time remaining', () => {
     const data = {
+      ...dataDefaults,
       windowStart: BASE_TIME + 90*MINUTE,
       windowEnd: BASE_TIME + 360*MINUTE,
       start: BASE_TIME - 10*MINUTE,
@@ -139,7 +202,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'Started 10 minutes ago.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
 
     // extraTimeAdjustment makes no difference here
@@ -147,12 +211,14 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'Started 10 minutes ago.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
   });
 
   it('does not warn for a "missed" deadline if showTimeRemaining = false', () => {
     const data = {
+      ...dataDefaults,
       start: BASE_TIME - 125*MINUTE,
       end: BASE_TIME - 5*MINUTE,
       hasStarted: true,
@@ -164,7 +230,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: "You started this assessment, but missed the deadline to upload your answers.",
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 

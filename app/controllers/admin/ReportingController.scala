@@ -2,17 +2,17 @@ package controllers.admin
 
 import java.util.UUID
 
-import controllers.{BaseController, RequestContext}
-import domain.{Assessment, SittingMetadata, StudentAssessmentMetadata}
+import controllers.BaseController
+import domain.{Assessment, SittingMetadata, StudentAssessment}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService
-import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
+import services.tabula.TabulaStudentInformationService._
 import services.{AssessmentClientNetworkActivityService, AssessmentService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.sso.{AuthenticatedRequest, UniversityID, User, UserLookupService}
+import warwick.sso.AuthenticatedRequest
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -53,7 +53,7 @@ class ReportingController @Inject()(
     }
   }
 
-  def showExpandedList(id: UUID, title: String, route: String, getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]])(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
+  def showExpandedList(id: UUID, title: String, route: String, getSittings: Future[ServiceResult[Seq[StudentAssessment]]])(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
     ServiceResults.zip(
       assessmentService.get(id),
       getSittings,
@@ -70,7 +70,7 @@ class ReportingController @Inject()(
     }
   }
 
-  def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]], assessmentId: UUID)(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
+  def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessment]]], assessmentId: UUID)(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
     ServiceResults.zip(
       assessmentService.get(assessmentId),
       getSittings,
@@ -79,7 +79,7 @@ class ReportingController @Inject()(
       case (assessment, sittings, queries) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId))),
-          networkActivityService.getLatestActivityFor(sittings.map(_.studentAssessmentId))
+          networkActivityService.getLatestActivityFor(sittings.map(_.id))
         ).successMap { case (profiles, latestActivities) =>
             val sorted = sittings
               .sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
@@ -132,9 +132,9 @@ class ReportingController @Inject()(
 
 case class ReportingMetadata(
   assessment: Assessment,
-  expected: Seq[StudentAssessmentMetadata],
-  started: Seq[StudentAssessmentMetadata],
-  notStarted: Seq[StudentAssessmentMetadata],
-  submitted: Seq[StudentAssessmentMetadata],
-  finalised: Seq[StudentAssessmentMetadata]
+  expected: Seq[StudentAssessment],
+  started: Seq[StudentAssessment],
+  notStarted: Seq[StudentAssessment],
+  submitted: Seq[StudentAssessment],
+  finalised: Seq[StudentAssessment]
 )

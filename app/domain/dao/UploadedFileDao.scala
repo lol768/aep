@@ -35,9 +35,9 @@ object UploadedFilesTables {
       contentLength,
       contentType,
       uploadedBy,
-      uploadStarted,
       created,
-      version
+      version,
+      uploadStarted,
     )
 
     override def atVersion(at: OffsetDateTime): StoredUploadedFile = copy(version = at)
@@ -90,7 +90,7 @@ trait UploadedFileDao {
 
   import profile.api._
 
-  def all: DBIO[Seq[StoredUploadedFile]]
+  def allWithoutOwner: DBIO[Seq[StoredUploadedFile]]
   def find(id: UUID): DBIO[Option[StoredUploadedFile]]
   def find(ids: Seq[UUID]): DBIO[Seq[StoredUploadedFile]]
   def insert(file: StoredUploadedFile)(implicit ac: AuditLogContext): DBIO[StoredUploadedFile]
@@ -106,8 +106,8 @@ class UploadedFileDaoImpl @Inject()(
   import profile.api._
   import tables._
 
-  override def all: DBIO[Seq[StoredUploadedFile]] =
-    uploadedFiles.result
+  override def allWithoutOwner: DBIO[Seq[StoredUploadedFile]] =
+    uploadedFiles.table.filter(_.ownerId.isEmpty).result
 
   override def find(id: UUID): DBIO[Option[StoredUploadedFile]] =
     uploadedFiles.table.filter(_.id === id).result.headOption

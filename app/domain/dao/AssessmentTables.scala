@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Duration, OffsetDateTime, ZoneId}
 import java.util.UUID
 
 import domain.Assessment.{AssessmentType, Platform, State}
@@ -8,6 +8,7 @@ import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, 
 import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredDeclarationsVersion, StoredStudentAssessment, StoredStudentAssessmentVersion}
 import domain.dao.UploadedFilesTables.{StoredUploadedFile, StoredUploadedFileVersion}
 import domain.{AssessmentClientNetworkActivity, DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
+import helpers.LenientTimezoneNameParsing.LenientZoneId
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json.JsValue
@@ -176,10 +177,11 @@ class AssessmentTables @Inject()(
     def rtt = column[Option[Int]]("rtt")
     def `type` = column[Option[String]]("type")
     def studentAssessmentId = column[UUID]("student_assessment_id")
+    def localTimezoneName = column[Option[LenientZoneId]]("local_timezone_name")
     def timestamp = column[OffsetDateTime]("timestamp_utc")
 
     def * = {
-      (downlink, downlinkMax, effectiveType, rtt, `type`, studentAssessmentId, timestamp).mapTo[AssessmentClientNetworkActivity]
+      (downlink, downlinkMax, effectiveType, rtt, `type`, studentAssessmentId, localTimezoneName, timestamp).mapTo[AssessmentClientNetworkActivity]
     }
   }
 
