@@ -43,19 +43,26 @@ sealed trait BaseSitting {
     d.plus(Assessment.lateSubmissionPeriod)
   }
 
+  private def clampToWindow(time: OffsetDateTime): Option[OffsetDateTime] =
+    (Seq(time) ++ assessment.lastAllowedStartTime).minOption
+
   /** The latest that you can submit and still be considered on time */
   lazy val onTimeEnd: Option[OffsetDateTime] =
     for {
       start <- studentAssessment.startTime
       duration <- onTimeDuration
-    } yield start.plus(duration)
+      time <- clampToWindow(start.plus(duration))
+    } yield time
+
 
   /** The latest that you can submit _at all_ */
   lazy val lateEnd: Option[OffsetDateTime] =
     for {
       start <- studentAssessment.startTime
       duration <- lateDuration
-    } yield start.plus(duration)
+      time <- clampToWindow(start.plus(duration))
+    } yield time
+
 
   lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
 
@@ -88,8 +95,8 @@ sealed trait BaseSitting {
     studentAssessment.submissionTime match {
       case Some(submitTime) if onTimeEnd.exists(submitTime.isBefore) => SubmissionState.OnTime
       case Some(_) if onTimeEnd.isEmpty => SubmissionState.Submitted
+      case Some(_) => SubmissionState.Late
       case None => SubmissionState.None
-      case _ => SubmissionState.Late
     }
 
   def getProgressState: Option[ProgressState] = {
