@@ -4,6 +4,7 @@ import com.google.inject.{ImplementedBy, Provider}
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.mvc.Call
+import system.Roles
 import system.Roles._
 import warwick.core.timing.TimingContext
 import warwick.sso.LoginContext
@@ -112,7 +113,7 @@ class NavigationServiceImpl @Inject()(
 
   private def invigilatorMenu(loginContext: LoginContext): Seq[Navigation] =
     if (loginContext.user.exists(u =>
-      Try(Await.result(assessmentService.isInvigilator(u.usercode)(TimingContext.none), 5.seconds)).toOption.exists(_.contains(true))
+      loginContext.userHasRole(Roles.Admin) || Try(Await.result(assessmentService.isInvigilator(u.usercode)(TimingContext.none), 5.seconds)).toOption.exists(_.contains(true))
     ))
       Seq(invigilator)
     else
