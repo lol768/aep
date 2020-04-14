@@ -20,7 +20,8 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: true,
       text: 'You can start in 1 hour and 30 minutes.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     })
   });
 
@@ -32,7 +33,8 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: true,
       text: '5 hours and 50 minutes left to start.',
-      allowStart: true
+      allowStart: true,
+      hourglassSpins: true
     })
   });
 
@@ -44,7 +46,8 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: true,
       text: 'The assessment window has now passed.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     })
   });
 
@@ -63,7 +66,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
 
     // extraTimeAdjustment used only for formatting - it's already included in the end date.
@@ -71,7 +75,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining (including 21 minutes additional time).',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
   });
 
@@ -90,7 +95,8 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: false,
       text: 'Started a moment ago. 3 hours and 45 minutes remaining.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
   });
 
@@ -107,7 +113,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: true,
       text: "You started this assessment, but missed the deadline to upload your answers.\nExceeded deadline by 5 minutes.",
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 
@@ -120,7 +127,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'You completed this assessment.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 
@@ -139,7 +147,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'Started 10 minutes ago.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
 
     // extraTimeAdjustment makes no difference here
@@ -147,7 +156,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'Started 10 minutes ago.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
   });
 
@@ -164,7 +174,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: "You started this assessment, but missed the deadline to upload your answers.",
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 

@@ -4,17 +4,19 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import akka.actor._
-import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck, Unsubscribe}
+import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
+import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
+import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.json._
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
+import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
+import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
-import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
-import warwick.core.helpers.JavaTime
-import warwick.core.helpers.ServiceResults.ServiceResult
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -101,8 +103,11 @@ class WebSocketActor @Inject() (
                 rtt = networkInformation.rtt,
                 `type` = networkInformation.`type`,
                 studentAssessmentId = assessmentId,
-                JavaTime.offsetDateTime)
-            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
+                localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
+                timestamp = JavaTime.offsetDateTime,
+              )
+            
+            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
               .recover {
                 case e: Exception =>
                   log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment $assessmentId")

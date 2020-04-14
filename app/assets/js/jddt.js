@@ -87,7 +87,7 @@ function relativeDateName(date) {
   return SOME_SUNNY_DAY;
 }
 
-function browserLocalTimezoneName() {
+export function browserLocalTimezoneName() {
   if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
     const dtf = Intl.DateTimeFormat();
     if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {
@@ -140,27 +140,70 @@ function stringifyTime(date) {
 }
 
 /**
- * Generates long/short JDDT format with timezoneName appended
+ * Generates long/short JDDT format
  * @private
  * @function
  * @param {Date} date - js Date object to format
- * @param {string} timezoneName - name of timezone to be appended
- * @param {boolean} [short] - if this is true the function will return truncated
+ * @param {Object} options - rendering options
+ * @param {string} [options.timezoneName] - name of timezone to be appended if set
+ * @param {boolean} [options.short=false] - if this is true the function will return truncated
  * months, days and years
- * @returns {string}
+ * @param {boolean} [options.includeIcon=true] - set this to false to not include the icon in the
+ * output
+ * @param {boolean} [options.printToday=false] - print 'today' instead of the date if the date is
+ * today's date
+ * @param {boolean} [options.lowercaseToday=true] - print 'today' instead of the date if the date
+ * is today's date
+ * @param {boolean} [options.printDate=true] - whether to print the date part
+ * @param {boolean} [options.printDay=true] - whether to print the day part of the date
+ * @param {boolean} [options.printDayOfMonth=true] - whether to print the day of month part of the
+ * date
+ * @param {boolean} [options.printMonth=true] - whether to print the month part of the date
+ * @param {boolean} [options.printYear] - whether to print the year part of the date - leave
+ * undefined to print if different to the current year
+ * @returns {string} HTML formatted string
  */
-function stringify(date, timezoneName, short) {
-  const currentYear = new Date(Date.now()).getFullYear();
-  let dateName = relativeDateName(date);
-  if (dateName === '') {
-    let yearString = '';
-    if (date.getFullYear() !== currentYear) {
-      yearString = stringifyYear(date.getFullYear());
+function stringify(date, {
+  timezoneName,
+  short = false,
+  includeIcon = true,
+  printToday = true,
+  lowercaseToday = true,
+  printDate = true,
+  printDay = true,
+  printDayOfMonth = true,
+  printMonth = true,
+  printYear,
+} = {}) {
+  const parts = [];
+  if (includeIcon) { parts.push(iconString); }
+
+  // We append a comma after the time except where the date string is today, so we need to work out
+  // the date string first
+  if (printDate) {
+    const dateName = printToday ? relativeDateName(date).trim() : '';
+    if (dateName === '') {
+      parts.push(`${stringifyTime(date).trim()},`);
+
+      if (printDay) parts.push(stringifyDay(date.getDay(), short));
+      if (printDayOfMonth) parts.push(th(date.getDate()));
+      if (printMonth) parts.push(stringifyMonth(date.getMonth(), short));
+
+      if (printYear === true
+        || (printYear !== false && date.getFullYear() !== new Date(Date.now()).getFullYear())) {
+        parts.push(stringifyYear(date.getFullYear(), short));
+      }
+    } else {
+      parts.push(stringifyTime(date).trim());
+      parts.push(lowercaseToday ? dateName.toLowerCase() : dateName);
     }
-    dateName = `${stringifyDay(date.getDay(), short)} ${th(date.getDate())} ${stringifyMonth(date.getMonth(), short)} ${yearString}`;
+  } else {
+    parts.push(stringifyTime(date).trim());
   }
-  const dateTimeString = `${dateName.trim()}, ${stringifyTime(date).trim()}`;
-  return `${iconString} ${dateTimeString.trim()} <span class="text-muted">${timezoneName}</span>`;
+
+  if (typeof timezoneName !== 'undefined') parts.push(`<span class="text-muted">${timezoneName}</span>`);
+
+  return parts.join(' ');
 }
 
 /**
@@ -176,7 +219,6 @@ function stringify(date, timezoneName, short) {
  * @returns {string}
  */
 function stringifyDateRange(fromDate, toDate, timezoneName, short) {
-  const currentYear = new Date(Date.now()).getFullYear();
   const fromYear = fromDate.getFullYear();
   const toYear = toDate.getFullYear();
   const fromMonth = fromDate.getMonth();
@@ -189,46 +231,26 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
   const sameDateNumber = fromDateNumber === toDateNumber;
   const sameExactDate = sameYear && sameMonth && sameDateNumber;
 
-  let fromDateNumberString = '';
-  let toDateNumberString = relativeDateName(toDate);
+  const isToToday = relativeDateName(toDate) === TODAY;
 
-  let fromYearString = '';
-  let toYearString = '';
+  const fromStringifyOptions = {
+    short,
+    includeIcon: false,
+    printDate: !sameExactDate,
 
-  if (!sameYear || fromYear !== currentYear || toYear !== currentYear) {
-    fromYearString = `${stringifyYear(fromYear, short)} `;
-    toYearString = `${stringifyYear(toYear, short)} `;
-  }
+    // These only take effect if printDate is true above
+    printYear: !sameYear,
+    printMonth: !sameYear || !sameMonth || isToToday,
+    printDayOfMonth: !sameYear || !sameMonth || !sameDateNumber,
+    printDay: !sameYear || !sameMonth || !sameDateNumber,
+  };
+  const toStringifyOptions = {
+    short,
+    includeIcon: false,
+    printYear: !sameYear,
+  };
 
-  let fromMonthString = '';
-  const toMonthString = toDateNumberString !== TODAY
-    ? `${stringifyMonth(toMonth, short)} `
-    : '';
-
-  if (!sameYear || !sameMonth || (toDateNumberString === TODAY && !sameExactDate)) {
-    fromMonthString = `${stringifyMonth(fromMonth, short)} `;
-  }
-
-  if (toDateNumberString === '') {
-    toDateNumberString = `${th(toDateNumber)} `;
-  }
-  let fromDateDayString = '';
-  const toDateDayString = toDateNumberString !== TODAY
-    ? `${stringifyDay(toDate.getDay(), short)} `
-    : '';
-
-  if (!sameYear || !sameMonth || !sameDateNumber) {
-    fromDateNumberString = `${th(fromDateNumber)} `;
-    fromDateDayString = `${stringifyDay(fromDate.getDay(), short)} `;
-  }
-
-  return `${iconString} \
-${stringifyTime(fromDate)} \
-${fromDateDayString}${fromDateNumberString}${fromMonthString}${fromYearString}\
-to \
-${stringifyTime(toDate)}, \
-${toDateDayString}${toDateNumberString}${toMonthString}${toYearString}\
-<span class="text-muted">${timezoneName}</span>`;
+  return `${iconString} ${stringify(fromDate, fromStringifyOptions)} to ${stringify(toDate, toStringifyOptions)} <span class="text-muted">${timezoneName}</span>`;
 }
 
 /**
@@ -308,7 +330,7 @@ export default class JDDT {
    * @returns {string}
    */
   longLocal() {
-    return stringify(this.jsDateLocal, this.localTimezoneName);
+    return stringify(this.jsDateLocal, { timezoneName: this.localTimezoneName });
   }
 
   /**
@@ -317,14 +339,14 @@ export default class JDDT {
    * @returns {string}
    */
   shortLocal() {
-    return stringify(this.jsDateLocal, this.localTimezoneName, true);
+    return stringify(this.jsDateLocal, { timezoneName: this.localTimezoneName, short: true });
   }
 
   /**
    * Generates short-format string of local datetime without junk
    */
   shortLocalBare() {
-    return ` (${stringify(this.jsDateLocal, this.localTimezoneName, true).replace(`${iconString} `, '')})`;
+    return ` (${stringify(this.jsDateLocal, { timezoneName: this.localTimezoneName, short: true, includeIcon: false })})`;
   }
 
   /**

@@ -1,17 +1,16 @@
-@import tags._
-@import domain.StudentAssessmentMetadata
-@import domain.AssessmentClientNetworkActivity
-@import domain.tabula
-@import warwick.sso.UniversityID
-@import org.apache.commons.lang3.time.DurationFormatUtils
 @import java.util.UUID
-@import domain.SittingMetadata
+
+@import domain.{AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import helpers.LenientTimezoneNameParsing._
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@import tags._
+@import warwick.sso.UniversityID
 
 @(
-        metadata: Seq[SittingMetadata],
-        userMap: Map[UniversityID, tabula.SitsProfile],
-        studentsWithQueries: Option[Seq[UniversityID]] = None,
-        latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty
+  metadata: Seq[SittingMetadata],
+  userMap: Map[UniversityID, tabula.SitsProfile],
+  studentsWithQueries: Option[Seq[UniversityID]] = None,
+  latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty
 )(implicit context: RequestContext)
 
 @if(metadata.nonEmpty) {
@@ -71,6 +70,7 @@
               @latestActivities.get(md.studentAssessment.studentAssessmentId).map { a =>
                 @if(a.isOnline) {
                   <i class="fad fa-signal themed-duotone"></i> Online now
+                  @a.localTimezoneName.map { e => <span class="text-muted">@e.timezoneName</span> }
                 } else {
                   <i class="fad fa-signal-slash themed-duotone"></i> Offline
                 }

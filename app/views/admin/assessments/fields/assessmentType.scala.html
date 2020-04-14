@@ -6,17 +6,17 @@
 
 <div class="row">
   <div class="col-sm-6">
-    @if(!allowAssessmentTypeChangesOnImportedAssessments && existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty)) {
+    @if(!allowAssessmentTypeChangesOnImportedAssessments && existing.exists(_.tabulaAssessmentId.nonEmpty)) {
       @b3.hidden(form("assessmentType"))
     }
-    @b3.radio(form("assessmentType"), Symbol("_label") -> (if (!allowAssessmentTypeChangesOnImportedAssessments && existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty)) "Type (as agreed by FAARG)" else "Type")) { implicit extraInfo =>
+    @b3.radio(form("assessmentType"), Symbol("_label") -> (if (!allowAssessmentTypeChangesOnImportedAssessments && existing.exists(_.tabulaAssessmentId.nonEmpty)) "Type (as agreed by FAARG)" else "Type")) { implicit extraInfo =>
       @AssessmentType.values.map { t => @b3.radioOption(
         t.entryName,
         t.label,
         Seq(
           Some(Symbol("data-valid-durations") -> t.validDurations.mkString("[", ",", "]")),
           /* Intentionally disabled, not readonly here - radio buttons don't support readonly. Bug in b3.radioOption prevents us doing 'disabled -> booleanfunc */
-          Some(Symbol("disabled") -> true).filter(_ => !allowAssessmentTypeChangesOnImportedAssessments && existing.exists(e => e.assessmentType.nonEmpty && e.tabulaAssessmentId.nonEmpty))
+          Some(Symbol("disabled") -> true).filter(_ => !allowAssessmentTypeChangesOnImportedAssessments && existing.exists(_.tabulaAssessmentId.nonEmpty))
         ).flatten: _*
       )}
     }

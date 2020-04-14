@@ -1,4 +1,5 @@
 import log from './log';
+import { browserLocalTimezoneName } from './jddt';
 
 const RECONNECT_THRESHOLD = 500;
 
@@ -17,6 +18,8 @@ const defaultHeartbeat = (ws) => {
     studentAssessmentId = inProgressAssessmentElement.getAttribute('data-id');
   }
 
+  const localTimezoneName = browserLocalTimezoneName();
+
   const message = {
     type: 'NetworkInformation',
     data: {
@@ -26,6 +29,7 @@ const defaultHeartbeat = (ws) => {
       rtt,
       type,
       studentAssessmentId,
+      localTimezoneName,
     },
   };
 
