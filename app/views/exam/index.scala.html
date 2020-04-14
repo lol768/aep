@@ -13,6 +13,26 @@
   announcements: Seq[Announcement],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
+@uploadForm = {
+  @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(sitting.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress quash-beforeunload") { implicit vfc =>
+    @b3.free(Symbol("_label") -> "Attach file") {
+      <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
+    }
+
+    <div class="help-block upload-info hide">
+      <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
+      <progress value="0" max="100"></progress>
+    </div>
+    <p class="help-block upload-error hide">
+      <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
+    </p>
+
+    @b3.free(Symbol("_class") -> "spaced-buttons") {
+      <button type="submit" class="btn btn-primary quash-beforeunload" id="uploadFilesButton">Upload files</button>
+    }
+  }
+}
+
 @defining(if (sitting.canModify()) "beforeunload" else "") { className =>
   @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className), existingMessages = announcements) {
     @assessmentPanel(sitting, isAssessmentPage = true)
@@ -100,7 +120,7 @@
                 potential errors and alert the entire cohort if necessary.
               </p>
               <p>
-                <a href="@controllers.routes.MessageController.showForm(sitting.assessment.id)" target="_blank">
+                <a href="@controllers.routes.MessageController.showForm(sitting.assessment.id)" target="_blank" id="contactInvigilatorLink">
                   Contact an invigilator
                 </a>
               </p>
@@ -111,26 +131,10 @@
             <div class="panel-body">
               <h2>Uploaded answer files</h2>
               <p class="text-muted"><i class="fad themed-duotone fa-info-circle" aria-hidden="true"></i>
-                We accept all common file formats: PDF, Word/Excel/Powerpoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, m4a, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
+                We accept all common file formats: PDF, Word/Excel/PowerPoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, m4a, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
               </p>
               @if(sitting.studentAssessment.uploadedFiles.nonEmpty) {
-                @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(sitting.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress quash-beforeunload") { implicit vfc =>
-                  @b3.free(Symbol("_label") -> "Attach file") {
-                    <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
-                  }
-
-                  <div class="help-block upload-info hide">
-                    <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
-                    <progress value="0" max="100"></progress>
-                  </div>
-                  <p class="help-block upload-error hide">
-                    <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
-                  </p>
-
-                  @b3.free(Symbol("_class") -> "spaced-buttons") {
-                    <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
-                  }
-                }
+                @uploadForm
                 <div class="uploaded-files">
                   @sitting.studentAssessment.uploadedFiles.map { file =>
                     <div class="panel uploaded-file">
@@ -163,23 +167,7 @@
                   <h3>You've not yet uploaded any answer files</h3>
                   <div class="left-align">
                     <p>Once you've answered the assessment questions and you're ready to submit, you can upload your files below.</p>
-                    @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(sitting.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress") { implicit vfc =>
-                      @b3.free(Symbol("_label") -> "Attach file") {
-                        <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
-                      }
-
-                        <div class="help-block upload-info hide">
-                          <p class="loading"><i class="far fa-spin fa-spinner-third"></i> Please wait whilst your submission is uploaded...</p>
-                          <progress value="0" max="100"></progress>
-                        </div>
-                        <p class="help-block upload-error hide">
-                          <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
-                        </p>
-
-                      @b3.free(Symbol("_class") -> "spaced-buttons") {
-                        <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
-                      }
-                    }
+                    @uploadForm
                   </div>
                 </div>
               }
@@ -204,7 +192,7 @@
                     Symbol("data-undisable-selector") -> ".finish-exam-btn",
                     Symbol("class") -> "undisable-with-checkbox",
                   )
-                  @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish assessment }
+                  @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("id") -> "finishAssessmentButton", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish assessment }
                 }
               </div>
             </div>
