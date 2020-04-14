@@ -43,6 +43,12 @@ function setWarning({ parentElement }) {
   parentElement.classList.remove('text-info');
 }
 
+function stopHourglassSpinning({ parentElement }) {
+  const spinner = parentElement.querySelector('i.fa-hourglass-spin');
+  if (!spinner) return;
+  spinner.classList.remove('fa-hourglass-spin');
+}
+
 /** Set the list of nodes containing timing information. Generally set by the side-effects
  * at the end of this module but can be reset for testing.
  * @param {NodeListOf<Element>} nodesIn
@@ -101,10 +107,12 @@ export function calculateTimingInfo(data, now) {
 
   let text;
   let warning = false;
+  let hourglassSpins = false;
   if (hasFinalised) {
     text = 'You completed this assessment.';
   } else if (hasStarted) {
     if (timeRemaining > 0) {
+      hourglassSpins = true;
       text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
       if (showTimeRemaining) {
         text += ` ${msToHumanReadable(timeRemaining)} remaining`;
@@ -123,8 +131,10 @@ export function calculateTimingInfo(data, now) {
   } else if (timeUntilStart > 0) {
     text = `You can start in ${msToHumanReadable(timeUntilStart)}.`;
     warning = true;
+    hourglassSpins = true;
   } else if (timeUntilEndOfWindow > 0) {
     text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    hourglassSpins = true;
     warning = true;
   } else {
     text = 'The assessment window has now passed.';
@@ -133,6 +143,7 @@ export function calculateTimingInfo(data, now) {
 
   return {
     allowStart: !hasStarted && timeUntilStart <= 0 && timeUntilEndOfWindow > 0,
+    hourglassSpins,
     text,
     warning,
   };
@@ -147,9 +158,11 @@ export function calculateTimingInfo(data, now) {
 function updateTimingInfo(node, data, now) {
   if (Number.isNaN(data.windowStart) || Number.isNaN(data.windowEnd)) return;
 
-  const { text, warning, allowStart } = calculateTimingInfo(data, now);
+  const {
+    text, warning, allowStart, hourglassSpins,
+  } = calculateTimingInfo(data, now);
 
-  markParentForm(node, allowStart);
+  markParentForm(node, allowStart, hourglassSpins);
 
   const textNode = document.createTextNode(text);
   const existingTextNode = node.lastChild;
@@ -163,6 +176,10 @@ function updateTimingInfo(node, data, now) {
     setWarning(node);
   } else {
     clearWarning(node);
+  }
+
+  if (!hourglassSpins) {
+    stopHourglassSpinning(node);
   }
 }
 

@@ -2,10 +2,15 @@ package helpers
 
 import java.time.ZoneId
 
+import play.api.libs.json.{JsString, Reads, Writes}
+
 import scala.util.{Success, Try}
 
 object LenientTimezoneNameParsing {
   type LenientZoneId = Either[String, ZoneId]
+
+  implicit val readsLenientZoneId: Reads[LenientZoneId] = implicitly[Reads[String]].map(_.maybeZoneId)
+  implicit val writesLenientZoneId: Writes[LenientZoneId] = o => JsString(o.timezoneName)
 
   implicit class TimezoneNameConversion(val timezoneName: String) extends AnyVal {
     def maybeZoneId: LenientZoneId = Try(ZoneId.of(timezoneName)) match {

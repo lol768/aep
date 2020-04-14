@@ -3,7 +3,6 @@ package actors
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import akka.Done
 import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
@@ -12,9 +11,10 @@ import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.json._
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
-import warwick.core.helpers.{JavaTime, ServiceResults}
+import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID}
 
@@ -108,7 +108,7 @@ class WebSocketActor @Inject() (
             )
 
           if (networkInformation.studentAssessmentId.nonEmpty) {
-            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(TimingContext.none)
+            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
               .recover {
                 case e: Exception =>
                   log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}")

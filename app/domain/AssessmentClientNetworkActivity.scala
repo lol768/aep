@@ -3,7 +3,8 @@ package domain
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
-import helpers.LenientTimezoneNameParsing.LenientZoneId
+import helpers.LenientTimezoneNameParsing._
+import play.api.libs.json.{Json, Writes}
 
 case class AssessmentClientNetworkActivity (
   downlink: Option[Double], // mbps
@@ -25,4 +26,10 @@ case class AssessmentClientNetworkActivity (
     else if (rtt.exists(_ >= 200) || downlink.exists(_ <= 2.0d)) Some(4)
     else if (rtt.exists(_ < 200 && downlink.exists(_ > 2.0d))) Some(5)
     else None // We can't make a judgement
+}
+
+object AssessmentClientNetworkActivity {
+  def tupled = (apply _).tupled
+
+  val writesAssessmentClientNetworkActivity: Writes[AssessmentClientNetworkActivity] = Json.writes[AssessmentClientNetworkActivity]
 }
