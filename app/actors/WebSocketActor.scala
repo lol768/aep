@@ -7,6 +7,7 @@ import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
 import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
+import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.json._
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
@@ -102,7 +103,10 @@ class WebSocketActor @Inject() (
                 rtt = networkInformation.rtt,
                 `type` = networkInformation.`type`,
                 studentAssessmentId = assessmentId,
-                JavaTime.offsetDateTime)
+                localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
+                timestamp = JavaTime.offsetDateTime,
+              )
+            
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
               .recover {
                 case e: Exception =>
