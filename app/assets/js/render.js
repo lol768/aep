@@ -42,16 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.body.classList.contains('beforeunload')) {
       import('./are-you-sure');
     }
-    let websocket;
-    import('./web-sockets').then((module) => {
-      const WebSocketConnection = module.default;
-      websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`);
-
+    import('./central-web-socket').then(({ default: websocket }) => {
       initAnnouncements(websocket);
       showWSConnectivity(websocket);
       if (document.querySelector('.timing-information')) initTiming(websocket);
-
-      websocket.connect();
     });
   }
 

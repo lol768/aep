@@ -19,10 +19,7 @@ function handleAnnouncement(data) {
 }
 
 function init() {
-  import('../web-sockets').then((module) => {
-    const WebSocketConnection = module.default;
-    const websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`);
-
+  import('../central-web-socket').then(({ default: websocket }) => {
     websocket.add({
       onData: (d) => {
         switch (d.type) {
@@ -37,8 +34,6 @@ function init() {
         }
       },
     });
-
-    websocket.connect();
   });
 }
 

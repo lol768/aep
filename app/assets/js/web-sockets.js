@@ -1,6 +1,13 @@
 import log from './log';
 import { browserLocalTimezoneName } from './jddt';
 
+/*
+
+  If you're importing this directly, you probably want to stop, collaborate and instead import
+  central-web-socket which handles connecting a single instance of the connection for you.
+
+ */
+
 const RECONNECT_THRESHOLD = 500;
 
 // How often should the websocket send a heartbeat to the server?
