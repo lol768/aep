@@ -4,7 +4,6 @@ import java.math.MathContext
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import com.google.inject.ImplementedBy
 import domain.AuditEvent
 import domain.ExtendedPostgresProfile.api._
 import domain.dao.{AuditDao, DaoRunner}
@@ -14,20 +13,12 @@ import play.api.libs.json._
 import uk.ac.warwick.util.logging.AuditLogger
 import uk.ac.warwick.util.logging.AuditLogger.RequestInformation
 import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.core.system.AuditLogContext
+import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
 import warwick.sso.Usercode
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
-
-@ImplementedBy(classOf[AuditServiceImpl])
-trait AuditService extends warwick.core.system.AuditService {
-  def audit[A](operation: Symbol, targetId: String, targetType: Symbol, data: JsValue)(f: => Future[ServiceResult[A]])(implicit context: AuditLogContext): Future[ServiceResult[A]]
-  def audit[A](operation: Symbol, targetIdTransform: A => String, targetType: Symbol, data: JsValue)(f: => Future[ServiceResult[A]])(implicit context: AuditLogContext): Future[ServiceResult[A]]
-  def findRecentTargetIDsByOperation(operation: Symbol, usercode: Usercode, limit: Int)(implicit t: TimingContext): Future[ServiceResult[Seq[String]]]
-  def findLastEventDateForTargetID(targetId: String, usercode: Usercode, operation: Symbol)(implicit t: TimingContext): Future[ServiceResult[Option[OffsetDateTime]]]
-}
 
 @Singleton
 class AuditServiceImpl @Inject()(

@@ -4,8 +4,10 @@ import controllers.UploadedFileErrorProviderImpl
 import net.codingwell.scalaguice.ScalaModule
 import org.quartz.Scheduler
 import play.api.{Configuration, Environment}
+import services.AuditServiceImpl
 import services.sandbox.DataGeneration
 import services.tabula.{TabulaAssessmentService, TabulaAssessmentServiceImpl, TabulaDepartmentService, TabulaDepartmentServiceImpl, TabulaStudentInformationService, TabulaStudentInformationServiceImpl}
+import warwick.core.system.AuditService
 import warwick.fileuploads.UploadedFileErrorProvider
 
 import scala.util.Random
@@ -28,6 +30,8 @@ class AppModule(environment: Environment, configuration: Configuration) extends 
     bind[TabulaDepartmentService]
       .annotatedWithName("TabulaDepartmentService-NoCache")
       .to[TabulaDepartmentServiceImpl]
+
+    bind[AuditService].to[AuditServiceImpl]
 
     // Default instance uses global Random with unpredictable seed. Override for tests where appropriate.
     bind[DataGeneration].toInstance(new DataGeneration(Random))
