@@ -4,19 +4,18 @@ import java.util.UUID
 
 import actors.WebSocketActor.AssessmentAnnouncement
 import actors.{PubSubActor, WebSocketActor}
-import akka.actor.{ActorRefFactory, ActorSystem}
+import akka.actor.ActorSystem
 import akka.stream.Materializer
 import controllers.WebSocketController._
-import play.api.data.Forms._
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
+import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.libs.json.JsValue
 import play.api.libs.streams.ActorFlow
 import play.api.mvc.{Action, AnyContent, Results, WebSocket}
 import services._
 import warwick.core.helpers.JavaTime
-import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, Usercode}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -54,6 +53,7 @@ class WebSocketController @Inject()(
   pubSub: PubSubService,
   studentAssessmentService: StudentAssessmentService,
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
+  assessmentService: AssessmentService,
 )(implicit
   mat: Materializer,
   actorSystem: ActorSystem,
@@ -73,21 +73,22 @@ class WebSocketController @Inject()(
         loginContext.user match {
           case Some(user) =>
             logger.info(s"WebSocket opening for ${user.usercode.string}")
-            studentAssessmentService
-              .byUniversityId(user.universityId.get)
-              .successMapTo(_.map(_.assessment.id.toString))
-              .map(_.getOrElse(Nil))
-              .map { relatedAssessmentIds =>
-                ActorFlow.actorRef(out => WebSocketActor.props(
-                  loginContext = loginContext,
-                  pubsub = pubSubActor,
-                  out = out,
-                  studentAssessmentService = studentAssessmentService,
-                  assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
-                  additionalTopics = relatedAssessmentIds,
-                ))
-              }
-              .map(Right(_))
+            studentAssessmentService.byUniversityId(user.universityId.get)
+                .successMapTo(_.map(_.assessment.id.toString))
+                .map(_.getOrElse(Nil)).zip(
+                  assessmentService.listForInvigilator(Set(user.usercode))
+                    .successMapTo(_.map(_.id.toString))
+                    .map(_.getOrElse(Nil))
+            ).map { case (relatedStudentAssessmentIds, relatedInvigilatorAssessmentIds) =>
+              ActorFlow.actorRef(out => WebSocketActor.props(
+                loginContext = loginContext,
+                pubsub = pubSubActor,
+                out = out,
+                studentAssessmentService = studentAssessmentService,
+                assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
+                additionalTopics = relatedStudentAssessmentIds.toSet ++ relatedInvigilatorAssessmentIds.toSet,
+              ))
+            }.map(Right.apply)
           case None =>
             Future.successful(Left(Forbidden("Only logged-in users can connect for live data using a WebSocket")))
         }

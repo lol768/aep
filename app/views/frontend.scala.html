@@ -1,6 +1,7 @@
 @import tags._
 @import views.html.tags.connectivityInfo
 @import domain.Announcement
+@import warwick.core.views.utils.nl2br
 @(
   title: String = "",
   extraClasses: Seq[String] = Seq(),
@@ -124,11 +125,15 @@
           }
           <div class="message-list">
             @existingMessages.map { message =>
-              <div class="alert alert-info">
-                <i class="fad fa-bullhorn" aria-hidden="true"></i>
-                @message.text
-                <div class="query-time">
-                  @localisedDatetime(message.created)
+              <div class="alert alert-info media">
+                <div class="media-left">
+                  <i class="fad fa-bullhorn" aria-hidden="true"></i>
+                </div>
+                <div class="media-body">
+                  @nl2br(message.text)
+                  <div class="query-time">
+                    @localisedDatetime(message.created)
+                  </div>
                 </div>
               </div>
 

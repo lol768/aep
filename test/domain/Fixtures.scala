@@ -92,6 +92,11 @@ object Fixtures {
       universityId = Some(UniversityID("1900002")),
       name = Name(Some("Student"), Some("User2"))
     )
+    val student3: User = baseStudent.copy(
+      usercode = Usercode("student3"),
+      universityId = Some(UniversityID("1900003")),
+      name = Name(Some("Student"), Some("User3"))
+    )
 
     def students(count: Int = 9): Set[User] = (1 to count).map { i =>
       val index = f"$i%03d"
@@ -143,7 +148,7 @@ object Fixtures {
     def storedAnnouncement(assId: UUID)(implicit dataGeneration: DataGeneration): StoredAnnouncement = {
       import dataGeneration.random
       val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
-      val text = dataGeneration.dummyWords(random.between(6,30))
+      val text = dataGeneration.dummyWords(random.between(6,30)).trim
 
       StoredAnnouncement(
         id = UUID.randomUUID(),

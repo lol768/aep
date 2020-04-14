@@ -85,7 +85,7 @@ class ThreadPoolHealthCheck(id: String, configLocation: String)
     new ServiceHealthcheck(name(id), status, now, message, perfData.asInstanceOf[Seq[ServiceHealthcheck.PerformanceData[_]]].asJava)
   })
 
-  // Called by AppStartup (Guice has no PostConstruct support)
+  // Called by HealthChecksStartup (Guice has no PostConstruct support)
   def init(): Unit = {
     actorSystem.scheduler.scheduleAtFixedRate(0.seconds, 5.seconds)(() => {
       try run()

@@ -6,7 +6,9 @@ import java.util.UUID
 import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
+import domain.messaging.MessageSender
 import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
+import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.json._
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
@@ -27,11 +29,13 @@ object WebSocketActor {
     out: ActorRef,
     studentAssessmentService: StudentAssessmentService,
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
-    additionalTopics: Seq[String],
+    additionalTopics: Set[String],
   )(implicit ec: ExecutionContext, t: TimingContext): Props =
     Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, additionalTopics))
 
   case class AssessmentAnnouncement(message: String, timestamp: OffsetDateTime)
+
+  case class AssessmentMessage(message: String, sender: MessageSender, client: String, timestamp: OffsetDateTime)
 
   case class ClientMessage(
     `type`: String,
@@ -63,7 +67,7 @@ class WebSocketActor @Inject() (
   loginContext: LoginContext,
   @Assisted studentAssessmentService: StudentAssessmentService,
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
-  additionalTopics: Seq[String],
+  additionalTopics: Set[String],
 )(implicit
   ec: ExecutionContext
 ) extends Actor with ActorLogging {
@@ -84,6 +88,14 @@ class WebSocketActor @Inject() (
       "user" -> JsString(loginContext.user.map(u => u.usercode.string).getOrElse("Anonymous"))
     )
 
+    case AssessmentMessage(message, sender, client, timestamp) => out ! Json.obj(
+      "type" -> "assessmentMessage",
+      "message" -> message,
+      "timestamp" -> views.html.tags.localisedDatetime(timestamp).toString,
+      "sender" -> sender.entryName,
+      "client" -> client
+    )
+
     case SubscribeAck(Subscribe(topic, _, _)) =>
       log.debug(s"WebSocket subscribed to PubSub messages on the topic of '$topic'")
 
@@ -93,22 +105,31 @@ class WebSocketActor @Inject() (
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
-          networkInformation.studentAssessmentId.map(assessmentId => {
-            val assessmentClientNetworkActivity =
-              AssessmentClientNetworkActivity(
-                downlink = networkInformation.downlink,
-                downlinkMax = networkInformation.downlinkMax,
-                effectiveType = networkInformation.effectiveType,
-                rtt = networkInformation.rtt,
-                `type` = networkInformation.`type`,
-                studentAssessmentId = assessmentId,
-                JavaTime.offsetDateTime)
+
+          val assessmentClientNetworkActivity =
+            AssessmentClientNetworkActivity(
+              downlink = networkInformation.downlink,
+              downlinkMax = networkInformation.downlinkMax,
+              effectiveType = networkInformation.effectiveType,
+              rtt = networkInformation.rtt,
+              `type` = networkInformation.`type`,
+              studentAssessmentId = networkInformation.studentAssessmentId.orNull,
+              localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
+              timestamp = JavaTime.offsetDateTime,
+            )
+
+          if (networkInformation.studentAssessmentId.nonEmpty) {
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
               .recover {
                 case e: Exception =>
-                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment $assessmentId")
+                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}")
               }
-          })
+          }
+
+          out ! Json.obj(
+            "type" -> "UpdateConnectivityIndicator",
+            "signalStrength" -> assessmentClientNetworkActivity.signalStrength
+          )
 
         case m if m.`type` == "RequestAssessmentTiming" =>
           val universityID: UniversityID = loginContext.user.flatMap(u => u.universityId).get

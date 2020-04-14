@@ -1,5 +1,6 @@
 package system
 
+import domain.JobKeys
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import play.api.{Configuration, Environment}
 import services.healthcheck._
@@ -23,7 +24,9 @@ class HealthChecksModule(environment: Environment, configuration: Configuration)
     healthchecks.addBinding.to[VirusScanServiceHealthCheck]
     healthchecks.addBinding.to[AkkaClusterSizeHealthCheck]
     healthchecks.addBinding.to[AkkaClusterUnreachableHealthCheck]
-    healthchecks.addBinding.to[ImportTabulaAssessmentsHealthCheck]
+
+    healthchecks.addBinding.toInstance(new QuartzJobHealthCheck(JobKeys.ImportAssessmentJob))
+    healthchecks.addBinding.toInstance(new QuartzJobHealthCheck(JobKeys.SendAssessmentRemindersJob))
 
     healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("default"))
     healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("fileUploadsExecutionContext", "uploads.threads.fileUploadsExecutionContext"))
