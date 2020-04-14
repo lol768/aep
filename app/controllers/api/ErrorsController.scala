@@ -4,7 +4,7 @@ import controllers.BaseController
 import javax.inject.Singleton
 import net.logstash.logback.argument.StructuredArguments
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsValue, Json, OFormat, Reads}
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -17,22 +17,36 @@ class ErrorsController extends BaseController {
 
   lazy val slf4jLogger: Logger = LoggerFactory.getLogger("JAVASCRIPT_ERROR")
 
+  case class JsError(
+    column: Option[Int],
+    line: Option[Int],
+    source: Option[String],
+    pageUrl: Option[String],
+    stack: Option[String],
+    message: Option[String],
+  )
+
+  object JsError {
+    implicit val reads: Reads[JsError] = Json.reads[JsError]
+  }
+
+
   def js = Action { implicit request =>
-    request.body.asJson.flatMap(_.asOpt[Seq[Map[String, JsValue]]]).toSeq.flatten.foreach { error =>
-      val (message, map) = process(error, request)
+    request.body.asJson.flatMap(_.asOpt[JsError]).foreach { jsError =>
+      val (message, map) = process(jsError, request)
       slf4jLogger.info(message, StructuredArguments.entries(map.asJava))
     }
     Ok("")
   }
 
-  def process(error: Map[String, JsValue], request: RequestHeader)(implicit ctx: RequestContext) : (String, Map[String, Any]) = {
-    val message = error.get("message").flatMap(_.asOpt[String]).getOrElse("-")
+  def process(jsError: JsError, request: RequestHeader)(implicit ctx: RequestContext): (String, Map[String, Any]) = {
+    val message = jsError.message.getOrElse("-")
     val map = Seq(
-      error.get("column").flatMap(_.asOpt[String]).flatMap(s => Try(s.toInt).toOption).map("column" -> _),
-      error.get("line").flatMap(_.asOpt[String]).flatMap(s => Try(s.toInt).toOption).map("line" -> _),
-      error.get("source").flatMap(_.asOpt[String]).map("source" -> _),
-      error.get("pageUrl").flatMap(_.asOpt[String]).map("page_url" -> _),
-      error.get("stack").flatMap(_.asOpt[String]).map("stack_trace" -> _),
+      jsError.column.map("column" -> _),
+      jsError.line.map("line" -> _),
+      jsError.source.map("source" -> _),
+      jsError.pageUrl.map("page_url" -> _),
+      jsError.stack.map("stack_trace" -> _),
       Option(request.remoteAddress).map("source_ip" -> _),
       request.headers.get("User-Agent").map(ua => "request_headers" -> Map("user-agent" -> ua.toString)),
       ctx.user.map(_.usercode.string).map("username" -> _),
