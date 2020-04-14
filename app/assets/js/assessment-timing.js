@@ -249,7 +249,6 @@ export default function initTiming(websocket) {
       ws.send(JSON.stringify(message));
     },
   });
-  websocket.connect();
 }
 
 // side-effects

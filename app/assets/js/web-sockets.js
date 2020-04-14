@@ -135,8 +135,8 @@ export default class WebSocketConnection {
   }
 
   sendHeartbeat() {
+    this.onHeartbeat.forEach((onHeartbeat) => onHeartbeat(this.ws));
     this.heartbeatTimeout = setTimeout(() => {
-      this.onHeartbeat.forEach((onHeartbeat) => onHeartbeat(this.ws));
       this.sendHeartbeat();
     }, HEARTBEAT_INTERVAL_MS);
   }

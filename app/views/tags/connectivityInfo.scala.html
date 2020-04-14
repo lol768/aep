@@ -1,4 +1,4 @@
 @()(implicit context: RequestContext)
 
-<div class="ws-connected hide"><i class="fad fa-signal themed-duotone"></i> You're currently <strong>connected</strong> to @(context.appFullName). </div>
+<div class="ws-connected hide"><i class="fad fa-signal themed-duotone connectivity-indicator"></i> You're currently <strong>connected</strong> to @(context.appFullName). </div>
 <div class="ws-disconnected hide text-danger"><i class="fad fa-signal-slash"></i> You're <strong>disconnected</strong> from @context.appFullName. We're trying to re-connect&hellip;</div>

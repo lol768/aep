@@ -94,25 +94,31 @@ class WebSocketActor @Inject() (
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
-          networkInformation.studentAssessmentId.map(assessmentId => {
-            val assessmentClientNetworkActivity =
-              AssessmentClientNetworkActivity(
-                downlink = networkInformation.downlink,
-                downlinkMax = networkInformation.downlinkMax,
-                effectiveType = networkInformation.effectiveType,
-                rtt = networkInformation.rtt,
-                `type` = networkInformation.`type`,
-                studentAssessmentId = assessmentId,
-                localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
-                timestamp = JavaTime.offsetDateTime,
-              )
-            
+
+          val assessmentClientNetworkActivity =
+            AssessmentClientNetworkActivity(
+              downlink = networkInformation.downlink,
+              downlinkMax = networkInformation.downlinkMax,
+              effectiveType = networkInformation.effectiveType,
+              rtt = networkInformation.rtt,
+              `type` = networkInformation.`type`,
+              studentAssessmentId = networkInformation.studentAssessmentId.orNull,
+              localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
+              timestamp = JavaTime.offsetDateTime,
+            )
+
+          if (networkInformation.studentAssessmentId.nonEmpty) {
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
               .recover {
                 case e: Exception =>
-                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment $assessmentId")
+                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}")
               }
-          })
+          }
+
+          out ! Json.obj(
+            "type" -> "UpdateConnectivityIndicator",
+            "signalStrength" -> assessmentClientNetworkActivity.signalStrength
+          )
 
         case m if m.`type` == "RequestAssessmentTiming" =>
           val universityID: UniversityID = loginContext.user.flatMap(u => u.universityId).get
