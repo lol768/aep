@@ -2,7 +2,6 @@ package controllers.api
 
 import org.scalatestplus.play._
 import play.api.mvc.Results
-import play.api.libs.json._
 import play.api.test._
 import controllers.TestRequestContexts
 
@@ -14,14 +13,15 @@ class ErrorsControllerTest extends PlaySpec with Results {
 
     "ErrorsController.js" should {
         "process an error with all properties" in {
-            val error: Map[String, JsValue] = Map(
-                "message" -> JsString("Error message"),
-                "column" -> JsNumber(12),
-                "line" -> JsNumber(345),
-                "source" -> JsString("sourcefile.js"),
-                "pageUrl" -> JsString("https://example.com/broken-page"),
-                "stack" -> JsString("TypeError: beans is not defined\nThere are no beans"),
+            val error = JavaScriptError(
+                message = Option("Error message"),
+                line = Option(12),
+                column = Option(345),
+                source = Option("sourcefile.js"),
+                pageUrl = Option("https://example.com/broken-page"),
+                stack = Option("TypeError: beans is not defined\nThere are no beans"),
             )
+
             val ctx = TestRequestContexts.nothing(req, None)
             val (message, args) = controller.process(error, req)(ctx)
             message mustBe "Error message"
@@ -38,14 +38,16 @@ class ErrorsControllerTest extends PlaySpec with Results {
         }
 
         "process an error with scant properties" in {
-            val error: Map[String, JsValue] = Map(
-                "message" -> JsString("Error message"),
-                "column" -> JsNull,
-                "line" -> JsNull,
-                "source" -> JsNull,
-                "pageUrl" -> JsString("https://example.com/broken-page"),
-                "stack" -> JsString("Promise rejected"),
+
+            val error = JavaScriptError(
+                message = Option("Error message"),
+                column = None,
+                line = None,
+                source = None,
+                pageUrl = Option("https://example.com/broken-page"),
+                stack = Option("Promise rejected"),
             )
+
             val ctx = TestRequestContexts.nothing(req, None)
             val (message, args) = controller.process(error, req)(ctx)
             message mustBe "Error message"

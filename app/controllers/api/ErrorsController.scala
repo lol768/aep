@@ -17,29 +17,15 @@ class ErrorsController extends BaseController {
 
   lazy val slf4jLogger: Logger = LoggerFactory.getLogger("JAVASCRIPT_ERROR")
 
-  case class JsError(
-    column: Option[Int],
-    line: Option[Int],
-    source: Option[String],
-    pageUrl: Option[String],
-    stack: Option[String],
-    message: Option[String],
-  )
-
-  object JsError {
-    implicit val reads: Reads[JsError] = Json.reads[JsError]
-  }
-
-
   def js = Action { implicit request =>
-    request.body.asJson.flatMap(_.asOpt[JsError]).foreach { jsError =>
+    request.body.asJson.flatMap(_.asOpt[JavaScriptError]).foreach { jsError =>
       val (message, map) = process(jsError, request)
       slf4jLogger.info(message, StructuredArguments.entries(map.asJava))
     }
     Ok("")
   }
 
-  def process(jsError: JsError, request: RequestHeader)(implicit ctx: RequestContext): (String, Map[String, Any]) = {
+  def process(jsError: JavaScriptError, request: RequestHeader)(implicit ctx: RequestContext): (String, Map[String, Any]) = {
     val message = jsError.message.getOrElse("-")
     val map = Seq(
       jsError.column.map("column" -> _),
@@ -55,3 +41,15 @@ class ErrorsController extends BaseController {
   }
 }
 
+case class JavaScriptError(
+  column: Option[Int],
+  line: Option[Int],
+  source: Option[String],
+  pageUrl: Option[String],
+  stack: Option[String],
+  message: Option[String],
+)
+
+object JavaScriptError {
+  implicit val reads: Reads[JavaScriptError] = Json.reads[JavaScriptError]
+}
