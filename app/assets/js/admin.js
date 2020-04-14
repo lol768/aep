@@ -10,6 +10,7 @@ import Tablesort from 'tablesort';
 import JDDT from './jddt';
 import * as flexiPicker from './flexi-picker';
 import * as dateTimePicker from './date-time-picker';
+import './double-submit-protection';
 
 import '@universityofwarwick/statuspage-widget/dist/main';
 import './admin/assessment-setup';
