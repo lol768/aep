@@ -65,6 +65,7 @@ export default class WebSocketConnection {
     this.onClose = onClose ? [onClose] : [];
     this.onData = onData ? [onData] : [];
     this.onHeartbeat = onHeartbeat ? [defaultHeartbeat, onHeartbeat] : [defaultHeartbeat];
+    this.dataLastReceivedAt = null;
   }
 
   add({
@@ -80,6 +81,8 @@ export default class WebSocketConnection {
   connect() {
     this.timeout = undefined;
     this.heartbeatTimeout = undefined;
+    this.dataLastReceivedAt = null;
+
     if (this.ws !== undefined) {
       if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
         // we don't need to reconnect
@@ -93,6 +96,7 @@ export default class WebSocketConnection {
 
     ws.onmessage = (d) => {
       if ('data' in d) {
+        this.dataLastReceivedAt = Date.now();
         this.onData.forEach((onData) => onData(JSON.parse(d.data)));
       }
     };
@@ -142,6 +146,13 @@ export default class WebSocketConnection {
   }
 
   sendHeartbeat() {
+    if (this.dataLastReceivedAt != null
+      && this.dataLastReceivedAt < Date.now() - HEARTBEAT_INTERVAL_MS) {
+      log('No data received in the last heartbeat window');
+      this.ws.dispatchEvent(new Event('error'));
+      return;
+    }
+
     this.onHeartbeat.forEach((onHeartbeat) => onHeartbeat(this.ws));
     this.heartbeatTimeout = setTimeout(() => {
       this.sendHeartbeat();
