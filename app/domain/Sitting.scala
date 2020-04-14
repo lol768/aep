@@ -8,7 +8,6 @@ import views.assessment.AssessmentTimingUpdate
 import warwick.core.helpers.JavaTime
 
 sealed trait BaseSitting {
-
   import domain.BaseSitting.ProgressState._
 
   val studentAssessment: BaseStudentAssessment
@@ -105,7 +104,7 @@ sealed trait BaseSitting {
         }
       } else if (inProgress) {
         val studentStartTime = studentAssessment.startTime.get
-        val inProgressState = for(ad <- assessment.duration; d <- duration; ld <- lateDuration) yield {
+        val inProgressState = for(ad <- assessment.duration; d <- onTimeDuration; ld <- lateDuration) yield {
           if (studentStartTime.plus(ad).isAfter(now)) {
             InProgress
           } else if (studentStartTime.plus(d).isAfter(now)) {

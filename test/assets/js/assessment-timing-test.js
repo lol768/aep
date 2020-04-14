@@ -109,7 +109,7 @@ describe('calculateTimingInfo', () => {
     });
   });
 
-  it('explains when you submitted on-time but currently in the late period', () => {
+  it('explains when you submitted on-time but currently in the Late period', () => {
     const data = {
       ...dataDefaults,
       start: BASE_TIME - 125*MINUTE,
@@ -119,10 +119,38 @@ describe('calculateTimingInfo', () => {
       extraTimeAdjustment: null,
       showTimeRemaining: true,
       submissionState: SubmissionState.OnTime,
+      progressState: 'Late',
     }
+    const result = calculateTimingInfo(data, BASE_TIME);
+    expect(result).to.deep.equal({
+      warning: false,
+      text: 'You uploaded your answers on time. If you upload any more answers you may be counted as late.',
+      allowStart: false,
+      hourglassSpins: true,
+    });
+  });
 
-
-  })
+  // TODO this (and a bunch of other stuff) will change with OE-279 where finalising becomes optional
+  it('explains when you submitted on-time but currently in the DeadlineMissed period', () => {
+    const data = {
+      ...dataDefaults,
+      start: BASE_TIME - 125*MINUTE,
+      end: BASE_TIME - 5*MINUTE,
+      hasStarted: true,
+      hasFinalised: false,
+      extraTimeAdjustment: null,
+      showTimeRemaining: true,
+      submissionState: SubmissionState.OnTime,
+      progressState: 'DeadlineMissed',
+    }
+    const result = calculateTimingInfo(data, BASE_TIME);
+    expect(result).to.deep.equal({
+      warning: true,
+      text: "You started this assessment, but missed the deadline to finalise your submission.\nExceeded deadline by 5 minutes.",
+      allowStart: false,
+      hourglassSpins: false
+    });
+  });
 
   it('shows a missed deadline', () => {
     const data = {

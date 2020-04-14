@@ -29,14 +29,15 @@ import msToHumanReadable from './time-helper';
 
 /** @type {NodeListOf<Element>} */
 let nodes;
-// Pre-parse data-rendering JSON so it can be easily re-used (or even modified over time)
+// Pre-parse data-rendering JSON so it can be easily re-used and modified over time
 let nodeData = {};
 
 export const SubmissionState = {
-  None: Symbol('None'),
-  OnTime: Symbol('OnTime'),
-  Late: Symbol('Late'),
-}
+  None: 'None',
+  Submitted: 'Submitted',
+  OnTime: 'OnTime',
+  Late: 'Late',
+};
 
 /** */
 function clearWarning({ parentElement }) {
@@ -102,7 +103,8 @@ export function calculateTimingInfo(data, now) {
     hasFinalised,
     extraTimeAdjustment,
     showTimeRemaining,
-    submissionState
+    progressState,
+    submissionState,
   } = data;
 
   const hasWindowPassed = now > windowEnd;
@@ -129,8 +131,12 @@ export function calculateTimingInfo(data, now) {
         }
         text += '.';
       }
+    } else if (submissionState === SubmissionState.OnTime && progressState === 'Late') {
+      text = 'You uploaded your answers on time. If you upload any more answers you may be counted as late.';
+      hourglassSpins = true;
     } else {
-      text = 'You started this assessment, but missed the deadline to upload your answers.';
+      const action = submissionState === SubmissionState.None ? 'upload your answers' : 'finalise your submission';
+      text = `You started this assessment, but missed the deadline to ${action}.`;
       if (showTimeRemaining) {
         text += `\nExceeded deadline by ${msToHumanReadable(-timeRemaining)}.`;
         warning = true;

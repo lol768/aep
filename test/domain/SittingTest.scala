@@ -23,8 +23,6 @@ class SittingTest extends PlaySpec with MockitoSugar {
     uploadedFiles: Seq[UploadedFile] = Seq.empty,
   ) {
 
-    // val mockMailerClient: MailerClient = mock[MailerClient](RETURNS_SMART_NULLS)
-
     val assessment: Assessment = Assessment(
       id = UUID.randomUUID(),
       paperCode = "heron-1",
@@ -74,9 +72,26 @@ class SittingTest extends PlaySpec with MockitoSugar {
 
     "Show the generic Started state for inProgress assessments without a duration" in new Fixture (
       assessmentStart = Some(JavaTime.offsetDateTime.minusHours(1)),
+      assessmentDuration = Some(Duration.ofHours(3)),
+      studentStart = Some(JavaTime.offsetDateTime.minusMinutes(30))
+    ) {
+      sitting.getProgressState mustBe Some(InProgress)
+    }
+
+    "Show InProgress assessments" in new Fixture (
+      assessmentStart = Some(JavaTime.offsetDateTime.minusHours(1)),
       studentStart = Some(JavaTime.offsetDateTime.minusMinutes(30))
     ) {
       sitting.getProgressState mustBe Some(Started)
+    }
+
+    "Show as GracePeriod just after the main exam writing period" in new Fixture (
+      assessmentStart = Some(JavaTime.offsetDateTime.minusHours(4)),
+      assessmentDuration = Some(Duration.ofHours(3)),
+      studentStart = Some(JavaTime.offsetDateTime.minusHours(3).minusMinutes(10))
+    ) {
+      // They had 3h+45m to submit, 3h+10m is in the grace upload period
+      sitting.getProgressState mustBe Some(OnGracePeriod)
     }
 
     "Show as Late after the on time duration" in new Fixture (
@@ -86,6 +101,15 @@ class SittingTest extends PlaySpec with MockitoSugar {
     ) {
       // They had 3h+45m to submit, so 4h is in the "Late" section
       sitting.getProgressState mustBe Some(Late)
+    }
+
+    "Show as DeadlineMissed after even more time" in new Fixture (
+      assessmentStart = Some(JavaTime.offsetDateTime.minusHours(4)),
+      assessmentDuration = Some(Duration.ofHours(3)),
+      studentStart = Some(JavaTime.offsetDateTime.minusHours(6))
+    ) {
+      // They had 3h+45m+2h to submit late, so 6h is right out
+      sitting.getProgressState mustBe Some(DeadlineMissed)
     }
 
   }
