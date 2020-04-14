@@ -22,7 +22,6 @@ export default function initAnnouncements(websocket) {
         icon.setAttribute('aria-hidden', 'true');
         const iconName = 'bullhorn';
         icon.classList.add('fad', `fa-${iconName}`);
-        const data = document.createTextNode(d.message);
         const timestamp = document.createElement('div');
         timestamp.classList.add('query-time');
         timestamp.innerHTML = d.timestamp;
