@@ -20,6 +20,7 @@
             </h4>
         }
 
+        @studentAssessmentMetadata(sitting)
 
         @if(isAssessmentPage) {
             @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(sitting.assessment.id)) { implicit fc =>
