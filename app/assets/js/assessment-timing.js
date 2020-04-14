@@ -10,6 +10,7 @@ import JDDT from './jddt';
  * @typedef {Object} TimingData
  * @property {unix_timestamp} windowStart - earliest allowed start time
  * @property {unix_timestamp} windowEnd - latest allowed start time
+ * @property {unix_timestamp} lastRecommendedStart - last start time to enjoy full duration
  * @property {unix_timestamp} start - when exam was started (if it has started)
  * @property {unix_timestamp} end - latest time to submit without being late
  *           (start + duration + user's reasonable adjustment)
@@ -17,6 +18,8 @@ import JDDT from './jddt';
  * @property {boolean} hasFinalised - have answers been submitted and finalised
  * @property {millis} extraTimeAdjustment - any reasonable adjustment the user has
  * @property {boolean} showTimeRemaining - should the time remaining be displayed
+ * @property {string} progressState - the ProgressState value
+ * @property {string} submissionState - the SubmissionState value
  */
 
 /**
@@ -28,9 +31,15 @@ import JDDT from './jddt';
 
 /** @type {NodeListOf<Element>} */
 let nodes;
-// Pre-parse data-rendering JSON so it can be easily re-used (or even modified over time)
+// Pre-parse data-rendering JSON so it can be easily re-used and modified over time
 let nodeData = {};
 
+export const SubmissionState = {
+  None: 'None',
+  Submitted: 'Submitted',
+  OnTime: 'OnTime',
+  Late: 'Late',
+};
 
 /** */
 function clearWarning({ parentElement }) {
@@ -90,12 +99,15 @@ export function calculateTimingInfo(data, now) {
   const {
     windowStart,
     windowEnd,
+    lastRecommendedStart,
     start,
     end,
     hasStarted,
     hasFinalised,
     extraTimeAdjustment,
     showTimeRemaining,
+    progressState,
+    submissionState,
   } = data;
 
   const hasWindowPassed = now > windowEnd;
@@ -105,6 +117,8 @@ export function calculateTimingInfo(data, now) {
   const timeSinceStart = inProgress ? Math.max(0, now - start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
+  // eslint-disable-next-line max-len
+  const timeUntilLastRecommendedStart = (!inProgress && !hasFinalised) ? lastRecommendedStart - now : null;
 
 
   let text;
@@ -123,8 +137,12 @@ export function calculateTimingInfo(data, now) {
         }
         text += '.';
       }
+    } else if (submissionState === SubmissionState.OnTime && progressState === 'Late') {
+      text = 'You uploaded your answers on time. If you upload any more answers you may be counted as late.';
+      hourglassSpins = true;
     } else {
-      text = 'You started this assessment, but missed the deadline to upload your answers.';
+      const action = submissionState === SubmissionState.None ? 'upload your answers' : 'finalise your submission';
+      text = `You started this assessment, but missed the deadline to ${action}.`;
       if (showTimeRemaining) {
         text += `\nExceeded deadline by ${msToHumanReadable(-timeRemaining)}.`;
         warning = true;
@@ -136,6 +154,9 @@ export function calculateTimingInfo(data, now) {
     hourglassSpins = true;
   } else if (timeUntilEndOfWindow > 0) {
     text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    if (timeUntilLastRecommendedStart > 0) {
+      text += ` To give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
+    }
     hourglassSpins = true;
     warning = true;
   } else {
@@ -211,7 +232,7 @@ export function receiveSocketData(d) {
     const { now, assessments } = d;
     assessments.forEach((assessment) => {
       const { id } = assessment;
-      let node = document.querySelector(`.timing-information[data-id="${id}"]`);
+      const node = document.querySelector(`.timing-information[data-id="${id}"]`);
       if (node) {
         const data = nodeData[id];
         // partial update of properties
@@ -223,12 +244,45 @@ export function receiveSocketData(d) {
         domRefresh(node, now);
       }
 
-      node = document.querySelector(`.timeline[data-id="${id}"]`);
-      if (node) {
+      // TODO tidy up how we manipulate other parts of the page
+      // (may want to manipulate the file upload section to warn about lateness)
+
+      const timelineNode = document.querySelector(`.timeline[data-id="${id}"]`);
+      if (timelineNode) {
         const { progressState } = assessment;
         if (progressState) {
-          node.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
-          node.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
+          timelineNode.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
+          timelineNode.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
+        }
+      }
+
+      const deadlineMissed = assessment.progressState === 'DeadlineMissed';
+      if (timelineNode && deadlineMissed) {
+        const contactInvigilatorLink = document.getElementById('contactInvigilatorLink');
+        const fileInputs = document.querySelectorAll('input[type=file]');
+        const deleteButtons = document.querySelectorAll('button[delete]');
+        const uploadFilesButton = document.getElementById('uploadFilesButton');
+        const agreeDisclaimerCheckbox = document.getElementById('agreeDisclaimer');
+        const finishAssessmentButton = document.getElementById('finishAssessmentButton');
+
+        if (contactInvigilatorLink) {
+          const span = document.createElement('span');
+          span.classList.add('text-muted');
+          span.textContent = contactInvigilatorLink.textContent;
+          contactInvigilatorLink.replaceWith(span);
+        }
+        // eslint-disable-next-line no-param-reassign
+        fileInputs.forEach((input) => { input.disabled = true; });
+        // eslint-disable-next-line no-param-reassign
+        deleteButtons.forEach((button) => { button.disabled = true; });
+        if (uploadFilesButton) {
+          uploadFilesButton.disabled = true;
+        }
+        if (agreeDisclaimerCheckbox) {
+          agreeDisclaimerCheckbox.disabled = true;
+        }
+        if (finishAssessmentButton) {
+          finishAssessmentButton.disabled = true;
         }
       }
     });

@@ -2,13 +2,12 @@ package domain
 
 import java.time.{Duration, OffsetDateTime}
 
-import domain.BaseSitting.ProgressState
+import domain.BaseSitting.{ProgressState, SubmissionState}
 import enumeratum.{EnumEntry, PlayEnum}
 import views.assessment.AssessmentTimingUpdate
 import warwick.core.helpers.JavaTime
 
 sealed trait BaseSitting {
-
   import domain.BaseSitting.ProgressState._
 
   val studentAssessment: BaseStudentAssessment
@@ -44,6 +43,27 @@ sealed trait BaseSitting {
     d.plus(Assessment.lateSubmissionPeriod)
   }
 
+  private def clampToWindow(time: OffsetDateTime): Option[OffsetDateTime] =
+    (Seq(time) ++ assessment.lastAllowedStartTime).minOption
+
+  /** The latest that you can submit and still be considered on time */
+  lazy val onTimeEnd: Option[OffsetDateTime] =
+    for {
+      start <- studentAssessment.startTime
+      duration <- onTimeDuration
+      time <- clampToWindow(start.plus(duration))
+    } yield time
+
+
+  /** The latest that you can submit _at all_ */
+  lazy val lateEnd: Option[OffsetDateTime] =
+    for {
+      start <- studentAssessment.startTime
+      duration <- lateDuration
+      time <- clampToWindow(start.plus(duration))
+    } yield time
+
+
   lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
 
   def canModify(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = studentAssessment.startTime.exists(startTime =>
@@ -59,15 +79,25 @@ sealed trait BaseSitting {
       id = assessment.id,
       windowStart = assessment.startTime,
       windowEnd = assessment.lastAllowedStartTime,
+      lastRecommendedStart = onTimeDuration.flatMap(d => assessment.lastAllowedStartTime.map(_.minus(d))),
       start = studentAssessment.startTime,
-      end = studentAssessment.startTime.flatMap(startTime => onTimeDuration.map(duration => startTime.plus(duration))),
+      end = onTimeEnd,
       hasStarted = studentAssessment.startTime.nonEmpty,
       hasFinalised = studentAssessment.finaliseTime.nonEmpty,
       extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
       showTimeRemaining = duration.isDefined,
       progressState = getProgressState,
+      submissionState = getSubmissionState,
     )
   }
+
+  lazy val getSubmissionState: SubmissionState =
+    studentAssessment.submissionTime match {
+      case Some(submitTime) if onTimeEnd.exists(submitTime.isBefore) => SubmissionState.OnTime
+      case Some(_) if onTimeEnd.isEmpty => SubmissionState.Submitted
+      case Some(_) => SubmissionState.Late
+      case None => SubmissionState.None
+    }
 
   def getProgressState: Option[ProgressState] = {
     val now = JavaTime.offsetDateTime
@@ -82,7 +112,7 @@ sealed trait BaseSitting {
         }
       } else if (inProgress) {
         val studentStartTime = studentAssessment.startTime.get
-        val inProgressState = for(ad <- assessment.duration; d <- duration; ld <- lateDuration) yield {
+        val inProgressState = for(ad <- assessment.duration; d <- onTimeDuration; ld <- lateDuration) yield {
           if (studentStartTime.plus(ad).isAfter(now)) {
             InProgress
           } else if (studentStartTime.plus(d).isAfter(now)) {
@@ -98,6 +128,17 @@ sealed trait BaseSitting {
         Finalised
       }
     }
+  }
+
+  /** Summary for invigilators */
+  def getSummaryStatusLabel: Option[String] = {
+    lazy val submission = getSubmissionState
+    getProgressState map {
+      case ProgressState.Late if submission == SubmissionState.OnTime => "Submitted, unfinalised"
+      case ProgressState.Late if submission == SubmissionState.Late => "Submitted late, unfinalised"
+      case other => other.label
+    }
+
   }
 }
 
@@ -149,6 +190,23 @@ object BaseSitting {
     val values: IndexedSeq[ProgressState] = findValues
   }
 
+  /**
+    * Describes how the student's currently submitted files will be considered,
+    * if they don't upload any further files.
+    *
+    * Unlike progress state, this doesn't change over time - if your files are
+    * on time, they stay like that, unless you upload more files.
+    */
+  sealed abstract class SubmissionState(val label: String) extends EnumEntry
+  object SubmissionState extends PlayEnum[SubmissionState] {
+    case object None extends SubmissionState(label = "None")
+    /** Used if we have files but are missing a duration, so we can't be more specific */
+    case object Submitted extends SubmissionState(label = "Submitted")
+    case object OnTime extends SubmissionState(label = "On time")
+    case object Late extends SubmissionState(label = "Late")
+    val values: IndexedSeq[SubmissionState] = findValues
+  }
+
 }
 
 case class Sitting(
@@ -158,6 +216,6 @@ case class Sitting(
 ) extends BaseSitting
 
 case class SittingMetadata(
-  studentAssessment: StudentAssessmentMetadata,
+  studentAssessment: StudentAssessment,
   assessment: AssessmentMetadata
 ) extends BaseSitting

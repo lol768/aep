@@ -8,9 +8,7 @@
         <span
         class="timing-information"
         data-id="@sitting.assessment.id"
-        data-rendering="@{
-            Json.stringify(Json.toJson(sitting.getTimingInfo))
-        }"
+        data-rendering="@Json.stringify(Json.toJson(sitting.getTimingInfo))"
         ></span>
     </span>
 }

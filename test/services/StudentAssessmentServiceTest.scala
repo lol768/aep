@@ -78,7 +78,6 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
       service.upsert(newStudentAssessment.asStudentAssessment(Map.empty)).serviceValue
 
       val studentAssessmentFromDB = service.get(newStudentAssessment.studentId, storedAssessment.id).serviceValue
-        .getOrElse(throw new Exception("Problem getting student assessment from DB"))
 
       val finaliseTime = JavaTime.offsetDateTime
       val updatedStudentAssessment = studentAssessmentFromDB.copy(
@@ -88,7 +87,6 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
       service.upsert(updatedStudentAssessment).serviceValue
 
       service.get(newStudentAssessment.studentId, storedAssessment.id).serviceValue
-        .getOrElse(throw new Exception("Problem getting student assessment from DB"))
         .finaliseTime mustBe Some(finaliseTime)
     }
 
