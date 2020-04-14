@@ -59,11 +59,11 @@ sealed trait BaseSitting {
 
   lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
 
-  def canModify: Boolean = studentAssessment.startTime.exists(startTime =>
+  def canModify(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = studentAssessment.startTime.exists(startTime =>
     lateDuration.exists { d =>
       !finalised &&
-        startTime.plus(d).isAfter(JavaTime.offsetDateTime) &&
-        !assessment.hasLastAllowedStartTimePassed
+        startTime.plus(d).isAfter(referenceDate) &&
+        !assessment.hasLastAllowedStartTimePassed(referenceDate)
     }
   )
 
@@ -72,6 +72,7 @@ sealed trait BaseSitting {
       id = assessment.id,
       windowStart = assessment.startTime,
       windowEnd = assessment.lastAllowedStartTime,
+      lastRecommendedStart = onTimeDuration.flatMap(d => assessment.lastAllowedStartTime.map(_.minus(d))),
       start = studentAssessment.startTime,
       end = onTimeEnd,
       hasStarted = studentAssessment.startTime.nonEmpty,
@@ -97,7 +98,7 @@ sealed trait BaseSitting {
       if (assessmentStartTime.isAfter(now)) {
         AssessmentNotYetOpen
       } else if (studentAssessment.startTime.isEmpty) {
-        if (assessment.hasLastAllowedStartTimePassed) {
+        if (assessment.hasLastAllowedStartTimePassed()) {
           NoShow
         } else {
           AssessmentOpenNotStarted

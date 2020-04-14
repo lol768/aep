@@ -13,7 +13,7 @@
   announcements: Seq[Announcement],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@defining(if (sitting.canModify) "beforeunload" else "") { className =>
+@defining(if (sitting.canModify()) "beforeunload" else "") { className =>
   @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className), existingMessages = announcements) {
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
@@ -89,7 +89,7 @@
       }
 
       @if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
-        @if(sitting.canModify) {
+        @if(sitting.canModify()) {
           <div class="panel panel-default">
             <div class="brand-stripe"></div>
             <div class="panel-body">

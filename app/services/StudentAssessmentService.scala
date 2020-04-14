@@ -132,8 +132,8 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   private def assertTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
-    require(storedAssessment.hasStartTimePassed, "Cannot do assessment, too early")
-    require(!storedAssessment.hasLastAllowedStartTimePassed, "Cannot do assessment, too late")
+    require(storedAssessment.hasStartTimePassed(), "Cannot do assessment, too early")
+    require(!storedAssessment.hasLastAllowedStartTimePassed(), "Cannot do assessment, too late")
   }
 
   private def hasAcceptedDeclarations(storedDeclarations: Option[StoredDeclarations]): Future[Unit] = Future.successful {

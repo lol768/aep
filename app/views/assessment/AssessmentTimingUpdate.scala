@@ -11,6 +11,7 @@ case class AssessmentTimingUpdate(
   id: UUID,
   windowStart: Option[OffsetDateTime],
   windowEnd: Option[OffsetDateTime],
+  lastRecommendedStart: Option[OffsetDateTime],
   start: Option[OffsetDateTime],
   end: Option[OffsetDateTime],
   hasStarted: Boolean,
