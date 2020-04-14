@@ -100,7 +100,7 @@
                 potential errors and alert the entire cohort if necessary.
               </p>
               <p>
-                <a href="@controllers.routes.MessageController.showForm(sitting.assessment.id)" target="_blank">
+                <a href="@controllers.routes.MessageController.showForm(sitting.assessment.id)" target="_blank" id="contactInvigilatorLink">
                   Contact an invigilator
                 </a>
               </p>
@@ -128,7 +128,7 @@
                   </p>
 
                   @b3.free(Symbol("_class") -> "spaced-buttons") {
-                    <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
+                    <button type="submit" class="btn btn-primary quash-beforeunload" id="uploadFilesButton">Upload files</button>
                   }
                 }
                 <div class="uploaded-files">
@@ -177,7 +177,7 @@
                         </p>
 
                       @b3.free(Symbol("_class") -> "spaced-buttons") {
-                        <button type="submit" class="btn btn-primary quash-beforeunload">Upload files</button>
+                        <button type="submit" class="btn btn-primary quash-beforeunload" id="uploadFilesButton">Upload files</button>
                       }
                     }
                   </div>
@@ -204,7 +204,7 @@
                     Symbol("data-undisable-selector") -> ".finish-exam-btn",
                     Symbol("class") -> "undisable-with-checkbox",
                   )
-                  @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish assessment }
+                  @b3.submit(Symbol("class") -> "btn btn-default finish-exam-btn", Symbol("id") -> "finishAssessmentButton", Symbol("disabled") -> "disabled"){ <i class="fas fa-check fa-fw"></i> Finish assessment }
                 }
               </div>
             </div>

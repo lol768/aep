@@ -209,7 +209,7 @@ export function receiveSocketData(d) {
     const { now, assessments } = d;
     assessments.forEach((assessment) => {
       const { id } = assessment;
-      let node = document.querySelector(`.timing-information[data-id="${id}"]`);
+      const node = document.querySelector(`.timing-information[data-id="${id}"]`);
       if (node) {
         const data = nodeData[id];
         // partial update of properties
@@ -221,12 +221,42 @@ export function receiveSocketData(d) {
         domRefresh(node, now);
       }
 
-      node = document.querySelector(`.timeline[data-id="${id}"]`);
-      if (node) {
+      const timelineNode = document.querySelector(`.timeline[data-id="${id}"]`);
+      if (timelineNode) {
         const { progressState } = assessment;
         if (progressState) {
-          node.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
-          node.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
+          timelineNode.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
+          timelineNode.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
+        }
+      }
+
+      const deadlineMissed = assessment.progressState === 'DeadlineMissed';
+      if (timelineNode && deadlineMissed) {
+        const contactInvigilatorLink = document.getElementById('contactInvigilatorLink');
+        const fileInputs = document.querySelectorAll('input[type=file]');
+        const deleteButtons = document.querySelectorAll('button[delete]');
+        const uploadFilesButton = document.getElementById('uploadFilesButton');
+        const agreeDisclaimerCheckbox = document.getElementById('agreeDisclaimer');
+        const finishAssessmentButton = document.getElementById('finishAssessmentButton');
+
+        if (contactInvigilatorLink) {
+          const span = document.createElement('span');
+          span.classList.add('text-muted');
+          span.textContent = contactInvigilatorLink.textContent;
+          contactInvigilatorLink.replaceWith(span);
+        }
+        // eslint-disable-next-line no-param-reassign
+        fileInputs.forEach((input) => { input.disabled = true; });
+        // eslint-disable-next-line no-param-reassign
+        deleteButtons.forEach((button) => { button.disabled = true; });
+        if (uploadFilesButton) {
+          uploadFilesButton.disabled = true;
+        }
+        if (agreeDisclaimerCheckbox) {
+          agreeDisclaimerCheckbox.disabled = true;
+        }
+        if (finishAssessmentButton) {
+          finishAssessmentButton.disabled = true;
         }
       }
     });
