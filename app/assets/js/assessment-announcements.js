@@ -1,5 +1,4 @@
 import JDDT from './jddt';
-import showNotification from './closable-notification';
 
 function checkNotificationPromise() {
   // https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API
@@ -48,7 +47,7 @@ export default function initAnnouncements(websocket) {
         messageList.appendChild(el);
         JDDT.initialise(messageList);
 
-        showNotification();
+        window.alert(`New message from invigilators: \n${d.message.replace(/<br \/>/g, '\n')}`); // eslint-disable-line no-alert
 
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Assessment announcement', { // eslint-disable-line no-new
