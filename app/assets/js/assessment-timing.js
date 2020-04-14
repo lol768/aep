@@ -129,9 +129,10 @@ export function calculateTimingInfo(data, now) {
   } else if (hasStarted) {
     if (timeRemaining > 0) {
       hourglassSpins = true;
-      text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
+      // You started 13 minutes ago. You have 1 hour and 46 minutes remaining until you should upload your answers.
+      text = `You started ${msToHumanReadable(timeSinceStart)} ago.`;
       if (showTimeRemaining) {
-        text += ` ${msToHumanReadable(timeRemaining)} remaining`;
+        text += ` You have ${msToHumanReadable(timeRemaining)} remaining until you should upload your answers`;
         if (extraTimeAdjustment) {
           text += ` (including ${msToHumanReadable(extraTimeAdjustment)} additional time)`;
         }
