@@ -11,17 +11,17 @@ sealed trait BaseSitting {
 
   import domain.BaseSitting.ProgressState._
 
-  def studentAssessment: BaseStudentAssessment
+  val studentAssessment: BaseStudentAssessment
 
-  def assessment: BaseAssessment
+  val assessment: BaseAssessment
 
-  def inProgress: Boolean = started && !finalised
+  val started: Boolean = studentAssessment.startTime.nonEmpty
 
-  def started: Boolean = studentAssessment.startTime.nonEmpty
+  val finalised: Boolean = studentAssessment.hasFinalised
 
-  def finalised: Boolean = studentAssessment.hasFinalised
+  val inProgress: Boolean = started && !finalised
 
-  def uploadGraceDuration: Duration = Duration.ofMinutes(45)
+  val uploadGraceDuration: Duration = Duration.ofMinutes(45)
 
   def isCurrentForStudent: Boolean = !finalised &&
     assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
@@ -82,15 +82,18 @@ sealed trait BaseSitting {
         }
       } else if (inProgress) {
         val studentStartTime = studentAssessment.startTime.get
-        if (studentStartTime.plus(assessment.duration.get).isAfter(now)) {
-          InProgress
-        } else if (studentStartTime.plus(duration.get).isAfter(now)) {
-          OnGracePeriod
-        } else if (studentStartTime.plus(lateDuration.get).isAfter(now)) {
-          Late
-        } else {
-          DeadlineMissed
+        val inProgressState = for(ad <- assessment.duration; d <- duration; ld <- lateDuration) yield {
+          if (studentStartTime.plus(ad).isAfter(now)) {
+            InProgress
+          } else if (studentStartTime.plus(d).isAfter(now)) {
+            OnGracePeriod
+          } else if (studentStartTime.plus(ld).isAfter(now)) {
+            Late
+          } else {
+            DeadlineMissed
+          }
         }
+        inProgressState.getOrElse(Started)
       } else {
         Finalised
       }
@@ -112,6 +115,11 @@ object BaseSitting {
 
     case object AssessmentOpenNotStarted extends ProgressState {
       val label = "Not started"
+    }
+
+    // OE-241 for bespoke assessments we don't have a duration so we only know if a student started
+    case object Started extends ProgressState {
+      val label = "Started"
     }
 
     case object InProgress extends ProgressState {

@@ -7,14 +7,14 @@ import warwick.fileuploads.UploadedFile
 import warwick.sso.UniversityID
 
 sealed trait BaseStudentAssessment {
-  def assessmentId: UUID
-  def studentId: UniversityID
-  def inSeat: Boolean
-  def startTime: Option[OffsetDateTime]
-  def extraTimeAdjustment: Option[Duration]
-  def finaliseTime: Option[OffsetDateTime]
+  val assessmentId: UUID
+  val studentId: UniversityID
+  val inSeat: Boolean
+  val startTime: Option[OffsetDateTime]
+  val extraTimeAdjustment: Option[Duration]
+  val finaliseTime: Option[OffsetDateTime]
 
-  def hasFinalised: Boolean = finaliseTime.nonEmpty
+  val hasFinalised: Boolean = finaliseTime.nonEmpty
 }
 
 case class StudentAssessment(

@@ -95,7 +95,7 @@ export function calculateTimingInfo(data, now) {
   const inProgress = hasStarted && !hasFinalised;
   const notYetStarted = !hasStarted && !hasWindowPassed;
   const timeRemaining = inProgress ? end - now : null;
-  const timeSinceStart = inProgress ? now - new Date(start) : null;
+  const timeSinceStart = inProgress ? Math.max(0, now - start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
 
@@ -196,6 +196,7 @@ export function receiveSocketData(d) {
       if (node) {
         const data = nodeData[id];
         // partial update of properties
+        // TODO as of OE-253 the socket sends all data so no point doing a partial update here.
         nodeData[id] = {
           ...data,
           ...assessment,

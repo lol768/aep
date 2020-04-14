@@ -11,29 +11,29 @@ import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
 
 sealed trait BaseAssessment extends DefinesStartWindow {
-  def id: UUID
-  def paperCode: String
-  def section: Option[String]
-  def title: String
-  def startTime: Option[OffsetDateTime]
-  def duration: Option[Duration]
-  def platform: Set[Platform]
-  def assessmentType: Option[AssessmentType]
-  def state: State
-  def tabulaAssessmentId: Option[UUID]
-  def examProfileCode: String
-  def moduleCode: String
-  def departmentCode: DepartmentCode
-  def sequence: String //MAB sequence
+  val id: UUID
+  val paperCode: String
+  val section: Option[String]
+  val title: String
+  val startTime: Option[OffsetDateTime]
+  val duration: Option[Duration]
+  val platform: Set[Platform]
+  val assessmentType: Option[AssessmentType]
+  val state: State
+  val tabulaAssessmentId: Option[UUID]
+  val examProfileCode: String
+  val moduleCode: String
+  val departmentCode: DepartmentCode
+  val sequence: String //MAB sequence
 
   def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
 }
 
 trait DefinesStartWindow {
   // (earliest allowed) start time
-  def startTime: Option[OffsetDateTime]
+  val startTime: Option[OffsetDateTime]
 
-  def lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
+  val lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
   def hasLastAllowedStartTimePassed: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime))
 
