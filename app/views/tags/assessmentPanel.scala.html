@@ -25,10 +25,10 @@
         @if(isAssessmentPage) {
             @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(sitting.assessment.id)) { implicit fc =>
                 @if(sitting.studentAssessment.startTime.isEmpty) {
-                    <button type="submit" class="btn btn-primary @if(!sitting.assessment.hasStartTimePassed || sitting.assessment.hasLastAllowedStartTimePassed) {hide}" id="startAssessment">
+                    <button type="submit" class="btn btn-primary @if(!sitting.assessment.hasStartTimePassed() || sitting.assessment.hasLastAllowedStartTimePassed()) {hide}" id="startAssessment">
                         Start
                     </button>
-                } else if (!sitting.assessment.platform.contains(Platform.OnlineExams) && sitting.assessment.hasStartTimePassed && !sitting.assessment.hasLastAllowedStartTimePassed) {
+                } else if (!sitting.assessment.platform.contains(Platform.OnlineExams) && sitting.assessment.hasStartTimePassed() && !sitting.assessment.hasLastAllowedStartTimePassed()) {
                     <button disabled="disabled" class="btn btn-default">Started</button>
                 }
                 @assessmentTiming(sitting)

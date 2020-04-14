@@ -4,12 +4,14 @@ import controllers.ServiceResultErrorRendering
 import domain.tabula.Department
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
-import play.api.mvc.{ActionFilter, ActionRefiner, Result}
+import play.api.mvc.{ActionFilter, ActionRefiner, MultipartFormData, Result}
 import services.tabula.TabulaDepartmentService
 import services.{AssessmentService, StudentAssessmentService}
 import system.Roles
 import system.routes.Types.UUID
+import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
+import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.sso._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -130,7 +132,15 @@ class ActionRefiners @Inject() (
     new Filter[StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
-          if (!request.sitting.canModify)
+          // If the request is a file upload, calculate whether the student can modify from the start of the upload
+          val referenceDate = request.body match {
+            case fileUpload: MultipartFormData[TemporaryUploadedFile @unchecked] =>
+              fileUpload.files.map(_.ref.metadata.uploadStarted).minOption.getOrElse(JavaTime.offsetDateTime)
+
+            case _ => JavaTime.offsetDateTime
+          }
+
+          if (!request.sitting.canModify(referenceDate))
             Some(Forbidden(views.html.errors.studentCannotModifySubmission(request.sitting)))
           else
             None
