@@ -1,7 +1,8 @@
 package domain
 
+import java.util.UUID
+
 import org.quartz.JobKey
-import system.routes.Types.UUID
 
 object JobKeys {
   sealed trait ByName {
