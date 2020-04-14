@@ -75,6 +75,25 @@ describe('calculateTimingInfo', () => {
     });
   });
 
+  it('shows time remaining now is slightly before start', () => {
+    const now = 1586461491323;
+    const result = calculateTimingInfo({
+        windowStart : 1586461200000,
+        windowEnd : 1586547600000,
+        start : 1586461491324,
+        end : 1586474991324,
+        hasStarted : true,
+        hasFinalised : false,
+        showTimeRemaining : true,
+        progressState : "InProgress"
+      }, now);
+    expect(result).to.deep.equal({
+      warning: false,
+      text: 'Started a moment ago. 3 hours and 45 minutes remaining.',
+      allowStart: false
+    });
+  });
+
   it('shows a missed deadline', () => {
     const data = {
       start: BASE_TIME - 125*MINUTE,

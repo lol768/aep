@@ -36,9 +36,10 @@ object TabulaAssessmentService {
   case class GetAssessmentsOptions(
     deptCode: String,
     withExamPapersOnly: Boolean = false,
+    inUseOnly: Boolean = true,
     examProfileCode: Option[String],
   ) {
-    def cacheKey = s"d:$deptCode;e:$withExamPapersOnly;p:$examProfileCode"
+    def cacheKey = s"d:$deptCode;e:$withExamPapersOnly;i:$inUseOnly;p:$examProfileCode"
   }
 
   case class GetAssessmentGroupMembersOptions(
@@ -87,6 +88,7 @@ class TabulaAssessmentServiceImpl @Inject() (
     val req = ws.url(url)
       .withQueryStringParameters(Seq(
         Some("withExamPapersOnly" -> options.withExamPapersOnly.toString),
+        Some("inUseOnly" -> options.inUseOnly.toString),
         options.examProfileCode.map("examProfileCode" -> _),
       ).flatten: _*)
     implicit def l: Logger = logger

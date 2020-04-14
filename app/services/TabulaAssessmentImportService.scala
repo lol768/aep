@@ -68,7 +68,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
     logger.info(s"Processing department $departmentCode")
 
     traverseSerial(examProfileCodes) { examProfileCode =>
-      tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, Some(examProfileCode)))
+      tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, inUseOnly = false, Some(examProfileCode)))
         .successFlatMapTo { assessmentComponents =>
           traverseSerial(assessmentComponents)(generateAssessment(_, examProfileCode))
         }
@@ -85,7 +85,6 @@ class TabulaAssessmentImportServiceImpl @Inject()(
           else {
             // Some information _must_ match, otherwise we need to change our approach
             require(schedules.forall(_.slotId == schedules.head.slotId))
-            require(schedules.forall(_.sequence == schedules.head.sequence))
             require(schedules.forall(_.startTime == schedules.head.startTime))
 
             // We allow locationSequence and location to differ, but we treat them as one assessment
@@ -107,9 +106,11 @@ class TabulaAssessmentImportServiceImpl @Inject()(
             else
               assessmentService.update(updated, Nil).successMapTo(Some(_))
 
-          case _ =>
+          case None if !schedule.locationName.contains("Assignment") =>
             val newAssessment = ac.asAssessment(None, schedule, overwriteAssessmentTypeOnImport)
             assessmentService.insert(newAssessment, Nil).successMapTo(Some(_))
+
+          case _ => Future.successful(ServiceResults.success(None))
         }.successFlatMapTo {
           case None => Future.successful(ServiceResults.success(None))
           case Some(assessment) =>

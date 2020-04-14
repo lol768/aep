@@ -11,17 +11,17 @@ sealed trait BaseSitting {
 
   import domain.BaseSitting.ProgressState._
 
-  def studentAssessment: BaseStudentAssessment
+  val studentAssessment: BaseStudentAssessment
 
-  def assessment: BaseAssessment
+  val assessment: BaseAssessment
 
-  def inProgress: Boolean = started && !finalised
+  val started: Boolean = studentAssessment.startTime.nonEmpty
 
-  def started: Boolean = studentAssessment.startTime.nonEmpty
+  val finalised: Boolean = studentAssessment.hasFinalised
 
-  def finalised: Boolean = studentAssessment.hasFinalised
+  val inProgress: Boolean = started && !finalised
 
-  def uploadGraceDuration: Duration = Duration.ofMinutes(45)
+  val uploadGraceDuration: Duration = Duration.ofMinutes(45)
 
   def isCurrentForStudent: Boolean = !finalised &&
     assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
