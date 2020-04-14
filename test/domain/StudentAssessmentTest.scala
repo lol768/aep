@@ -21,7 +21,7 @@ class StudentAssessmentTest extends PlaySpec {
 
       val files: Seq[UploadedFile] = (1 to 10).map { i =>
         Fixtures.uploadedFiles.storedUploadedStudentAssessmentFile(saId,
-          createTime = JavaTime.offsetDateTime.`with`(LocalTime.of(10+i, 0, 0)),
+          createTime = JavaTime.offsetDateTime `with` (LocalTime of (10+i, 0, 0)),
           uploadDuration = Duration.ofMinutes(12)
         ).asUploadedFile
       }
@@ -31,7 +31,7 @@ class StudentAssessmentTest extends PlaySpec {
         uploadedFiles = filesMap.keys.to(List)
       ).asStudentAssessment(filesMap)
       sa.uploadedFiles must have size 10
-      sa.submissionTime mustBe Some(JavaTime.offsetDateTime.`with`(LocalTime.of(19, 30, 0)))
+      sa.submissionTime mustBe Some(JavaTime.offsetDateTime.`with`(LocalTime.of(19, 48, 0)))
     }
   }
 
