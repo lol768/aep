@@ -18,7 +18,7 @@
         studentsWithQueries: Seq[UniversityID],
         latestActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}") {
+@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation") {
     <div class="id7-main-content">
         <div class="row">
             <div class="col-md-6">
