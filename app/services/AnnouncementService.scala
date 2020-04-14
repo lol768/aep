@@ -33,7 +33,7 @@ class AnnouncementServiceImpl @Inject()(
   daoRunner: DaoRunner,
   dao: AnnouncementDao,
   pubSubService: PubSubService,
-  studentAssessmentService: StudentAssessmentService,
+  notificationService: NotificationService,
 )(implicit ec: ExecutionContext) extends AnnouncementService {
 
   override def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] =
@@ -48,8 +48,11 @@ class AnnouncementServiceImpl @Inject()(
 
       pubSubService.publish(
         topic = announcement.assessment.toString,
-        AssessmentAnnouncement(announcement.text, announcement.created)
+        AssessmentAnnouncement(warwick.core.views.utils.nl2br(announcement.text).body, announcement.created)
       )
+
+      // Intentionally fire-and-forget to send the announcement via My Warwick as well
+      notificationService.newAnnouncement(announcement)
 
       daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(Done))
     }

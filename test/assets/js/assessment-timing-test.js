@@ -19,8 +19,9 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: 'You can start between Thu 11th Apr 2019, 18:56 and Thu 11th Apr 2019, 23:26 Europe/London, in 1 hour and 30 minutes.',
-      allowStart: false
+      text: 'You can start in 1 hour and 30 minutes.',
+      allowStart: false,
+      hourglassSpins: true
     })
   });
 
@@ -31,8 +32,9 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: 'This assessment opened at Thu 11th Apr 2019, 17:16, and closes at Thu 11th Apr 2019, 23:16. You have 5 hours and 50 minutes left to start it.',
-      allowStart: true
+      text: '5 hours and 50 minutes left to start.',
+      allowStart: true,
+      hourglassSpins: true
     })
   });
 
@@ -44,7 +46,8 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: true,
       text: 'The assessment window has now passed.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     })
   });
 
@@ -62,16 +65,18 @@ describe('calculateTimingInfo', () => {
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'You started 10 minutes ago. You have 1 hour and 5 minutes remaining until you should upload your answers.',
-      allowStart: false
+      text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining.',
+      allowStart: false,
+      hourglassSpins: true
     });
 
     // extraTimeAdjustment used only for formatting - it's already included in the end date.
     data.extraTimeAdjustment = 21*MINUTE;
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'You started 10 minutes ago. You have 1 hour and 5 minutes remaining until you should upload your answers (including 21 minutes additional time).',
-      allowStart: false
+      text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining (including 21 minutes additional time).',
+      allowStart: false,
+      hourglassSpins: true
     });
   });
 
@@ -90,7 +95,8 @@ describe('calculateTimingInfo', () => {
     expect(result).to.deep.equal({
       warning: false,
       text: 'Started a moment ago. 3 hours and 45 minutes remaining.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: true
     });
   });
 
@@ -107,7 +113,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: true,
       text: "You started this assessment, but missed the deadline to upload your answers.\nExceeded deadline by 5 minutes.",
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 
@@ -120,7 +127,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: 'You completed this assessment.',
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 
@@ -138,16 +146,18 @@ describe('calculateTimingInfo', () => {
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'You started 10 minutes ago.',
-      allowStart: false
+      text: 'Started 10 minutes ago.',
+      allowStart: false,
+      hourglassSpins: true
     });
 
     // extraTimeAdjustment makes no difference here
     data.extraTimeAdjustment = 21*MINUTE;
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'You started 10 minutes ago.',
-      allowStart: false
+      text: 'Started 10 minutes ago.',
+      allowStart: false,
+      hourglassSpins: true
     });
   });
 
@@ -164,7 +174,8 @@ describe('calculateTimingInfo', () => {
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
       text: "You started this assessment, but missed the deadline to upload your answers.",
-      allowStart: false
+      allowStart: false,
+      hourglassSpins: false
     });
   });
 

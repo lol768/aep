@@ -103,17 +103,17 @@ object DataGenerationService {
 
   def makeStoredAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None)(implicit dataGeneration: DataGeneration): StoredAssessment = {
     val deptCode = dataGeneration.fakeDept
-    val stemModuleCode =  f"$deptCode${Random.between(101, 999)}%03d"
-    val cats =   f"${Random.between(1, 99)}%02d"
+    val stemModuleCode =  f"$deptCode${dataGeneration.random.between(101, 999)}%03d"
+    val cats =   f"${dataGeneration.random.between(1, 99)}%02d"
 
     val date = LocalDate.of(2018, 1, 1)
     val localCreateTime = LocalDateTime.of(date, LocalTime.of(8, 0, 0, 0))
-    val localStartTime = LocalDateTime.of(date, LocalTime.of(Random.between(9, 15), 0, 0, 0))
+    val localStartTime = LocalDateTime.of(date, LocalTime.of(dataGeneration.random.between(9, 15), 0, 0, 0))
     val createTime = localCreateTime.atOffset(zone.getRules.getOffset(localCreateTime))
     val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
-    val paperCode = s"$stemModuleCode${Random.between(1, 9)}"
-    val platform = platformOption.getOrElse(Platform.values(Random.nextInt(Platform.values.size)))
-    val assType = Some(AssessmentType.values(Random.nextInt(AssessmentType.values.size)))
+    val paperCode = s"$stemModuleCode${dataGeneration.random.between(1, 9)}"
+    val platform = platformOption.getOrElse(Platform.values(dataGeneration.random.nextInt(Platform.values.size)))
+    val assType = Some(AssessmentType.values(dataGeneration.random.nextInt(AssessmentType.values.size)))
     val moduleCode =  s"$stemModuleCode-$cats"
     val sequence = f"E${dataGeneration.random.between(1, 9)}%02d"
 

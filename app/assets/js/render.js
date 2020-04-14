@@ -15,7 +15,6 @@ import * as log from './log';
 import UploadWithProgress from './upload-with-progress';
 import '@universityofwarwick/id7/js/id7-default-feature-detect';
 import JDDT from './jddt';
-import WebSocketConnection from './web-sockets';
 import initAnnouncements from './assessment-announcements';
 import initTiming from './assessment-timing';
 import showWSConnectivity from './ws-connectivity';
@@ -43,15 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.body.classList.contains('beforeunload')) {
       import('./are-you-sure');
     }
-    let websocket;
-    import('./web-sockets').then(() => {
-      websocket = new WebSocketConnection(`wss://${window.location.host}/websocket`);
-
+    import('./central-web-socket').then(({ default: websocket }) => {
       initAnnouncements(websocket);
       showWSConnectivity(websocket);
       if (document.querySelector('.timing-information')) initTiming(websocket);
-
-      websocket.connect();
     });
   }
 

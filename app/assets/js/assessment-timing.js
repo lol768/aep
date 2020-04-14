@@ -1,5 +1,4 @@
 import msToHumanReadable from './time-helper';
-import JDDT from './jddt';
 
 /**
  * @typedef {number} unix_timestamp
@@ -42,6 +41,12 @@ function clearWarning({ parentElement }) {
 function setWarning({ parentElement }) {
   parentElement.classList.add('text-danger');
   parentElement.classList.remove('text-info');
+}
+
+function stopHourglassSpinning({ parentElement }) {
+  const spinner = parentElement.querySelector('i.fa-hourglass-spin');
+  if (!spinner) return;
+  spinner.classList.remove('fa-hourglass-spin');
 }
 
 /** Set the list of nodes containing timing information. Generally set by the side-effects
@@ -100,18 +105,17 @@ export function calculateTimingInfo(data, now) {
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
 
-  const jdWindowStart = new JDDT(windowStart);
-  const jdWindowEnd = new JDDT(windowEnd);
-
   let text;
   let warning = false;
+  let hourglassSpins = false;
   if (hasFinalised) {
     text = 'You completed this assessment.';
   } else if (hasStarted) {
     if (timeRemaining > 0) {
-      text = `You started ${msToHumanReadable(timeSinceStart)} ago.`;
+      hourglassSpins = true;
+      text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
       if (showTimeRemaining) {
-        text += ` You have ${msToHumanReadable(timeRemaining)} remaining until you should upload your answers`;
+        text += ` ${msToHumanReadable(timeRemaining)} remaining`;
         if (extraTimeAdjustment) {
           text += ` (including ${msToHumanReadable(extraTimeAdjustment)} additional time)`;
         }
@@ -125,10 +129,12 @@ export function calculateTimingInfo(data, now) {
       }
     }
   } else if (timeUntilStart > 0) {
-    text = `You can start between ${jdWindowStart.localString()} and ${jdWindowEnd.localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
+    text = `You can start in ${msToHumanReadable(timeUntilStart)}.`;
     warning = true;
+    hourglassSpins = true;
   } else if (timeUntilEndOfWindow > 0) {
-    text = `This assessment opened at ${jdWindowStart.localString()}, and closes at ${jdWindowEnd.localString()}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start it.`;
+    text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    hourglassSpins = true;
     warning = true;
   } else {
     text = 'The assessment window has now passed.';
@@ -137,6 +143,7 @@ export function calculateTimingInfo(data, now) {
 
   return {
     allowStart: !hasStarted && timeUntilStart <= 0 && timeUntilEndOfWindow > 0,
+    hourglassSpins,
     text,
     warning,
   };
@@ -151,9 +158,11 @@ export function calculateTimingInfo(data, now) {
 function updateTimingInfo(node, data, now) {
   if (Number.isNaN(data.windowStart) || Number.isNaN(data.windowEnd)) return;
 
-  const { text, warning, allowStart } = calculateTimingInfo(data, now);
+  const {
+    text, warning, allowStart, hourglassSpins,
+  } = calculateTimingInfo(data, now);
 
-  markParentForm(node, allowStart);
+  markParentForm(node, allowStart, hourglassSpins);
 
   const textNode = document.createTextNode(text);
   const existingTextNode = node.lastChild;
@@ -167,6 +176,10 @@ function updateTimingInfo(node, data, now) {
     setWarning(node);
   } else {
     clearWarning(node);
+  }
+
+  if (!hourglassSpins) {
+    stopHourglassSpinning(node);
   }
 }
 
@@ -236,7 +249,6 @@ export default function initTiming(websocket) {
       ws.send(JSON.stringify(message));
     },
   });
-  websocket.connect();
 }
 
 // side-effects

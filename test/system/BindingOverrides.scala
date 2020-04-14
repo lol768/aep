@@ -6,6 +6,8 @@ import services.sandbox.DataGeneration
 import scala.util.Random
 
 object BindingOverrides {
+  val fixedRandomSeed: Long = 787878L
+
   def fixedDataGeneration: Binding[DataGeneration] =
-    bind[DataGeneration].toInstance(new DataGeneration(new Random(787878)))
+    bind[DataGeneration].toInstance(new DataGeneration(new Random(fixedRandomSeed)))
 }
