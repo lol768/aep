@@ -1,4 +1,5 @@
 import msToHumanReadable from './time-helper';
+import JDDT from './jddt';
 
 /**
  * @typedef {number} unix_timestamp
@@ -116,8 +117,8 @@ export function calculateTimingInfo(data, now) {
   const timeSinceStart = inProgress ? Math.max(0, now - start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
-  // eslint-disable-next-line max-len
-  const timeUntilLastRecommendedStart = (!inProgress && !hasFinalised) ? lastRecommendedStart - now : null;
+  const timeUntilLastRecommendedStart = (!inProgress && !hasFinalised)
+    ? lastRecommendedStart - now : null;
 
   let text;
   let warning = false;
@@ -127,9 +128,9 @@ export function calculateTimingInfo(data, now) {
   } else if (hasStarted) {
     if (timeRemaining > 0) {
       hourglassSpins = true;
-      text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
+      text = `You started ${msToHumanReadable(timeSinceStart)} ago.`;
       if (showTimeRemaining) {
-        text += ` ${msToHumanReadable(timeRemaining)} remaining`;
+        text += ` You have ${msToHumanReadable(timeRemaining)} remaining until you should upload your answers`;
         if (extraTimeAdjustment) {
           text += ` (including ${msToHumanReadable(extraTimeAdjustment)} additional time)`;
         }
@@ -147,11 +148,11 @@ export function calculateTimingInfo(data, now) {
       }
     }
   } else if (timeUntilStart > 0) {
-    text = `You can start in ${msToHumanReadable(timeUntilStart)}.`;
+    text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
     warning = true;
     hourglassSpins = true;
   } else if (timeUntilEndOfWindow > 0) {
-    text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    text = `This assessment opened at ${new JDDT(windowStart).localString(false)}, and closes ${new JDDT(windowEnd).localString(true)}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
     if (timeUntilLastRecommendedStart > 0) {
       text += ` To give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
     }

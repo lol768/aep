@@ -165,6 +165,7 @@ function stringifyTime(date) {
  */
 function stringify(date, {
   timezoneName,
+  wrapTimezoneName = true,
   short = false,
   includeIcon = true,
   printToday = true,
@@ -201,7 +202,13 @@ function stringify(date, {
     parts.push(stringifyTime(date).trim());
   }
 
-  if (typeof timezoneName !== 'undefined') parts.push(`<span class="text-muted">${timezoneName}</span>`);
+  if (typeof timezoneName !== 'undefined' && wrapTimezoneName) {
+    parts.push(`<span class="text-muted">${timezoneName}</span>`);
+  }
+
+  if (typeof timezoneName !== 'undefined' && !wrapTimezoneName) {
+    parts.push(timezoneName);
+  }
 
   return parts.join(' ');
 }
@@ -347,6 +354,35 @@ export default class JDDT {
    */
   shortLocalBare() {
     return ` (${stringify(this.jsDateLocal, { timezoneName: this.localTimezoneName, short: true, includeIcon: false })})`;
+  }
+
+  /**
+   * pure plain string
+   *
+   * @returns {string}
+   * @param includeTimezoneName
+   */
+  localString(includeTimezoneName = false) {
+    const options = {
+      wrapTimezoneName: false,
+      printYear: true,
+      includeIcon: false,
+    };
+    if (includeTimezoneName) {
+      return stringify(
+        this.jsDateLocal,
+        {
+          ...options,
+          timezoneName: this.localTimezoneName,
+        },
+      );
+    }
+    return stringify(
+      this.jsDateLocal,
+      {
+        ...options,
+      },
+    );
   }
 
   /**
