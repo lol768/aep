@@ -89,6 +89,7 @@ export function calculateTimingInfo(data, now) {
   const {
     windowStart,
     windowEnd,
+    lastRecommendedStart,
     start,
     end,
     hasStarted,
@@ -104,6 +105,8 @@ export function calculateTimingInfo(data, now) {
   const timeSinceStart = inProgress ? Math.max(0, now - start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
+  // eslint-disable-next-line max-len
+  const timeUntilLastRecommendedStart = (!inProgress && !hasFinalised) ? lastRecommendedStart - now : null;
 
   let text;
   let warning = false;
@@ -134,6 +137,9 @@ export function calculateTimingInfo(data, now) {
     hourglassSpins = true;
   } else if (timeUntilEndOfWindow > 0) {
     text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    if (timeUntilLastRecommendedStart > 0) {
+      text += ` But to give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
+    }
     hourglassSpins = true;
     warning = true;
   } else {
