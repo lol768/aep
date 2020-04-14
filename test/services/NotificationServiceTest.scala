@@ -98,7 +98,7 @@ class NotificationServiceTest
       activity.getRecipients.getUsers.asScala mustBe Set(Fixtures.users.student1.usercode.string, Fixtures.users.student2.usercode.string, Fixtures.users.student3.usercode.string)
       activity.getTitle mustBe "CY5637: Your alternative assessment for 'Information theory: Testing Adventurous Promiscuities and Fury' is due today"
       activity.getUrl mustBe s"https://example.warwick.ac.uk/assessment/${assessment.id}"
-      activity.getText mustBe "You can start this assessment between 10:00, Mon 1st Jan 2018 and 10:00, Tue 2nd Jan 2018 (Europe/London)."
+      activity.getText mustBe "You can start this assessment between Mon 1st Jan 2018, 10:00 and Tue 2nd Jan 2018, 10:00 (Europe/London)."
       activity.getType mustBe "assessment-reminder"
     }
   }
