@@ -153,7 +153,7 @@ export function calculateTimingInfo(data, now) {
   } else if (timeUntilEndOfWindow > 0) {
     text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
     if (timeUntilLastRecommendedStart > 0) {
-      text += ` But to give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
+      text += ` To give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
     }
     hourglassSpins = true;
     warning = true;
