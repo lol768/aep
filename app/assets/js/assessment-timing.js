@@ -9,6 +9,7 @@ import msToHumanReadable from './time-helper';
  * @typedef {Object} TimingData
  * @property {unix_timestamp} windowStart - earliest allowed start time
  * @property {unix_timestamp} windowEnd - latest allowed start time
+ * @property {unix_timestamp} lastRecommendedStart - last start time to enjoy full duration
  * @property {unix_timestamp} start - when exam was started (if it has started)
  * @property {unix_timestamp} end - latest time to submit without being late
  *           (start + duration + user's reasonable adjustment)
