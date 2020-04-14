@@ -50,7 +50,7 @@
             <td>Unknown department</td>
           }
           <td>
-            @md.getProgressState.map(_.label)
+            @md.getSummaryStatusLabel
           </td>
           <td>
             @md.studentAssessment.startTime.map {time =>

@@ -83,7 +83,7 @@ sealed trait BaseSitting {
     )
   }
 
-  def getSubmissionState: SubmissionState =
+  lazy val getSubmissionState: SubmissionState =
     studentAssessment.submissionTime match {
       case Some(submitTime) if onTimeEnd.exists(submitTime.isBefore) => SubmissionState.OnTime
       case Some(_) if onTimeEnd.isEmpty => SubmissionState.Submitted
@@ -120,6 +120,17 @@ sealed trait BaseSitting {
         Finalised
       }
     }
+  }
+
+  /** Summary for invigilators */
+  def getSummaryStatusLabel: Option[String] = {
+    lazy val submission = getSubmissionState
+    getProgressState map {
+      case ProgressState.Late if submission == SubmissionState.OnTime => "Submitted, unfinalised"
+      case ProgressState.Late if submission == SubmissionState.Late => "Submitted late, unfinalised"
+      case other => other.label
+    }
+
   }
 }
 
