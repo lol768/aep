@@ -4,6 +4,7 @@ import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import helpers.LenientTimezoneNameParsing.LenientZoneId
+import play.api.libs.json.{Json, Writes}
 
 case class AssessmentClientNetworkActivity (
   downlink: Option[Double], // mbps
@@ -16,4 +17,10 @@ case class AssessmentClientNetworkActivity (
   timestamp: OffsetDateTime = OffsetDateTime.now,
 ) {
   def isOnline = Duration.between(timestamp, OffsetDateTime.now).compareTo(Duration.ofMinutes(2L)) < 0;
+}
+
+object AssessmentClientNetworkActivity {
+  def tupled = (apply _).tupled
+
+  val writesAssessmentClientNetworkActivity: Writes[AssessmentClientNetworkActivity] = Json.writes[AssessmentClientNetworkActivity]
 }

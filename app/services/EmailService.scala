@@ -5,21 +5,20 @@ import java.util.UUID
 
 import akka.Done
 import com.google.inject.ImplementedBy
-import domain.{OutgoingEmail, Page}
+import domain.AuditEvent.{Operation, Target}
 import domain.dao.{DaoRunner, OutgoingEmailDao}
-import warwick.core.helpers.ServiceResults
-import warwick.core.helpers.ServiceResults.{ServiceError, ServiceResult}
+import domain.{OutgoingEmail, Page}
 import javax.inject.{Inject, Named, Singleton}
 import javax.mail.internet.AddressException
 import org.quartz.{JobBuilder, JobKey, Scheduler, TriggerBuilder}
 import play.api.libs.json.Json
 import play.api.libs.mailer.{Email, MailerClient}
-import play.db.NamedDatabase
 import services.job.SendOutgoingEmailJob
 import uk.ac.warwick.util.core.ExceptionUtils
 import warwick.core.Logging
-import warwick.core.helpers.JavaTime
-import warwick.core.system.AuditLogContext
+import warwick.core.helpers.ServiceResults.{ServiceError, ServiceResult}
+import warwick.core.helpers.{JavaTime, ServiceResults}
+import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
 import warwick.sso.{User, UserLookupService}
 
@@ -133,9 +132,9 @@ class EmailServiceImpl @Inject()(
 
     def send(e: OutgoingEmail, user: Option[User]): Future[ServiceResult[Done]] =
       auditService.audit(
-        Symbol("SendEmail"),
+        Operation.OutgoingEmail.SendEmail,
         e.id.map(_.toString).orNull,
-        Symbol("OutgoingEmail"),
+        Target.OutgoingEmail,
         Json.toJson(e.email)(OutgoingEmail.emailFormatter)
       ) {
         val sendEmail = Future {
