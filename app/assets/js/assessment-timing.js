@@ -1,4 +1,5 @@
 import msToHumanReadable from './time-helper';
+import JDDT from './jddt';
 
 /**
  * @typedef {number} unix_timestamp
@@ -105,6 +106,7 @@ export function calculateTimingInfo(data, now) {
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
 
+
   let text;
   let warning = false;
   let hourglassSpins = false;
@@ -129,7 +131,8 @@ export function calculateTimingInfo(data, now) {
       }
     }
   } else if (timeUntilStart > 0) {
-    text = `You can start in ${msToHumanReadable(timeUntilStart)}.`;
+    // You can start between 13:30 on Thursday 9th April and 13:30 on Friday 10th April Europe/London, in 23 hours and 35 minutes time.
+    text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
     warning = true;
     hourglassSpins = true;
   } else if (timeUntilEndOfWindow > 0) {

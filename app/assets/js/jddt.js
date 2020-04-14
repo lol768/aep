@@ -165,6 +165,7 @@ function stringifyTime(date) {
  */
 function stringify(date, {
   timezoneName,
+  wrapTimezoneName = true,
   short = false,
   includeIcon = true,
   printToday = true,
@@ -201,24 +202,30 @@ function stringify(date, {
     parts.push(stringifyTime(date).trim());
   }
 
-  if (typeof timezoneName !== 'undefined') parts.push(`<span class="text-muted">${timezoneName}</span>`);
+  if (typeof timezoneName !== 'undefined' && wrapTimezoneName) {
+    parts.push(`<span class="text-muted">${timezoneName}</span>`);
+  }
+
+  if (typeof timezoneName !== 'undefined' && !wrapTimezoneName) {
+    parts.push(timezoneName);
+  }
 
   return parts.join(' ');
 }
 
-function stringifyToPlainText(date, timezoneName, short) {
-  const currentYear = new Date(Date.now()).getFullYear();
-  let dateName = relativeDateName(date);
-  if (dateName === '') {
-    let yearString = '';
-    if (date.getFullYear() !== currentYear) {
-      yearString = stringifyYear(date.getFullYear());
-    }
-    dateName = `${stringifyDay(date.getDay(), short)} ${th(date.getDate())} ${stringifyMonth(date.getMonth(), short)} ${yearString}`;
-  }
-  const dateTimeString = `${dateName.trim()}, ${stringifyTime(date).trim()}`;
-  return timezoneName ? `${dateTimeString.trim()} ${timezoneName}` : dateTimeString.trim();
-}
+// function stringifyToPlainText(date, timezoneName, short) {
+//   const currentYear = new Date(Date.now()).getFullYear();
+//   let dateName = relativeDateName(date);
+//   if (dateName === '') {
+//     let yearString = '';
+//     if (date.getFullYear() !== currentYear) {
+//       yearString = stringifyYear(date.getFullYear());
+//     }
+//     dateName = `${stringifyDay(date.getDay(), short)} ${th(date.getDate())} ${stringifyMonth(date.getMonth(), short)} ${yearString}`;
+//   }
+//   const dateTimeString = `${dateName.trim()}, ${stringifyTime(date).trim()}`;
+//   return timezoneName ? `${dateTimeString.trim()} ${timezoneName}` : dateTimeString.trim();
+// }
 
 /**
  * Takes two dates and returns a stringified range that doesn't duplicate any more
@@ -371,8 +378,8 @@ export default class JDDT {
    */
   localString(includeTimezoneName = false) {
     return includeTimezoneName
-      ? stringifyToPlainText(this.jsDateLocal, this.localTimezoneName, true)
-      : stringifyToPlainText(this.jsDateLocal, null, true);
+      ? stringify(this.jsDateLocal, { timezoneName: this.localTimezoneName, printYear: true, includeIcon: false })
+      : stringify(this.jsDateLocal, { printYear: true, includeIcon: false });
   }
 
   /**
