@@ -8,6 +8,9 @@ import play.api.libs.json.JsValue
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
+import play.api.mvc.RequestHeader
+import net.logstash.logback.argument.StructuredArgument
+import controllers.RequestContext
 
 @Singleton
 class ErrorsController extends BaseController {
@@ -15,23 +18,26 @@ class ErrorsController extends BaseController {
   lazy val slf4jLogger: Logger = LoggerFactory.getLogger("JAVASCRIPT_ERROR")
 
   def js = Action { implicit request =>
-    request.body.asJson.flatMap(_.validate[Seq[Map[String, JsValue]]].asOpt).toSeq.flatten.foreach { error =>
-      val message = error.get("message").flatMap(_.asOpt[String]).getOrElse("-")
-      val entries = StructuredArguments.entries {
-        Seq(
-          error.get("column").flatMap(_.asOpt[String]).flatMap(s => Try(s.toInt).toOption).map("column" -> _),
-          error.get("line").flatMap(_.asOpt[String]).flatMap(s => Try(s.toInt).toOption).map("line" -> _),
-          error.get("source").flatMap(_.asOpt[String]).map("source" -> _),
-          error.get("pageUrl").flatMap(_.asOpt[String]).map("page_url" -> _),
-          error.get("stack").flatMap(_.asOpt[String]).map("stack_trace" -> _),
-          Option(request.remoteAddress).map("source_ip" -> _),
-          request.headers.get("User-Agent").map(ua => "request_headers" -> Map("user-agent" -> ua.toString)),
-          request.user.map(_.usercode.string).map("username" -> _),
-        ).flatten.toMap.asJava
-      }
-      slf4jLogger.info(message, entries)
+    request.body.asJson.flatMap(_.asOpt[Seq[Map[String, JsValue]]]).toSeq.flatten.foreach { error =>
+      val (message, map) = process(error, request)
+      slf4jLogger.info(message, StructuredArguments.entries(map.asJava))
     }
     Ok("")
+  }
+
+  def process(error: Map[String, JsValue], request: RequestHeader)(implicit ctx: RequestContext) : (String, Map[String, Any]) = {
+    val message = error.get("message").flatMap(_.asOpt[String]).getOrElse("-")
+    val map = Seq(
+      error.get("column").flatMap(_.asOpt[String]).flatMap(s => Try(s.toInt).toOption).map("column" -> _),
+      error.get("line").flatMap(_.asOpt[String]).flatMap(s => Try(s.toInt).toOption).map("line" -> _),
+      error.get("source").flatMap(_.asOpt[String]).map("source" -> _),
+      error.get("pageUrl").flatMap(_.asOpt[String]).map("page_url" -> _),
+      error.get("stack").flatMap(_.asOpt[String]).map("stack_trace" -> _),
+      Option(request.remoteAddress).map("source_ip" -> _),
+      request.headers.get("User-Agent").map(ua => "request_headers" -> Map("user-agent" -> ua.toString)),
+      ctx.user.map(_.usercode.string).map("username" -> _),
+    ).flatten.toMap
+    (message, map)
   }
 }
 
