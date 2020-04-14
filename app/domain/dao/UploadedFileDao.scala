@@ -35,9 +35,9 @@ object UploadedFilesTables {
       contentLength,
       contentType,
       uploadedBy,
-      uploadStarted,
       created,
-      version
+      version,
+      uploadStarted,
     )
 
     override def atVersion(at: OffsetDateTime): StoredUploadedFile = copy(version = at)

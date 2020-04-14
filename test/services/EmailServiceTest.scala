@@ -15,6 +15,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.Json
 import play.api.libs.mailer.{Email, MailerClient}
+import warwick.core.system.AuditService
 import warwick.sso.UserLookupService
 
 import scala.concurrent.ExecutionContext.Implicits.global
