@@ -213,20 +213,6 @@ function stringify(date, {
   return parts.join(' ');
 }
 
-// function stringifyToPlainText(date, timezoneName, short) {
-//   const currentYear = new Date(Date.now()).getFullYear();
-//   let dateName = relativeDateName(date);
-//   if (dateName === '') {
-//     let yearString = '';
-//     if (date.getFullYear() !== currentYear) {
-//       yearString = stringifyYear(date.getFullYear());
-//     }
-//     dateName = `${stringifyDay(date.getDay(), short)} ${th(date.getDate())} ${stringifyMonth(date.getMonth(), short)} ${yearString}`;
-//   }
-//   const dateTimeString = `${dateName.trim()}, ${stringifyTime(date).trim()}`;
-//   return timezoneName ? `${dateTimeString.trim()} ${timezoneName}` : dateTimeString.trim();
-// }
-
 /**
  * Takes two dates and returns a stringified range that doesn't duplicate any more
  * info than it needs to
