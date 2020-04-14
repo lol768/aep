@@ -126,7 +126,6 @@ export function calculateTimingInfo(data, now) {
       if (showTimeRemaining) {
         text += `\nExceeded deadline by ${msToHumanReadable(-timeRemaining)}.`;
         warning = true;
-        hourglassSpins = true;
       }
     }
   } else if (timeUntilStart > 0) {

@@ -94,7 +94,7 @@ describe('calculateTimingInfo', () => {
       warning: true,
       text: "You started this assessment, but missed the deadline to upload your answers.\nExceeded deadline by 5 minutes.",
       allowStart: false,
-      hourglassSpins: true
+      hourglassSpins: false
     });
   });
 
