@@ -76,7 +76,7 @@ class AssessmentTables @Inject()(
     def withUploadedFiles = q
       .joinLeft(uploadedFiles.table)
       .on { case (a, f) =>
-        a.id === f.ownerId && f.ownerType === (UploadedFileOwner.Assessment: UploadedFileOwner) && (a.storedBrief.asColumnOf[JsValue] +> "fileIds") ?? f.id.asColumnOf[String]
+        a.id === f.ownerId && f.ownerType === (UploadedFileOwner.AssessmentBrief: UploadedFileOwner) && (a.storedBrief.asColumnOf[JsValue] +> "fileIds") ?? f.id.asColumnOf[String]
       }
   }
 

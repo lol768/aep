@@ -169,7 +169,7 @@ class AssessmentServiceImpl @Inject()(
               metadata,
               ac.usercode.get,
               assessment.id,
-              UploadedFileOwner.Assessment
+              UploadedFileOwner.AssessmentBrief
             ).map(_.id)
           })
         } else DBIO.successful(assessment.brief.files.map(_.id))
@@ -211,7 +211,7 @@ class AssessmentServiceImpl @Inject()(
               metadata,
               ac.usercode.get,
               assessment.id,
-              UploadedFileOwner.Assessment
+              UploadedFileOwner.AssessmentBrief
             ).map(_.id)
           })
         } else DBIO.successful(assessment.brief.files.map(_.id))

@@ -187,7 +187,7 @@ object Fixtures {
         uploadedBy = users.staff1.usercode,
         uploadStarted = createTime.asOffsetDateTime.minusSeconds(7L),
         ownerId = None,
-        ownerType = Some(UploadedFileOwner.Assessment),
+        ownerType = Some(UploadedFileOwner.AssessmentBrief),
         created = createTime.asOffsetDateTime,
         version = createTime.asOffsetDateTime,
       )
