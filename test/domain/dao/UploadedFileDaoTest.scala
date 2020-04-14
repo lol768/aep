@@ -75,7 +75,7 @@ class UploadedFileDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachT
           DateTimeUtils.CLOCK_IMPLEMENTATION = Clock.fixed(now, JavaTime.timeZone)
         })
 
-        all <- dao.all
+        all <- dao.allWithoutOwner
 
         _ <- DBIO.from(Future.successful {
           all.length mustEqual 10
@@ -90,7 +90,7 @@ class UploadedFileDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachT
           findFirstTwo.map(_.id) mustEqual firstTwo
         })
 
-        afterDelete <- dao.delete(files(0).id) andThen dao.all
+        afterDelete <- dao.delete(files(0).id) andThen dao.allWithoutOwner
 
         _ <- DBIO.from(Future.successful {
           afterDelete.length mustEqual 9
