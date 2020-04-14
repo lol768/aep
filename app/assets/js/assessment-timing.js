@@ -9,6 +9,7 @@ import msToHumanReadable from './time-helper';
  * @typedef {Object} TimingData
  * @property {unix_timestamp} windowStart - earliest allowed start time
  * @property {unix_timestamp} windowEnd - latest allowed start time
+ * @property {unix_timestamp} lastRecommendedStart - last start time to enjoy full duration
  * @property {unix_timestamp} start - when exam was started (if it has started)
  * @property {unix_timestamp} end - latest time to submit without being late
  *           (start + duration + user's reasonable adjustment)
@@ -89,6 +90,7 @@ export function calculateTimingInfo(data, now) {
   const {
     windowStart,
     windowEnd,
+    lastRecommendedStart,
     start,
     end,
     hasStarted,
@@ -104,6 +106,8 @@ export function calculateTimingInfo(data, now) {
   const timeSinceStart = inProgress ? Math.max(0, now - start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
+  // eslint-disable-next-line max-len
+  const timeUntilLastRecommendedStart = (!inProgress && !hasFinalised) ? lastRecommendedStart - now : null;
 
   let text;
   let warning = false;
@@ -134,6 +138,9 @@ export function calculateTimingInfo(data, now) {
     hourglassSpins = true;
   } else if (timeUntilEndOfWindow > 0) {
     text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    if (timeUntilLastRecommendedStart > 0) {
+      text += ` But to give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
+    }
     hourglassSpins = true;
     warning = true;
   } else {
