@@ -247,6 +247,7 @@ class AssessmentsController @Inject()(
               invigilators = data.invigilators,
               state = newState,
               tabulaAssessmentId = None,
+              tabulaAssignments = Set(),
               examProfileCode = "EXAPR20",
               moduleCode = data.moduleCode,
               departmentCode = data.departmentCode,

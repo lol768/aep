@@ -130,6 +130,7 @@ object DataGenerationService {
       invigilators = List(invigilator1, invigilator2),
       state = Assessment.State.Draft,
       tabulaAssessmentId = None,
+      tabulaAssignments = Nil,
       examProfileCode = "EXSUM20",
       moduleCode = moduleCode,
       departmentCode = DepartmentCode(deptCode),

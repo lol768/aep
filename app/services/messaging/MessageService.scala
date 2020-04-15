@@ -54,7 +54,7 @@ class MessageService @Inject() (
       .map { clientName =>
         pubSubService.publish(
           topic = savedMessage.assessmentId.toString,
-          AssessmentMessage(warwick.core.views.utils.nl2br(savedMessage.text).body, savedMessage.sender, clientName, savedMessage.created)
+          AssessmentMessage(savedMessage.text, savedMessage.sender, clientName, savedMessage.created)
         )
         ServiceResults.success(Done)
       }
