@@ -74,7 +74,7 @@ class NotificationServiceImpl @Inject()(
           controllers.routes.AssessmentController.view(assessment.id).absoluteURL(true, domain),
           (assessment.startTime, assessment.lastAllowedStartTime) match {
             case (Some(startTime), Some(lastAllowedStartTime)) =>
-              s"You can start this assessment between ${JavaTime.Relative(startTime, printToday = false)} and ${JavaTime.Relative(lastAllowedStartTime, printToday = false)} (${JavaTime.timeZone.getId})."
+              s"You can start this assessment between ${JavaTime.Relative(startTime)} and ${JavaTime.Relative(lastAllowedStartTime)} (${JavaTime.timeZone.getId})."
 
             case (Some(startTime), _) =>
               s"You can start this assessment at ${JavaTime.Relative(startTime, printToday = false)} (${JavaTime.timeZone.getId})."
