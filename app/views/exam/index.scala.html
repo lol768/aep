@@ -6,6 +6,7 @@
 @import warwick.core.helpers.JavaTime
 
 @import domain.Announcement
+@import domain.BaseSitting.ProgressState
 @(
   sitting: Sitting,
   finishExamForm: Form[FinishExamFormData],
@@ -138,6 +139,18 @@
                 We accept all common file formats: PDF, Word/Excel/PowerPoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, m4a, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
               </p>
               @if(sitting.studentAssessment.uploadedFiles.nonEmpty) {
+                <div id="late-upload-warning">
+                  @if(sitting.getProgressState.contains(ProgressState.Late)) {
+                    <div class="alert alert-warning media">
+                      <div class="media-left">
+                        <i class="fas fa-exclamation-triangle"></i>
+                      </div>
+                      <div class="media-body">
+                        If you upload new files at this point your submission may be considered as late.
+                      </div>
+                    </div>
+                  }
+                </div>
                 @uploadForm
                 <div class="uploaded-files">
                   @sitting.studentAssessment.uploadedFiles.map { file =>
