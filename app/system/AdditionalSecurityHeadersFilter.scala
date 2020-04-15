@@ -14,11 +14,13 @@ class AdditionalSecurityHeadersFilter @Inject() (
 
   private val featurePolicyHeaderValue = configuration.get[String]("play.filters.headers.featurePolicy")
   private val reportToHeaderValue = configuration.get[String]("play.filters.headers.reportTo")
+  private val nelHeaderValue = configuration.get[String]("play.filters.headers.nel")
 
   override def apply(next: EssentialAction): EssentialAction = EssentialAction { req =>
     next(req).map(result => result.withHeaders(
       "Feature-Policy" -> featurePolicyHeaderValue,
-      "Report-To" -> reportToHeaderValue
+      "Report-To" -> reportToHeaderValue,
+      "NEL" -> nelHeaderValue
     ))
   }
 }

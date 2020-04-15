@@ -59,7 +59,7 @@
               }
               @sitting.assessment.brief.files.map { file =>
                 <li>
-                  <a class="assessment-brief-file" target="_blank" href="@controllers.routes.AssessmentController.downloadFile(sitting.assessment.id, file.id)">@file.fileName</a>
+                  <a class="assessment-brief-file" target="_blank" rel="noreferrer" href="@controllers.routes.AssessmentController.downloadFile(sitting.assessment.id, file.id)">@file.fileName</a>
                 </li>
               }
             </ul>
@@ -163,11 +163,11 @@
                             </a>
                           </div>
                           <div class="media-body">
-                            <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" target="_blank">@file.fileName</a></h4>
+                            <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" target="_blank" rel="noreferrer">@file.fileName</a></h4>
                             <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@JavaTime.Relative(file.created)</small></p>
                             @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(sitting.assessment.id, file.id), Symbol("class") -> "quash-beforeunload") { implicit ifc =>
                               <p>
-                                <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
+                                <a download target="_blank" rel="noreferrer" href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
                                   Download</a> <button delete type="submit" class="btn btn-default btn-sm"><i class="fas fa-trash"></i>
                                 Delete</button>
                               </p>
@@ -226,9 +226,9 @@
                       </a>
                     </div>
                     <div class="media-body">
-                      <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" target="_blank">@file.fileName</a></h4>
+                      <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" target="_blank" rel="noreferrer">@file.fileName</a></h4>
                       <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@JavaTime.Relative(file.created)</small></p>
-                      <a download target="_blank" href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
+                      <a download target="_blank" rel="noreferrer" href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
                         Download</a>
                     </div>
                   </div>
