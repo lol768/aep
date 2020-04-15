@@ -10,7 +10,6 @@ export default builder.playApp()
     'admin-style': './app/assets/css/admin.less',
   })
   .momentTimezonesFrom(2020)
-  .momentTimezonesLondonOnly()
   .addBrowserLevel({ id: 'modern', suffix: '-modern', babelTargets: {
     chrome: '75',
     edge: '44',

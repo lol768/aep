@@ -24,7 +24,7 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: 'You can start between 18:56, Thursday 11th April 2019 and 23:26, Thursday 11th April 2019 Europe/London, in 1 hour and 30 minutes.',
+      text: 'You can start between 18:56, Thursday 11th April 2019 and 23:26, Thursday 11th April 2019 BST, in 1 hour and 30 minutes.',
       allowStart: false,
       hourglassSpins: true
     })
@@ -38,7 +38,7 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: 'This assessment opened at 17:16, Thursday 11th April 2019, and closes 23:16, Thursday 11th April 2019 Europe/London. You have 5 hours and 50 minutes left to start.',
+      text: 'This assessment opened at 17:16, Thursday 11th April 2019, and closes 23:16, Thursday 11th April 2019 BST. You have 5 hours and 50 minutes left to start.',
       allowStart: true,
       hourglassSpins: true
     })

@@ -78,7 +78,7 @@
                     case _ => {<i class="fad fa-signal themed-duotone"></i>}
                   }
                   Online now
-                  @a.localTimezoneName.map { e => <span class="text-muted">@e.timezoneName</span> }
+                  @a.localTimezoneName.map { e => <span class="text-muted">@e.timezoneAbbr()</span> }
                 } else {
                   <i class="fad fa-signal-slash themed-duotone"></i> Offline
                 }
