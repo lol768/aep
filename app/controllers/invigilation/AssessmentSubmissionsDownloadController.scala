@@ -32,7 +32,7 @@ class AssessmentSubmissionsDownloadController @Inject()(
       Future.successful(BadRequest("Submissions are not available for non-AEP assessments"))
     } else {
       uploadedFileService.listWithOwner(assessmentId, UploadedFileOwner.AssessmentSubmissions).successFlatMap { files =>
-        if (files.size > 2) Future.successful(BadRequest(s"Expected just 1 file but was ${files.size}"))
+        if (files.size >= 2) Future.successful(BadRequest(s"Expected just 1 file but was ${files.size}"))
         else if (files.size == 1) uploadedFileControllerHelper.serveFile(files.head)
         else {
           val jobKey = JobKeys.GenerateAssessmentZipJob(assessmentId).key
