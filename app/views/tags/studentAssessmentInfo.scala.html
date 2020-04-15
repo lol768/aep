@@ -10,8 +10,17 @@
   metadata: Seq[SittingMetadata],
   userMap: Map[UniversityID, tabula.SitsProfile],
   studentsWithQueries: Option[Seq[UniversityID]] = None,
-  latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty
+  latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
+  sortByHeader: Option[String] = None,
 )(implicit context: RequestContext)
+
+@sortBy(header: Option[String], value: String, default: Option[String] = None) = {
+  @if(header.nonEmpty) {
+    @if(header.get.toLowerCase==value.toLowerCase) { data-sort-default }
+  } else {
+    @if(default.nonEmpty) { @default.get }
+  }
+}
 
 @if(metadata.nonEmpty) {
   @studentsWithQueries.map { sWQ =>
@@ -23,16 +32,16 @@
     </a>
     </div>
   }
-  <table class="table table-bordered">
+  <table class="table table-bordered table-sortable students-taking-assessment-table">
     <thead>
       <tr>
-        <th>Student</th>
-        <th>Department</th>
-        <th>State</th>
-        <th>Start time</th>
-        <th>Finalised time</th>
-        <th>Adjustments</th>
-        <th>Connection</th>
+        <th @sortBy(sortByHeader, "Student", Some(s"data-sort-default"))>Student</th>
+        <th @sortBy(sortByHeader, "Department")>Department</th>
+        <th @sortBy(sortByHeader, "State")>State</th>
+        <th @sortBy(sortByHeader, "Start time")>Start time</th>
+        <th @sortBy(sortByHeader, "Finalised time")>Finalised time</th>
+        <th @sortBy(sortByHeader, "Adjustments")>Adjustments</th>
+        <th @sortBy(sortByHeader, "Connection")>Connection</th>
         @studentsWithQueries.map { sWQ =>
           <th><i class="fad themed-duotone fa-comment-alt-lines mr-half"></i></th>
         }
