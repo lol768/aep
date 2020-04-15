@@ -147,7 +147,7 @@ export default class FlexiPicker {
       })
       .then((response) => {
         // Return the items only if the user hasn't since made a different query
-        if (this.currentQuery === query) {
+        if (this.currentQuery === query && typeof response.data !== 'undefined') {
           $.each(response.data.results, (i, item) => FlexiPicker.transformItem(item));
           callback(response.data.results || []);
         }

@@ -149,7 +149,17 @@ export default class WebSocketConnection {
     if (this.dataLastReceivedAt != null
       && this.dataLastReceivedAt < Date.now() - HEARTBEAT_INTERVAL_MS) {
       log('No data received in the last heartbeat window');
-      this.ws.dispatchEvent(new Event('error'));
+
+      // IE11
+      let event;
+      if (typeof Event === 'function') {
+        event = new Event('error');
+      } else {
+        event = document.createEvent('Event');
+        event.initEvent('error', true, true);
+      }
+      this.ws.dispatchEvent(event);
+
       return;
     }
 
