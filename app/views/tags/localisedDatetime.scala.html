@@ -1,9 +1,12 @@
 @import java.time.OffsetDateTime
-@import warwick.core.helpers.JavaTime
 @import java.util.TimeZone
+
+@import helpers.LenientTimezoneNameParsing._
+@import warwick.core.helpers.JavaTime
+
 @(datetime: OffsetDateTime)
 
-<i class="fad themed-duotone fa-clock fa-fw"></i> @JavaTime.Relative(datetime) <span class="text-muted">@JavaTime.timeZone</span><br />
+<i class="fad themed-duotone fa-clock fa-fw"></i> @JavaTime.Relative(datetime) <span class="text-muted">@Right(JavaTime.timeZone).timezoneAbbr(datetime)</span><br />
   <span class="jddt"
   data-format="shortLocal"
   data-millis="@datetime.toInstant.toEpochMilli"
