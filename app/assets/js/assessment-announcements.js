@@ -31,7 +31,7 @@ export function formatAnnouncement(d) {
   const mediaBody = document.createElement('div');
   mediaBody.classList.add('media-body');
   mediaLeft.appendChild(icon);
-  mediaBody.innerHTML = d.message.replace(/\n/, '<br>');
+  mediaBody.innerHTML = d.messageHTML;
   mediaBody.appendChild(timestamp);
   el.appendChild(mediaLeft);
   el.appendChild(mediaBody);
@@ -47,13 +47,13 @@ export default function initAnnouncements(websocket) {
         messageList.appendChild(el);
         JDDT.initialise(messageList);
 
-        window.alert(`New message from invigilators: \n${d.message.replace(/<br \/>/g, '\n')}`); // eslint-disable-line no-alert
-
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Assessment announcement', { // eslint-disable-line no-new
-            body: d.message,
+            body: d.messageHTML,
             requireInteraction: true,
           });
+        } else {
+          window.alert(`New message from invigilators: \n${d.messageText}`); // eslint-disable-line no-alert
         }
       }
     },
