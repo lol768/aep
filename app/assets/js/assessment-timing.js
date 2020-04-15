@@ -140,6 +140,9 @@ export function calculateTimingInfo(data, now) {
       text = 'You uploaded your answers on time. If you upload any more answers you may be counted as late.';
       hourglassSpins = true;
     } else {
+      // In practice I don't think we will ever print the "finalise your submission" version any
+      // more, because if you submitted anything and the time ran out, it's considered finalised
+      // and would be handled at the very top
       const action = submissionState === SubmissionState.None ? 'upload your answers' : 'finalise your submission';
       text = `You started this assessment, but missed the deadline to ${action}.`;
       if (showTimeRemaining) {

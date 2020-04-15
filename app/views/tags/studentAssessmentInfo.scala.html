@@ -30,7 +30,7 @@
         <th>Department</th>
         <th>State</th>
         <th>Start time</th>
-        <th>Finalised time</th>
+        <th>Submission time</th>
         @if(context.features.importStudentExtraTime) {
           <th>Adjustments</th>
         }
@@ -60,7 +60,7 @@
             }
           </td>
           <td>
-            @md.studentAssessment.finaliseTime.map {time =>
+            @md.finalisedTime.map {time =>
               @localisedDatetime(time)
             }
           </td>
@@ -68,7 +68,7 @@
             <td>@md.studentAssessment.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
           }
           <td>
-            @if(md.studentAssessment.hasFinalised) {
+            @if(md.finalised) {
               <span class="text-muted">No information</span>
             } else {
               @latestActivities.get(md.studentAssessment.id).map { a =>

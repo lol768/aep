@@ -68,7 +68,7 @@ class GenerateAssessmentZipJob @Inject()(
             sitting.declarations.acceptsAuthorship.toString,
             if (sitting.declarations.completedRA) sitting.declarations.selfDeclaredRA.toString else "",
             sitting.studentAssessment.startTime.map(csvDateTimeFormat.format).getOrElse(""),
-            sitting.studentAssessment.finaliseTime.map(csvDateTimeFormat.format).getOrElse(""),
+            sitting.studentAssessment.explicitFinaliseTime.map(csvDateTimeFormat.format).getOrElse(""),
             sitting.studentAssessment.submissionTime.map(csvDateTimeFormat.format).getOrElse(""),
             sitting.studentAssessment.uploadedFiles.map(_.fileName).mkString(", ")
           )

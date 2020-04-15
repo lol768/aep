@@ -9,6 +9,7 @@ import warwick.core.helpers.JavaTime
 
 sealed trait BaseSitting {
   import domain.BaseSitting.ProgressState._
+  import Assessment.uploadGraceDuration
 
   val studentAssessment: BaseStudentAssessment
 
@@ -16,11 +17,15 @@ sealed trait BaseSitting {
 
   val started: Boolean = studentAssessment.startTime.nonEmpty
 
-  val finalised: Boolean = studentAssessment.hasFinalised
+  /** Finalised either explicitly or by the exam ending (as long as some files were uploaded) */
+  lazy val finalised: Boolean = finalisedTime.nonEmpty
 
-  val inProgress: Boolean = started && !finalised
+  lazy val explicitlyFinalised: Boolean = studentAssessment.hasExplicitlyFinalised
 
-  val uploadGraceDuration: Duration = Duration.ofMinutes(45)
+  lazy val finalisedTime: Option[OffsetDateTime] = studentAssessment.explicitFinaliseTime
+    .orElse(studentAssessment.submissionTime.filter(_ => hasLateEndPassed))
+
+  lazy val inProgress: Boolean = started && !finalised
 
   def isCurrentForStudent: Boolean = !finalised &&
     assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
@@ -35,11 +40,13 @@ sealed trait BaseSitting {
 
   // How long the student has to complete the assessment including submission uploads
   lazy val onTimeDuration: Option[Duration] = duration.map { d =>
+    require(uploadGraceDuration != null, "uploadGraceDuration is null!")
     d.plus(uploadGraceDuration)
   }
 
   // Hard limit for student submitting, though they may be counted late.
   lazy val lateDuration: Option[Duration] = onTimeDuration.map { d =>
+    require(Assessment.lateSubmissionPeriod != null, "Assessment.lateSubmissionPeriod is null!")
     d.plus(Assessment.lateSubmissionPeriod)
   }
 
@@ -63,6 +70,8 @@ sealed trait BaseSitting {
       time <- clampToWindow(start.plus(duration))
     } yield time
 
+  private def hasLateEndPassed: Boolean =
+    lateEnd.exists(_.isBefore(JavaTime.offsetDateTime))
 
   lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
 
@@ -83,7 +92,7 @@ sealed trait BaseSitting {
       start = studentAssessment.startTime,
       end = onTimeEnd,
       hasStarted = studentAssessment.startTime.nonEmpty,
-      hasFinalised = studentAssessment.finaliseTime.nonEmpty,
+      hasFinalised = finalised,
       extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
       showTimeRemaining = duration.isDefined,
       progressState = getProgressState,

@@ -121,7 +121,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                       inSeat = false,
                       startTime = None,
                       extraTimeAdjustment = extraTimeAdjustment,
-                      finaliseTime = None,
+                      explicitFinaliseTime = None,
                       uploadedFiles = Nil,
                     )
                   }

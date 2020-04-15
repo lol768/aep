@@ -77,27 +77,24 @@ class StudentAssessmentServiceImpl @Inject()(
       .map(ServiceResults.success)
 
   override def sittingsByAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] =
-    daoRunner.run(for {
-      assessmentRow <- assessmentDao.loadByIdWithUploadedFiles(assessmentId)
-      assessment = AssessmentService.inflateRowWithUploadedFiles(assessmentRow).getOrElse(noAssessmentFound(assessmentId))
-      rows <- dao.loadByAssessmentIdWithUploadedFiles(assessmentId)
-      studentAssessments = inflateRowsWithUploadedFiles(rows)
-      declarations <- dao.getDeclarations(studentAssessments.map(_.id))
-    } yield studentAssessments.map(sa => Sitting(sa, assessment, declarations.find(_.studentAssessmentId == sa.id).map(_.asDeclarations).getOrElse(Declarations(sa.id)))))
-      .map(ServiceResults.success)
+    daoRunner.run(dao.loadByAssessmentIdWithUploadedFiles(assessmentId))
+      .map(inflateRowsWithUploadedFiles)
+      .flatMap(convertToSittings)
 
   override def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
     daoRunner.run(dao.loadByUniversityIdWithUploadedFiles(universityId))
       .map(inflateRowsWithUploadedFiles)
-      .flatMap { studentAssessments =>
-        val saIds = studentAssessments.map(_.assessmentId)
-        ServiceResults.zip(
-          assessmentService.getByIds(saIds).successMapTo(_.map(a => a.id -> a).toMap),
-          getDeclarations(saIds).successMapTo(_.map(d => d.studentAssessmentId -> d).toMap)
-        ).map(_.map { case (assessmentsMap, declarationsMap) =>
-          studentAssessments.map(sa => Sitting(sa, assessmentsMap(sa.assessmentId), declarationsMap.getOrElse(sa.id, Declarations(sa.id))))
-        })
-      }
+      .flatMap(convertToSittings)
+  }
+
+  private def convertToSittings(studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
+    val saIds = studentAssessments.map(_.assessmentId).distinct
+    ServiceResults.zip(
+      assessmentService.getByIds(saIds).successMapTo(_.map(a => a.id -> a).toMap),
+      getDeclarations(saIds).successMapTo(_.map(d => d.studentAssessmentId -> d).toMap)
+    ).map(_.map { case (assessmentsMap, declarationsMap) =>
+      studentAssessments.map(sa => Sitting(sa, assessmentsMap(sa.assessmentId), declarationsMap.getOrElse(sa.id, Declarations(sa.id))))
+    })
   }
 
   override def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]] = {
@@ -281,7 +278,7 @@ class StudentAssessmentServiceImpl @Inject()(
         inSeat = studentAssessment.inSeat,
         startTime = studentAssessment.startTime,
         extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
-        finaliseTime = studentAssessment.finaliseTime,
+        finaliseTime = studentAssessment.explicitFinaliseTime,
         uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
         created = timestamp,
         version = timestamp,
@@ -297,7 +294,7 @@ class StudentAssessmentServiceImpl @Inject()(
             updated <- dao.update(existingSA.copy(
               inSeat = studentAssessment.inSeat,
               startTime = studentAssessment.startTime,
-              finaliseTime = studentAssessment.finaliseTime,
+              finaliseTime = studentAssessment.explicitFinaliseTime,
               uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
             ))
             withUploadedFiles <- dao.loadWithUploadedFiles(updated.studentId, updated.assessmentId)
@@ -311,7 +308,7 @@ class StudentAssessmentServiceImpl @Inject()(
             inSeat = studentAssessment.inSeat,
             startTime = studentAssessment.startTime,
             extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
-            finaliseTime = studentAssessment.finaliseTime,
+            finaliseTime = studentAssessment.explicitFinaliseTime,
             uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
             created = timestamp,
             version = timestamp,
