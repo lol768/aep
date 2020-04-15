@@ -1,0 +1,18 @@
+@import services.refiners.DepartmentAdminAssessmentRequest
+@(form: Form[Boolean], canBeDeleted: Boolean)(implicit request: DepartmentAdminAssessmentRequest[_], messages: MessagesProvider, context: RequestContext)
+
+@adminLayout(title = s"Delete assessment for ${request.assessment.title} (${request.assessment.moduleCode})") {
+  @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.delete(request.assessment.id)) { implicit vfc =>
+    @b3.free() {
+      <p>Are you sure you want to delete this assessment? <strong>This cannot be undone.</strong></p>
+    }
+
+    @b3.checkbox(form("confirm"), Symbol("_text") -> "I confirm that I want to delete this assessment")
+
+    @b3.free(Symbol("_class") -> "spaced-buttons sticky") {
+      <button type="submit" class="btn btn-danger" name="action">Delete</button>
+      <a href="@controllers.admin.routes.AssessmentsController.updateForm(request.assessment.id)" class="btn btn-default">Cancel</a>
+    }
+  }
+
+}
