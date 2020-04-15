@@ -1,5 +1,7 @@
 package services.refiners
 
+import java.util.UUID
+
 import controllers.ServiceResultErrorRendering
 import domain.tabula.Department
 import javax.inject.{Inject, Singleton}
@@ -8,7 +10,6 @@ import play.api.mvc.{ActionFilter, ActionRefiner, MultipartFormData, Result}
 import services.tabula.TabulaDepartmentService
 import services.{AssessmentService, StudentAssessmentService}
 import system.Roles
-import system.routes.Types.UUID
 import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile

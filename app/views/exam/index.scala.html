@@ -35,6 +35,10 @@
 
 @defining(if (sitting.canModify()) "beforeunload" else "") { className =>
   @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className), existingMessages = announcements) {
+    <div class="alert alert-info hidden notification-permission">
+      Alternative Exams Portal needs your permission to <a href="#" class="btn btn-primary btn-xs">show system notifications</a> for assessment announcements
+    </div>
+
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
 

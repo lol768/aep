@@ -93,6 +93,7 @@ trait UploadedFileDao {
   def allWithoutOwner: DBIO[Seq[StoredUploadedFile]]
   def find(id: UUID): DBIO[Option[StoredUploadedFile]]
   def find(ids: Seq[UUID]): DBIO[Seq[StoredUploadedFile]]
+  def findByOwner(ownerId: UUID, ownerType: UploadedFileOwner): DBIO[Seq[StoredUploadedFile]]
   def insert(file: StoredUploadedFile)(implicit ac: AuditLogContext): DBIO[StoredUploadedFile]
   def delete(id: UUID)(implicit ac: AuditLogContext): DBIO[Boolean]
 }
@@ -104,6 +105,7 @@ class UploadedFileDaoImpl @Inject()(
   tables: AssessmentTables,
 )(implicit ec: ExecutionContext) extends UploadedFileDao with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
+  import jdbcTypes._
   import tables._
 
   override def allWithoutOwner: DBIO[Seq[StoredUploadedFile]] =
@@ -114,6 +116,11 @@ class UploadedFileDaoImpl @Inject()(
 
   override def find(ids: Seq[UUID]): DBIO[Seq[StoredUploadedFile]] =
     uploadedFiles.table.filter(_.id inSetBind ids).result
+
+  override def findByOwner(ownerId: UUID, ownerType: UploadedFileOwner): DBIO[Seq[StoredUploadedFile]] =
+    uploadedFiles.table
+      .filter(f => f.ownerId === ownerId && f.ownerType === ownerType)
+      .result
 
   override def insert(file: StoredUploadedFile)(implicit ac: AuditLogContext): DBIO[StoredUploadedFile] =
     uploadedFiles.insert(file)

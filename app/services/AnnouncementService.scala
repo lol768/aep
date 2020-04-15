@@ -48,7 +48,7 @@ class AnnouncementServiceImpl @Inject()(
 
       pubSubService.publish(
         topic = announcement.assessment.toString,
-        AssessmentAnnouncement(warwick.core.views.utils.nl2br(announcement.text).body, announcement.created)
+        AssessmentAnnouncement(announcement.text, announcement.created)
       )
 
       // Intentionally fire-and-forget to send the announcement via My Warwick as well

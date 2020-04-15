@@ -34,6 +34,7 @@ class SittingTest extends PlaySpec with MockitoSugar {
       assessmentType = Some(AssessmentType.Bespoke),
       state = Assessment.State.Approved,
       tabulaAssessmentId = Some(UUID.randomUUID()),
+      tabulaAssignments = Set.empty,
       examProfileCode= "MAY2020",
       moduleCode = "IN-101",
       departmentCode = DepartmentCode("IN"),

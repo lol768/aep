@@ -11,6 +11,7 @@ import play.api.Configuration
 import services.TabulaAssessmentImportService.{AssessmentImportResult, DepartmentWithAssessments}
 import services.tabula.TabulaAssessmentService.GetAssessmentsOptions
 import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
+import system.Features
 import warwick.core.Logging
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.Implicits._
@@ -40,10 +41,9 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
   configuration: Configuration,
+  features: Features
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
-  private[this] lazy val importStudentExtraTime = configuration.get[Boolean]("app.importStudentExtraTime")
-  private[this] lazy val overwriteAssessmentTypeOnImport = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
 
   def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
     tabulaDepartmentService.getDepartments().successFlatMapTo { departments =>
@@ -92,14 +92,14 @@ class TabulaAssessmentImportServiceImpl @Inject()(
             assessmentService.delete(existingAssessment).successMapTo(_ => None)
 
           case Some(existingAssessment) =>
-            val updated = ac.asAssessment(Some(existingAssessment), schedule, overwriteAssessmentTypeOnImport)
+            val updated = ac.asAssessment(Some(existingAssessment), schedule, features.overwriteAssessmentTypeOnImport)
             if (updated == existingAssessment)
               Future.successful(ServiceResults.success(Some(existingAssessment)))
             else
               assessmentService.update(updated, Nil).successMapTo(Some(_))
 
           case None if !schedule.locationName.contains("Assignment") =>
-            val newAssessment = ac.asAssessment(None, schedule, overwriteAssessmentTypeOnImport)
+            val newAssessment = ac.asAssessment(None, schedule, features.overwriteAssessmentTypeOnImport)
             assessmentService.insert(newAssessment, Nil).successMapTo(Some(_))
 
           case _ => Future.successful(ServiceResults.success(None))
@@ -113,7 +113,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
               val additions: Seq[StudentAssessment] =
                 schedule.students.filterNot(s => studentAssessments.exists(_.studentId == s.universityID))
                   .map { scheduleStudent =>
-                    val extraTimeAdjustment = if (importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                    val extraTimeAdjustment = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
                     StudentAssessment(
                       id = UUID.randomUUID(),
                       assessmentId = assessment.id,
@@ -128,7 +128,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
 
               val modifications: Seq[StudentAssessment] =
                 schedule.students.flatMap { scheduleStudent =>
-                  val extraTimeAdjustment = if (importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                  val extraTimeAdjustment = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
                   studentAssessments.find(_.studentId == scheduleStudent.universityID).flatMap { studentAssessment =>
                     val updated = studentAssessment.copy(
                       extraTimeAdjustment = extraTimeAdjustment,

@@ -1,6 +1,7 @@
 package controllers.admin
 
 import java.io.File
+import java.util.UUID
 
 import controllers.admin.AssessmentsController.AssessmentFormData
 import domain.Assessment.{AssessmentType, Platform}
@@ -10,7 +11,6 @@ import play.api.mvc._
 import play.api.test.Helpers._
 import services.AssessmentService
 import specs.BaseSpec
-import system.routes.Types.UUID
 import warwick.core.helpers.JavaTime
 import warwick.sso.User
 

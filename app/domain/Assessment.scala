@@ -27,6 +27,7 @@ sealed trait BaseAssessment extends DefinesStartWindow {
   val sequence: String //MAB sequence
 
   def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
+  def isDownloadAvailable: Boolean = platform.contains(Platform.OnlineExams) && lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime.minusHours(1)))
 }
 
 trait DefinesStartWindow {
@@ -53,10 +54,11 @@ case class Assessment(
   invigilators: Set[Usercode],
   state: State,
   tabulaAssessmentId: Option[UUID], //for assessments created within app directly this will be blank.
+  tabulaAssignments: Set[UUID],
   examProfileCode: String,
   moduleCode: String,
   departmentCode: DepartmentCode,
-  sequence: String
+  sequence: String,
 ) extends BaseAssessment with Ordered[Assessment] {
   def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
     id,
@@ -69,6 +71,7 @@ case class Assessment(
     assessmentType,
     state,
     tabulaAssessmentId,
+    tabulaAssignments,
     examProfileCode,
     moduleCode,
     departmentCode,
@@ -94,6 +97,7 @@ case class AssessmentMetadata(
   assessmentType: Option[AssessmentType],
   state: State,
   tabulaAssessmentId: Option[UUID],
+  tabulaAssignments: Set[UUID],
   examProfileCode: String,
   moduleCode: String,
   departmentCode: DepartmentCode,
