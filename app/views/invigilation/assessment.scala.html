@@ -52,5 +52,10 @@
         <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="expected">
             @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), latestActivities)
         </div>
+        @if(assessment.isDownloadAvailable) {
+            <p>
+                <a href="@controllers.invigilation.routes.AssessmentSubmissionsDownloadController.download(assessment.id)" class="btn btn-default"><i class="fad themed-duotone fa-folder-download"></i> Download submissions</a>
+            </p>
+        }
     </div>
 }

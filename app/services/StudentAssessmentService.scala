@@ -29,6 +29,7 @@ trait StudentAssessmentService {
   def get(studentId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[StudentAssessment]]
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
+  def sittingsByAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
   def getSittingsMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]]
@@ -73,6 +74,16 @@ class StudentAssessmentServiceImpl @Inject()(
   override def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
     daoRunner.run(dao.loadByAssessmentIdWithUploadedFiles(assessmentId))
       .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
+
+  override def sittingsByAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] =
+    daoRunner.run(for {
+      assessmentRow <- assessmentDao.loadByIdWithUploadedFiles(assessmentId)
+      assessment = AssessmentService.inflateRowWithUploadedFiles(assessmentRow).getOrElse(noAssessmentFound(assessmentId))
+      rows <- dao.loadByAssessmentIdWithUploadedFiles(assessmentId)
+      studentAssessments = inflateRowsWithUploadedFiles(rows)
+      declarations <- dao.getDeclarations(studentAssessments.map(_.id))
+    } yield studentAssessments.map(sa => Sitting(sa, assessment, declarations.find(_.studentAssessmentId == sa.id).map(_.asDeclarations).getOrElse(Declarations(sa.id)))))
       .map(ServiceResults.success)
 
   override def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
