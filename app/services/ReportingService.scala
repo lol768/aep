@@ -3,8 +3,7 @@ package services
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
-import domain.AssessmentMetadata
-import domain.StudentAssessment
+import domain.{AssessmentMetadata, Sitting, StudentAssessment}
 import domain.dao.{AssessmentDao, DaoRunner, StudentAssessmentDao}
 import javax.inject.{Inject, Singleton}
 import warwick.core.helpers.ServiceResults
@@ -30,6 +29,7 @@ class ReportingServiceImpl @Inject()(
   daoRunner: DaoRunner,
   assDao: AssessmentDao,
   assessmentService: AssessmentService,
+  sittingService: StudentAssessmentService,
   sittingDao: StudentAssessmentDao,
 )(implicit ec: ExecutionContext) extends ReportingService {
 
@@ -39,20 +39,26 @@ class ReportingServiceImpl @Inject()(
   override def startedAndSubmittableAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
     assessmentService.getStartedAndSubmittable.map(_.map(_.map(_.asAssessmentMetadata)))
 
+  private def expectedSittingsFull(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] =
+    sittingService.sittingsByAssessmentId(assessment)
+
   override def expectedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    daoRunner.run(sittingDao.loadByAssessmentIdWithUploadedFiles(assessment)).map { studentsWithFiles =>
-      StudentAssessmentService.inflateRowsWithUploadedFiles(studentsWithFiles)
-    }.map(Right.apply)
+    expectedSittingsFull(assessment)
+      .successMapTo(_.map(_.studentAssessment))
 
   override def startedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.startTime.isDefined))
+    expectedSittingsFull(assessment).successMapTo(sittings => sittings.filter(_.studentAssessment.startTime.isDefined))
+      .successMapTo(_.map(_.studentAssessment))
 
   override def notStartedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.startTime.isEmpty))
+    expectedSittingsFull(assessment).successMapTo(sittings => sittings.filter(_.studentAssessment.startTime.isEmpty))
+      .successMapTo(_.map(_.studentAssessment))
 
   override def submittedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.uploadedFiles.nonEmpty))
+    expectedSittingsFull(assessment).successMapTo(sittings => sittings.filter(_.studentAssessment.uploadedFiles.nonEmpty))
+      .successMapTo(_.map(_.studentAssessment))
 
   override def finalisedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    expectedSittings(assessment).successMapTo(sittings => sittings.filter(_.finaliseTime.isDefined))
+    expectedSittingsFull(assessment).successMapTo(sittings => sittings.filter(_.finalised))
+      .successMapTo(_.map(_.studentAssessment))
 }

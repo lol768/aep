@@ -1,13 +1,14 @@
 package controllers.invigilation
 
 import controllers.BaseController
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
 import services.{AssessmentService, SecurityService}
 import system.Roles
 
 import scala.concurrent.ExecutionContext
 
+@Singleton
 class InvigilatorListController @Inject()(
   security: SecurityService,
   assessmentService: AssessmentService,

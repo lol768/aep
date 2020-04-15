@@ -1,5 +1,7 @@
 package services.messaging
 
+import java.util.UUID
+
 import actors.WebSocketActor.AssessmentMessage
 import akka.Done
 import domain.AuditEvent.{Operation, Target}
@@ -11,7 +13,6 @@ import services.PubSubService
 import services.tabula.TabulaStudentInformationService
 import services.tabula.TabulaStudentInformationService.GetStudentInformationOptions
 import slick.dbio.DBIO
-import system.routes.Types.UUID
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -53,7 +54,7 @@ class MessageService @Inject() (
       .map { clientName =>
         pubSubService.publish(
           topic = savedMessage.assessmentId.toString,
-          AssessmentMessage(warwick.core.views.utils.nl2br(savedMessage.text).body, savedMessage.sender, clientName, savedMessage.created)
+          AssessmentMessage(savedMessage.text, savedMessage.sender, clientName, savedMessage.created)
         )
         ServiceResults.success(Done)
       }

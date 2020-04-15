@@ -11,12 +11,14 @@ function requestPermission(e) {
   return false;
 }
 
-if (Notification.permission === 'default') {
-  const alert = document.querySelector('div.notification-permission');
-  if (alert) {
-    const btn = alert.querySelector('a.btn');
-    btn.addEventListener('click', requestPermission);
-    btn.addEventListener('keydown', requestPermission);
-    alert.classList.remove('hidden');
+if ('Notification' in window) {
+  if (Notification.permission === 'default') {
+    const alert = document.querySelector('div.notification-permission');
+    if (alert) {
+      const btn = alert.querySelector('a.btn');
+      btn.addEventListener('click', requestPermission);
+      btn.addEventListener('keydown', requestPermission);
+      alert.classList.remove('hidden');
+    }
   }
 }

@@ -1,7 +1,10 @@
 @import java.time.OffsetDateTime
-@import warwick.core.helpers.JavaTime
-@import java.util.TimeZone
 @import java.time.format.DateTimeFormatter
+@import java.util.TimeZone
+
+@import helpers.LenientTimezoneNameParsing._
+@import warwick.core.helpers.JavaTime
+
 @(fromDatetime: OffsetDateTime, toDatetime: OffsetDateTime, hideLatter: Boolean = false)
 
   @titleCase3Chars(input: Any) = {
@@ -39,11 +42,14 @@
           @if(!sameYear) {
             '@fromDatetime.getYear.toString.substring(2, 4)
           }
+          @if(Right(JavaTime.timeZone).timezoneAbbr(fromDatetime) != Right(JavaTime.timeZone).timezoneAbbr(toDatetime)) {
+            <span class="text-muted">@Right(JavaTime.timeZone).timezoneAbbr(fromDatetime)</span>
+          }
           @if(!hideLatter) {
             and
             @toDatetime.format(DateTimeFormatter.ofPattern("HH:mm")),
             @if(sameDate && toDatetime.getYear == now.getYear && toDatetime.getMonth == now.getMonth && toDatetime.getDayOfMonth == now.getDayOfMonth) {
-              Today
+              today
             } else {
               @titleCase3Chars(toDatetime.getDayOfWeek) @th(toDatetime.getDayOfMonth) @titleCase3Chars(toDatetime.getMonth)
               @if(!sameYear || toDatetime.getYear != JavaTime.offsetDateTime.getYear) {
@@ -52,7 +58,7 @@
             }
           } else {
             @if(fromDatetime.getYear == now.getYear && fromDatetime.getMonth == now.getMonth && fromDatetime.getDayOfMonth == now.getDayOfMonth) {
-              Today
+              today
             } else {
               @titleCase3Chars(fromDatetime.getDayOfWeek) @th(fromDatetime.getDayOfMonth) @titleCase3Chars(fromDatetime.getMonth)
               @if(fromDatetime.getYear != JavaTime.offsetDateTime.getYear) {
@@ -60,7 +66,7 @@
               }
             }
           }
-          <span class="text-muted">@JavaTime.timeZone</span><br />
+          <span class="text-muted">@Right(JavaTime.timeZone).timezoneAbbr(toDatetime)</span><br />
         }
       }
     }

@@ -8,7 +8,7 @@ import play.api.libs.json.{JsValue, Json, OFormat, Reads}
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
-import play.api.mvc.RequestHeader
+import play.api.mvc.{Action, RequestHeader}
 import net.logstash.logback.argument.StructuredArgument
 import controllers.RequestContext
 
@@ -17,12 +17,17 @@ class ErrorsController extends BaseController {
 
   lazy val slf4jLogger: Logger = LoggerFactory.getLogger("JAVASCRIPT_ERROR")
 
-  def js = Action { implicit request =>
-    request.body.asJson.flatMap(_.asOpt[JavaScriptError]).foreach { jsError =>
-      val (message, map) = process(jsError, request)
-      slf4jLogger.info(message, StructuredArguments.entries(map.asJava))
-    }
-    Ok("")
+  def js: Action[JsValue] = Action(parse.json) { implicit request =>
+    request.body.validate[Seq[JavaScriptError]].fold(
+      invalid => BadRequest(invalid.toString()),
+      jsErrors => {
+        jsErrors.foreach { jsError =>
+          val (message, map) = process(jsError, request)
+          slf4jLogger.info(message, StructuredArguments.entries(map.asJava))
+        }
+        Ok("")
+      }
+    )
   }
 
   def process(jsError: JavaScriptError, request: RequestHeader)(implicit ctx: RequestContext): (String, Map[String, Any]) = {
@@ -34,7 +39,7 @@ class ErrorsController extends BaseController {
       jsError.pageUrl.map("page_url" -> _),
       jsError.stack.map("stack_trace" -> _),
       Option(request.remoteAddress).map("source_ip" -> _),
-      request.headers.get("User-Agent").map(ua => "request_headers" -> Map("user-agent" -> ua.toString)),
+      request.headers.get("User-Agent").map(ua => "request_headers" -> Map("user-agent" -> ua)),
       ctx.user.map(_.usercode.string).map("username" -> _),
     ).flatten.toMap
     (message, map)

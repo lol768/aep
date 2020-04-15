@@ -6,7 +6,7 @@ const BASE_TIME = 1555000000000; // Thu Apr 11 2019 17:26:40
 
 const dataDefaults = {
   submissionState: SubmissionState.None
-}
+};
 
 describe('calculateTimingInfo', () => {
 
@@ -24,7 +24,7 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: 'You can start in 1 hour and 30 minutes.',
+      text: 'You can start between 18:56, Thursday 11th April 2019 and 23:26, Thursday 11th April 2019 BST, in 1 hour and 30 minutes.',
       allowStart: false,
       hourglassSpins: true
     })
@@ -38,7 +38,7 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: '5 hours and 50 minutes left to start.',
+      text: 'This assessment opened at 17:16, Thursday 11th April 2019, and closes 23:16, Thursday 11th April 2019 BST. You have 5 hours and 50 minutes left to start.',
       allowStart: true,
       hourglassSpins: true
     })
@@ -73,7 +73,7 @@ describe('calculateTimingInfo', () => {
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining.',
+      text: 'You started 10 minutes ago. You have 1 hour and 5 minutes remaining until you should upload your answers.',
       allowStart: false,
       hourglassSpins: true
     });
@@ -82,7 +82,7 @@ describe('calculateTimingInfo', () => {
     data.extraTimeAdjustment = 21*MINUTE;
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'Started 10 minutes ago. 1 hour and 5 minutes remaining (including 21 minutes additional time).',
+      text: 'You started 10 minutes ago. You have 1 hour and 5 minutes remaining until you should upload your answers (including 21 minutes additional time).',
       allowStart: false,
       hourglassSpins: true
     });
@@ -103,7 +103,7 @@ describe('calculateTimingInfo', () => {
       }, now);
     expect(result).to.deep.equal({
       warning: false,
-      text: 'Started a moment ago. 3 hours and 45 minutes remaining.',
+      text: 'You started a moment ago. You have 3 hours and 45 minutes remaining until you should upload your answers.',
       allowStart: false,
       hourglassSpins: true
     });
@@ -201,7 +201,7 @@ describe('calculateTimingInfo', () => {
 
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'Started 10 minutes ago.',
+      text: 'You started 10 minutes ago.',
       allowStart: false,
       hourglassSpins: true
     });
@@ -210,7 +210,7 @@ describe('calculateTimingInfo', () => {
     data.extraTimeAdjustment = 21*MINUTE;
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'Started 10 minutes ago.',
+      text: 'You started 10 minutes ago.',
       allowStart: false,
       hourglassSpins: true
     });

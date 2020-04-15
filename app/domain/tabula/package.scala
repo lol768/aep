@@ -76,15 +76,16 @@ package object tabula {
         duration = existingAssessment.flatMap(_.duration),
         platform = existingAssessment.map(_.platform).getOrElse(Set[Platform]()),
         assessmentType = {
-          if (overwriteAssessmentType) 
+          if (overwriteAssessmentType)
             locationNameToAssessmentType(schedule.locationName).orElse(existingAssessment.flatMap(_.assessmentType))
-          else 
+          else
             existingAssessment.flatMap(_.assessmentType).orElse(locationNameToAssessmentType(schedule.locationName))
         },
         brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, Map.empty)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
         state = existingAssessment.map(_.state).getOrElse(Imported),
         tabulaAssessmentId = existingAssessment.map(_.tabulaAssessmentId).getOrElse(Some(id)),
+        tabulaAssignments = existingAssessment.map(_.tabulaAssignments).getOrElse(Set()),
         examProfileCode = schedule.examProfileCode,
         moduleCode = fullModuleCode,
         departmentCode = DepartmentCode(module.adminDepartment.code),

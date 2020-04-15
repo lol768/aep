@@ -6,7 +6,7 @@ import java.util.UUID
 import controllers.BaseController
 import controllers.invigilation.AnnouncementAndQueriesController.{AnnouncementData, form}
 import domain.{Announcement, Assessment}
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms.{mapping, _}
 import play.api.i18n.Messages
@@ -30,6 +30,7 @@ object AnnouncementAndQueriesController {
   )(AnnouncementData.apply)(AnnouncementData.unapply))
 }
 
+@Singleton
 class AnnouncementAndQueriesController @Inject()(
   security: SecurityService,
   studentInformationService: TabulaStudentInformationService,

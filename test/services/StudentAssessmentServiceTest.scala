@@ -81,13 +81,13 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
 
       val finaliseTime = JavaTime.offsetDateTime
       val updatedStudentAssessment = studentAssessmentFromDB.copy(
-        finaliseTime = Some(finaliseTime)
+        explicitFinaliseTime = Some(finaliseTime)
       )
 
       service.upsert(updatedStudentAssessment).serviceValue
 
       service.get(newStudentAssessment.studentId, storedAssessment.id).serviceValue
-        .finaliseTime mustBe Some(finaliseTime)
+        .explicitFinaliseTime mustBe Some(finaliseTime)
     }
 
     "prevent starting before earliest allowed start time" in new Fixture {

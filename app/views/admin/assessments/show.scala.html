@@ -10,6 +10,7 @@
   form: Form[AssessmentFormData],
   departments: Seq[Department],
   allowAssessmentTypeChangesOnImportedAssessments: Boolean,
+  canBeDeleted: Boolean,
   numberOfPlatforms: Int = 2
 )(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
@@ -82,7 +83,7 @@
         </div>
       </fieldset>
 
-      @fields.submit(Some(assessment))
+      @fields.submit(Some(assessment), includeDelete = assessment.tabulaAssessmentId.isEmpty, canBeDeleted = canBeDeleted)
     }
     @fields.platformModal(2)
   }

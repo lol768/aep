@@ -1,9 +1,14 @@
 package helpers
 
-import java.time.ZoneId
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder, TextStyle}
+import java.time.{OffsetDateTime, ZoneId}
+import java.util.Locale
 
 import play.api.libs.json.{JsString, Reads, Writes}
+import warwick.core.helpers.JavaTime
 
+import scala.collection.concurrent
+import scala.jdk.CollectionConverters._
 import scala.util.{Success, Try}
 
 object LenientTimezoneNameParsing {
@@ -19,10 +24,23 @@ object LenientTimezoneNameParsing {
     }
   }
 
+  private val TimezoneAbbreviationFormatterCache: concurrent.Map[ZoneId, DateTimeFormatter] = concurrent.TrieMap()
+
   implicit class MaybeZoneIdConversion(val maybeZoneId: LenientZoneId) extends AnyVal {
     def timezoneName: String = maybeZoneId match {
       case Left(timezoneName) => timezoneName
       case Right(zone) => zone.getId
+    }
+
+    def timezoneAbbr(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): String = maybeZoneId match {
+      case Left(timezoneName) => timezoneName
+      case Right(zone) =>
+        TimezoneAbbreviationFormatterCache.getOrElseUpdate(
+          zone,
+          new DateTimeFormatterBuilder()
+            .appendZoneText(TextStyle.SHORT, Set(zone).asJava)
+            .toFormatter(Locale.UK)
+        ).format(referenceDate.atZoneSameInstant(zone))
     }
   }
 }

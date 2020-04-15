@@ -42,6 +42,7 @@ class ReportingController @Inject()(
   def assessment(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
     ServiceResults.zip(
       assessmentService.get(id),
+      // FIXME These all run the same query and filter in memory, so needlessly the same SQL executed five times
       reportingService.expectedSittings(id),
       reportingService.startedSittings(id),
       reportingService.notStartedSittings(id),
