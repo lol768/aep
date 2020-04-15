@@ -226,6 +226,62 @@ function localRefreshAll() {
   });
 }
 
+function updateTimeline(timelineNode, id, assessment) {
+  if (timelineNode) {
+    const { progressState } = assessment;
+    if (progressState) {
+      timelineNode.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
+      timelineNode.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
+    }
+  }
+}
+
+function showLateWarning() {
+  const lateWarningNode = document.querySelector('#late-upload-warning');
+  if (lateWarningNode) {
+    lateWarningNode.innerHTML = `
+                    <div class="alert alert-warning media">
+                      <div class="media-left">
+                        <i class="fas fa-exclamation-triangle"></i>
+                      </div>
+                      <div class="media-body">
+                        If you upload new files at this point your submission may be considered as late.
+                      </div>
+                    </div>`;
+  }
+}
+
+function showDeadlineMissed(timelineNode) {
+  if (timelineNode) {
+    const contactInvigilatorLink = document.getElementById('contactInvigilatorLink');
+    const fileInputs = document.querySelectorAll('input[type=file]');
+    const deleteButtons = document.querySelectorAll('button[delete]');
+    const uploadFilesButton = document.getElementById('uploadFilesButton');
+    const agreeDisclaimerCheckbox = document.getElementById('agreeDisclaimer');
+    const finishAssessmentButton = document.getElementById('finishAssessmentButton');
+
+    if (contactInvigilatorLink) {
+      const span = document.createElement('span');
+      span.classList.add('text-muted');
+      span.textContent = contactInvigilatorLink.textContent;
+      contactInvigilatorLink.replaceWith(span);
+    }
+    // eslint-disable-next-line no-param-reassign
+    fileInputs.forEach((input) => { input.disabled = true; });
+    // eslint-disable-next-line no-param-reassign
+    deleteButtons.forEach((button) => { button.disabled = true; });
+    if (uploadFilesButton) {
+      uploadFilesButton.disabled = true;
+    }
+    if (agreeDisclaimerCheckbox) {
+      agreeDisclaimerCheckbox.disabled = true;
+    }
+    if (finishAssessmentButton) {
+      finishAssessmentButton.disabled = true;
+    }
+  }
+}
+
 export function receiveSocketData(d) {
   if (d.type === 'AssessmentTimingInformation') {
     const { now, assessments } = d;
@@ -243,59 +299,15 @@ export function receiveSocketData(d) {
         domRefresh(node, now);
       }
 
-      // TODO tidy up how we manipulate other parts of the page
-      // (may want to manipulate the file upload section to warn about lateness)
-
       const timelineNode = document.querySelector(`.timeline[data-id="${id}"]`);
-      if (timelineNode) {
-        const { progressState } = assessment;
-        if (progressState) {
-          timelineNode.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
-          timelineNode.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
-        }
+      updateTimeline(timelineNode, id, assessment);
+
+      if (assessment.progressState === SubmissionState.Late) {
+        showLateWarning();
       }
 
-      const lateWarningNode = document.querySelector('#late-upload-warning');
-      if (lateWarningNode && assessment.progressState === SubmissionState.Late) {
-        lateWarningNode.innerHTML = `
-                    <div class="alert alert-warning media">
-                      <div class="media-left">
-                        <i class="fas fa-exclamation-triangle"></i>
-                      </div>
-                      <div class="media-body">
-                        If you upload new files at this point your submission may be considered as late.
-                      </div>
-                    </div>`;
-      }
-
-      const deadlineMissed = assessment.progressState === 'DeadlineMissed';
-      if (timelineNode && deadlineMissed) {
-        const contactInvigilatorLink = document.getElementById('contactInvigilatorLink');
-        const fileInputs = document.querySelectorAll('input[type=file]');
-        const deleteButtons = document.querySelectorAll('button[delete]');
-        const uploadFilesButton = document.getElementById('uploadFilesButton');
-        const agreeDisclaimerCheckbox = document.getElementById('agreeDisclaimer');
-        const finishAssessmentButton = document.getElementById('finishAssessmentButton');
-
-        if (contactInvigilatorLink) {
-          const span = document.createElement('span');
-          span.classList.add('text-muted');
-          span.textContent = contactInvigilatorLink.textContent;
-          contactInvigilatorLink.replaceWith(span);
-        }
-        // eslint-disable-next-line no-param-reassign
-        fileInputs.forEach((input) => { input.disabled = true; });
-        // eslint-disable-next-line no-param-reassign
-        deleteButtons.forEach((button) => { button.disabled = true; });
-        if (uploadFilesButton) {
-          uploadFilesButton.disabled = true;
-        }
-        if (agreeDisclaimerCheckbox) {
-          agreeDisclaimerCheckbox.disabled = true;
-        }
-        if (finishAssessmentButton) {
-          finishAssessmentButton.disabled = true;
-        }
+      if (assessment.progressState === 'DeadlineMissed') {
+        showDeadlineMissed(timelineNode);
       }
     });
   }
