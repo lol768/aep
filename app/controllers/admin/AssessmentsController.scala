@@ -126,7 +126,7 @@ object AssessmentsController {
       "departmentCode" -> departmentCodeFieldMapping,
       "sequence" -> nonEmptyText,
       "startTime" -> startTimeFieldMapping,
-      "students" -> existing.map(_ => ignored(Set.empty[UniversityID])).getOrElse(studentsFieldMapping),
+      "students" -> existing.filter(_.tabulaAssessmentId.nonEmpty).map(_ => ignored(Set.empty[UniversityID])).getOrElse(studentsFieldMapping),
       "title" -> nonEmptyText,
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
@@ -247,6 +247,7 @@ class AssessmentsController @Inject()(
               invigilators = data.invigilators,
               state = newState,
               tabulaAssessmentId = None,
+              tabulaAssignments = Set(),
               examProfileCode = "EXAPR20",
               moduleCode = data.moduleCode,
               departmentCode = data.departmentCode,
@@ -263,7 +264,7 @@ class AssessmentsController @Inject()(
                 inSeat = false,
                 startTime = None,
                 extraTimeAdjustment = None,
-                finaliseTime = None,
+                explicitFinaliseTime = None,
                 uploadedFiles = Nil,
               )
             ))
@@ -353,7 +354,7 @@ class AssessmentsController @Inject()(
                       inSeat = false,
                       startTime = None,
                       extraTimeAdjustment = None,
-                      finaliseTime = None,
+                      explicitFinaliseTime = None,
                       uploadedFiles = Nil,
                     )
                   }

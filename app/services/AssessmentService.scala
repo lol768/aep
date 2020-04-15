@@ -169,7 +169,7 @@ class AssessmentServiceImpl @Inject()(
               metadata,
               ac.usercode.get,
               assessment.id,
-              UploadedFileOwner.Assessment
+              UploadedFileOwner.AssessmentBrief
             ).map(_.id)
           })
         } else DBIO.successful(assessment.brief.files.map(_.id))
@@ -190,6 +190,7 @@ class AssessmentServiceImpl @Inject()(
           invigilators = sortedInvigilators(assessment),
           state = assessment.state,
           tabulaAssessmentId = assessment.tabulaAssessmentId,
+          tabulaAssignments = assessment.tabulaAssignments.map(_.toString).toList.sorted,
           examProfileCode = assessment.examProfileCode,
           moduleCode = assessment.moduleCode,
           departmentCode = assessment.departmentCode,
@@ -211,7 +212,7 @@ class AssessmentServiceImpl @Inject()(
               metadata,
               ac.usercode.get,
               assessment.id,
-              UploadedFileOwner.Assessment
+              UploadedFileOwner.AssessmentBrief
             ).map(_.id)
           })
         } else DBIO.successful(assessment.brief.files.map(_.id))
@@ -232,6 +233,7 @@ class AssessmentServiceImpl @Inject()(
           invigilators = sortedInvigilators(assessment),
           state = assessment.state,
           tabulaAssessmentId = assessment.tabulaAssessmentId,
+          tabulaAssignments = assessment.tabulaAssignments.map(_.toString).toList.sorted,
           examProfileCode = assessment.examProfileCode,
           moduleCode = assessment.moduleCode,
           departmentCode = assessment.departmentCode,
@@ -276,6 +278,7 @@ class AssessmentServiceImpl @Inject()(
             invigilators = sortedInvigilators(assessment),
             state = assessment.state,
             tabulaAssessmentId = assessment.tabulaAssessmentId,
+            tabulaAssignments = assessment.tabulaAssignments.map(_.toString).toList.sorted,
             examProfileCode = assessment.examProfileCode,
             moduleCode = assessment.moduleCode,
             departmentCode = assessment.departmentCode,

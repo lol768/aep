@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.BaseController
 import domain.SittingMetadata
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
@@ -15,6 +15,7 @@ import warwick.sso.{User, UserLookupService, Usercode}
 
 import scala.concurrent.ExecutionContext
 
+@Singleton
 class InvigilatorAssessmentController @Inject()(
   security: SecurityService,
   reportingService: ReportingService,
@@ -43,7 +44,7 @@ class InvigilatorAssessmentController @Inject()(
       case (departments, studentAssessments, queries) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId))),
-          networkActivityService.getLatestActivityFor(studentAssessments.map(_.studentAssessmentId))
+          networkActivityService.getLatestActivityFor(studentAssessments.map(_.id))
         ).successMap { case (students, latestActivities) =>
             Ok(views.html.invigilation.assessment(
               assessment = assessment,

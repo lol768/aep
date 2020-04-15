@@ -116,7 +116,7 @@ object Fixtures {
     // If you just need any old assessment that's assigned to philosophy to test with...
     lazy val philosophyAssessment: Assessment = Assessment(
       UUID.randomUUID, "ph-assessment", None, "Philosophy Assessment", Some(JavaTime.offsetDateTime.plusHours(1)),  Some(Duration.ofHours(3)), Set(Platform.OnlineExams),
-      Some(AssessmentType.OpenBook), Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, "meh", "ph101", DepartmentCode("ph"),
+      Some(AssessmentType.OpenBook), Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, Set.empty, "meh", "ph101", DepartmentCode("ph"),
       "sequence"
     )
   }
@@ -187,26 +187,29 @@ object Fixtures {
         uploadedBy = users.staff1.usercode,
         uploadStarted = createTime.asOffsetDateTime.minusSeconds(7L),
         ownerId = None,
-        ownerType = Some(UploadedFileOwner.Assessment),
+        ownerType = Some(UploadedFileOwner.AssessmentBrief),
         created = createTime.asOffsetDateTime,
         version = createTime.asOffsetDateTime,
       )
     }
 
-    def storedUploadedStudentAssessmentFile(studentAssessmentId: UUID) = {
-      val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
-
+    def storedUploadedStudentAssessmentFile(
+      studentAssessmentId: UUID,
+      id: UUID = UUID.randomUUID(),
+      createTime: OffsetDateTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0).asOffsetDateTime,
+      uploadDuration: Duration = Duration.ofSeconds(7)
+    ) = {
       StoredUploadedFile(
-        id = UUID.randomUUID(),
+        id = id,
         fileName = specialJPG.uploadedFileSave.fileName,
         contentLength = specialJPG.uploadedFileSave.contentLength,
         contentType = specialJPG.uploadedFileSave.contentType,
         uploadedBy = users.student1.usercode,
-        uploadStarted = createTime.asOffsetDateTime.minusSeconds(7L),
+        uploadStarted = createTime.minus(uploadDuration),
         ownerId = Some(studentAssessmentId),
         ownerType = Some(UploadedFileOwner.StudentAssessment),
-        created = createTime.asOffsetDateTime,
-        version = createTime.asOffsetDateTime
+        created = createTime,
+        version = createTime
       )
     }
   }

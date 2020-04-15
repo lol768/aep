@@ -1,5 +1,6 @@
 @(
   title: String = "",
+  headTitle: String = "",
   extraClasses: Seq[String] = Seq()
 )(content: Html)(implicit context: RequestContext)
 
@@ -23,7 +24,7 @@
     <meta name="msapplication-config" content="@routes.Assets.versioned("images/browserconfig.xml")">
     <meta name="theme-color" content="#a14418">
 
-    <title>@if(!title.isEmpty){@title - }@context.appFullName</title>
+    <title>@if(!headTitle.isEmpty){@headTitle - }@if(headTitle.isEmpty && !title.isEmpty){@title - }@context.appFullName</title>
 
     @* Preload the most popular font type. Agents should be able to decide whether they can use these assets based on the type attribute. *@
     <link rel="preload" type="font/woff2" crossorigin="anonymous" href="@routes.Assets.versioned("lib/fontawesome-pro/webfonts/fa-light-300.woff2")" as="font">

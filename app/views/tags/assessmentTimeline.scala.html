@@ -3,6 +3,7 @@
 @import domain.BaseSitting.ProgressState._
 @import tags._
 
+@import domain.Assessment
 @(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
 @for(
     startTime <- sitting.studentAssessment.startTime;
@@ -37,7 +38,7 @@
             <div class="right">
                 <h1>@bareLocalisedDateTime(startTime) You started the assessment</h1>
                 <p>
-                This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus @sitting.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(durationInfo.durationWithExtraAdjustment), includeFullStop = true)</p>
+                This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus @Assessment.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(durationInfo.durationWithExtraAdjustment), includeFullStop = true)</p>
                 <p>Please plan your time accordingly.</p>
                 @if(durationInfo.durationWithExtraAdjustment.toHours==3) {
                     <div class="duration-3-spacer"></div>
@@ -54,7 +55,7 @@
             </div>
             <div class="right">
                 <h1 class="mb-1">@bareLocalisedDateTime(startTime.plus(durationInfo.durationWithExtraAdjustment))
-                    You have @sitting.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(durationInfo.onTimeDuration)) to upload your answers</h1>
+                    You have @Assessment.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(durationInfo.onTimeDuration)) to upload your answers</h1>
             </div>
         </div>
         <div class="block pink @if(sitting.getProgressState.contains(Late)) { active } else {}" data-state="@Late.entryName">

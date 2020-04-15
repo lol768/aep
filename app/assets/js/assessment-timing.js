@@ -1,4 +1,5 @@
 import msToHumanReadable from './time-helper';
+import JDDT from './jddt';
 
 /**
  * @typedef {number} unix_timestamp
@@ -9,6 +10,7 @@ import msToHumanReadable from './time-helper';
  * @typedef {Object} TimingData
  * @property {unix_timestamp} windowStart - earliest allowed start time
  * @property {unix_timestamp} windowEnd - latest allowed start time
+ * @property {unix_timestamp} lastRecommendedStart - last start time to enjoy full duration
  * @property {unix_timestamp} start - when exam was started (if it has started)
  * @property {unix_timestamp} end - latest time to submit without being late
  *           (start + duration + user's reasonable adjustment)
@@ -16,6 +18,8 @@ import msToHumanReadable from './time-helper';
  * @property {boolean} hasFinalised - have answers been submitted and finalised
  * @property {millis} extraTimeAdjustment - any reasonable adjustment the user has
  * @property {boolean} showTimeRemaining - should the time remaining be displayed
+ * @property {string} progressState - the ProgressState value
+ * @property {string} submissionState - the SubmissionState value
  */
 
 /**
@@ -27,9 +31,15 @@ import msToHumanReadable from './time-helper';
 
 /** @type {NodeListOf<Element>} */
 let nodes;
-// Pre-parse data-rendering JSON so it can be easily re-used (or even modified over time)
+// Pre-parse data-rendering JSON so it can be easily re-used and modified over time
 let nodeData = {};
 
+export const SubmissionState = {
+  None: 'None',
+  Submitted: 'Submitted',
+  OnTime: 'OnTime',
+  Late: 'Late',
+};
 
 /** */
 function clearWarning({ parentElement }) {
@@ -89,12 +99,15 @@ export function calculateTimingInfo(data, now) {
   const {
     windowStart,
     windowEnd,
+    lastRecommendedStart,
     start,
     end,
     hasStarted,
     hasFinalised,
     extraTimeAdjustment,
     showTimeRemaining,
+    progressState,
+    submissionState,
   } = data;
 
   const hasWindowPassed = now > windowEnd;
@@ -104,6 +117,8 @@ export function calculateTimingInfo(data, now) {
   const timeSinceStart = inProgress ? Math.max(0, now - start) : null;
   const timeUntilStart = notYetStarted ? windowStart - now : null;
   const timeUntilEndOfWindow = !hasFinalised ? windowEnd - now : null;
+  const timeUntilLastRecommendedStart = (!inProgress && !hasFinalised)
+    ? lastRecommendedStart - now : null;
 
   let text;
   let warning = false;
@@ -113,27 +128,37 @@ export function calculateTimingInfo(data, now) {
   } else if (hasStarted) {
     if (timeRemaining > 0) {
       hourglassSpins = true;
-      text = `Started ${msToHumanReadable(timeSinceStart)} ago.`;
+      text = `You started ${msToHumanReadable(timeSinceStart)} ago.`;
       if (showTimeRemaining) {
-        text += ` ${msToHumanReadable(timeRemaining)} remaining`;
+        text += ` You have ${msToHumanReadable(timeRemaining)} remaining until you should upload your answers`;
         if (extraTimeAdjustment) {
           text += ` (including ${msToHumanReadable(extraTimeAdjustment)} additional time)`;
         }
         text += '.';
       }
+    } else if (submissionState === SubmissionState.OnTime && progressState === 'Late') {
+      text = 'You uploaded your answers on time. If you upload any more answers you may be counted as late.';
+      hourglassSpins = true;
     } else {
-      text = 'You started this assessment, but missed the deadline to upload your answers.';
+      // In practice I don't think we will ever print the "finalise your submission" version any
+      // more, because if you submitted anything and the time ran out, it's considered finalised
+      // and would be handled at the very top
+      const action = submissionState === SubmissionState.None ? 'upload your answers' : 'finalise your submission';
+      text = `You started this assessment, but missed the deadline to ${action}.`;
       if (showTimeRemaining) {
         text += `\nExceeded deadline by ${msToHumanReadable(-timeRemaining)}.`;
         warning = true;
       }
     }
   } else if (timeUntilStart > 0) {
-    text = `You can start in ${msToHumanReadable(timeUntilStart)}.`;
+    text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
     warning = true;
     hourglassSpins = true;
   } else if (timeUntilEndOfWindow > 0) {
-    text = `${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    text = `This assessment opened at ${new JDDT(windowStart).localString(false)}, and closes ${new JDDT(windowEnd).localString(true)}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+    if (timeUntilLastRecommendedStart > 0) {
+      text += ` To give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
+    }
     hourglassSpins = true;
     warning = true;
   } else {
@@ -204,12 +229,68 @@ function localRefreshAll() {
   });
 }
 
+function updateTimeline(timelineNode, id, assessment) {
+  if (timelineNode) {
+    const { progressState } = assessment;
+    if (progressState) {
+      timelineNode.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
+      timelineNode.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
+    }
+  }
+}
+
+function showLateWarning() {
+  const lateWarningNode = document.querySelector('#late-upload-warning');
+  if (lateWarningNode) {
+    lateWarningNode.innerHTML = `
+                    <div class="alert alert-warning media">
+                      <div class="media-left">
+                        <i class="fas fa-exclamation-triangle"></i>
+                      </div>
+                      <div class="media-body">
+                        If you upload new files at this point your submission may be considered as late.
+                      </div>
+                    </div>`;
+  }
+}
+
+function showDeadlineMissed(timelineNode) {
+  if (timelineNode) {
+    const contactInvigilatorLink = document.getElementById('contactInvigilatorLink');
+    const fileInputs = document.querySelectorAll('input[type=file]');
+    const deleteButtons = document.querySelectorAll('button[delete]');
+    const uploadFilesButton = document.getElementById('uploadFilesButton');
+    const agreeDisclaimerCheckbox = document.getElementById('agreeDisclaimer');
+    const finishAssessmentButton = document.getElementById('finishAssessmentButton');
+
+    if (contactInvigilatorLink) {
+      const span = document.createElement('span');
+      span.classList.add('text-muted');
+      span.textContent = contactInvigilatorLink.textContent;
+      contactInvigilatorLink.replaceWith(span);
+    }
+    // eslint-disable-next-line no-param-reassign
+    fileInputs.forEach((input) => { input.disabled = true; });
+    // eslint-disable-next-line no-param-reassign
+    deleteButtons.forEach((button) => { button.disabled = true; });
+    if (uploadFilesButton) {
+      uploadFilesButton.disabled = true;
+    }
+    if (agreeDisclaimerCheckbox) {
+      agreeDisclaimerCheckbox.disabled = true;
+    }
+    if (finishAssessmentButton) {
+      finishAssessmentButton.disabled = true;
+    }
+  }
+}
+
 export function receiveSocketData(d) {
   if (d.type === 'AssessmentTimingInformation') {
     const { now, assessments } = d;
     assessments.forEach((assessment) => {
       const { id } = assessment;
-      let node = document.querySelector(`.timing-information[data-id="${id}"]`);
+      const node = document.querySelector(`.timing-information[data-id="${id}"]`);
       if (node) {
         const data = nodeData[id];
         // partial update of properties
@@ -221,13 +302,15 @@ export function receiveSocketData(d) {
         domRefresh(node, now);
       }
 
-      node = document.querySelector(`.timeline[data-id="${id}"]`);
-      if (node) {
-        const { progressState } = assessment;
-        if (progressState) {
-          node.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
-          node.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
-        }
+      const timelineNode = document.querySelector(`.timeline[data-id="${id}"]`);
+      updateTimeline(timelineNode, id, assessment);
+
+      if (assessment.progressState === SubmissionState.Late) {
+        showLateWarning();
+      }
+
+      if (assessment.progressState === 'DeadlineMissed') {
+        showDeadlineMissed(timelineNode);
       }
     });
   }

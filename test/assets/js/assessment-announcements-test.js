@@ -12,7 +12,8 @@ describe('Assessment Announcements', () => {
 
   it('should nicely format a simple message provided by the websocket', () => {
     const messageData = {
-      message: "This is the captain of your ship, \n Colin...",
+      messageText: "This is the captain of your ship, \n Colin...",
+      messageHTML: "This is the captain of your ship, <br> Colin...",
       timestamp: 1586850896285
     };
 

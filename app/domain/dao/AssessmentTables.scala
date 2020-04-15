@@ -37,6 +37,7 @@ class AssessmentTables @Inject()(
     def invigilators = column[List[String]]("invigilators")
     def state = column[State]("state")
     def tabulaAssessmentId = column[Option[UUID]]("tabula_assessment_id")
+    def tabulaAssignments = column[List[String]]("tabula_assignments")
     def examProfileCode = column[String]("exam_profile_code")
     def moduleCode = column[String]("module_code")
     def departmentCode = column[DepartmentCode]("department_code")
@@ -52,7 +53,7 @@ class AssessmentTables @Inject()(
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAssessment] =
-      (id, paperCode, section, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version).mapTo[StoredAssessment]
+      (id, paperCode, section, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, tabulaAssignments, examProfileCode, moduleCode, departmentCode, sequence, created, version).mapTo[StoredAssessment]
 
     def paperCodeIndex = index("idx_assessment_papercode", (paperCode, section, examProfileCode))
     def tabulaAssessmentIndex = index("idx_assessment_tabula", (tabulaAssessmentId, examProfileCode), unique = true)
@@ -67,7 +68,7 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAssessmentVersion] =
-      (id, paperCode, section, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, examProfileCode, moduleCode, departmentCode, sequence, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
+      (id, paperCode, section, title, startTime, duration, platform, assessmentType, storedBrief, invigilators, state, tabulaAssessmentId, tabulaAssignments, examProfileCode, moduleCode, departmentCode, sequence, created, version, operation, timestamp, auditUser).mapTo[StoredAssessmentVersion]
 
     def pk = primaryKey("pk_assessment_version", (id, timestamp))
   }
@@ -76,7 +77,7 @@ class AssessmentTables @Inject()(
     def withUploadedFiles = q
       .joinLeft(uploadedFiles.table)
       .on { case (a, f) =>
-        a.id === f.ownerId && f.ownerType === (UploadedFileOwner.Assessment: UploadedFileOwner) && (a.storedBrief.asColumnOf[JsValue] +> "fileIds") ?? f.id.asColumnOf[String]
+        a.id === f.ownerId && f.ownerType === (UploadedFileOwner.AssessmentBrief: UploadedFileOwner) && (a.storedBrief.asColumnOf[JsValue] +> "fileIds") ?? f.id.asColumnOf[String]
       }
   }
 

@@ -123,7 +123,10 @@ val appDeps = Seq(
 
   "org.apache.jclouds.api" % "filesystem" % "2.2.0",
 
-  "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1"
+  "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1",
+
+  "org.apache.commons" % "commons-compress" % "1.20",
+  "com.github.tototoshi" %% "scala-csv" % "1.3.6"
 )
 
 val testDeps = Seq(

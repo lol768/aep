@@ -6,7 +6,7 @@ import java.util.UUID
 import controllers.BaseController
 import controllers.invigilation.AnnouncementAndQueriesController.{AnnouncementData, form}
 import domain.{Announcement, Assessment}
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms.{mapping, _}
 import play.api.i18n.Messages
@@ -30,6 +30,7 @@ object AnnouncementAndQueriesController {
   )(AnnouncementData.apply)(AnnouncementData.unapply))
 }
 
+@Singleton
 class AnnouncementAndQueriesController @Inject()(
   security: SecurityService,
   studentInformationService: TabulaStudentInformationService,
@@ -46,15 +47,16 @@ class AnnouncementAndQueriesController @Inject()(
       tabulaDepartmentService.getDepartments,
       messageService.findByStudentAssessment(assessmentId, universityId),
       announcementService.getByAssessmentId(assessmentId),
-      studentAssessmentService.getMetadata(universityId, assessmentId),
+      studentAssessmentService.get(universityId, assessmentId),
       studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId))
     ).successMap {
-      case (departments, queries, announcements, studentAssessmentMetadata, profile) =>
-        val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery)).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
+      case (departments, queries, announcements, studentAssessment, profile) =>
+        val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery))
+          .sortBy(_.date)(Ordering[OffsetDateTime].reverse)
         val student = Map(universityId -> profile)
         Ok(views.html.invigilation.studentQueries(
           req.assessment,
-          studentAssessmentMetadata,
+          studentAssessment,
           announcementsAndQueries,
           student,
           department = departments.find(_.code == req.assessment.departmentCode.string),
