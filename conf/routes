@@ -59,6 +59,8 @@ GET         /admin/assessments/create                             @controllers.a
 POST        /admin/assessments/create                             @controllers.admin.AssessmentsController.create
 GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.updateForm(id: UUID)
 POST        /admin/assessments/:id                                @controllers.admin.AssessmentsController.update(id: UUID)
+GET         /admin/assessments/:id/delete                         @controllers.admin.AssessmentsController.deleteForm(id: UUID)
+POST        /admin/assessments/:id/delete                         @controllers.admin.AssessmentsController.delete(id: UUID)
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)

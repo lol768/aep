@@ -4,7 +4,7 @@ import java.time.{Duration, LocalDateTime}
 import java.util.UUID
 
 import akka.Done
-import controllers.BaseController
+import controllers.{BaseController, FormMappings}
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import domain.tabula.SitsProfile
 import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
@@ -20,7 +20,7 @@ import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentService, SecurityService, StudentAssessmentService}
-import warwick.core.helpers.ServiceResults
+import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileControllerHelper
@@ -192,6 +192,12 @@ class AssessmentsController @Inject()(
     }
   }
 
+  // If it's ad-hoc, and it's either before the start date or none of the students have started, you can delete it
+  private def canBeDeleted(assessment: Assessment, studentAssessments: Seq[StudentAssessment]): Boolean =
+    assessment.tabulaAssessmentId.isEmpty && (
+      assessment.startTime.exists(_.isAfter(JavaTime.offsetDateTime)) || studentAssessments.forall(_.startTime.isEmpty)
+    )
+
   private def showForm(assessment: Assessment, assessmentForm: Form[AssessmentFormData])(implicit request: AuthenticatedRequest[_]): Future[Result] =
     ServiceResults.zip(
       studentAssessmentService.byAssessmentId(assessment.id),
@@ -200,7 +206,7 @@ class AssessmentsController @Inject()(
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
-          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport))
+          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport, canBeDeleted(assessment, studentAssessments)))
         }
     }
 
@@ -396,6 +402,27 @@ class AssessmentsController @Inject()(
         .map(uploadedFileControllerHelper.serveFile)
         .getOrElse(Future.successful(NotFound("File not found")))
     }
+  }
+
+  def deleteForm(assessmentId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>
+    studentAssessmentService.byAssessmentId(request.assessment.id).successMap(studentAssessments =>
+      Ok(views.html.admin.assessments.delete(FormMappings.confirmForm, canBeDeleted(request.assessment, studentAssessments)))
+    )
+  }
+
+  def delete(assessmentId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>
+    studentAssessmentService.byAssessmentId(request.assessment.id).successFlatMap(studentAssessments =>
+      if (!canBeDeleted(request.assessment, studentAssessments)) {
+        throw new IllegalArgumentException("Cannot delete this assessment")
+      } else {
+        FormMappings.confirmForm.bindFromRequest.fold(
+          formWithErrors => Future.successful(Ok(views.html.admin.assessments.delete(formWithErrors, canBeDeleted = true))),
+          _ => assessmentService.delete(request.assessment).successMap(_ =>
+            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessmnet.deleted", request.assessment.title))
+          )
+        )
+      }
+    )
   }
 
   private def deptAdminCanView(assessment: Assessment)(
