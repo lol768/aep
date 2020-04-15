@@ -255,6 +255,19 @@ export function receiveSocketData(d) {
         }
       }
 
+      const lateWarningNode = document.querySelector('#late-upload-warning');
+      if (lateWarningNode && assessment.progressState === SubmissionState.Late) {
+        lateWarningNode.innerHTML = `
+                    <div class="alert alert-warning media">
+                      <div class="media-left">
+                        <i class="fas fa-exclamation-triangle"></i>
+                      </div>
+                      <div class="media-body">
+                        If you upload new files at this point your submission may be considered as late.
+                      </div>
+                    </div>`;
+      }
+
       const deadlineMissed = assessment.progressState === 'DeadlineMissed';
       if (timelineNode && deadlineMissed) {
         const contactInvigilatorLink = document.getElementById('contactInvigilatorLink');
