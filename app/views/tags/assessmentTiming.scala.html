@@ -3,10 +3,10 @@
 @import play.api.libs.json.Json
 @(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
 @sitting.assessment.startTime.map { startTime =>
-    <div class="timing-information-container">
-        <div><i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i></div>
+    <div class="media">
+        <div class="media-left"><i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i></div>
         <div
-        class="timing-information"
+        class="media-body timing-information"
         data-id="@sitting.assessment.id"
         data-rendering="@Json.stringify(Json.toJson(sitting.getTimingInfo))"
         ></div>
