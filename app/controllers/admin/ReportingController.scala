@@ -71,7 +71,7 @@ class ReportingController @Inject()(
     }
   }
 
-  def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessment]]], assessmentId: UUID)(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
+  def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessment]]], assessmentId: UUID, sortByHeader: Option[String] = None)(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
     ServiceResults.zip(
       assessmentService.get(assessmentId),
       getSittings,
@@ -85,7 +85,7 @@ class ReportingController @Inject()(
             val sorted = sittings
               .sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
               .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct), latestActivities))
+            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct), latestActivities, sortByHeader))
           }
     }
   }
@@ -95,7 +95,8 @@ class ReportingController @Inject()(
   }
 
   def expectedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
-    showStudentAssessmentInfoTable(reportingService.expectedSittings(id), id)
+    val sortByHeader = request.getQueryString("sort").flatMap(v => if(v.isEmpty) None else Some(v))
+    showStudentAssessmentInfoTable(reportingService.expectedSittings(id), id, sortByHeader)
   }
 
   def started(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
