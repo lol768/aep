@@ -31,7 +31,9 @@
         <th>State</th>
         <th>Start time</th>
         <th>Finalised time</th>
-        <th>Adjustments</th>
+        @if(context.features.importStudentExtraTime) {
+          <th>Adjustments</th>
+        }
         <th>Connection</th>
         @studentsWithQueries.map { sWQ =>
           <th><i class="fad themed-duotone fa-comment-alt-lines mr-half"></i></th>
@@ -62,7 +64,9 @@
               @localisedDatetime(time)
             }
           </td>
-          <td>@md.studentAssessment.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
+          @if(context.features.importStudentExtraTime) {
+            <td>@md.studentAssessment.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
+          }
           <td>
             @if(md.studentAssessment.hasFinalised) {
               <span class="text-muted">No information</span>
