@@ -27,7 +27,9 @@
         <th>Last name</th>
         <th>Department</th>
         <th>User type</th>
-        <th>Extra time (per hr)</th>
+        @if(context.features.importStudentExtraTime) {
+          <th>Extra time (per hr)</th>
+        }
       </tr>
     </thead>
     <tbody>
@@ -45,9 +47,11 @@
               <td colspan="4"><em>Unknown</em></td>
             }
           }
-          <td data-sort="@student.extraTimeAdjustment.map(_.toMillis)">
-            @student.extraTimeAdjustment.map(d => DurationFormatUtils.formatDurationWords(d.toMillis, true, true))
-          </td>
+          @if(context.features.importStudentExtraTime) {
+            <td data-sort="@student.extraTimeAdjustment.map(_.toMillis)">
+              @student.extraTimeAdjustment.map(d => DurationFormatUtils.formatDurationWords(d.toMillis, true, true))
+            </td>
+          }
         </tr>
       }
     </tbody>

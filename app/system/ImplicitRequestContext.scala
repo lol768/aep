@@ -26,16 +26,19 @@ trait ImplicitRequestContext extends LowPriorityRequestContextImplicits {
   @Inject
   private[this] var tabulaConfiguration: TabulaConfiguration = _
 
+  @Inject
+  private[this] var features: Features = _
+
   implicit def requestContext(implicit request: RequestHeader): RequestContext =
     request match {
       case req: AuthenticatedRequest[_] =>
-        RequestContext.authenticated(ssoClient, req, navigationService.getNavigation(req.context), csrfPageHelperFactory, configuration, tabulaConfiguration)
+        RequestContext.authenticated(ssoClient, req, navigationService.getNavigation(req.context), csrfPageHelperFactory, configuration, features, tabulaConfiguration)
 
       case req: WrappedAuthenticatedRequest[_] =>
-        RequestContext.authenticated(ssoClient, req.authRequest, navigationService.getNavigation(req.authRequest.context), csrfPageHelperFactory, configuration, tabulaConfiguration)
+        RequestContext.authenticated(ssoClient, req.authRequest, navigationService.getNavigation(req.authRequest.context), csrfPageHelperFactory, configuration, features, tabulaConfiguration)
 
       case _ =>
-        RequestContext.authenticated(ssoClient, request, loginContext => navigationService.getNavigation(loginContext), csrfPageHelperFactory, configuration, tabulaConfiguration)
+        RequestContext.authenticated(ssoClient, request, loginContext => navigationService.getNavigation(loginContext), csrfPageHelperFactory, configuration, features, tabulaConfiguration)
     }
 
   implicit val requestContextBuilder: RequestHeader => RequestContext =
