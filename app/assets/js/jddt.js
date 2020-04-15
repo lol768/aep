@@ -1,4 +1,5 @@
 // John Dale Datetime (JDDT)
+import moment from 'moment-timezone'; // forgive me
 
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -88,14 +89,7 @@ function relativeDateName(date) {
 }
 
 export function browserLocalTimezoneName() {
-  if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
-    const dtf = Intl.DateTimeFormat();
-    if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {
-      return dtf.resolvedOptions().timeZone;
-    }
-  }
-
-  return undefined;
+  return moment.tz.guess();
 }
 
 /**
@@ -137,6 +131,16 @@ function stringifyDay(weekdayNumber, short) {
  */
 function stringifyTime(date) {
   return `${pad0(date.getHours())}:${pad0(date.getMinutes())}`;
+}
+
+/**
+ * Returns the timezone abbreviation for a specified date and timezone ID, e.g. "BST"
+ * @param {Date} date
+ * @param {string} timezoneName
+ * @returns {string}
+ */
+function stringifyTimezone(date, timezoneName) {
+  return moment(date).tz(timezoneName).zoneAbbr();
 }
 
 /**
@@ -203,11 +207,11 @@ function stringify(date, {
   }
 
   if (typeof timezoneName !== 'undefined' && wrapTimezoneName) {
-    parts.push(`<span class="text-muted">${timezoneName}</span>`);
+    parts.push(`<span class="text-muted">${stringifyTimezone(date, timezoneName)}</span>`);
   }
 
   if (typeof timezoneName !== 'undefined' && !wrapTimezoneName) {
-    parts.push(timezoneName);
+    parts.push(stringifyTimezone(date, timezoneName));
   }
 
   return parts.join(' ');
@@ -240,7 +244,14 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
 
   const isToToday = relativeDateName(toDate) === TODAY;
 
+  // Include the "from" timezone as well if it doesn't match (e.g. if it's a range from GMT to BST)
+  let fromTimezoneName;
+  if (stringifyTimezone(fromDate, timezoneName) !== stringifyTimezone(toDate, timezoneName)) {
+    fromTimezoneName = timezoneName;
+  }
+
   const fromStringifyOptions = {
+    timezoneName: fromTimezoneName,
     short,
     includeIcon: false,
     printDate: !sameExactDate,
@@ -252,12 +263,13 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
     printDay: !sameYear || !sameMonth || !sameDateNumber,
   };
   const toStringifyOptions = {
+    timezoneName,
     short,
     includeIcon: false,
     printYear: !sameYear,
   };
 
-  return `${iconString} ${stringify(fromDate, fromStringifyOptions)} to ${stringify(toDate, toStringifyOptions)} <span class="text-muted">${timezoneName}</span>`;
+  return `${iconString} ${stringify(fromDate, fromStringifyOptions)} to ${stringify(toDate, toStringifyOptions)}`;
 }
 
 /**
