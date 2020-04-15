@@ -294,11 +294,6 @@ export default class JDDT {
 
     this.localTimezoneOffset = this.jsDateLocal.getTimezoneOffset();
     this.localTimezoneName = browserLocalTimezoneName();
-    if (this.localTimezoneName === undefined) {
-      this.localTimezoneName = `${this.localTimezoneOffset < 0 ? '-' : '+'}\
-        ${pad0(Math.floor(Math.abs(this.localTimezoneOffset / 60)))}:\
-        ${pad0(Math.abs(this.localTimezoneOffset) % 60)}`;
-    }
 
     // These are the defaults, but should be overwritten using setServerTimezone
     this.serverTimezoneOffset = 0;
