@@ -163,6 +163,7 @@ object AssessmentsController {
         .verifying(urlConstraint)
         .verifying(durationConstraint)
         .verifying(platformConstraint)
+        .verifying("error.assessment.description.required", _.description.exists(_.hasText))
       else baseMapping
     )
   }
