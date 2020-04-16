@@ -49,7 +49,7 @@ export default function initAnnouncements(websocket) {
 
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Assessment announcement', { // eslint-disable-line no-new
-            body: d.messageHTML,
+            body: d.messageText,
             requireInteraction: true,
           });
         } else {
