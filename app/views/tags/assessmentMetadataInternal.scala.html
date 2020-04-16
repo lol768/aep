@@ -33,12 +33,12 @@
             @assessment.durationStyle match {
                 case DayWindow => {
                     <div>
-                        <i class="fad fa-fw fa-calendar-day"></i> Complete anytime within the 24 hours
+                        <i class="fad fa-fw fa-calendar-day" aria-hidden="true"></i> Complete anytime within the 24 hours
                     </div>
                 }
                 case FixedStart => {
                     <div class="text-danger">
-                        <i class="fad fa-fw fa-watch"></i> You must begin at the start time.
+                        <i class="fad fa-fw fa-watch" aria-hidden="true"></i> This is a fixed time assessment. It does not run in a 24 hour window, so you must begin at the start time.
                     </div>
                 }
             }
