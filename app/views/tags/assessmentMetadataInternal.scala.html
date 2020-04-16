@@ -1,5 +1,6 @@
 @import domain.Assessment
 @import views.html.tags._
+@import Assessment.DurationStyle._
 
 @(assessment: Assessment)(implicit context: RequestContext)
 
@@ -27,5 +28,20 @@
     <dt>Duration</dt>
     <dd>
         <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@durationWords(assessment)
+
+        @if(!assessment.hasLastAllowedStartTimePassed()) {
+            @assessment.durationStyle match {
+                case DayWindow => {
+                    <div>
+                        <i class="fad fa-fw fa-calendar-day"></i> Complete anytime within the 24 hours
+                    </div>
+                }
+                case FixedStart => {
+                    <div class="text-danger">
+                        <i class="fad fa-fw fa-watch"></i> You must begin at the start time.
+                    </div>
+                }
+            }
+        }
     </dd>
 }
