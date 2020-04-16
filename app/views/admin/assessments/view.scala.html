@@ -1,0 +1,68 @@
+@import tags._
+@import domain.{Assessment,  StudentAssessment}
+@import domain.tabula.SitsProfile
+@import domain.tabula.Department
+@import warwick.sso.UniversityID
+@import system.routes.Types.Usercode
+@import warwick.core.views.utils._
+
+@(
+  assessment: Assessment,
+  studentAssessments: Seq[StudentAssessment],
+  studentInformation: Map[UniversityID, SitsProfile],
+  department: Option[Department],
+  invigilators: Map[Usercode, String],
+  allowAssessmentTypeChangesOnImportedAssessments: Boolean,
+  numberOfPlatforms: Int = 2
+)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
+
+
+@adminLayout(title = s"Assessment for ${assessment.title} (${assessment.moduleCode})", extraClasses = Seq("grey-nopad")) {
+  <div class="row">
+    <div class="col-md-6">
+    @moduleInfo(assessment, department)
+    </div>
+    <div class="col-md-6">
+      @moduleBrief(assessment)
+      @if(assessment.tabulaAssignments.nonEmpty) {
+        <dl class="panel panel-default">
+          <div class="panel-body">
+            <dt>Tabula assignments</dt>
+            <dd>
+              <ul>
+                @assessment.tabulaAssignments.map { assignmentId =>
+                  <li><a href="@context.tabulaConfiguration.getAssignmentUrl(assignmentId)">@assignmentId</a></li>
+                }
+              </ul>
+            </dd>
+          </div>
+        </dl>
+      }
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <details>
+            <summary class="text-muted">Invigilators</summary>
+            <ul>
+            @assessment.invigilators.map { usercode =>
+              <li>
+                @invigilators.get(usercode).map { username =>
+                <span>@username</span>
+                <span class="text-muted">(@usercode.string)</span>
+                }.getOrElse(usercode.string)
+              </li>
+            }
+            </ul>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel panel-default">
+    <div class="panel-body">
+      <details>
+        <summary class="text-muted">@studentAssessments.size @pl(studentAssessments.size, "student")()</summary>
+        @studentsTable(Some(assessment), studentAssessments, studentInformation)
+      </details>
+    </div>
+  </div>
+}
