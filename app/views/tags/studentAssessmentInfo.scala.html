@@ -37,6 +37,7 @@
     <thead>
       <tr>
         <th @sortBy(sortByHeader, "Student", Some(s"data-sort-default"))>Student</th>
+        <th @sortBy(sortByHeader, "Email address")>Email address</th>
         <th @sortBy(sortByHeader, "Department")>Department</th>
         <th @sortBy(sortByHeader, "State")>State</th>
         <th @sortBy(sortByHeader, "Start time")>Start time</th>
@@ -56,9 +57,13 @@
         <tr>
           @userMap.get(md.studentAssessment.studentId).map { profile =>
             <td>@profile.fullName <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
+            <td>@profile.warwickEmail.map { emailAddress =>
+              <a href="mailto:@emailAddress">@emailAddress</a>
+            }.getOrElse("Unknown email")</td>
             <td>@profile.department.name</td>
           }.getOrElse {
             <td>Unknown name <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
+            <td>Unknown email</td>
             <td>Unknown department</td>
           }
           <td>
