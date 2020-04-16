@@ -46,7 +46,7 @@ const postErrorsThrottled = throttle(() => {
 function onError(message, source, line, column, error) {
   let stack = error.stack || error;
 
-  if (typeof stack !== 'string') {
+  if (stack !== undefined && typeof stack !== 'string') {
     stack = JSON.stringify(stack);
   }
 
