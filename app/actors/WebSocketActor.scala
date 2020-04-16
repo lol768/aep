@@ -34,11 +34,11 @@ object WebSocketActor {
   )(implicit ec: ExecutionContext, t: TimingContext): Props =
     Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, additionalTopics))
 
-  case class AssessmentAnnouncement(messageText: String, timestamp: OffsetDateTime) {
+  case class AssessmentAnnouncement(id: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
-  case class AssessmentMessage(messageText: String, sender: MessageSender, client: String, timestamp: OffsetDateTime) {
+  case class AssessmentMessage(id: String, messageText: String, sender: MessageSender, client: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
@@ -88,6 +88,7 @@ class WebSocketActor @Inject() (
   override def receive: Receive = {
     case aa: AssessmentAnnouncement => out ! Json.obj(
       "type" -> "announcement",
+      "id" -> aa.id,
       "messageHTML" -> aa.messageHTML.body,
       "messageText" -> aa.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(aa.timestamp).toString,
@@ -96,6 +97,7 @@ class WebSocketActor @Inject() (
 
     case am: AssessmentMessage => out ! Json.obj(
       "type" -> "assessmentMessage",
+      "id" -> am.id,
       "messageHTML" -> am.messageHTML.body,
       "messageText" -> am.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(am.timestamp).toString,

@@ -54,7 +54,7 @@ class MessageService @Inject() (
       .map { clientName =>
         pubSubService.publish(
           topic = savedMessage.assessmentId.toString,
-          AssessmentMessage(savedMessage.text, savedMessage.sender, clientName, savedMessage.created)
+          AssessmentMessage(savedMessage.id.toString, savedMessage.text, savedMessage.sender, clientName, savedMessage.created)
         )
         ServiceResults.success(Done)
       }
