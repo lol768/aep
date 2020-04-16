@@ -35,7 +35,7 @@ $(() => {
       $('#platform_OnlineExams').prop('disabled', false);
     }
 
-    const validDurations = $('input[name=assessmentType]:checked').data('valid-durations');
+    const validDurations = $('input[name=assessmentType]:checked').data('valid-durations') || [];
     $durationField.closest('.form-group').toggle(validDurations.length > 0);
     $durationField.find('option').each((_, option) => {
       const $option = $(option);
