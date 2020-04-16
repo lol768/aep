@@ -71,7 +71,17 @@ export default class WebSocketConnection {
   add({
     onConnect, onError, onClose, onData, onHeartbeat,
   } = {}) {
-    if (onConnect) this.onConnect.push(onConnect);
+    if (onConnect) {
+      this.onConnect.push(onConnect);
+
+      if (this.ws !== undefined) {
+        if (this.ws.readyState === WebSocket.OPEN) {
+          onConnect();
+        } else {
+          this.ws.addEventListener('open', onConnect);
+        }
+      }
+    }
     if (onError) this.onError.push(onError);
     if (onClose) this.onClose.push(onClose);
     if (onData) this.onData.push(onData);
