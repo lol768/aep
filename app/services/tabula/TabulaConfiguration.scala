@@ -1,5 +1,7 @@
 package services.tabula
 
+import java.util.UUID
+
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import system.routes.Types.UniversityID
@@ -15,6 +17,9 @@ class TabulaConfiguration @Inject() (c: Configuration) {
 
   def getAssessmentComponentMembersUrl(deptCode: String, academicYear: AcademicYear): String =
     s"$rootUrl/api/v1/department/$deptCode/${academicYear.getStartYear}/assessmentComponentMembers"
+
+  def getAssignmentUrl(assignmentId: UUID): String =
+    s"$rootUrl/coursework/admin/assignments/$assignmentId/summary"
 
   def getDepartmentsUrl: String =
     s"$rootUrl/api/v1/department"

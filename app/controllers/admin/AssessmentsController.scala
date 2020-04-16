@@ -25,7 +25,7 @@ import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
-import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
+import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService, Usercode}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -176,6 +176,7 @@ class AssessmentsController @Inject()(
   studentAssessmentService: StudentAssessmentService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   departmentService: TabulaDepartmentService,
+  userLookup: UserLookupService,
   configuration: Configuration,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
@@ -207,7 +208,7 @@ class AssessmentsController @Inject()(
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
-          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport, canBeDeleted(assessment, studentAssessments)))
+          Ok(views.html.admin.assessments.form(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport, canBeDeleted(assessment, studentAssessments)))
         }
     }
 
@@ -310,6 +311,28 @@ class AssessmentsController @Inject()(
         description = assessment.brief.text,
         invigilators = assessment.invigilators,
       )))
+    }
+  }
+
+  def view(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
+    val assessment = request.assessment
+    ServiceResults.zip(
+      studentAssessmentService.byAssessmentId(assessment.id),
+      departmentService.getDepartments()
+    ).successFlatMap { case (studentAssessments, departments) =>
+      studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
+        .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
+        .map { studentInformation =>
+          val invigilators = userLookup
+            .getUsers(assessment.invigilators.toSeq)
+            .getOrElse(Nil)
+            .map {
+              case (_, user) => user
+            }
+            .map(user => user.usercode -> user.name.full.getOrElse(user.usercode.string))
+            .toMap
+          Ok(views.html.admin.assessments.view(assessment, studentAssessments, studentInformation, departments.find(_.code == assessment.departmentCode.string), invigilators, !overwriteAssessmentTypeOnImport))
+        }
     }
   }
 
