@@ -5,7 +5,7 @@ import java.util.UUID
 
 import akka.Done
 import controllers.{BaseController, FormMappings}
-import domain.Assessment.{AssessmentType, Brief, Platform, State}
+import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform, State}
 import domain.tabula.SitsProfile
 import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
 import helpers.StringUtils._
@@ -76,6 +76,7 @@ object AssessmentsController {
     platform: Set[Platform],
     assessmentType: Option[AssessmentType],
     durationMinutes: Option[Long],
+    durationStyle: DurationStyle,
     urls: Map[Platform, String],
     description: Option[String],
     invigilators: Set[Usercode],
@@ -131,6 +132,7 @@ object AssessmentsController {
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
       "durationMinutes" -> optional(longNumber),
+      "durationStyle" -> ignored[DurationStyle](DurationStyle.DayWindow), // TODO add to create/edit forms
       "urls" -> mapping[Map[Platform, String], Option[String], Option[String], Option[String], Option[String], Option[String]](
         Platform.OnlineExams.entryName -> optional(text),
         Platform.Moodle.entryName -> optional(text),
@@ -246,6 +248,7 @@ class AssessmentsController @Inject()(
               duration = data.durationMinutes.map(Duration.ofMinutes),
               platform = data.platform,
               assessmentType = data.assessmentType,
+              durationStyle = data.durationStyle,
               brief = Brief(
                 text = data.description,
                 urls = data.urls,
@@ -306,6 +309,7 @@ class AssessmentsController @Inject()(
         platform = assessment.platform,
         assessmentType = assessment.assessmentType,
         durationMinutes = assessment.duration.map(_.toMinutes),
+        durationStyle = assessment.durationStyle,
         urls = assessment.brief.urls,
         description = assessment.brief.text,
         invigilators = assessment.invigilators,

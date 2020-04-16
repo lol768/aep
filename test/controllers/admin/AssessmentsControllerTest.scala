@@ -4,7 +4,7 @@ import java.io.File
 import java.util.UUID
 
 import controllers.admin.AssessmentsController.AssessmentFormData
-import domain.Assessment.{AssessmentType, Platform}
+import domain.Assessment.{AssessmentType, DurationStyle, Platform}
 import domain.{DepartmentCode, Fixtures}
 import helpers.{CleanUpDatabaseAfterEachTest, Scenario}
 import play.api.mvc._
@@ -129,6 +129,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       title = "bonk",
       description = None,
       durationMinutes = Some(120L),
+      durationStyle = DurationStyle.DayWindow,
       platform = Set(Platform.OnlineExams),
       assessmentType = Some(AssessmentType.OpenBook),
       students = Set.empty,
@@ -148,6 +149,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       title = a.title,
       description = Some("Honky bonky binky bang"),
       durationMinutes = a.duration.map(_.toMinutes),
+      durationStyle = DurationStyle.DayWindow,
       platform = a.platform,
       assessmentType = a.assessmentType,
       urls = a.platform.map(p => p -> "https://www.warwick.ac.uk").toMap,

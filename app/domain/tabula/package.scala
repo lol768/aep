@@ -4,7 +4,7 @@ import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import domain.Assessment.State.Imported
-import domain.Assessment.{AssessmentType, Brief, Platform}
+import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform}
 import services.tabula.TabulaResponseParsers.SitsAssessmentType
 
 package object tabula {
@@ -81,6 +81,7 @@ package object tabula {
           else
             existingAssessment.flatMap(_.assessmentType).orElse(locationNameToAssessmentType(schedule.locationName))
         },
+        durationStyle = existingAssessment.map(_.durationStyle).getOrElse(DurationStyle.DayWindow),
         brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, Map.empty)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
         state = existingAssessment.map(_.state).getOrElse(Imported),

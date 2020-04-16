@@ -9,7 +9,7 @@ import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
-import domain.Assessment.{AssessmentType, Platform}
+import domain.Assessment.{AssessmentType, DurationStyle, Platform}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import services.sandbox.DataGeneration
 import slick.basic.{BasicProfile, DatabaseConfig}
@@ -116,7 +116,7 @@ object Fixtures {
     // If you just need any old assessment that's assigned to philosophy to test with...
     lazy val philosophyAssessment: Assessment = Assessment(
       UUID.randomUUID, "ph-assessment", None, "Philosophy Assessment", Some(JavaTime.offsetDateTime.plusHours(1)),  Some(Duration.ofHours(3)), Set(Platform.OnlineExams),
-      Some(AssessmentType.OpenBook), Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, Set.empty, "meh", "ph101", DepartmentCode("ph"),
+      Some(AssessmentType.OpenBook), DurationStyle.DayWindow, Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, Set.empty, "meh", "ph101", DepartmentCode("ph"),
       "sequence"
     )
   }
