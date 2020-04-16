@@ -5,17 +5,17 @@ import java.util.UUID
 
 import domain.messaging.{MessageSave, MessageSender}
 import javax.inject.{Inject, Singleton}
-import play.api.i18n.Messages
-import play.api.mvc.{Action, AnyContent}
-import services.{AssessmentService, SecurityService, StudentAssessmentService}
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.i18n.Messages
+import play.api.mvc.{Action, AnyContent}
+import services.SecurityService
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService
 import services.tabula.TabulaStudentInformationService.GetStudentInformationOptions
 import warwick.core.helpers.ServiceResults
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class MessageController @Inject()(
@@ -23,10 +23,10 @@ class MessageController @Inject()(
   messageService: MessageService,
   studentInformationService: TabulaStudentInformationService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
-  import security._
   import MessageController._
+  import security._
 
-  def showForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
+  def showForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId, allowWhereNoDuration = true).async { implicit request =>
     val universityId = request.sitting.studentAssessment.studentId
     ServiceResults.zip(
       messageService.findByStudentAssessment(assessmentId, universityId),
@@ -38,7 +38,7 @@ class MessageController @Inject()(
     }
   }
 
-  def submitForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
+  def submitForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId, allowWhereNoDuration = true).async { implicit request =>
     def success(data: MessageData) =
       messageService.send(MessageSave(data.messageText, MessageSender.Client), currentUniversityId(), assessmentId).successMap { _ =>
         Redirect(controllers.routes.MessageController.showForm(assessmentId))

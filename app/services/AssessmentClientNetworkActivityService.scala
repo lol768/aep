@@ -52,7 +52,7 @@ class AssessmentClientNetworkActivityServiceImpl @Inject()(
 
   override def getLatestActivityFor(studentAssessmentIds: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Map[UUID, AssessmentClientNetworkActivity]]] = {
     daoRunner.run(dao.getLatestActivityFor(studentAssessmentIds)).map { activities =>
-      ServiceResults.success(activities.map(a => a.studentAssessmentId -> a).toMap)
+      ServiceResults.success(activities.map(a => a.studentAssessmentId.get -> a).toMap)
     }
   }
 }

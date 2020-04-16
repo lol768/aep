@@ -10,12 +10,22 @@
   metadata: Seq[SittingMetadata],
   userMap: Map[UniversityID, tabula.SitsProfile],
   studentsWithQueries: Option[Seq[UniversityID]] = None,
-  latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty
+  totalQueries: Int = 0,
+  latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
+  sortByHeader: Option[String] = None,
 )(implicit context: RequestContext)
+
+@sortBy(header: Option[String], value: String, default: Option[String] = None) = {
+  @if(header.nonEmpty) {
+    @if(header.get.toLowerCase==value.toLowerCase) { data-sort-default }
+  } else {
+    @if(default.nonEmpty) { @default.get }
+  }
+}
 
 @if(metadata.nonEmpty) {
   @studentsWithQueries.map { sWQ =>
-    <div class="alert alert-info sets-document-title-prefix" data-document-title-prefix="@if(sWQ.nonEmpty) { (@sWQ.length) }">
+    <div class="alert alert-info sets-document-title-prefix" data-document-title-prefix="@if(totalQueries > 0) { (@totalQueries) }">
       <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
       @sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.
       <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
@@ -23,18 +33,19 @@
     </a>
     </div>
   }
-  <table class="table table-bordered">
+  <table class="table table-bordered table-sortable students-taking-assessment-table">
     <thead>
       <tr>
-        <th>Student</th>
-        <th>Department</th>
-        <th>State</th>
-        <th>Start time</th>
-        <th>Submission time</th>
+        <th @sortBy(sortByHeader, "Student", Some(s"data-sort-default"))>Student</th>
+        <th @sortBy(sortByHeader, "Email address")>Email address</th>
+        <th @sortBy(sortByHeader, "Department")>Department</th>
+        <th @sortBy(sortByHeader, "State")>State</th>
+        <th @sortBy(sortByHeader, "Start time")>Start time</th>
+        <th @sortBy(sortByHeader, "Submission time")>Submission time</th>
         @if(context.features.importStudentExtraTime) {
-          <th>Adjustments</th>
+          <th @sortBy(sortByHeader, "Adjustments")>Adjustments</th>
         }
-        <th>Connection</th>
+        <th @sortBy(sortByHeader, "Connection")>Connection</th>
         @studentsWithQueries.map { sWQ =>
           <th><i class="fad themed-duotone fa-comment-alt-lines mr-half"></i></th>
         }
@@ -46,9 +57,13 @@
         <tr>
           @userMap.get(md.studentAssessment.studentId).map { profile =>
             <td>@profile.fullName <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
+            <td>@profile.warwickEmail.map { emailAddress =>
+              <a href="mailto:@emailAddress">@emailAddress</a>
+            }.getOrElse("Unknown email")</td>
             <td>@profile.department.name</td>
           }.getOrElse {
             <td>Unknown name <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
+            <td>Unknown email</td>
             <td>Unknown department</td>
           }
           <td>

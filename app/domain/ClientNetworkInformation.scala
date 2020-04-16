@@ -1,6 +1,5 @@
 package domain
 
-import java.time.ZoneId
 import java.util.UUID
 
 case class ClientNetworkInformation(
@@ -10,5 +9,6 @@ case class ClientNetworkInformation(
   rtt: Option[Int], // rounded to nearest 25ms
   `type`: Option[String], // bluetooth, cellular, ethernet, none, wifi, wimax, other, unknown
   studentAssessmentId: Option[UUID],
+  assessmentId: Option[UUID],
   localTimezoneName: Option[String], // Accept a String here but store a ZoneId
 )

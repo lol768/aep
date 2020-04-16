@@ -1,15 +1,5 @@
 import JDDT from './jddt';
-
-function checkNotificationPromise() {
-  // https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API
-  try {
-    Notification.requestPermission().then();
-  } catch (e) {
-    return false;
-  }
-
-  return true;
-}
+import { checkNotificationPromise } from './notifications-api';
 
 /**
  * Separated for testing purposes - takes data and returns it as nice HTML
@@ -49,7 +39,7 @@ export default function initAnnouncements(websocket) {
 
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Assessment announcement', { // eslint-disable-line no-new
-            body: d.messageHTML,
+            body: d.messageText,
             requireInteraction: true,
           });
         } else {

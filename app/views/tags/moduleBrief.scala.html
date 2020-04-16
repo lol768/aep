@@ -34,7 +34,7 @@
                 <ul>
                 @assessment.brief.files.map { file =>
                     <li>
-                        <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank">
+                        <a href="@controllers.invigilation.routes.InvigilatorAssessmentController.getFile(assessment.id, file.id)" target="_blank" rel="noreferrer">
                             <i class="fad fa-file fa-fw"></i>@file.fileName
                         </a>
                     </li>

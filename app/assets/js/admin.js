@@ -92,4 +92,8 @@ $(() => {
       window.location.reload();
     }, 5000);
   }
+
+  if (document.body.classList.contains('connect-ws')) {
+    import('./central-web-socket');
+  }
 });

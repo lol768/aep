@@ -61,6 +61,7 @@ GET         /admin/assessments/:id                                @controllers.a
 POST        /admin/assessments/:id                                @controllers.admin.AssessmentsController.update(id: UUID)
 GET         /admin/assessments/:id/delete                         @controllers.admin.AssessmentsController.deleteForm(id: UUID)
 POST        /admin/assessments/:id/delete                         @controllers.admin.AssessmentsController.delete(id: UUID)
+GET         /admin/assessments/:id/view                           @controllers.admin.AssessmentsController.view(id: UUID)
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
@@ -86,6 +87,9 @@ GET         /admin/student-activity/filter                        @controllers.a
 
 GET         /invigilation                                         @controllers.invigilation.InvigilatorListController.list()
 GET         /invigilation/assessment/:id                          @controllers.invigilation.InvigilatorAssessmentController.view(id: UUID)
+# https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
++nocsp
+GET         /invigilation/assessment/:id/files/:fileId            @controllers.invigilation.InvigilatorAssessmentController.getFile(id: UUID, fileId: UUID)
 GET         /invigilation/assessment/:id/student/:uniid/queries   @controllers.invigilation.AnnouncementAndQueriesController.view(id: UUID, uniid: UniversityID)
 GET         /invigilation/assessment/:id/queries                  @controllers.invigilation.AnnouncementAndQueriesController.viewAll(id: UUID)
 POST        /invigilation/assessment/:id/announcement/add         @controllers.invigilation.AnnouncementAndQueriesController.addAnnouncement(id: UUID)
