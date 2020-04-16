@@ -27,11 +27,15 @@ export default class UploadWithProgress {
   /**
    * @private
    */
-  static handleErrorInUpload(formElement) {
+  static handleErrorInUpload(formElement, errorMessage) {
     log('Failed to finish upload');
     // TODO log to server
     formElement.querySelector('.upload-info').classList.add('hide'); // IE10
     formElement.querySelector('.upload-error').classList.remove('hide'); // IE10
+    if (errorMessage && errorMessage !== '') {
+      /* eslint-disable-next-line no-param-reassign */
+      formElement.querySelector('.upload-error-text').innerText = errorMessage;
+    }
     formElement.reset();
   }
 
@@ -64,7 +68,7 @@ export default class UploadWithProgress {
               this.successCallback(formElement);
             } else {
               this.failureCallback(xhr);
-              UploadWithProgress.handleErrorInUpload(formElement);
+              UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText);
             }
           } else if (xhr.readyState === XMLHttpRequest.OPENED) {
             formElement.querySelector('.upload-info').classList.remove('hide'); // IE10
