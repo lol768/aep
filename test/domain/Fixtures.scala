@@ -152,7 +152,7 @@ object Fixtures {
 
       StoredAnnouncement(
         id = UUID.randomUUID(),
-        sender = usercode,
+        sender = Some(usercode),
         assessmentId = assId,
         text = text,
         created = createTime.asOffsetDateTime,

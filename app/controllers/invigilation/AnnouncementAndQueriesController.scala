@@ -14,7 +14,7 @@ import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService.{GetMultipleStudentInformationOptions, GetStudentInformationOptions}
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
-import services.{AnnouncementService, AssessmentService, SecurityService, StudentAssessmentService}
+import services.{AnnouncementService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.ServiceResults
 import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService}
 
