@@ -117,6 +117,7 @@ package object tabula {
     lastName: String,
     fullName: String,
     department: DepartmentIdentity,
+    warwickEmail: Option[String],
     course: Option[Course],
     attendance: Option[Attendance],
     group: Option[StudentGroup],
