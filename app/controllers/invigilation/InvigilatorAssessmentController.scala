@@ -11,9 +11,10 @@ import services.tabula.TabulaStudentInformationService.GetMultipleStudentInforma
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentClientNetworkActivityService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
+import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.sso.{User, UserLookupService, Usercode}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class InvigilatorAssessmentController @Inject()(
@@ -24,6 +25,7 @@ class InvigilatorAssessmentController @Inject()(
   tabulaDepartmentService: TabulaDepartmentService,
   messageService: MessageService,
   networkActivityService: AssessmentClientNetworkActivityService,
+  uploadedFileControllerHelper: UploadedFileControllerHelper,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -68,6 +70,12 @@ class InvigilatorAssessmentController @Inject()(
             ))
           }
     }
+  }
+
+  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>
+    request.assessment.brief.files.find(_.id == fileId)
+      .map(uploadedFileControllerHelper.serveFile)
+      .getOrElse(Future.successful(NotFound("File not found")))
   }
 
 }
