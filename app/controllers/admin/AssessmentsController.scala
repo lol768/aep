@@ -18,7 +18,7 @@ import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
-import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
+import services.tabula.{TabulaAssessmentService, TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -178,6 +178,7 @@ class AssessmentsController @Inject()(
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   departmentService: TabulaDepartmentService,
   userLookup: UserLookupService,
+  tabulaAssessmentService: TabulaAssessmentService,
   configuration: Configuration,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
@@ -269,6 +270,8 @@ class AssessmentsController @Inject()(
               StudentAssessment(
                 id = UUID.randomUUID(),
                 assessmentId = newAssessment.id,
+                occurrence = None,
+                academicYear = None,
                 studentId = universityID,
                 inSeat = false,
                 startTime = None,
@@ -381,6 +384,8 @@ class AssessmentsController @Inject()(
                     StudentAssessment(
                       id = UUID.randomUUID(),
                       assessmentId = assessment.id,
+                      occurrence = None,
+                      academicYear = None,
                       studentId = universityID,
                       inSeat = false,
                       startTime = None,
@@ -419,6 +424,15 @@ class AssessmentsController @Inject()(
           }
         }
       })
+  }
+
+  def generateAssignments(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
+    val assessment = request.assessment
+
+    tabulaAssessmentService.generateAssignments(assessment).successMap { _ =>
+      Redirect(routes.AssessmentsController.view(assessment.id))
+        .flashing { "success" -> Messages("flash.assessment.generatedAssignments", assessment.title) }
+    }
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>

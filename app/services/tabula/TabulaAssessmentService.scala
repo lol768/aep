@@ -1,11 +1,13 @@
 package services.tabula
 
-import domain.tabula
+import java.util.UUID
+
+import domain.{Assessment, tabula}
 import com.google.inject.ImplementedBy
 import helpers.{TrustedAppsHelper, WSRequestUriBuilder}
 import javax.inject.{Inject, Singleton}
 import play.api.cache.AsyncCacheApi
-import play.api.libs.json.{JsPath, JsValue, JsonValidationError, Reads}
+import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSRequest}
 import system.TimingCategories
 import uk.ac.warwick.sso.client.trusted.{TrustedApplicationUtils, TrustedApplicationsManager}
@@ -13,7 +15,7 @@ import warwick.core.helpers.ServiceResults.{ServiceError, ServiceResult}
 import warwick.core.timing.{TimingContext, TimingService}
 import warwick.caching._
 import warwick.core.Logging
-import warwick.core.helpers.ServiceResults
+import warwick.core.helpers.{JavaTime, ServiceResults}
 
 import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
@@ -21,13 +23,17 @@ import scala.concurrent.{ExecutionContext, Future}
 import ServiceResults.Implicits._
 import com.google.inject.name.Named
 import TabulaAssessmentService._
+import domain.tabula.Assignment
 import play.api.Logger
+import services.{AssessmentService, StudentAssessmentService}
 import uk.ac.warwick.util.termdates.AcademicYear
+import warwick.core.system.AuditLogContext
 
 @ImplementedBy(classOf[CachingTabulaAssessmentService])
 trait TabulaAssessmentService {
   def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn]
   def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]]
+  def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
 }
 
 object TabulaAssessmentService {
@@ -70,6 +76,8 @@ class CachingTabulaAssessmentService @Inject() (
   override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] =
     impl.getAssessmentGroupMembers(options)
 
+  override def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
+    impl.generateAssignments(assessment)
 }
 
 @Singleton
@@ -79,6 +87,8 @@ class TabulaAssessmentServiceImpl @Inject() (
   trustedApplicationsManager: TrustedApplicationsManager,
   tabulaHttp: TabulaHttp,
   timing: TimingService,
+  assessmentService: AssessmentService,
+  studentAssessmentService: StudentAssessmentService,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentService with Logging {
 
   import tabulaHttp._
@@ -93,7 +103,7 @@ class TabulaAssessmentServiceImpl @Inject() (
       ).flatten: _*)
     implicit def l: Logger = logger
 
-    doGet(url, req, description = "getAssessments").successFlatMapTo { jsValue =>
+    doRequest(url, method = "GET", req, description = "getAssessments").successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.responseAssessmentComponentsReads)
     }
   }
@@ -106,9 +116,61 @@ class TabulaAssessmentServiceImpl @Inject() (
       )
     implicit def l: Logger = logger
 
-    doGet(url, req, description = "getAssessmentGroupMembers").successFlatMapTo { jsValue =>
+    doRequest(url, method = "GET", req, description = "getAssessmentGroupMembers").successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.responsePaperCodesReads)
     }
+  }
+
+  private def createAssignment(assessment: Assessment, academicYear: AcademicYear, occurrences: Set[String]): Future[ServiceResult[Assignment]] = {
+    val moduleCode = assessment.moduleCode.split("-").head.toLowerCase
+    val url = config.getCreateAssignmentUrl(moduleCode)
+
+    val sitsLinks = occurrences.map(o => Json.obj(
+      "moduleCode" -> assessment.moduleCode,
+      "occurrence" -> o,
+      "sequence" -> assessment.sequence
+    ))
+
+    // TODO - if openEnded causes problems use assessment.lastAllowedStartTime.plusDays(1)
+    // note - will may need a new create assignment API that ignores validation on close time (only supports 10-4)
+
+    val isPreviousAcademicYear = academicYear != AcademicYear.forDate(JavaTime.offsetDateTime)
+
+    val body: JsValue = Json.obj(
+      "name" -> s"${assessment.title} - ${assessment.paperCode} (AEP submissions)",
+      "openEnded" -> true,
+      "collectSubmissions" -> false,
+      "publishFeedback" -> false,
+      "automaticallySubmitToTurnitin" -> true,
+      // "resitAssessment" -> true, TODO - tabula API ignores this
+      "fileAttachmentLimit" -> 20, // TODO - we should teach our private Tabula submission API to ignore the limit
+      "academicYear" -> academicYear.toString,
+      "sitsLinks" -> sitsLinks,
+      // "anonymity" -> "IDOnly" TODO - tabula API doesn't support this
+    )
+
+    val req = ws.url(url)
+      .withHttpHeaders("Content-Type" -> "application/json")
+      .withBody(body)
+
+    implicit def l: Logger = logger
+
+    doRequest(url, "POST", req, description = "createAssignment").successFlatMapTo { jsValue =>
+      parseAndValidate(jsValue, TabulaResponseParsers.responseAssignmentReads)
+    }
+  }
+
+  override def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] = timing.time(TimingCategories.TabulaWrite) {
+    studentAssessmentService.byAssessmentId(assessment.id)
+      .successFlatMapTo { students =>
+        val byYear = students.filter(_.academicYear.isDefined).groupBy(_.academicYear.get)
+        ServiceResults.futureSequence(byYear.map { case (academicYear, students) =>
+          createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
+        }.toSeq)
+      }.successFlatMapTo { assignments =>
+        val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => UUID.fromString(a.id))
+        assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
+      }
   }
 
 }
@@ -123,15 +185,16 @@ class TabulaHttp @Inject() (
 )(implicit ec: ExecutionContext) extends Logging {
 
   /**
-    * Make a trusted GET request to an URL.
+    * Make a trusted request to an URL.
     *
     * @param url Full URL
+    * @param method HTTP method
     * @param wsRequest Request object
     * @param description Description for logging
     * @param l Logger, for logging
     * @return JsValue if request was trusted (but use parseAndValidate to check it was successful)
     */
-  def doGet(url: String, wsRequest: WSRequest, description: String)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
+  def doRequest(url: String, method: String, wsRequest: WSRequest, description: String)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
     val trustedHeaders: Seq[(String, String)] = TrustedApplicationUtils.getRequestHeaders(
       trustedApplicationsManager.getCurrentApplication,
       config.usercode,
@@ -139,7 +202,7 @@ class TabulaHttp @Inject() (
     ).asScala.map(h => h.getName -> h.getValue).toSeq
 
     wsRequest.addHttpHeaders(trustedHeaders: _*)
-      .get()
+      .execute(method)
       .map { r =>
         try {
           Right(TrustedAppsHelper.validateResponse(url, r).json)

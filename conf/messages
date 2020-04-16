@@ -12,6 +12,7 @@ flash.assessment.created=Assessment "{0}" has been created and is now ready.
 flash.assessment.created.notReady=Assessment "{0}" has been created. To be ready: {1}
 flash.assessment.updated=Assessment "{0}" has been updated and is now ready.
 flash.assessment.updated.notReady=Assessment "{0}" has been updated. To be ready: {1}
+flash.assessment.generatedAssignments=Tabula assignments have been generated for Assessment "{0}".
 flash.assessment.declaration.must-check-box=You must tick the box to start the assessment.
 flash.assessment.declaration.must-choose-radio=You must choose an option to start the assessment.
 flash.assessment.finish.must-check-box=You must tick the box to finish the assessment.

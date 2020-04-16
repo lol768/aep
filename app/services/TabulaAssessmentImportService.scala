@@ -117,6 +117,8 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                     StudentAssessment(
                       id = UUID.randomUUID(),
                       assessmentId = assessment.id,
+                      occurrence = Option(scheduleStudent.occurrence),
+                      academicYear = Option(schedule.academicYear),
                       studentId = scheduleStudent.universityID,
                       inSeat = false,
                       startTime = None,
@@ -132,6 +134,8 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                   studentAssessments.find(_.studentId == scheduleStudent.universityID).flatMap { studentAssessment =>
                     val updated = studentAssessment.copy(
                       extraTimeAdjustment = extraTimeAdjustment,
+                      occurrence = Option(scheduleStudent.occurrence),
+                      academicYear = Option(schedule.academicYear),
                     )
 
                     // Don't return no-ops

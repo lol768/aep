@@ -275,6 +275,8 @@ class StudentAssessmentServiceImpl @Inject()(
       daoRunner.run(dao.insertAll(studentAssessments.map(studentAssessment => StoredStudentAssessment(
         id = studentAssessment.id,
         assessmentId = studentAssessment.assessmentId,
+        occurrence = studentAssessment.occurrence,
+        academicYear = studentAssessment.academicYear.map(_.getStartYear),
         studentId = studentAssessment.studentId,
         inSeat = studentAssessment.inSeat,
         startTime = studentAssessment.startTime,
@@ -293,6 +295,8 @@ class StudentAssessmentServiceImpl @Inject()(
         result.map { existingSA =>
           daoRunner.run(for {
             updated <- dao.update(existingSA.copy(
+              occurrence = studentAssessment.occurrence,
+              academicYear = studentAssessment.academicYear.map(_.getStartYear),
               inSeat = studentAssessment.inSeat,
               startTime = studentAssessment.startTime,
               finaliseTime = studentAssessment.explicitFinaliseTime,
@@ -305,6 +309,8 @@ class StudentAssessmentServiceImpl @Inject()(
           daoRunner.run(dao.insert(StoredStudentAssessment(
             id = studentAssessment.id,
             assessmentId = studentAssessment.assessmentId,
+            occurrence = studentAssessment.occurrence,
+            academicYear = studentAssessment.academicYear.map(_.getStartYear),
             studentId = studentAssessment.studentId,
             inSeat = studentAssessment.inSeat,
             startTime = studentAssessment.startTime,
