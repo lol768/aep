@@ -10,6 +10,7 @@ import domain.messaging.MessageSender
 import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.twirl.api.Html
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
@@ -18,7 +19,7 @@ import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
-import warwick.sso.{LoginContext, UniversityID}
+import warwick.sso.{LoginContext, UniversityID, Usercode}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -120,16 +121,18 @@ class WebSocketActor @Inject() (
               effectiveType = networkInformation.effectiveType,
               rtt = networkInformation.rtt,
               `type` = networkInformation.`type`,
-              studentAssessmentId = networkInformation.studentAssessmentId.orNull,
+              studentAssessmentId = networkInformation.studentAssessmentId,
+              assessmentId = networkInformation.assessmentId,
+              usercode = loginContext.user.map(_.usercode),
               localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
               timestamp = JavaTime.offsetDateTime,
             )
 
-          if (networkInformation.studentAssessmentId.nonEmpty) {
+          if (networkInformation.studentAssessmentId.nonEmpty || networkInformation.assessmentId.nonEmpty) {
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
               .recover {
                 case e: Exception =>
-                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}")
+                  log.error(e, s"Error storing AssessmentClientNetworkActivity for ${if(networkInformation.studentAssessmentId.nonEmpty) s"StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}" else s"Assessment ${assessmentClientNetworkActivity.assessmentId}"}")
               }
           }
 
