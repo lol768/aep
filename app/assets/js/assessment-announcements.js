@@ -53,11 +53,17 @@ export function formatAnnouncement(d) {
   return el;
 }
 
+/**
+ * @param {WebSocketConnection} websocket
+ */
 export default function initAnnouncements(websocket) {
   websocket.add({
-    onConnect: () => {
-      websocket.send
-    }
+    onHeartbeat: (ws) => {
+      // ws.send({
+      //   type: 'RequestAnnouncements',
+      //   assessmentId:
+      // })
+    },
     onData: (d) => {
       const messageList = document.querySelector('.message-list');
       if (messageList && d.type === 'announcement') {
