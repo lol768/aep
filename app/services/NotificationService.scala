@@ -15,6 +15,7 @@ import warwick.sso.UserLookupService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
+import helpers.LenientTimezoneNameParsing._
 
 @ImplementedBy(classOf[NotificationServiceImpl])
 trait NotificationService {
@@ -68,16 +69,22 @@ class NotificationServiceImpl @Inject()(
       Future.successful(ServiceResults.fromTry(userLookupService.getUsers(universityIds))).successMapTo { users =>
         val usercodes = users.values.map(_.usercode.string).toSet
 
+        val timezone: LenientZoneId = Right(JavaTime.timeZone)
+
         val activity = new Activity(
           usercodes.asJava,
           s"${assessment.paperCode}: Your alternative assessment for '${assessment.title}' is due today",
           controllers.routes.AssessmentController.view(assessment.id).absoluteURL(true, domain),
           (assessment.startTime, assessment.lastAllowedStartTime) match {
+            // Special case where this crosses the DST boundary
+            case (Some(startTime), Some(lastAllowedStartTime)) if timezone.timezoneAbbr(startTime) != timezone.timezoneAbbr(lastAllowedStartTime) =>
+              s"You can start this assessment between ${JavaTime.Relative(startTime)} (${timezone.timezoneAbbr(startTime)}) and ${JavaTime.Relative(lastAllowedStartTime)} (${timezone.timezoneAbbr(lastAllowedStartTime)})."
+
             case (Some(startTime), Some(lastAllowedStartTime)) =>
-              s"You can start this assessment between ${JavaTime.Relative(startTime, printToday = false)} and ${JavaTime.Relative(lastAllowedStartTime, printToday = false)} (${JavaTime.timeZone.getId})."
+              s"You can start this assessment between ${JavaTime.Relative(startTime)} and ${JavaTime.Relative(lastAllowedStartTime)} (${timezone.timezoneAbbr(lastAllowedStartTime)})."
 
             case (Some(startTime), _) =>
-              s"You can start this assessment at ${JavaTime.Relative(startTime, printToday = false)} (${JavaTime.timeZone.getId})."
+              s"You can start this assessment at ${JavaTime.Relative(startTime)} (${timezone.timezoneAbbr(startTime)})."
 
             // Should be filtered before it gets here (how can it be today without a start time?), but just ignore
             case _ => ""

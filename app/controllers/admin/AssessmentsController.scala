@@ -4,7 +4,7 @@ import java.time.{Duration, LocalDateTime}
 import java.util.UUID
 
 import akka.Done
-import controllers.BaseController
+import controllers.{BaseController, FormMappings}
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import domain.tabula.SitsProfile
 import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
@@ -20,12 +20,12 @@ import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentService, SecurityService, StudentAssessmentService}
-import warwick.core.helpers.ServiceResults
+import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
-import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
+import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService, Usercode}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -101,7 +101,7 @@ object AssessmentsController {
 
   val urlConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
     val missingUrls = assessmentForm.platform.filter(_.requiresUrl).filter(platform =>
-      assessmentForm.urls.get(platform).isEmpty
+      assessmentForm.urls.get(platform).forall(!_.hasText)
     )
     if (missingUrls.isEmpty)
       Valid
@@ -112,7 +112,7 @@ object AssessmentsController {
   def notStarted(existing: Option[Assessment]): Constraint[AssessmentFormData] = Constraint { _ =>
     if (existing.forall(_.tabulaAssessmentId.isEmpty))
       Valid
-    else if (existing.exists(_.hasStartTimePassed))
+    else if (existing.exists(_.hasStartTimePassed()))
       Invalid(Seq(ValidationError("error.assessment.started")))
     else
       Valid
@@ -126,7 +126,7 @@ object AssessmentsController {
       "departmentCode" -> departmentCodeFieldMapping,
       "sequence" -> nonEmptyText,
       "startTime" -> startTimeFieldMapping,
-      "students" -> existing.map(_ => ignored(Set.empty[UniversityID])).getOrElse(studentsFieldMapping),
+      "students" -> existing.filter(_.tabulaAssessmentId.nonEmpty).map(_ => ignored(Set.empty[UniversityID])).getOrElse(studentsFieldMapping),
       "title" -> nonEmptyText,
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
@@ -163,6 +163,8 @@ object AssessmentsController {
         .verifying(urlConstraint)
         .verifying(durationConstraint)
         .verifying(platformConstraint)
+        .verifying("error.assessment.description.required", _.description.exists(_.hasText))
+        .verifying("error.assessment.invigilators.required", _.invigilators.nonEmpty)
       else baseMapping
     )
   }
@@ -175,6 +177,7 @@ class AssessmentsController @Inject()(
   studentAssessmentService: StudentAssessmentService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   departmentService: TabulaDepartmentService,
+  userLookup: UserLookupService,
   configuration: Configuration,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
@@ -192,6 +195,12 @@ class AssessmentsController @Inject()(
     }
   }
 
+  // If it's ad-hoc, and it's either before the start date or none of the students have started, you can delete it
+  private def canBeDeleted(assessment: Assessment, studentAssessments: Seq[StudentAssessment]): Boolean =
+    assessment.tabulaAssessmentId.isEmpty && (
+      assessment.startTime.exists(_.isAfter(JavaTime.offsetDateTime)) || studentAssessments.forall(_.startTime.isEmpty)
+    )
+
   private def showForm(assessment: Assessment, assessmentForm: Form[AssessmentFormData])(implicit request: AuthenticatedRequest[_]): Future[Result] =
     ServiceResults.zip(
       studentAssessmentService.byAssessmentId(assessment.id),
@@ -200,7 +209,7 @@ class AssessmentsController @Inject()(
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
-          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport))
+          Ok(views.html.admin.assessments.form(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport, canBeDeleted(assessment, studentAssessments)))
         }
     }
 
@@ -247,6 +256,7 @@ class AssessmentsController @Inject()(
               invigilators = data.invigilators,
               state = newState,
               tabulaAssessmentId = None,
+              tabulaAssignments = Set(),
               examProfileCode = "EXAPR20",
               moduleCode = data.moduleCode,
               departmentCode = data.departmentCode,
@@ -263,7 +273,7 @@ class AssessmentsController @Inject()(
                 inSeat = false,
                 startTime = None,
                 extraTimeAdjustment = None,
-                finaliseTime = None,
+                explicitFinaliseTime = None,
                 uploadedFiles = Nil,
               )
             ))
@@ -302,6 +312,28 @@ class AssessmentsController @Inject()(
         description = assessment.brief.text,
         invigilators = assessment.invigilators,
       )))
+    }
+  }
+
+  def view(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
+    val assessment = request.assessment
+    ServiceResults.zip(
+      studentAssessmentService.byAssessmentId(assessment.id),
+      departmentService.getDepartments()
+    ).successFlatMap { case (studentAssessments, departments) =>
+      studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
+        .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
+        .map { studentInformation =>
+          val invigilators = userLookup
+            .getUsers(assessment.invigilators.toSeq)
+            .getOrElse(Nil)
+            .map {
+              case (_, user) => user
+            }
+            .map(user => user.usercode -> user.name.full.getOrElse(user.usercode.string))
+            .toMap
+          Ok(views.html.admin.assessments.view(assessment, studentAssessments, studentInformation, departments.find(_.code == assessment.departmentCode.string), invigilators, !overwriteAssessmentTypeOnImport))
+        }
     }
   }
 
@@ -353,7 +385,7 @@ class AssessmentsController @Inject()(
                       inSeat = false,
                       startTime = None,
                       extraTimeAdjustment = None,
-                      finaliseTime = None,
+                      explicitFinaliseTime = None,
                       uploadedFiles = Nil,
                     )
                   }
@@ -389,12 +421,31 @@ class AssessmentsController @Inject()(
       })
   }
 
-  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
-    assessmentService.get(assessmentId).successFlatMap { assessment =>
-      assessment.brief.files.find(_.id == fileId)
-        .map(uploadedFileControllerHelper.serveFile)
-        .getOrElse(Future.successful(NotFound("File not found")))
-    }
+  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>
+    request.assessment.brief.files.find(_.id == fileId)
+      .map(uploadedFileControllerHelper.serveFile)
+      .getOrElse(Future.successful(NotFound("File not found")))
+  }
+
+  def deleteForm(assessmentId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>
+    studentAssessmentService.byAssessmentId(request.assessment.id).successMap(studentAssessments =>
+      Ok(views.html.admin.assessments.delete(FormMappings.confirmForm, canBeDeleted(request.assessment, studentAssessments)))
+    )
+  }
+
+  def delete(assessmentId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>
+    studentAssessmentService.byAssessmentId(request.assessment.id).successFlatMap(studentAssessments =>
+      if (!canBeDeleted(request.assessment, studentAssessments)) {
+        throw new IllegalArgumentException("Cannot delete this assessment")
+      } else {
+        FormMappings.confirmForm.bindFromRequest.fold(
+          formWithErrors => Future.successful(Ok(views.html.admin.assessments.delete(formWithErrors, canBeDeleted = true))),
+          _ => assessmentService.delete(request.assessment).successMap(_ =>
+            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessmnet.deleted", request.assessment.title))
+          )
+        )
+      }
+    )
   }
 
   private def deptAdminCanView(assessment: Assessment)(

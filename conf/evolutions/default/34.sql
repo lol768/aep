@@ -1,11 +1,9 @@
 # --- !Ups
 
-alter table announcement add column sender varchar;
-alter table announcement_version add column sender varchar;
-update announcement set sender = '';
-update announcement_version set sender = '';
+alter table  assessment add column tabula_assignments text[] not null default '{}';
+alter table  assessment_version add column tabula_assignments text[] not null default '{}';
 
 # --- !Downs
 
-alter table announcement drop column sender;
-alter table announcement_version drop column sender;
+alter table assessment drop column tabula_assignments;
+alter table assessment_version drop column tabula_assignments;

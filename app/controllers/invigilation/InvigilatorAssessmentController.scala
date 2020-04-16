@@ -4,17 +4,19 @@ import java.util.UUID
 
 import controllers.BaseController
 import domain.SittingMetadata
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentClientNetworkActivityService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
+import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.sso.{User, UserLookupService, Usercode}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
+@Singleton
 class InvigilatorAssessmentController @Inject()(
   security: SecurityService,
   reportingService: ReportingService,
@@ -23,6 +25,7 @@ class InvigilatorAssessmentController @Inject()(
   tabulaDepartmentService: TabulaDepartmentService,
   messageService: MessageService,
   networkActivityService: AssessmentClientNetworkActivityService,
+  uploadedFileControllerHelper: UploadedFileControllerHelper,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -43,7 +46,7 @@ class InvigilatorAssessmentController @Inject()(
       case (departments, studentAssessments, queries) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId))),
-          networkActivityService.getLatestActivityFor(studentAssessments.map(_.studentAssessmentId))
+          networkActivityService.getLatestActivityFor(studentAssessments.map(_.id))
         ).successMap { case (students, latestActivities) =>
             Ok(views.html.invigilation.assessment(
               assessment = assessment,
@@ -67,6 +70,12 @@ class InvigilatorAssessmentController @Inject()(
             ))
           }
     }
+  }
+
+  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>
+    request.assessment.brief.files.find(_.id == fileId)
+      .map(uploadedFileControllerHelper.serveFile)
+      .getOrElse(Future.successful(NotFound("File not found")))
   }
 
 }

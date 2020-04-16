@@ -1,5 +1,5 @@
-@import domain.Assessment.Platform
 @import domain.Sitting
+@import domain.Assessment.Platform
 @import tags._
 
 @(sitting: Sitting, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
@@ -20,23 +20,25 @@
             </h4>
         }
 
-    @studentAssessmentMetadata(sitting)
+        @studentAssessmentMetadata(sitting)
 
         @if(isAssessmentPage) {
             @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(sitting.assessment.id)) { implicit fc =>
                 @if(sitting.studentAssessment.startTime.isEmpty) {
-                    <button type="submit" class="btn btn-primary @if(!sitting.assessment.hasStartTimePassed || sitting.assessment.hasLastAllowedStartTimePassed) {hide}" id="startAssessment">
+                    <button type="submit" class="btn btn-primary @if(!sitting.assessment.hasStartTimePassed() || sitting.assessment.hasLastAllowedStartTimePassed()) {hide}" id="startAssessment">
                         Start
                     </button>
-                } else if (!sitting.assessment.platform.contains(Platform.OnlineExams) && sitting.assessment.hasStartTimePassed && !sitting.assessment.hasLastAllowedStartTimePassed) {
+                } else if (!sitting.assessment.platform.contains(Platform.OnlineExams) && sitting.assessment.hasStartTimePassed() && !sitting.assessment.hasLastAllowedStartTimePassed()) {
                     <button disabled="disabled" class="btn btn-default">Started</button>
                 }
                 @assessmentTiming(sitting)
             }
             </div>
-            <div class="col-lg-6">
-                @assessmentTimeline(sitting)
-            </div>
+            @if(!sitting.finalised) {
+                <div class="col-lg-6">
+                    @assessmentTimeline(sitting)
+                </div>
+            }
         </div>
         } else {
             <a href="@routes.AssessmentController.view(sitting.assessment.id)" class="btn btn-primary">

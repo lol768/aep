@@ -98,7 +98,7 @@ class SysadminTestController @Inject()(
   import securityService._
 
   def home: Action[AnyContent] = RequireSysadmin.async { implicit request =>
-    uploadedFileService.list().successMap { files =>
+    uploadedFileService.listWithoutOwner().successMap { files =>
       Ok(views.html.sysadmin.test(emailForm, myWarwickForm, files, uploadedFileControllerHelper.supportedMimeTypes))
     }
   }

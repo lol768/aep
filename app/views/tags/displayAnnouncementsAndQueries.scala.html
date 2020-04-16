@@ -4,7 +4,6 @@
 @import warwick.sso.UniversityID
 @import warwick.sso.Usercode
 @import warwick.sso.User
-@import warwick.core.views.utils.nl2br
 @(
         announcementsAndQueries: Seq[AnnouncementOrQuery],
         students: Map[UniversityID, tabula.SitsProfile],
@@ -30,7 +29,7 @@
         }
       </div>
       <div class="query-text">
-        @nl2br(query.text)
+        @query.html
       </div>
       <div class="query-time">
         @localisedDatetime(query.date)

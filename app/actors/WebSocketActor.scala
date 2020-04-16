@@ -11,6 +11,7 @@ import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, Sittin
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.json._
+import play.twirl.api.Html
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
 import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
@@ -33,9 +34,13 @@ object WebSocketActor {
   )(implicit ec: ExecutionContext, t: TimingContext): Props =
     Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, additionalTopics))
 
-  case class AssessmentAnnouncement(message: String, timestamp: OffsetDateTime)
+  case class AssessmentAnnouncement(messageText: String, timestamp: OffsetDateTime) {
+    val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
+  }
 
-  case class AssessmentMessage(message: String, sender: MessageSender, client: String, timestamp: OffsetDateTime)
+  case class AssessmentMessage(messageText: String, sender: MessageSender, client: String, timestamp: OffsetDateTime) {
+    val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
+  }
 
   case class ClientMessage(
     `type`: String,
@@ -81,19 +86,21 @@ class WebSocketActor @Inject() (
   }
 
   override def receive: Receive = {
-    case AssessmentAnnouncement(announcement, timestamp) => out ! Json.obj(
+    case aa: AssessmentAnnouncement => out ! Json.obj(
       "type" -> "announcement",
-      "message" -> announcement,
-      "timestamp" -> views.html.tags.localisedDatetime(timestamp).toString,
+      "messageHTML" -> aa.messageHTML.body,
+      "messageText" -> aa.messageText,
+      "timestamp" -> views.html.tags.localisedDatetime(aa.timestamp).toString,
       "user" -> JsString(loginContext.user.map(u => u.usercode.string).getOrElse("Anonymous"))
     )
 
-    case AssessmentMessage(message, sender, client, timestamp) => out ! Json.obj(
+    case am: AssessmentMessage => out ! Json.obj(
       "type" -> "assessmentMessage",
-      "message" -> message,
-      "timestamp" -> views.html.tags.localisedDatetime(timestamp).toString,
-      "sender" -> sender.entryName,
-      "client" -> client
+      "messageHTML" -> am.messageHTML.body,
+      "messageText" -> am.messageText,
+      "timestamp" -> views.html.tags.localisedDatetime(am.timestamp).toString,
+      "sender" -> am.sender.entryName,
+      "client" -> am.client
     )
 
     case SubscribeAck(Subscribe(topic, _, _)) =>

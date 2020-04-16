@@ -18,7 +18,7 @@ class localisedDatetimeRangeTest extends BaseSpec {
       val result = localisedDatetimeRange(march24_1030, march24_1130).body.replaceAll("\\s+", " ")
       result must include("Tue 24th Mar")
       result must include("Between 10:30 and 11:30")
-      result must include("Europe/London")
+      result must include("GMT")
       result must include("class=\"jddt-range\"")
       result must include("data-from-millis=\"1585045800000\"")
       result must include("data-to-millis=\"1585049400000\"")
@@ -31,7 +31,7 @@ class localisedDatetimeRangeTest extends BaseSpec {
       val tenthirty = LocalTime.of(10,30)
       val today1030 = OffsetDateTime.now.`with`(tenthirty)
       val today1130 = today1030.plusHours(1L)
-      localisedDatetimeRange(today1030, today1130).body must include("Today")
+      localisedDatetimeRange(today1030, today1130).body must include("today")
     }
 
     "include the year when it's different to the current year" in {

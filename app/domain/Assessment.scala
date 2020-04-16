@@ -27,6 +27,7 @@ sealed trait BaseAssessment extends DefinesStartWindow {
   val sequence: String //MAB sequence
 
   def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
+  def isDownloadAvailable: Boolean = platform.contains(Platform.OnlineExams) && lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime.minusHours(1)))
 }
 
 trait DefinesStartWindow {
@@ -35,9 +36,9 @@ trait DefinesStartWindow {
 
   val lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
 
-  def hasLastAllowedStartTimePassed: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime))
+  def hasLastAllowedStartTimePassed(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = lastAllowedStartTime.exists(_.isBefore(referenceDate))
 
-  def hasStartTimePassed: Boolean = startTime.exists(_.isBefore(JavaTime.offsetDateTime))
+  def hasStartTimePassed(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = startTime.exists(_.isBefore(referenceDate))
 }
 
 case class Assessment(
@@ -53,10 +54,11 @@ case class Assessment(
   invigilators: Set[Usercode],
   state: State,
   tabulaAssessmentId: Option[UUID], //for assessments created within app directly this will be blank.
+  tabulaAssignments: Set[UUID],
   examProfileCode: String,
   moduleCode: String,
   departmentCode: DepartmentCode,
-  sequence: String
+  sequence: String,
 ) extends BaseAssessment with Ordered[Assessment] {
   def asAssessmentMetadata: AssessmentMetadata = AssessmentMetadata(
     id,
@@ -69,6 +71,7 @@ case class Assessment(
     assessmentType,
     state,
     tabulaAssessmentId,
+    tabulaAssignments,
     examProfileCode,
     moduleCode,
     departmentCode,
@@ -94,6 +97,7 @@ case class AssessmentMetadata(
   assessmentType: Option[AssessmentType],
   state: State,
   tabulaAssessmentId: Option[UUID],
+  tabulaAssignments: Set[UUID],
   examProfileCode: String,
   moduleCode: String,
   departmentCode: DepartmentCode,
@@ -191,6 +195,8 @@ object Assessment {
   // marked as LATE though.
   // Updated in OE-148
   val lateSubmissionPeriod: Duration = Duration.ofHours(2)
+
+  val uploadGraceDuration: Duration = Duration.ofMinutes(45)
 
   private[domain] val window: Duration = Duration.ofHours(24)
 

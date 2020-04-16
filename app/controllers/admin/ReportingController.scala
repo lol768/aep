@@ -2,17 +2,17 @@ package controllers.admin
 
 import java.util.UUID
 
-import controllers.{BaseController, RequestContext}
-import domain.{Assessment, SittingMetadata, StudentAssessmentMetadata}
+import controllers.BaseController
+import domain.{Assessment, SittingMetadata, StudentAssessment}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService
-import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
+import services.tabula.TabulaStudentInformationService._
 import services.{AssessmentClientNetworkActivityService, AssessmentService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.sso.{AuthenticatedRequest, UniversityID, User, UserLookupService}
+import warwick.sso.AuthenticatedRequest
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,6 +42,7 @@ class ReportingController @Inject()(
   def assessment(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
     ServiceResults.zip(
       assessmentService.get(id),
+      // FIXME These all run the same query and filter in memory, so needlessly the same SQL executed five times
       reportingService.expectedSittings(id),
       reportingService.startedSittings(id),
       reportingService.notStartedSittings(id),
@@ -53,7 +54,7 @@ class ReportingController @Inject()(
     }
   }
 
-  def showExpandedList(id: UUID, title: String, route: String, getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]])(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
+  def showExpandedList(id: UUID, title: String, route: String, getSittings: Future[ServiceResult[Seq[StudentAssessment]]])(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
     ServiceResults.zip(
       assessmentService.get(id),
       getSittings,
@@ -70,7 +71,7 @@ class ReportingController @Inject()(
     }
   }
 
-  def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessmentMetadata]]], assessmentId: UUID)(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
+  def showStudentAssessmentInfoTable(getSittings: Future[ServiceResult[Seq[StudentAssessment]]], assessmentId: UUID, sortByHeader: Option[String] = None)(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] = {
     ServiceResults.zip(
       assessmentService.get(assessmentId),
       getSittings,
@@ -79,12 +80,12 @@ class ReportingController @Inject()(
       case (assessment, sittings, queries) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId))),
-          networkActivityService.getLatestActivityFor(sittings.map(_.studentAssessmentId))
+          networkActivityService.getLatestActivityFor(sittings.map(_.id))
         ).successMap { case (profiles, latestActivities) =>
             val sorted = sittings
               .sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
               .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct), latestActivities))
+            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct), latestActivities, sortByHeader))
           }
     }
   }
@@ -94,7 +95,8 @@ class ReportingController @Inject()(
   }
 
   def expectedTable(id: UUID): Action[AnyContent] = InvigilatorAssessmentAction(id).async { implicit request =>
-    showStudentAssessmentInfoTable(reportingService.expectedSittings(id), id)
+    val sortByHeader = request.getQueryString("sort").flatMap(v => if(v.isEmpty) None else Some(v))
+    showStudentAssessmentInfoTable(reportingService.expectedSittings(id), id, sortByHeader)
   }
 
   def started(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
@@ -132,9 +134,9 @@ class ReportingController @Inject()(
 
 case class ReportingMetadata(
   assessment: Assessment,
-  expected: Seq[StudentAssessmentMetadata],
-  started: Seq[StudentAssessmentMetadata],
-  notStarted: Seq[StudentAssessmentMetadata],
-  submitted: Seq[StudentAssessmentMetadata],
-  finalised: Seq[StudentAssessmentMetadata]
+  expected: Seq[StudentAssessment],
+  started: Seq[StudentAssessment],
+  notStarted: Seq[StudentAssessment],
+  submitted: Seq[StudentAssessment],
+  finalised: Seq[StudentAssessment]
 )

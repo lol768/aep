@@ -52,7 +52,7 @@ class AnnouncementServiceImpl @Inject()(
       // publish announcement to students
       pubSubService.publish(
         topic = s"studentAssessment:${announcement.assessment.toString}",
-        AssessmentAnnouncement(warwick.core.views.utils.nl2br(announcement.text).body, announcement.created)
+        AssessmentAnnouncement(announcement.text, announcement.created)
       )
 
       // publish announcement to invigilators

@@ -1,6 +1,7 @@
 @import domain.Assessment
 @import domain.Sitting
 @import views.html.tags._
+@import domain.Assessment.Platform
 @(assessment: Sitting)(implicit context: RequestContext)
 
 <dl>
@@ -11,15 +12,10 @@
         <dd>@tags.localisedDatetime(assessment.studentAssessment.startTime.get)</dd>
 
         <dt>Finished at</dt>
-        <dd>@tags.localisedDatetime(assessment.studentAssessment.finaliseTime.get)</dd>
-    } else {
-        @assessment.assessment.startTime.map { startTime =>
-            @assessment.assessment.lastAllowedStartTime.map { end =>
-                <dt>Can start</dt>
-                <dd>
-                    @localisedDatetimeRange(startTime, end)
-                </dd>
-            }
+        @assessment.studentAssessment.submissionTime.map { time =>
+        <dd>@tags.localisedDatetime(time)</dd>
+        }.getOrElse {
+            <dd><span class="text-danger">(Missing)</span></dd>
         }
     }
 </dl>

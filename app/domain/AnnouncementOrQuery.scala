@@ -3,7 +3,8 @@ package domain
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import warwick.sso.{UniversityID, User, Usercode}
+import play.twirl.api.Html
+import warwick.sso.{UniversityID, Usercode}
 
 case class AnnouncementOrQuery(
   sender: Either[Usercode, UniversityID],
@@ -11,5 +12,7 @@ case class AnnouncementOrQuery(
   date: OffsetDateTime,
   isAnnouncement: Boolean
 ) {
-  def isQuery = !isAnnouncement
+  def isQuery: Boolean = !isAnnouncement
+
+  val html: Html = Html(warwick.core.views.utils.nl2br(text).body)
 }

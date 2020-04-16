@@ -1,4 +1,5 @@
 // John Dale Datetime (JDDT)
+import moment from 'moment-timezone'; // forgive me
 
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -88,14 +89,7 @@ function relativeDateName(date) {
 }
 
 export function browserLocalTimezoneName() {
-  if (window.Intl !== undefined && Intl.DateTimeFormat !== undefined) {
-    const dtf = Intl.DateTimeFormat();
-    if (dtf.resolvedOptions !== undefined && dtf.resolvedOptions().timeZone !== undefined) {
-      return dtf.resolvedOptions().timeZone;
-    }
-  }
-
-  return undefined;
+  return moment.tz.guess();
 }
 
 /**
@@ -140,6 +134,16 @@ function stringifyTime(date) {
 }
 
 /**
+ * Returns the timezone abbreviation for a specified date and timezone ID, e.g. "BST"
+ * @param {Date} date
+ * @param {string} timezoneName
+ * @returns {string}
+ */
+function stringifyTimezone(date, timezoneName) {
+  return moment(date).tz(timezoneName).zoneAbbr();
+}
+
+/**
  * Generates long/short JDDT format
  * @private
  * @function
@@ -165,6 +169,7 @@ function stringifyTime(date) {
  */
 function stringify(date, {
   timezoneName,
+  wrapTimezoneName = true,
   short = false,
   includeIcon = true,
   printToday = true,
@@ -201,7 +206,13 @@ function stringify(date, {
     parts.push(stringifyTime(date).trim());
   }
 
-  if (typeof timezoneName !== 'undefined') parts.push(`<span class="text-muted">${timezoneName}</span>`);
+  if (typeof timezoneName !== 'undefined' && wrapTimezoneName) {
+    parts.push(`<span class="text-muted">${stringifyTimezone(date, timezoneName)}</span>`);
+  }
+
+  if (typeof timezoneName !== 'undefined' && !wrapTimezoneName) {
+    parts.push(stringifyTimezone(date, timezoneName));
+  }
 
   return parts.join(' ');
 }
@@ -233,7 +244,14 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
 
   const isToToday = relativeDateName(toDate) === TODAY;
 
+  // Include the "from" timezone as well if it doesn't match (e.g. if it's a range from GMT to BST)
+  let fromTimezoneName;
+  if (stringifyTimezone(fromDate, timezoneName) !== stringifyTimezone(toDate, timezoneName)) {
+    fromTimezoneName = timezoneName;
+  }
+
   const fromStringifyOptions = {
+    timezoneName: fromTimezoneName,
     short,
     includeIcon: false,
     printDate: !sameExactDate,
@@ -245,12 +263,13 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
     printDay: !sameYear || !sameMonth || !sameDateNumber,
   };
   const toStringifyOptions = {
+    timezoneName,
     short,
     includeIcon: false,
     printYear: !sameYear,
   };
 
-  return `${iconString} ${stringify(fromDate, fromStringifyOptions)} to ${stringify(toDate, toStringifyOptions)} <span class="text-muted">${timezoneName}</span>`;
+  return `${iconString} ${stringify(fromDate, fromStringifyOptions)} to ${stringify(toDate, toStringifyOptions)}`;
 }
 
 /**
@@ -275,11 +294,6 @@ export default class JDDT {
 
     this.localTimezoneOffset = this.jsDateLocal.getTimezoneOffset();
     this.localTimezoneName = browserLocalTimezoneName();
-    if (this.localTimezoneName === undefined) {
-      this.localTimezoneName = `${this.localTimezoneOffset < 0 ? '-' : '+'}\
-        ${pad0(Math.floor(Math.abs(this.localTimezoneOffset / 60)))}:\
-        ${pad0(Math.abs(this.localTimezoneOffset) % 60)}`;
-    }
 
     // These are the defaults, but should be overwritten using setServerTimezone
     this.serverTimezoneOffset = 0;
@@ -347,6 +361,35 @@ export default class JDDT {
    */
   shortLocalBare() {
     return ` (${stringify(this.jsDateLocal, { timezoneName: this.localTimezoneName, short: true, includeIcon: false })})`;
+  }
+
+  /**
+   * pure plain string
+   *
+   * @returns {string}
+   * @param includeTimezoneName
+   */
+  localString(includeTimezoneName = false) {
+    const options = {
+      wrapTimezoneName: false,
+      printYear: true,
+      includeIcon: false,
+    };
+    if (includeTimezoneName) {
+      return stringify(
+        this.jsDateLocal,
+        {
+          ...options,
+          timezoneName: this.localTimezoneName,
+        },
+      );
+    }
+    return stringify(
+      this.jsDateLocal,
+      {
+        ...options,
+      },
+    );
   }
 
   /**

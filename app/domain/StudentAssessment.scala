@@ -12,9 +12,17 @@ sealed trait BaseStudentAssessment {
   val inSeat: Boolean
   val startTime: Option[OffsetDateTime]
   val extraTimeAdjustment: Option[Duration]
-  val finaliseTime: Option[OffsetDateTime]
+  val explicitFinaliseTime: Option[OffsetDateTime]
 
-  val hasFinalised: Boolean = finaliseTime.nonEmpty
+  val hasExplicitlyFinalised: Boolean = explicitFinaliseTime.nonEmpty
+
+  val mostRecentFileUpload: Option[OffsetDateTime]
+
+  /**
+    * The effective time that the user submitted their answers - taken as when the most
+    * recently added file started to be uploaded.
+    */
+  val submissionTime: Option[OffsetDateTime] = mostRecentFileUpload
 }
 
 case class StudentAssessment(
@@ -24,17 +32,10 @@ case class StudentAssessment(
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],
   extraTimeAdjustment: Option[Duration],
-  finaliseTime: Option[OffsetDateTime],
+  explicitFinaliseTime: Option[OffsetDateTime],
   uploadedFiles: Seq[UploadedFile]
-) extends BaseStudentAssessment
+) extends BaseStudentAssessment {
 
-case class StudentAssessmentMetadata(
-  assessmentId: UUID,
-  studentAssessmentId: UUID,
-  studentId: UniversityID,
-  inSeat: Boolean,
-  startTime: Option[OffsetDateTime],
-  extraTimeAdjustment: Option[Duration],
-  finaliseTime: Option[OffsetDateTime],
-  uploadedFileCount: Int
-) extends BaseStudentAssessment
+  lazy val mostRecentFileUpload: Option[OffsetDateTime] = uploadedFiles.view.map(_.uploadStarted).maxOption
+
+}

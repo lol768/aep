@@ -48,4 +48,17 @@ class SchedulerConfiguration @Inject()(
   }
 
   def cronFromProperty(key:String): CronScheduleBuilder = cronSchedule(new CronExpression(configuration.get[String](key)))
+
+  def configureUnscheduledJob(name: String, jobBuilder: JobBuilder)(implicit scheduler: Scheduler): Unit = {
+    val jobKey = new JobKey(name)
+
+    if (scheduler.getJobDetail(jobKey) == null) {
+      val job = jobBuilder.withIdentity(jobKey).storeDurably(true).build()
+
+      logger.info(s"Creating job: $name")
+      scheduler.addJob(job, false)
+    } else {
+      logger.info(s"Job already exists: $name")
+    }
+  }
 }

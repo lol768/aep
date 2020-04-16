@@ -56,4 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelectorAll('.studentAssessmentInfo').length > 0) {
     import('./studentAssessmentInfo');
   }
+
+  if (document.querySelector('div.notification-permission')) {
+    import('./notifications');
+  }
+
+  const closeMessagesButton = document.querySelector('#close-messages');
+  if (closeMessagesButton) {
+    closeMessagesButton.addEventListener('click', () => {
+      window.close();
+    });
+  }
 });

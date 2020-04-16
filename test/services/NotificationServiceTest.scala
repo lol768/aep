@@ -1,5 +1,6 @@
 package services
 
+import java.time.{LocalDate, LocalTime, OffsetTime, ZoneOffset}
 import java.util.concurrent.CompletableFuture
 
 import domain._
@@ -12,6 +13,7 @@ import org.scalatest.BeforeAndAfterEach
 import play.api.Application
 import play.api.inject._
 import system.BindingOverrides
+import uk.ac.warwick.util.core.DateTimeUtils
 import uk.ac.warwick.util.mywarwick.MyWarwickService
 import uk.ac.warwick.util.mywarwick.model.request.Activity
 import uk.ac.warwick.util.mywarwick.model.response.Response
@@ -88,19 +90,21 @@ class NotificationServiceTest
     }
 
     "send a reminder of assessments starting today" in new AssessmentsWithStudentsFixture {
-      service.sendReminders(assessment).serviceValue
+      DateTimeUtils.useMockDateTime(LocalDate.of(2018, 1, 1).atTime(OffsetTime.of(LocalTime.of(8, 0), ZoneOffset.ofHours(0))), () => {
+        service.sendReminders(assessment).serviceValue
 
-      verify(mockMyWarwickService).queueNotification(
-        activityCaptor.capture(),
-        isEq(mockScheduler)
-      )
+        verify(mockMyWarwickService).queueNotification(
+          activityCaptor.capture(),
+          isEq(mockScheduler)
+        )
 
-      val activity: Activity = activityCaptor.getValue
-      activity.getRecipients.getUsers.asScala mustBe Set(Fixtures.users.student1.usercode.string, Fixtures.users.student2.usercode.string, Fixtures.users.student3.usercode.string)
-      activity.getTitle mustBe "CY5637: Your alternative assessment for 'Information theory: Testing Adventurous Promiscuities and Fury' is due today"
-      activity.getUrl mustBe s"https://example.warwick.ac.uk/assessment/${assessment.id}"
-      activity.getText mustBe "You can start this assessment between 10:00, Mon 1st Jan 2018 and 10:00, Tue 2nd Jan 2018 (Europe/London)."
-      activity.getType mustBe "assessment-reminder"
+        val activity: Activity = activityCaptor.getValue
+        activity.getRecipients.getUsers.asScala mustBe Set(Fixtures.users.student1.usercode.string, Fixtures.users.student2.usercode.string, Fixtures.users.student3.usercode.string)
+        activity.getTitle mustBe "CY5637: Your alternative assessment for 'Information theory: Testing Adventurous Promiscuities and Fury' is due today"
+        activity.getUrl mustBe s"https://example.warwick.ac.uk/assessment/${assessment.id}"
+        activity.getText mustBe "You can start this assessment between 10:00 today and 10:00, Tue 2nd Jan (GMT)."
+        activity.getType mustBe "assessment-reminder"
+      })
     }
   }
 

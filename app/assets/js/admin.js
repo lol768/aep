@@ -4,12 +4,14 @@
  */
 
 import './polyfills';
+import './error-reporter-init';
 
 import $ from 'jquery';
 import Tablesort from 'tablesort';
 import JDDT from './jddt';
 import * as flexiPicker from './flexi-picker';
 import * as dateTimePicker from './date-time-picker';
+import './double-submit-protection';
 
 import '@universityofwarwick/statuspage-widget/dist/main';
 import './admin/assessment-setup';
@@ -82,5 +84,12 @@ $(() => {
 
   if (document.body.classList.contains('allAnnouncementsAndQueries')) {
     import('./admin/assessment-announcements-and-queries');
+  }
+
+  if (document.body.classList.contains('generating-zip')) {
+    setTimeout(() => {
+      document.querySelectorAll('.fa-spinner-third').forEach((node) => node.parentNode.removeChild(node));
+      window.location.reload();
+    }, 5000);
   }
 });

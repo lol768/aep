@@ -1,14 +1,21 @@
-@import views.html.b3.vertical.VerticalFieldConstructor
-@import controllers.admin.AssessmentsController.AssessmentFormData
-@import domain.Assessment.State
 @import domain.Assessment
-@(existing: Option[Assessment] = None)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor)
+@import views.html.b3.vertical.VerticalFieldConstructor
+@(existing: Option[Assessment] = None, includeDelete: Boolean = false, canBeDeleted: Boolean = false)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor)
 
 @b3.free() {
     @if(existing.isEmpty) {
         <button type="submit" class="btn btn-primary">Create</button>
     } else {
         <button type="submit" class="btn btn-primary">Update</button>
+        @if(existing.get.tabulaAssessmentId.isEmpty && includeDelete) {
+            @if(canBeDeleted) {
+                <a href="@controllers.admin.routes.AssessmentsController.delete(existing.get.id)" class="btn btn-danger">Delete</a>
+            } else {
+                <span data-toggle="tooltip" data-placement="top" title="This assessment cannot be deleted as some students have started">
+                    <button class="btn btn-danger disabled" disabled>Delete</button>
+                </span>
+            }
+        }
     }
     <a href="@controllers.admin.routes.AssessmentsController.index()" class="btn btn-default">Cancel</a>
 }

@@ -2,18 +2,14 @@
 @import domain.Sitting
 @import play.api.libs.json.Json
 @(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
-@if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
-    @sitting.assessment.startTime.map { startTime =>
-        <span>
-            <i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i>
-            <span
-            class="timing-information"
-            data-id="@sitting.assessment.id"
-            data-rendering="@{
-                Json.stringify(Json.toJson(sitting.getTimingInfo))
-            }"
-            ></span>
-        </span>
-    }
+@sitting.assessment.startTime.map { startTime =>
+    <div class="media">
+        <div class="media-left"><i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i></div>
+        <div
+        class="media-body timing-information"
+        data-id="@sitting.assessment.id"
+        data-rendering="@Json.stringify(Json.toJson(sitting.getTimingInfo))"
+        ></div>
+    </div>
 }
 
