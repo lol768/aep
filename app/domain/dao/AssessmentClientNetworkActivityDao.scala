@@ -16,6 +16,7 @@ trait AssessmentClientNetworkActivityDao {
 
   def insert(activity: AssessmentClientNetworkActivity): DBIO[AssessmentClientNetworkActivity]
   def deleteAll(studentAssessmentId: UUID): DBIO[Int]
+  def deleteAll(studentAssessmentIds: Seq[UUID]): DBIO[Int]
   def findByStudentAssessmentId(studentAssessmentId: UUID): DBIO[Seq[AssessmentClientNetworkActivity]]
   def getClientActivities(offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
   def getClientActivityFor(assessments: Seq[StudentAssessment], startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime], offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
@@ -37,6 +38,9 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
 
   override def deleteAll(studentAssessmentId: UUID): DBIO[Int] =
     assessmentClientNetworkActivities.filter { a => a.studentAssessmentId === studentAssessmentId }.delete
+
+  override def deleteAll(studentAssessmentIds: Seq[UUID]): DBIO[Int] =
+    assessmentClientNetworkActivities.filter(_.studentAssessmentId inSetBind studentAssessmentIds).delete
 
   override def findByStudentAssessmentId(studentAssessmentId: UUID): DBIO[Seq[AssessmentClientNetworkActivity]] =
     assessmentClientNetworkActivities.filter { a => a.studentAssessmentId === studentAssessmentId }.result

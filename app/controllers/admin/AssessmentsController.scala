@@ -441,7 +441,7 @@ class AssessmentsController @Inject()(
         FormMappings.confirmForm.bindFromRequest.fold(
           formWithErrors => Future.successful(Ok(views.html.admin.assessments.delete(formWithErrors, canBeDeleted = true))),
           _ => assessmentService.delete(request.assessment).successMap(_ =>
-            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessmnet.deleted", request.assessment.title))
+            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessment.deleted", request.assessment.title))
           )
         )
       }
