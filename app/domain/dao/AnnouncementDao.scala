@@ -24,6 +24,7 @@ trait AnnouncementsTables extends VersionedTables {
 
   trait CommonProperties { self: Table[_] =>
     def assessmentId = column[UUID]("assessment_id")
+    def sender = column[Usercode]("sender")
     def text = column[String]("text")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
@@ -35,7 +36,7 @@ trait AnnouncementsTables extends VersionedTables {
     def id = column[UUID]("id", O.PrimaryKey)
 
     override def * : ProvenShape[StoredAnnouncement] =
-      (id, assessmentId, text, created, version).mapTo[StoredAnnouncement]
+      (id, sender, assessmentId, text, created, version).mapTo[StoredAnnouncement]
   }
 
   class AnnouncementVersions(tag: Tag) extends Table[StoredAnnouncementVersion](tag, "announcement_version")
@@ -47,7 +48,7 @@ trait AnnouncementsTables extends VersionedTables {
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredAnnouncementVersion] =
-      (id, assessmentId, text, created, version, operation, timestamp, auditUser).mapTo[StoredAnnouncementVersion]
+      (id, sender, assessmentId, text, created, version, operation, timestamp, auditUser).mapTo[StoredAnnouncementVersion]
 
     def pk = primaryKey("pk_announcement_version", (id, timestamp))
   }
@@ -59,6 +60,7 @@ trait AnnouncementsTables extends VersionedTables {
 object AnnouncementsTables {
   case class StoredAnnouncement(
     id: UUID = UUID.randomUUID(),
+    sender: Usercode,
     assessmentId: UUID,
     text: String,
     created: OffsetDateTime,
@@ -67,6 +69,7 @@ object AnnouncementsTables {
     def asAnnouncement: Announcement =
       Announcement(
         id,
+        sender,
         assessmentId,
         text,
         created,
@@ -76,6 +79,7 @@ object AnnouncementsTables {
     override def storedVersion[B <: StoredVersion[StoredAnnouncement]](operation: DatabaseOperation, timestamp: OffsetDateTime)(implicit ac: AuditLogContext): B =
       StoredAnnouncementVersion(
         id,
+        sender,
         assessmentId,
         text,
         created,
@@ -88,6 +92,7 @@ object AnnouncementsTables {
 
   case class StoredAnnouncementVersion(
     id: UUID = UUID.randomUUID(),
+    sender: Usercode,
     assessmentId: UUID,
     text: String,
     created: OffsetDateTime,

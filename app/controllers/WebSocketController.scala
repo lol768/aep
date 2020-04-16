@@ -86,7 +86,9 @@ class WebSocketController @Inject()(
                 out = out,
                 studentAssessmentService = studentAssessmentService,
                 assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
-                additionalTopics = relatedStudentAssessmentIds.toSet ++ relatedInvigilatorAssessmentIds.toSet,
+                additionalTopics =
+                  (relatedStudentAssessmentIds.map(id => s"studentAssessment:$id") ++
+                    relatedInvigilatorAssessmentIds.map(id => s"invigilatorAssessment:$id")).toSet
               ))
             }.map(Right.apply)
           case None =>

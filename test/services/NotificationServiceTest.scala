@@ -15,6 +15,7 @@ import system.BindingOverrides
 import uk.ac.warwick.util.mywarwick.MyWarwickService
 import uk.ac.warwick.util.mywarwick.model.request.Activity
 import uk.ac.warwick.util.mywarwick.model.response.Response
+import warwick.sso.{UniversityID, Usercode}
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.Future
@@ -66,7 +67,7 @@ class NotificationServiceTest
   }
 
   private class AnnouncementFixture extends AssessmentsWithStudentsFixture {
-    val announcement: Announcement = Fixtures.announcements.storedAnnouncement(assessment.id).asAnnouncement
+    val announcement: Announcement = Fixtures.announcements.storedAnnouncement(assessment.id, Usercode("staff1")).asAnnouncement
   }
 
   "NotificationService" should {

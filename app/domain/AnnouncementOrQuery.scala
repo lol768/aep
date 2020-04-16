@@ -3,14 +3,13 @@ package domain
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import warwick.sso.UniversityID
+import warwick.sso.{UniversityID, User, Usercode}
 
 case class AnnouncementOrQuery(
-  sender: Either[String, UniversityID],
+  sender: Either[Usercode, UniversityID],
   text: String,
   date: OffsetDateTime,
+  isAnnouncement: Boolean
 ) {
-  def isAnnouncement = sender.isLeft
-
   def isQuery = !isAnnouncement
 }

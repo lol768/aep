@@ -2,11 +2,14 @@
 @import domain.AnnouncementOrQuery
 @import domain.tabula
 @import warwick.sso.UniversityID
+@import warwick.sso.Usercode
+@import warwick.sso.User
 @import warwick.core.views.utils.nl2br
 @(
         announcementsAndQueries: Seq[AnnouncementOrQuery],
         students: Map[UniversityID, tabula.SitsProfile],
-        announcementOrQuery: String
+        announcementOrQuery: String,
+        invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 <div class="@announcementOrQuery-container">
@@ -14,7 +17,11 @@
     <div class="@announcementOrQuery">
       <div class="query-user">
         @query.sender match {
-          case Left(sender: String) => { @sender }
+          case Left(sender: Usercode) => {
+            @invigilators.get(sender).map { u =>
+              @u.name.full.getOrElse("Announcement")
+            }.getOrElse("Announcement")
+          }
           case Right(universityID: UniversityID) => {
             @students.get(universityID).map { u =>
               @u.fullName (@universityID.string)
