@@ -92,7 +92,6 @@ class WebSocketActor @Inject() (
       "messageHTML" -> aa.messageHTML.body,
       "messageText" -> aa.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(aa.timestamp).toString,
-      "user" -> JsString(loginContext.user.map(u => u.usercode.string).getOrElse("Anonymous"))
     )
 
     case am: AssessmentMessage => out ! Json.obj(

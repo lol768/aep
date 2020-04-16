@@ -1,5 +1,13 @@
 import JDDT from './jddt';
 
+/**
+ * @typedef {Object} AnnouncementResponse
+ * @property {string} id - Unique identifier for this announcement
+ * @property {string} messageHTML
+ * @property {string} messageText
+ * @property {string} timestamp - Formatted date string
+ */
+
 function checkNotificationPromise() {
   // https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API
   try {
@@ -13,23 +21,30 @@ function checkNotificationPromise() {
 
 /**
  * Separated for testing purposes - takes data and returns it as nice HTML
- * @param {object} d - as received by the websocket
+ * @param {AnnouncementResponse} d - as received by the websocket
  * @returns {HTMLDivElement} - formatted nicely and ready for appending to the document
  */
 export function formatAnnouncement(d) {
   const el = document.createElement('div');
   el.classList.add('alert', 'alert-info', 'media');
+  el.dataset.announcementId = d.id;
+
   const icon = document.createElement('i');
   icon.setAttribute('aria-hidden', 'true');
   const iconName = 'bullhorn';
   icon.classList.add('fad', `fa-${iconName}`);
+
   const timestamp = document.createElement('div');
   timestamp.classList.add('query-time');
   timestamp.innerHTML = d.timestamp;
+
   const mediaLeft = document.createElement('div');
   mediaLeft.classList.add('media-left');
+
   const mediaBody = document.createElement('div');
   mediaBody.classList.add('media-body');
+
+  // assemble
   mediaLeft.appendChild(icon);
   mediaBody.innerHTML = d.messageHTML;
   mediaBody.appendChild(timestamp);
@@ -40,20 +55,26 @@ export function formatAnnouncement(d) {
 
 export default function initAnnouncements(websocket) {
   websocket.add({
+    onConnect: () => {
+      websocket.send
+    }
     onData: (d) => {
       const messageList = document.querySelector('.message-list');
       if (messageList && d.type === 'announcement') {
-        const el = formatAnnouncement(d);
-        messageList.appendChild(el);
-        JDDT.initialise(messageList);
+        const existingAnnouncement = messageList.querySelector(`[data-announcement-id="${d.id}"]`);
+        if (!existingAnnouncement) {
+          const el = formatAnnouncement(d);
+          messageList.appendChild(el);
+          JDDT.initialise(messageList);
 
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Assessment announcement', { // eslint-disable-line no-new
-            body: d.messageText,
-            requireInteraction: true,
-          });
-        } else {
-          window.alert(`New message from invigilators: \n${d.messageText}`); // eslint-disable-line no-alert
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Assessment announcement', { // eslint-disable-line no-new
+              body: d.messageText,
+              requireInteraction: true,
+            });
+          } else {
+            window.alert(`New message from invigilators: \n${d.messageText}`); // eslint-disable-line no-alert
+          }
         }
       }
     },
