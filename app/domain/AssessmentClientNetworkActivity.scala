@@ -15,8 +15,8 @@ case class AssessmentClientNetworkActivity (
   rtt: Option[Int], // rounded to nearest 25ms
   `type`: Option[String], // bluetooth, cellular, ethernet, none, wifi, wimax, other, unknown
   studentAssessmentId: Option[UUID],
-  assessmentId: Option[UUID],
-  usercode: Option[Usercode],
+  assessmentId: Option[UUID] = None,
+  usercode: Option[Usercode] = None,
   localTimezoneName: Option[LenientZoneId],
   timestamp: OffsetDateTime = OffsetDateTime.now,
 ) {
