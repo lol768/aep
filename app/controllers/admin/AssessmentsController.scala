@@ -165,7 +165,7 @@ object AssessmentsController {
         .verifying(platformConstraint)
         .verifying("error.assessment.description.required", _.description.exists(_.hasText))
         .verifying("error.assessment.invigilators.required", _.invigilators.nonEmpty)
-        .verifying("error.assessment.students.required", x => existing.filter(_.tabulaAssessmentId.isEmpty).map(_ => x.students.nonEmpty).getOrElse(true))
+        .verifying("error.assessment.students.required", data => existing.exists(_.tabulaAssessmentId.nonEmpty) || data.students.nonEmpty)
       else baseMapping
     )
   }
