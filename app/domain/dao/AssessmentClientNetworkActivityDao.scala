@@ -81,7 +81,7 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
   }
 
   private def assessmentFilter(studentAssessmentIds: Seq[UUID], e: AssessmentClientNetworkActivities) =
-    if (studentAssessmentIds.nonEmpty) { e.studentAssessmentId.inSet(studentAssessmentIds) } else { LiteralColumn(true) }
+    if (studentAssessmentIds.nonEmpty) { e.studentAssessmentId.inSet(studentAssessmentIds).getOrElse(false) } else { LiteralColumn(true) }
 
   private def clientActivityForQuery(assessments: Seq[StudentAssessment],startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime]) = {
     assessmentClientNetworkActivities

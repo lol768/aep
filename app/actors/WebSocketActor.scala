@@ -10,6 +10,7 @@ import domain.messaging.MessageSender
 import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.twirl.api.Html
 import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
@@ -18,7 +19,7 @@ import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
-import warwick.sso.{LoginContext, UniversityID}
+import warwick.sso.{LoginContext, UniversityID, Usercode}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -48,8 +49,17 @@ object WebSocketActor {
   )
   val readsClientMessage: Reads[ClientMessage] = Json.reads[ClientMessage]
 
-  val readsClientNetworkInformation: Reads[ClientNetworkInformation] = Json.reads[ClientNetworkInformation]
-
+  val readsClientNetworkInformation: Reads[ClientNetworkInformation] = (
+    (__ \ "downlink").readNullable[Double] and
+      (__ \ "downlinkMax").readNullable[Double] and
+      (__ \ "effectiveType").readNullable[String] and
+      (__ \ "rtt").readNullable[Int] and
+      (__ \ "type").readNullable[String] and
+      (__ \ "studentAssessmentId").readNullable[UUID] and
+      (__ \ "assessmentId").readNullable[UUID] and
+      (__ \ "usercode").readNullable[String].map(_.map(Usercode.apply)) and
+      (__ \ "localTimezoneName").readNullable[String]
+    )(ClientNetworkInformation.apply _)
   case class RequestAssessmentTiming(
     assessmentId: UUID
   )
@@ -120,16 +130,18 @@ class WebSocketActor @Inject() (
               effectiveType = networkInformation.effectiveType,
               rtt = networkInformation.rtt,
               `type` = networkInformation.`type`,
-              studentAssessmentId = networkInformation.studentAssessmentId.orNull,
+              studentAssessmentId = networkInformation.studentAssessmentId,
+              assessmentId = networkInformation.assessmentId,
+              usercode = networkInformation.usercode,
               localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
               timestamp = JavaTime.offsetDateTime,
             )
 
-          if (networkInformation.studentAssessmentId.nonEmpty) {
+          if (networkInformation.studentAssessmentId.nonEmpty || networkInformation.assessmentId.nonEmpty) {
             assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
               .recover {
                 case e: Exception =>
-                  log.error(e, s"Error storing AssessmentClientNetworkActivity for StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}")
+                  log.error(e, s"Error storing AssessmentClientNetworkActivity for ${if(networkInformation.studentAssessmentId.nonEmpty) s"StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}" else s"Assessment ${assessmentClientNetworkActivity.assessmentId}"}")
               }
           }
 

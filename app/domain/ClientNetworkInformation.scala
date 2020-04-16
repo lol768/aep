@@ -1,7 +1,8 @@
 package domain
 
-import java.time.ZoneId
 import java.util.UUID
+
+import warwick.sso.Usercode
 
 case class ClientNetworkInformation(
   downlink: Option[Double], // mbps
@@ -10,5 +11,7 @@ case class ClientNetworkInformation(
   rtt: Option[Int], // rounded to nearest 25ms
   `type`: Option[String], // bluetooth, cellular, ethernet, none, wifi, wimax, other, unknown
   studentAssessmentId: Option[UUID],
+  assessmentId: Option[UUID],
+  usercode: Option[Usercode],
   localTimezoneName: Option[String], // Accept a String here but store a ZoneId
 )

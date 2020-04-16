@@ -21,8 +21,12 @@ const defaultHeartbeat = (ws) => {
 
   const inProgressAssessmentElement = document.querySelector('.in-progress-assessment-data');
   let studentAssessmentId = null;
+  let assessmentId = null;
+  let usercode = null;
   if (inProgressAssessmentElement) {
     studentAssessmentId = inProgressAssessmentElement.getAttribute('data-id');
+    assessmentId = inProgressAssessmentElement.getAttribute('data-assessment');
+    usercode = inProgressAssessmentElement.getAttribute('data-usercode');
   }
 
   const localTimezoneName = browserLocalTimezoneName();
@@ -36,6 +40,8 @@ const defaultHeartbeat = (ws) => {
       rtt,
       type,
       studentAssessmentId,
+      assessmentId,
+      usercode,
       localTimezoneName,
     },
   };
