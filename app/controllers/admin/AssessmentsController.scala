@@ -165,6 +165,7 @@ object AssessmentsController {
         .verifying(platformConstraint)
         .verifying("error.assessment.description.required", _.description.exists(_.hasText))
         .verifying("error.assessment.invigilators.required", _.invigilators.nonEmpty)
+        .verifying("error.assessment.students.required", _.students.nonEmpty)
       else baseMapping
     )
   }
@@ -235,7 +236,7 @@ class AssessmentsController @Inject()(
 
           val (newState, readyErrors) = formMapping(existing = None, ready = true).bindFromRequest().fold(
             formWithErrors => (State.Draft, formWithErrors.errors ++ fileErrors),
-            _ => getState(fileErrors, data)
+            _ => if (fileErrors.isEmpty) (State.Approved, Nil) else (State.Draft, fileErrors)
           )
 
           import helpers.DateConversion._
@@ -349,7 +350,7 @@ class AssessmentsController @Inject()(
 
         val (newState, readyErrors) = formMapping(existing = Some(assessment), ready = true).bindFromRequest().fold(
           formWithErrors => (State.Draft, formWithErrors.errors ++ fileErrors),
-          _ => getState(fileErrors, data)
+          _ => if (fileErrors.isEmpty) (State.Approved, Nil) else (State.Draft, fileErrors)
         )
 
         val updatedIfAdHoc =
@@ -465,11 +466,5 @@ class AssessmentsController @Inject()(
         Department(code = DepartmentCode(tabulaDepartment.code), name = tabulaDepartment.name)
       }
     }
-  }
-
-  private def getState(errors: Seq[FormError], data: AssessmentFormData) = {
-    if (errors.isEmpty && data.students.nonEmpty) (State.Approved, Nil)
-    else if (errors.isEmpty && data.students.isEmpty) (State.Draft, Nil)
-    else (State.Draft, errors)
   }
 }
