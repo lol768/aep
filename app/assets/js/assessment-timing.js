@@ -234,7 +234,7 @@ function updateTimeline(timelineNode, id, assessment) {
     const { progressState } = assessment;
     if (progressState) {
       timelineNode.querySelectorAll('.block').forEach((e) => e.classList.remove('active'));
-      timelineNode.querySelectorAll(`.block[data-state="${progressState}"`).forEach((e) => e.classList.add('active'));
+      timelineNode.querySelectorAll(`.block[data-state="${progressState}"]`).forEach((e) => e.classList.add('active'));
     }
   }
 }
