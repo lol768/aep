@@ -6,6 +6,7 @@ import com.google.inject.ImplementedBy
 import domain.{AssessmentMetadata, Sitting, StudentAssessment}
 import domain.dao.{AssessmentDao, DaoRunner, StudentAssessmentDao}
 import javax.inject.{Inject, Singleton}
+import services.ReportingService.AssessmentReport
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -13,10 +14,21 @@ import warwick.core.timing.TimingContext
 
 import scala.concurrent.{ExecutionContext, Future}
 
+object ReportingService {
+  case class AssessmentReport(
+    expectedSittings: Seq[StudentAssessment],
+    startedSittings: Seq[StudentAssessment],
+    notStartedSittings: Seq[StudentAssessment],
+    submittedSittings: Seq[StudentAssessment],
+    finalisedSittings: Seq[StudentAssessment]
+  )
+}
+
 @ImplementedBy(classOf[ReportingServiceImpl])
 trait ReportingService {
   def todayAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
   def startedAndSubmittableAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
+  def assessmentReport(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[AssessmentReport]]
   def expectedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def startedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def notStartedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
@@ -42,23 +54,31 @@ class ReportingServiceImpl @Inject()(
   private def expectedSittingsFull(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] =
     sittingService.sittingsByAssessmentId(assessment)
 
+  override def assessmentReport(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[AssessmentReport]] = {
+    expectedSittingsFull(assessment).successMapTo(sittings =>
+      AssessmentReport(
+        expectedSittings = sittings.map(_.studentAssessment),
+        startedSittings = sittings.filter(_.studentAssessment.startTime.isDefined).map(_.studentAssessment),
+        notStartedSittings = sittings.filter(_.studentAssessment.startTime.isEmpty).map(_.studentAssessment),
+        submittedSittings = sittings.filter(_.studentAssessment.uploadedFiles.nonEmpty).map(_.studentAssessment),
+        finalisedSittings = sittings.filter(_.finalised).map(_.studentAssessment)
+      )
+    )
+  }
+
   override def expectedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    expectedSittingsFull(assessment)
-      .successMapTo(_.map(_.studentAssessment))
+    assessmentReport(assessment).successMapTo(_.expectedSittings)
 
   override def startedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    expectedSittingsFull(assessment).successMapTo(sittings => sittings.filter(_.studentAssessment.startTime.isDefined))
-      .successMapTo(_.map(_.studentAssessment))
+    assessmentReport(assessment).successMapTo(_.startedSittings)
 
   override def notStartedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    expectedSittingsFull(assessment).successMapTo(sittings => sittings.filter(_.studentAssessment.startTime.isEmpty))
-      .successMapTo(_.map(_.studentAssessment))
+    assessmentReport(assessment).successMapTo(_.notStartedSittings)
 
   override def submittedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    expectedSittingsFull(assessment).successMapTo(sittings => sittings.filter(_.studentAssessment.uploadedFiles.nonEmpty))
-      .successMapTo(_.map(_.studentAssessment))
+    assessmentReport(assessment).successMapTo(_.submittedSittings)
 
   override def finalisedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-    expectedSittingsFull(assessment).successMapTo(sittings => sittings.filter(_.finalised))
-      .successMapTo(_.map(_.studentAssessment))
+    assessmentReport(assessment).successMapTo(_.finalisedSittings)
+
 }

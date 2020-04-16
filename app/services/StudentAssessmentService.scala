@@ -55,6 +55,7 @@ class StudentAssessmentServiceImpl @Inject()(
   uploadedFileService: UploadedFileService,
   assessmentService: AssessmentService,
   assessmentDao: AssessmentDao,
+  assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
 
 
@@ -319,7 +320,10 @@ class StudentAssessmentServiceImpl @Inject()(
 
   override def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] =
     audit.audit(Operation.StudentAssessment.DeleteStudentAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)) {
-      daoRunner.run(dao.delete(studentAssessment.studentId, studentAssessment.assessmentId))
+      daoRunner.run(for {
+        _ <- assessmentClientNetworkActivityDao.deleteAll(studentAssessment.id)
+        deleted <- dao.delete(studentAssessment.studentId, studentAssessment.assessmentId)
+      } yield deleted)
         .map(_ => ServiceResults.success(Done))
     }
 
