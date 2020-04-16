@@ -22,9 +22,21 @@ const postErrorsThrottled = throttle(() => {
         'Content-Type': 'application/json',
       },
     },
-  ).then(() => {
-    log.info('Errors posted to server');
+  ).then((response) => {
     errors = errors.slice(errorsToPost.length);
+
+    if (response.status === 400) {
+      log.info('Errors rejected by server');
+      errors = errors.concat({
+        time: new Date().getTime(),
+        message: 'Errors rejected by server',
+        pageUrl: window.location.href,
+      });
+      postErrorsThrottled();
+      return;
+    }
+
+    log.info('Errors posted to server');
   }).catch((e) => {
     log.info('Failed to post errors to server', e);
     postErrorsThrottled();
@@ -32,13 +44,19 @@ const postErrorsThrottled = throttle(() => {
 }, 5000);
 
 function onError(message, source, line, column, error) {
+  let stack = error.stack || error;
+
+  if (typeof stack !== 'string') {
+    stack = JSON.stringify(stack);
+  }
+
   errors = errors.concat({
     time: new Date().getTime(),
     message,
     source,
     line,
     column,
-    stack: error.stack || error,
+    stack,
     pageUrl: window.location.href,
   });
   postErrorsThrottled();
