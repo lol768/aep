@@ -4,6 +4,7 @@ import java.util.UUID
 
 import controllers.BaseController
 import domain.SittingMetadata
+import domain.messaging.MessageSender
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
 import services.messaging.MessageService
@@ -65,6 +66,7 @@ class InvigilatorAssessmentController @Inject()(
                 .toMap,
               students = students,
               department = departments.find(_.code == assessment.departmentCode.string),
+              queriesFromStudents = queries.filter(_.sender == MessageSender.Client),
               studentsWithQueries = queries.map(_.client).distinct,
               latestActivities = latestActivities,
             ))

@@ -9,6 +9,7 @@
 @import java.util.UUID
 @import domain.SittingMetadata
 
+@import domain.messaging.Message
 @(
         assessment: Assessment,
         sittingMetadata: Seq[SittingMetadata],
@@ -16,6 +17,7 @@
         students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID],
+        queriesFromStudents: Seq[Message],
         latestActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation") {
@@ -50,7 +52,7 @@
             <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
         </div>
         <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="expected">
-            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), latestActivities)
+            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestActivities)
         </div>
         @if(assessment.isDownloadAvailable) {
             <p>
