@@ -101,7 +101,7 @@ object AssessmentsController {
 
   val urlConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
     val missingUrls = assessmentForm.platform.filter(_.requiresUrl).filter(platform =>
-      assessmentForm.urls.get(platform).isEmpty
+      assessmentForm.urls.get(platform).forall(!_.hasText)
     )
     if (missingUrls.isEmpty)
       Valid
@@ -164,6 +164,7 @@ object AssessmentsController {
         .verifying(durationConstraint)
         .verifying(platformConstraint)
         .verifying("error.assessment.description.required", _.description.exists(_.hasText))
+        .verifying("error.assessment.invigilators.required", _.invigilators.nonEmpty)
       else baseMapping
     )
   }
