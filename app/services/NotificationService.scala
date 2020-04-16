@@ -55,10 +55,9 @@ class NotificationServiceImpl @Inject()(
           "assessment-announcement"
         )
 
-        myWarwickService.queueNotification(
-          activity,
-          scheduler
-        )
+        if (usercodes.nonEmpty) {
+          myWarwickService.queueNotification(activity, scheduler)
+        }
 
         activity
       }
@@ -66,15 +65,19 @@ class NotificationServiceImpl @Inject()(
 
   override def newMessage(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]] = {
     assessmentService.get(message.assessmentId).successMapTo { assessment =>
+      val usercodes = assessment.invigilators.map(_.string)
+
       val activity = new Activity(
-        assessment.invigilators.map(_.string).asJava,
+        usercodes.asJava,
         s"${assessment.paperCode}: Query from student",
         controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id).absoluteURL(true, domain),
         message.text,
         "assessment-query"
       )
 
-      myWarwickService.queueNotification(activity, scheduler)
+      if (usercodes.nonEmpty) {
+        myWarwickService.queueNotification(activity, scheduler)
+      }
 
       activity
     }
@@ -110,10 +113,9 @@ class NotificationServiceImpl @Inject()(
           "assessment-reminder"
         )
 
-        myWarwickService.queueNotification(
-          activity,
-          scheduler
-        )
+        if (usercodes.nonEmpty) {
+          myWarwickService.queueNotification(activity, scheduler)
+        }
 
         activity
       }
