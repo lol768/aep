@@ -1,7 +1,9 @@
 package services
 
 import com.google.inject.ImplementedBy
+import domain.messaging.Message
 import domain.{Announcement, Assessment}
+import helpers.LenientTimezoneNameParsing._
 import javax.inject.{Inject, Singleton}
 import org.quartz.Scheduler
 import play.api.Configuration
@@ -15,11 +17,11 @@ import warwick.sso.UserLookupService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
-import helpers.LenientTimezoneNameParsing._
 
 @ImplementedBy(classOf[NotificationServiceImpl])
 trait NotificationService {
   def newAnnouncement(announcement: Announcement)(implicit t: TimingContext): Future[ServiceResult[Activity]]
+  def newMessage(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]]
   def sendReminders(assessment: Assessment)(implicit t: TimingContext): Future[ServiceResult[Activity]]
 }
 
@@ -61,6 +63,22 @@ class NotificationServiceImpl @Inject()(
         activity
       }
     }
+
+  override def newMessage(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]] = {
+    assessmentService.get(message.assessmentId).successMapTo { assessment =>
+      val activity = new Activity(
+        assessment.invigilators.map(_.string).asJava,
+        s"${assessment.paperCode}: Query from student",
+        controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id).absoluteURL(true, domain),
+        message.text,
+        "assessment-query"
+      )
+
+      myWarwickService.queueNotification(activity, scheduler)
+
+      activity
+    }
+  }
 
   override def sendReminders(assessment: Assessment)(implicit t: TimingContext): Future[ServiceResult[Activity]] =
     studentAssessmentService.byAssessmentId(assessment.id).successFlatMapTo { students =>
