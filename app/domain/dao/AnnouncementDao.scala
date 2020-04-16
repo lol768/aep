@@ -24,7 +24,7 @@ trait AnnouncementsTables extends VersionedTables {
 
   trait CommonProperties { self: Table[_] =>
     def assessmentId = column[UUID]("assessment_id")
-    def sender = column[Usercode]("sender")
+    def sender = column[Option[Usercode]]("sender")
     def text = column[String]("text")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
@@ -60,7 +60,7 @@ trait AnnouncementsTables extends VersionedTables {
 object AnnouncementsTables {
   case class StoredAnnouncement(
     id: UUID = UUID.randomUUID(),
-    sender: Usercode,
+    sender: Option[Usercode],
     assessmentId: UUID,
     text: String,
     created: OffsetDateTime,
@@ -92,7 +92,7 @@ object AnnouncementsTables {
 
   case class StoredAnnouncementVersion(
     id: UUID = UUID.randomUUID(),
-    sender: Usercode,
+    sender: Option[Usercode],
     assessmentId: UUID,
     text: String,
     created: OffsetDateTime,

@@ -56,12 +56,14 @@ class AnnouncementServiceImpl @Inject()(
       )
 
       // publish announcement to invigilators
-      userLookupService.getUsers(Seq(announcement.sender)).toOption.flatMap(thing => thing.headOption.map(_._2)).foreach { user =>
-        val name = user.name.full.map(name => s"${name} : ").getOrElse("")
-        pubSubService.publish(
-          topic = s"invigilatorAssessment:${announcement.assessment.toString}",
-          AssessmentAnnouncement(warwick.core.views.utils.nl2br(s"${name}${announcement.text.trim}").body, announcement.created)
-        )
+      announcement.sender.foreach { sender =>
+        userLookupService.getUsers(Seq(sender)).toOption.flatMap(userMap => userMap.headOption.map(_._2)).foreach { user =>
+          val name = user.name.full.map(name => s"${name} : ").getOrElse("")
+          pubSubService.publish(
+            topic = s"invigilatorAssessment:${announcement.assessment.toString}",
+            AssessmentAnnouncement(s"${name}${announcement.text.trim}", announcement.created)
+          )
+        }
       }
 
       // Intentionally fire-and-forget to send the announcement via My Warwick as well

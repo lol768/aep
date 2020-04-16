@@ -7,7 +7,7 @@ import play.twirl.api.Html
 import warwick.sso.{UniversityID, Usercode}
 
 case class AnnouncementOrQuery(
-  sender: Either[Usercode, UniversityID],
+  sender: Either[Option[Usercode], UniversityID],
   text: String,
   date: OffsetDateTime,
   isAnnouncement: Boolean

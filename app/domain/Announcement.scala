@@ -8,7 +8,7 @@ import play.twirl.api.Html
 
 case class Announcement(
   id: UUID = UUID.randomUUID(),
-  sender: Usercode,
+  sender: Option[Usercode],
   assessment: UUID,
   text: String,
   created: OffsetDateTime = OffsetDateTime.now(),

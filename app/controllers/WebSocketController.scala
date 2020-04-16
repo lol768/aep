@@ -124,7 +124,11 @@ class WebSocketController @Inject()(
       _ => BadRequest,
       data => {
         pubSub.publish(
-          data.assessment.toString,
+          s"invigilatorAssessment:${data.assessment.toString}",
+          AssessmentAnnouncement(data.message, JavaTime.offsetDateTime),
+        )
+        pubSub.publish(
+          s"studentAssessment:${data.assessment.toString}",
           AssessmentAnnouncement(data.message, JavaTime.offsetDateTime),
         )
         Redirect(controllers.routes.WebSocketController.sendBroadcast())

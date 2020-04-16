@@ -96,7 +96,7 @@ class AnnouncementAndQueriesController @Inject()(
     form.bindFromRequest.fold(
       errors => render(assessmentId, req.assessment, errors),
       data => {
-        announcementService.save(Announcement(assessment = req.assessment.id, sender = currentUser().usercode, text = data.message)).map( _ =>
+        announcementService.save(Announcement(assessment = req.assessment.id, sender = Some(currentUser().usercode), text = data.message)).map( _ =>
           Redirect(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessmentId))
             .flashing("success" -> Messages("flash.assessment.announcement.created"))
         )

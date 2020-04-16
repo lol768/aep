@@ -16,9 +16,11 @@
     <div class="@announcementOrQuery">
       <div class="query-user">
         @query.sender match {
-          case Left(sender: Usercode) => {
-            @invigilators.get(sender).map { u =>
-              @u.name.full.getOrElse("Announcement")
+          case Left(sender: Option[Usercode]) => {
+            @sender.map { s =>
+              @invigilators.get(s).map { u =>
+                @u.name.full.getOrElse("Announcement")
+              }.getOrElse("Announcement")
             }.getOrElse("Announcement")
           }
           case Right(universityID: UniversityID) => {
