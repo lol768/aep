@@ -233,7 +233,7 @@ class AssessmentsController @Inject()(
 
           val (newState, readyErrors) = formMapping(existing = None, ready = true).bindFromRequest().fold(
             formWithErrors => (State.Draft, formWithErrors.errors ++ fileErrors),
-            _ => if (fileErrors.isEmpty) (State.Approved, Nil) else (State.Draft, fileErrors)
+            _ => getState(fileErrors, data)
           )
 
           import helpers.DateConversion._
@@ -325,7 +325,7 @@ class AssessmentsController @Inject()(
 
         val (newState, readyErrors) = formMapping(existing = Some(assessment), ready = true).bindFromRequest().fold(
           formWithErrors => (State.Draft, formWithErrors.errors ++ fileErrors),
-          _ => if (fileErrors.isEmpty) (State.Approved, Nil) else (State.Draft, fileErrors)
+          _ => getState(fileErrors, data)
         )
 
         val updatedIfAdHoc =
@@ -443,4 +443,9 @@ class AssessmentsController @Inject()(
     }
   }
 
+  private def getState(errors: Seq[FormError], data: AssessmentFormData) = {
+    if (errors.isEmpty && data.students.nonEmpty) (State.Approved, Nil)
+    else if (errors.isEmpty && data.students.isEmpty) (State.Draft, Nil)
+    else (State.Draft, errors)
+  }
 }
