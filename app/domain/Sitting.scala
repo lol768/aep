@@ -97,6 +97,7 @@ sealed trait BaseSitting {
       showTimeRemaining = duration.isDefined,
       progressState = getProgressState,
       submissionState = getSubmissionState,
+      durationStyle = assessment.durationStyle,
     )
   }
 
