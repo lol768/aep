@@ -5,7 +5,7 @@ import java.util.UUID
 
 import helpers.LenientTimezoneNameParsing._
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Writes, __}
+import play.api.libs.json.{Writes, _}
 import warwick.sso.Usercode
 
 case class AssessmentClientNetworkActivity (

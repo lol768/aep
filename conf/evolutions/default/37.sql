@@ -10,3 +10,5 @@ create index idx_assessment_client_network_activity_assessment on assessment_cli
 drop index idx_assessment_client_network_activity_assessment;
 alter table assessment_client_network_activity drop column usercode;
 alter table assessment_client_network_activity drop column assessment_id;
+delete from assessment_client_network_activity where student_assessment_id is null;
+alter table assessment_client_network_activity alter column student_assessment_id set not null;

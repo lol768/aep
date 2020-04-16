@@ -49,17 +49,8 @@ object WebSocketActor {
   )
   val readsClientMessage: Reads[ClientMessage] = Json.reads[ClientMessage]
 
-  val readsClientNetworkInformation: Reads[ClientNetworkInformation] = (
-    (__ \ "downlink").readNullable[Double] and
-      (__ \ "downlinkMax").readNullable[Double] and
-      (__ \ "effectiveType").readNullable[String] and
-      (__ \ "rtt").readNullable[Int] and
-      (__ \ "type").readNullable[String] and
-      (__ \ "studentAssessmentId").readNullable[UUID] and
-      (__ \ "assessmentId").readNullable[UUID] and
-      (__ \ "usercode").readNullable[String].map(_.map(Usercode.apply)) and
-      (__ \ "localTimezoneName").readNullable[String]
-    )(ClientNetworkInformation.apply _)
+  val readsClientNetworkInformation: Reads[ClientNetworkInformation] = Json.reads[ClientNetworkInformation]
+
   case class RequestAssessmentTiming(
     assessmentId: UUID
   )
@@ -132,7 +123,7 @@ class WebSocketActor @Inject() (
               `type` = networkInformation.`type`,
               studentAssessmentId = networkInformation.studentAssessmentId,
               assessmentId = networkInformation.assessmentId,
-              usercode = networkInformation.usercode,
+              usercode = loginContext.user.map(_.usercode),
               localTimezoneName = networkInformation.localTimezoneName.map(_.maybeZoneId),
               timestamp = JavaTime.offsetDateTime,
             )
