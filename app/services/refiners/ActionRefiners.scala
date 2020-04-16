@@ -129,7 +129,7 @@ class ActionRefiners @Inject() (
         }
     }
 
-  val StudentCanModifySubmission: Filter[StudentAssessmentSpecificRequest] =
+  def StudentCanModifySubmission(allowWhereNoDuration: Boolean): Filter[StudentAssessmentSpecificRequest] =
     new Filter[StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
@@ -141,10 +141,10 @@ class ActionRefiners @Inject() (
             case _ => JavaTime.offsetDateTime
           }
 
-          if (!request.sitting.canModify(referenceDate))
-            Some(Forbidden(views.html.errors.studentCannotModifySubmission(request.sitting)))
-          else
+          if (request.sitting.canModify(referenceDate) || allowWhereNoDuration && request.sitting.assessment.duration.isEmpty && request.sitting.started)
             None
+          else
+            Some(Forbidden(views.html.errors.studentCannotModifySubmission(request.sitting)))
         }
     }
 

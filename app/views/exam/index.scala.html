@@ -115,7 +115,7 @@
         </div>
       }
 
-      @if(sitting.started) {
+      @if(sitting.isCurrentForStudent || sitting.assessment.duration.isEmpty && sitting.started) {
         <div class="panel panel-default">
           <div class="brand-stripe"></div>
           <div class="panel-body">
