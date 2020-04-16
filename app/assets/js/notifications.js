@@ -1,4 +1,4 @@
-import { checkNotificationPromise } from './assessment-announcements';
+import { checkNotificationPromise } from './notifications-api';
 
 function requestPermission(e) {
   e.preventDefault();
