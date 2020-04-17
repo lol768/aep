@@ -55,6 +55,7 @@ class WebSocketController @Inject()(
   studentAssessmentService: StudentAssessmentService,
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   assessmentService: AssessmentService,
+  announcementService: AnnouncementService,
 )(implicit
   mat: Materializer,
   actorSystem: ActorSystem,
@@ -75,7 +76,7 @@ class WebSocketController @Inject()(
           case Some(user) =>
             logger.info(s"WebSocket opening for ${user.usercode.string}")
             studentAssessmentService.byUniversityId(user.universityId.get)
-                .successMapTo(_.map(_.assessment.id.toString))
+                .successMapTo(_.filter(_.inProgress).map(_.assessment.id.toString))
                 .map(_.getOrElse(Nil)).zip(
                   assessmentService.listForInvigilator(Set(user.usercode))
                     .successMapTo(_.map(_.id.toString))
@@ -87,6 +88,7 @@ class WebSocketController @Inject()(
                 out = out,
                 studentAssessmentService = studentAssessmentService,
                 assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
+                announcementService = announcementService,
                 additionalTopics = relatedStudentAssessmentIds.toSet ++ relatedInvigilatorAssessmentIds.toSet,
               ))
             }.map(Right.apply)

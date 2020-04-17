@@ -1,5 +1,6 @@
 import JDDT from './jddt';
 import { checkNotificationPromise } from './notifications-api';
+import * as log from './log';
 
 /**
  * @typedef {Object} AnnouncementResponse
@@ -47,12 +48,20 @@ export function formatAnnouncement(d) {
  * @param {WebSocketConnection} websocket
  */
 export default function initAnnouncements(websocket) {
+  const { assessmentId } = document.body.dataset;
+
+  if (!assessmentId) {
+    log.error('No data-assessment-id found on body');
+  }
+
   websocket.add({
-    onHeartbeat: () => {
-      // ws.send({
-      //   type: 'RequestAnnouncements',
-      //   assessmentId:
-      // })
+    onHeartbeat: (ws) => {
+      ws.send(JSON.stringify({
+        type: 'RequestAnnouncements',
+        data: {
+          assessmentId,
+        },
+      }));
     },
     onData: (d) => {
       const messageList = document.querySelector('.message-list');
@@ -61,7 +70,7 @@ export default function initAnnouncements(websocket) {
         if (!existingAnnouncement) {
           const el = formatAnnouncement(d);
           messageList.appendChild(el);
-          JDDT.initialise(messageList);
+          JDDT.initialise(el);
 
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('Assessment announcement', { // eslint-disable-line no-new

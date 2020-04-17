@@ -12,6 +12,7 @@ import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.{AnnouncementDao, DaoRunner}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
+import system.routes.Types.UniversityID
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.{AuditLogContext, AuditService}
@@ -24,6 +25,7 @@ trait AnnouncementService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Announcement]]
   def getByAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
+  def getByAssessmentId(student: UniversityID, id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
   def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
 }
 
@@ -48,7 +50,7 @@ class AnnouncementServiceImpl @Inject()(
 
       pubSubService.publish(
         topic = announcement.assessment.toString,
-        AssessmentAnnouncement(announcement.id.toString, announcement.text, announcement.created)
+        AssessmentAnnouncement.from(announcement)
       )
 
       // Intentionally fire-and-forget to send the announcement via My Warwick as well
@@ -68,5 +70,8 @@ class AnnouncementServiceImpl @Inject()(
     }})
 
   override def getByAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]] =
-  daoRunner.run(dao.getByAssessmentId(id)).map(_.map(_.asAnnouncement)).map(ServiceResults.success)
+    daoRunner.run(dao.getByAssessmentId(id)).map(_.map(_.asAnnouncement)).map(ServiceResults.success)
+
+  override def getByAssessmentId(student: UniversityID, id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]] =
+    daoRunner.run(dao.getByAssessmentId(student, id)).map(_.map(_.asAnnouncement)).map(ServiceResults.success)
 }

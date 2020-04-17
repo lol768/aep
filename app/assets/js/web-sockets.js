@@ -8,6 +8,8 @@ import { browserLocalTimezoneName } from './jddt';
 
  */
 
+/* JSDoc type hints */
+
 /**
  * @typedef {function} PlainEventHandler
  * @return {void}
@@ -118,6 +120,7 @@ export default class WebSocketConnection {
     const {
       onConnect, onError, onClose, onData, onHeartbeat,
     } = callbacks;
+
     if (onConnect) {
       this.onConnect.push(onConnect);
 
@@ -134,6 +137,7 @@ export default class WebSocketConnection {
     if (onData) this.onData.push(onData);
     if (onHeartbeat) this.onHeartbeat.push(onHeartbeat);
   }
+
 
   connect() {
     this.timeout = undefined;
