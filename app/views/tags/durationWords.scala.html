@@ -1,5 +1,10 @@
 @import domain.Assessment
+@import java.time.Duration
 @import org.apache.commons.lang3.time.DurationFormatUtils
 
 @(assessment: Assessment)
-@assessment.duration.map(d => DurationFormatUtils.formatDurationWords(d.toMillis, true, true)).getOrElse(<span class="muted">N/A</span>)
+@assessment.duration match {
+  case Some(d) if d == Duration.ofHours(2) => { Up to 2 hours }
+  case Some(d) => { @DurationFormatUtils.formatDurationWords(d.toMillis, true, true) }
+  case None => { <span class="muted">N/A</span> }
+}

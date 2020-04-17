@@ -3,6 +3,7 @@ package controllers.admin
 import java.util.UUID
 
 import controllers.BaseController
+import domain.messaging.MessageSender
 import domain.{SittingMetadata, StudentAssessment, tabula}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, Result}
@@ -79,7 +80,7 @@ class ReportingController @Inject()(
             val sorted = sittings
               .sortBy(studentAssessmentOrdering(profiles))
               .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct), latestActivities, sortByHeader))
+            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct), queries.count(_.sender == MessageSender.Client), latestActivities, sortByHeader))
           }
     }
   }

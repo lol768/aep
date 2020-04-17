@@ -4,7 +4,9 @@ import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import helpers.LenientTimezoneNameParsing._
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{Writes, _}
+import warwick.sso.Usercode
 
 case class AssessmentClientNetworkActivity (
   downlink: Option[Double], // mbps
@@ -12,7 +14,9 @@ case class AssessmentClientNetworkActivity (
   effectiveType: Option[String], // 'slow-2g', '2g', '3g', or '4g',
   rtt: Option[Int], // rounded to nearest 25ms
   `type`: Option[String], // bluetooth, cellular, ethernet, none, wifi, wimax, other, unknown
-  studentAssessmentId: UUID,
+  studentAssessmentId: Option[UUID],
+  assessmentId: Option[UUID] = None,
+  usercode: Option[Usercode] = None,
   localTimezoneName: Option[LenientZoneId],
   timestamp: OffsetDateTime = OffsetDateTime.now,
 ) {
@@ -31,5 +35,16 @@ case class AssessmentClientNetworkActivity (
 object AssessmentClientNetworkActivity {
   def tupled = (apply _).tupled
 
-  val writesAssessmentClientNetworkActivity: Writes[AssessmentClientNetworkActivity] = Json.writes[AssessmentClientNetworkActivity]
+  val writesAssessmentClientNetworkActivity: Writes[AssessmentClientNetworkActivity] =  (
+    (__ \ "downlink").write[Option[Double]] and
+      (__ \ "downlinkMax").write[Option[Double]] and
+      (__ \ "effectiveType").write[Option[String]] and
+      (__ \ "rtt").write[Option[Int]] and
+      (__ \ "type").write[Option[String]] and
+      (__ \ "studentAssessmentId").write[Option[UUID]] and
+      (__ \ "assessmentId").write[Option[UUID]] and
+      (__ \ "universityId").writeNullable[String].contramap[Option[Usercode]](_.map(_.string)) and
+      (__ \ "localTimezoneName").write[Option[LenientZoneId]] and
+      (__ \ "timestamp").write[OffsetDateTime]
+  )(unlift(AssessmentClientNetworkActivity.unapply))
 }
