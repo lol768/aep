@@ -8,6 +8,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import scala.concurrent.ExecutionContext
 
+
 @ImplementedBy(classOf[AssessmentClientNetworkActivityDaoImpl])
 trait AssessmentClientNetworkActivityDao {
   self: HasDatabaseConfigProvider[ExtendedPostgresProfile] =>
@@ -22,6 +23,7 @@ trait AssessmentClientNetworkActivityDao {
   def getClientActivityFor(assessments: Seq[StudentAssessment], startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime], offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
   def countClientActivityFor(assessments: Seq[StudentAssessment],startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime]): DBIO[Int]
   def getLatestActivityFor(studentAssessmentIds: Seq[UUID]): DBIO[Seq[AssessmentClientNetworkActivity]]
+  def getLatestInvigilatorActivityFor(assessmentId: UUID): DBIO[Seq[AssessmentClientNetworkActivity]]
 }
 
 @Singleton
@@ -32,6 +34,7 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
 )(implicit ec: ExecutionContext) extends AssessmentClientNetworkActivityDao with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
   import tables._
+  import jdbcTypes._
 
   override def insert(activity: AssessmentClientNetworkActivity): DBIO[AssessmentClientNetworkActivity] =
     (assessmentClientNetworkActivities += activity).map(_ => activity)
@@ -76,6 +79,20 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
           .map { case (key, values) => (key, values.map(_.timestamp).max)}
       }
       .on { case (record, (key, timestamp)) => record.studentAssessmentId === key && record.timestamp === timestamp}
+      .map { case (record, _) => record }
+      .result
+  }
+
+  override def getLatestInvigilatorActivityFor(assessmentId: UUID): profile.api.DBIO[Seq[AssessmentClientNetworkActivity]] = {
+    assessmentClientNetworkActivities
+      .filter { a => a.assessmentId === assessmentId && a.studentAssessmentId.isEmpty }
+      .join {
+        assessmentClientNetworkActivities
+          .filter{ a => a.assessmentId === assessmentId && a.studentAssessmentId.isEmpty }
+          .groupBy(e => e.usercode)
+          .map { case (key, values) => (key, values.map(_.timestamp).max)}
+      }
+      .on { case (record, (key, timestamp)) => record.usercode === key && record.timestamp === timestamp}
       .map { case (record, _) => record }
       .result
   }

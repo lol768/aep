@@ -6,6 +6,7 @@
 @import warwick.sso.UniversityID
 @import java.util.UUID
 @import domain.SittingMetadata
+@import warwick.core.helpers.JavaTime
 
 @import domain.messaging.Message
 @(
@@ -16,7 +17,8 @@
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID],
         queriesFromStudents: Seq[Message],
-        latestActivities: Map[UUID, AssessmentClientNetworkActivity]
+        invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
+        latestStudentActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation", extraClasses = Seq("connect-ws")) {
     <div class="id7-main-content">
@@ -34,10 +36,31 @@
                             <ul>
                             @assessment.invigilators.map { usercode =>
                                 <li>
-                                    @invigilators.get(usercode).map { username =>
-                                    <span>@username</span>
-                                    <span class="text-muted">(@usercode.string)</span>
-                                    }.getOrElse(usercode.string)
+                                    @if(invigilatorActivities.contains(usercode)) {
+                                        @invigilatorActivities.get(usercode).map { latestActivity =>
+                                            @invigilators.get(usercode).map { username =>
+                                                <span class="@if(latestActivity.isOnline){text-success}else{text-danger}"><i class="fad @if(latestActivity.isOnline){fa-wifi}else{fa-wifi-slash}"></i> @username</span>
+                                                <span class="text-muted">(@usercode.string)</span>
+                                            }.getOrElse {
+                                                <span class="@if(latestActivity.isOnline){text-success}else{text-danger}"><i class="fad @if(latestActivity.isOnline){fa-wifi}else{fa-wifi-slash}"></i> @usercode.string</span>
+                                            }
+
+                                            <ul>
+                                                <li>Last seen online @JavaTime.Relative(latestActivity.timestamp)</li>
+                                            </ul>
+                                        }
+                                    } else {
+                                         @invigilators.get(usercode).map { username =>
+                                            <span class="text-danger"><i class="fad fa-wifi-slash"></i> @username</span>
+                                            <span class="text-muted">(@usercode.string)</span>
+                                        }.getOrElse {
+                                            <span class="text-danger"><i class="fad fa-wifi-slash"></i> @usercode.string</span>
+                                        }
+
+                                        <ul>
+                                            <li>Never seen online</li>
+                                        </ul>
+                                    }
                                 </li>
                             }
                             </ul>
@@ -51,7 +74,7 @@
             <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
         </div>
         <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="expected">
-            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestActivities)
+            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestStudentActivities)
         </div>
         @if(assessment.isDownloadAvailable) {
             <p>
