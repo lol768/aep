@@ -3,7 +3,7 @@
   "version": "1.0.0-SNAPSHOT",
   "private": true,
   "devDependencies": {
-    "@universityofwarwick/webpack-config-builder": "1.0.4",
+    "@universityofwarwick/webpack-config-builder": "1.0.5",
     "chai": "4.2.0",
     "chromedriver": "80.0.1",
     "eslint": "6.8.0",
@@ -15,11 +15,12 @@
     "mocha-bamboo-reporter": "1.1.2",
     "puppeteer": "2.1.1",
     "sinon": "9.0.0",
-    "sinon-chai": "3.5.0"
+    "sinon-chai": "3.5.0",
+    "@babel/compat-data": "7.9.0"
   },
   "dependencies": {
     "@fortawesome/fontawesome-pro": "5.12.1",
-    "@universityofwarwick/id7": "2.6.5",
+    "@universityofwarwick/id7": "2.6.6",
     "@universityofwarwick/serverpipe": "1.2.1",
     "@universityofwarwick/statuspage-widget": "0.0.5",
     "bootstrap-3-typeahead": "github:UniversityofWarwick/Bootstrap-3-Typeahead#acada2f8e5d9a70dbb37c1fd152895937a03f8d5",

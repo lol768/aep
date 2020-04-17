@@ -42,15 +42,8 @@ function attachListener(form) {
 
 if (typeof MutationObserver !== 'undefined') {
   // Should exist in IE11
-  const observer = new MutationObserver((objects) => {
-    // expect Babel for this
-    objects.forEach((mutationRecord) => {
-      if (mutationRecord.type === 'childList') {
-        for (let i = 0; i < mutationRecord.target.children.length; i += 1) {
-          mutationRecord.target.children[i].querySelectorAll('form.double-submit-protection').forEach(attachListener);
-        }
-      }
-    });
+  const observer = new MutationObserver(() => {
+    document.body.querySelectorAll('form.double-submit-protection').forEach(attachListener);
   });
   observer.observe(document.body, {
     childList: true,

@@ -1,5 +1,5 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
-@import controllers.admin.AssessmentsController.AssessmentFormData
+@import controllers.admin.AdminAssessmentsController.AssessmentFormData
 @import domain.Assessment
 @(assessment: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
@@ -19,7 +19,7 @@
             @assessment.map { assessment =>
                 @assessment.brief.files.map { file =>
                     <li>
-                        <a href="@controllers.admin.routes.AssessmentsController.getFile(assessment.id, file.id)" target="_blank" rel="noreferrer">
+                        <a href="@controllers.admin.routes.AdminAssessmentsController.getFile(assessment.id, file.id)" target="_blank" rel="noreferrer">
                             <i class="fad fa-file fa-fw"></i>@file.fileName
                         </a>
                     </li>

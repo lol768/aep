@@ -52,6 +52,7 @@ export default function initAnnouncements(websocket) {
 
   if (!assessmentId) {
     log.error('No data-assessment-id found on body');
+    return;
   }
 
   websocket.add({

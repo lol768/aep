@@ -14,6 +14,7 @@ import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
+import warwick.sso.Usercode
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,7 +28,7 @@ trait AssessmentClientNetworkActivityService {
 
   def getLatestActivityFor(studentAssessmentIds: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Map[UUID, AssessmentClientNetworkActivity]]]
 
-  def getLatestInvigilatorActivityFor(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentClientNetworkActivity]]]
+  def getLatestInvigilatorActivityFor(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Map[Usercode, AssessmentClientNetworkActivity]]]
 }
 
 @Singleton
@@ -61,9 +62,9 @@ class AssessmentClientNetworkActivityServiceImpl @Inject()(
     }
   }
 
-  override def getLatestInvigilatorActivityFor(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentClientNetworkActivity]]] = {
+  override def getLatestInvigilatorActivityFor(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Map[Usercode, AssessmentClientNetworkActivity]]] = {
     daoRunner.run(dao.getLatestInvigilatorActivityFor(assessmentId)).map { activities =>
-      ServiceResults.success(activities)
+      ServiceResults.success(activities.map(a => a.usercode.get -> a).toMap)
     }
   }
 }

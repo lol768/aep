@@ -29,9 +29,9 @@ import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService, Userc
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-object AssessmentsController {
+object AdminAssessmentsController {
 
-  import controllers.admin.AssessmentsController.AssessmentFormData._
+  import controllers.admin.AdminAssessmentsController.AssessmentFormData._
 
   object AssessmentFormData {
     val invigilatorsFieldMapping: Mapping[Set[Usercode]] = set(text)
@@ -172,7 +172,7 @@ object AssessmentsController {
 }
 
 @Singleton
-class AssessmentsController @Inject()(
+class AdminAssessmentsController @Inject()(
   security: SecurityService,
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
@@ -186,7 +186,7 @@ class AssessmentsController @Inject()(
   ec: ExecutionContext
 ) extends BaseController {
 
-  import AssessmentsController._
+  import AdminAssessmentsController._
   import security._
 
   private[this] lazy val overwriteAssessmentTypeOnImport = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
@@ -282,7 +282,7 @@ class AssessmentsController @Inject()(
               )
             ))
           ).successMap(_ =>
-            Redirect(routes.AssessmentsController.index()).flashing {
+            Redirect(routes.AdminAssessmentsController.index()).flashing {
               if (newState == State.Approved)
                 "success" -> Messages("flash.assessment.created", data.title)
               else
@@ -291,7 +291,7 @@ class AssessmentsController @Inject()(
           )
         } else { // User is not an admin for the supplied department
           Future.successful(Redirect(
-            controllers.admin.routes.AssessmentsController.create()
+            controllers.admin.routes.AdminAssessmentsController.create()
           ).flashing("error" -> Messages("error.permissions.notDepartmentAdminForSelected", data.departmentCode)))
         }
       })
@@ -359,6 +359,7 @@ class AssessmentsController @Inject()(
         val updatedIfAdHoc =
           if (assessment.tabulaAssessmentId.isEmpty) {
             import helpers.DateConversion._
+            // Only update fields here that are appropriate for mock assessments (other fields may be updated below)
             assessment.copy(
               moduleCode = data.moduleCode,
               paperCode = data.paperCode,
@@ -405,19 +406,33 @@ class AssessmentsController @Inject()(
 
         ServiceResults.zip(
           updateStudents,
-          assessmentService.update(updatedIfAdHoc.copy(
-            title = data.title,
-            duration = data.durationMinutes.map(Duration.ofMinutes),
-            platform = data.platform,
-            invigilators = data.invigilators,
-            brief = assessment.brief.copy(
-              text = data.description,
-              urls = data.urls
-            ),
-            state = newState
-          ), files = files.map(f => (f.in, f.metadata)))
+          assessmentService.update(
+            // Updates that are valid whether or not this is a mock assessment
+            Assessment(
+              title = data.title,
+              duration = data.durationMinutes.map(Duration.ofMinutes),
+              platform = data.platform,
+              invigilators = data.invigilators,
+              state = newState,
+              brief = assessment.brief.copy(
+                text = data.description,
+                urls = data.urls
+              ),
+              // Rest are unchanged (may have been changed above)
+              id = updatedIfAdHoc.id,
+              paperCode = updatedIfAdHoc.paperCode,
+              section = updatedIfAdHoc.section,
+              startTime = updatedIfAdHoc.startTime,
+              assessmentType = updatedIfAdHoc.assessmentType,
+              tabulaAssessmentId = updatedIfAdHoc.tabulaAssessmentId,
+              tabulaAssignments = updatedIfAdHoc.tabulaAssignments,
+              examProfileCode = updatedIfAdHoc.examProfileCode,
+              moduleCode = updatedIfAdHoc.moduleCode,
+              departmentCode = updatedIfAdHoc.departmentCode,
+              sequence = updatedIfAdHoc.sequence
+            ), files = files.map(f => (f.in, f.metadata)))
         ).successMap { _ =>
-          Redirect(routes.AssessmentsController.index()).flashing {
+          Redirect(routes.AdminAssessmentsController.index()).flashing {
             if (newState == State.Approved)
               "success" -> Messages("flash.assessment.updated", data.title)
             else
@@ -431,7 +446,7 @@ class AssessmentsController @Inject()(
     val assessment = request.assessment
 
     tabulaAssessmentService.generateAssignments(assessment).successMap { _ =>
-      Redirect(routes.AssessmentsController.view(assessment.id))
+      Redirect(routes.AdminAssessmentsController.view(assessment.id))
         .flashing { "success" -> Messages("flash.assessment.generatedAssignments", assessment.title) }
     }
   }
@@ -456,7 +471,7 @@ class AssessmentsController @Inject()(
         FormMappings.confirmForm.bindFromRequest.fold(
           formWithErrors => Future.successful(Ok(views.html.admin.assessments.delete(formWithErrors, canBeDeleted = true))),
           _ => assessmentService.delete(request.assessment).successMap(_ =>
-            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessment.deleted", request.assessment.title))
+            Redirect(routes.AdminAssessmentsController.index()).flashing("success" -> Messages("flash.assessment.deleted", request.assessment.title))
           )
         )
       }

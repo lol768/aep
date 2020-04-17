@@ -65,7 +65,7 @@ class NavigationServiceImpl @Inject()(
   private lazy val emailQueue = NavigationPage("Email queue", controllers.sysadmin.routes.EmailQueueController.queued())
   private lazy val sentEmails = NavigationPage("View sent emails", controllers.sysadmin.routes.ViewEmailsController.listAll())
   private lazy val myWarwickQueue = NavigationPage("My Warwick queue", controllers.sysadmin.routes.MyWarwickQueueController.queued())
-  private lazy val assessments = NavigationPage("Assessments", controllers.admin.routes.AssessmentsController.index())
+  private lazy val assessments = NavigationPage("Assessments", controllers.admin.routes.AdminAssessmentsController.index())
   //private lazy val approvals = NavigationPage("Approvals", controllers.admin.routes.ApprovalsController.index())
   private lazy val reporting = NavigationPage("Reporting", controllers.admin.routes.ReportingController.index())
   private lazy val dataGeneration = NavigationPage("Data generation", controllers.sysadmin.routes.DummyDataGenerationController.showForm())

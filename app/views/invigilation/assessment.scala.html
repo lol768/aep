@@ -33,48 +33,14 @@
                     <div class="panel-body">
                         <details>
                             <summary class="text-muted">Invigilators</summary>
-                            <ul>
-                            @assessment.invigilators.map { usercode =>
-                                <li>
-                                    @if(invigilatorActivities.contains(usercode)) {
-                                        @invigilatorActivities.get(usercode).map { latestActivity =>
-                                            @invigilators.get(usercode).map { username =>
-                                                <span class="@if(latestActivity.isOnline){text-success}else{text-danger}"><i class="fad @if(latestActivity.isOnline){fa-wifi}else{fa-wifi-slash}"></i> @username</span>
-                                                <span class="text-muted">(@usercode.string)</span>
-                                            }.getOrElse {
-                                                <span class="@if(latestActivity.isOnline){text-success}else{text-danger}"><i class="fad @if(latestActivity.isOnline){fa-wifi}else{fa-wifi-slash}"></i> @usercode.string</span>
-                                            }
-
-                                            <ul>
-                                                <li>Last seen online @JavaTime.Relative(latestActivity.timestamp)</li>
-                                            </ul>
-                                        }
-                                    } else {
-                                         @invigilators.get(usercode).map { username =>
-                                            <span class="text-danger"><i class="fad fa-wifi-slash"></i> @username</span>
-                                            <span class="text-muted">(@usercode.string)</span>
-                                        }.getOrElse {
-                                            <span class="text-danger"><i class="fad fa-wifi-slash"></i> @usercode.string</span>
-                                        }
-
-                                        <ul>
-                                            <li>Never seen online</li>
-                                        </ul>
-                                    }
-                                </li>
-                            }
-                            </ul>
+                            @views.html.invigilation.invigilatorsList(assessment, invigilators, invigilatorActivities)
                         </details>
                     </div>
                 </div>
             </div>
         </div>
-        <h2>Students</h2>
-        <div class="alert alert-info">
-            <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
-        </div>
         <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
-            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestStudentActivities)
+            @queriesAndStudents(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestStudentActivities)
         </div>
         @if(assessment.isDownloadAvailable) {
             <p>
