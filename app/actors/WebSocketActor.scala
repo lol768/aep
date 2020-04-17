@@ -72,7 +72,7 @@ object WebSocketActor {
   }
 
   case class RequestAnnouncements(
-    assessmentId: UUID
+    assessmentId: Option[UUID]
   )
   object RequestAnnouncements {
     val `type`: String = "RequestAnnouncements"
@@ -191,27 +191,27 @@ class WebSocketActor @Inject() (
           val universityID: UniversityID = currentUniversityID
           m.data.getOrElse(Json.obj()).validate[RequestAnnouncements].fold(
             invalid => log.error(s"Failed to parse RequestAnnouncements message: $invalid"),
-            data => {
-              val assessmentId = data.assessmentId
-
-              ServiceResults.zip(
-                studentAssessmentService.get(universityID, assessmentId),
-                announcementService.getByAssessmentId(universityID, assessmentId)
-              ).foreach { result =>
-                result.fold(
-                  errors => log.error(s"Error fetching announcments: $errors"),
-                  { case (student, announcements) =>
-                    if (student.startTime.nonEmpty) {
-                      announcements.foreach { announcement =>
-                        self ! AssessmentAnnouncement.from(announcement)
+            {
+              case RequestAnnouncements(Some(assessmentId)) =>
+                ServiceResults.zip(
+                  studentAssessmentService.get(universityID, assessmentId),
+                  announcementService.getByAssessmentId(universityID, assessmentId)
+                ).foreach { result =>
+                  result.fold(
+                    errors => log.error(s"Error fetching announcments: $errors"),
+                    { case (student, announcements) =>
+                      if (student.startTime.nonEmpty) {
+                        announcements.foreach { announcement =>
+                          self ! AssessmentAnnouncement.from(announcement)
+                        }
                       }
                     }
-                  }
-                )
-              }
+                  )
+                }
+
+              case RequestAnnouncements(None) => // do nothing
             }
           )
-
 
         case m => log.error(s"Ignoring unrecognised client message: $m")
       }

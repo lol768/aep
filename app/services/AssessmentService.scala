@@ -34,6 +34,8 @@ trait AssessmentService {
 
   def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
+  def listForExamProfileCode(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
   def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
@@ -65,26 +67,6 @@ class AssessmentServiceImpl @Inject()(
   assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao
 )(implicit ec: ExecutionContext) extends AssessmentService {
 
-  private def inflate(storedAssessments: Seq[AssessmentsTables.StoredAssessment])(implicit t: TimingContext) = {
-    uploadedFileService.get(storedAssessments.flatMap(_.storedBrief.fileIds)).map { uploadedFiles =>
-      ServiceResults.success(storedAssessments.map(_.asAssessment(uploadedFiles.map(f => f.id -> f).toMap)))
-    }
-  }
-
-  private def withFiles(
-    query: DBIO[Option[StoredAssessment]],
-    errorMsg: String = "Could not find results for query"
-  )(implicit t: TimingContext) =
-    daoRunner.run(query).flatMap { storedAssessmentOption =>
-      storedAssessmentOption.map { storedAssessment =>
-        uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
-          ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
-        }
-      }.getOrElse {
-        Future.successful(ServiceResults.error(errorMsg))
-      }
-    }
-
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
     daoRunner.run(dao.loadAllWithUploadedFiles)
       .map(inflateRowsWithUploadedFiles)
@@ -100,19 +82,25 @@ class AssessmentServiceImpl @Inject()(
     daoRunner.run(dao.isInvigilator(usercode)).map(ServiceResults.success)
   }
 
-  override def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
-    daoRunner.run(dao.getByInvigilator(usercodes)).flatMap(inflate)
-  }
+  override def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.getByInvigilatorWithUploadedFiles(usercodes))
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
 
-  override def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
-    withFiles(
-      dao.getByIdAndInvigilator(id, usercodes),
-      s"Could not find Assessment with ID $id with invigilators ${usercodes.map(_.string).mkString(",")}"
-    )
-  }
+  override def listForExamProfileCode(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.getByExamProfileCodeWithUploadedFiles(examProfileCode))
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
+
+  override def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] =
+    daoRunner.run(dao.getByIdAndInvigilatorWithUploadedFiles(id, usercodes))
+      .map(inflateRowWithUploadedFiles)
+      .map(_.fold[ServiceResult[Assessment]](ServiceResults.error(s"Could not find Assessment with ID $id with invigilators ${usercodes.map(_.string).mkString(",")}"))(ServiceResults.success))
 
   override def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
-    daoRunner.run(dao.getToday).flatMap(inflate)
+    daoRunner.run(dao.getTodayWithUploadedFiles)
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
 
   // Returns all assessments where the start time has passed, and the latest possible finish time for any student is yet to come
   override def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
