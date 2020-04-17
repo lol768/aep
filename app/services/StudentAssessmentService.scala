@@ -349,12 +349,12 @@ class StudentAssessmentServiceImpl @Inject()(
         result.map { existingDeclaration =>
           daoRunner.run(dao.update(
             StoredDeclarations(
-              existingDeclaration.studentAssessmentId,
-              decs.acceptsAuthorship,
-              decs.selfDeclaredRA,
-              decs.selfDeclaredRA,
-              existingDeclaration.created,
-              existingDeclaration.version
+              studentAssessmentId = existingDeclaration.studentAssessmentId,
+              acceptsAuthorship = decs.acceptsAuthorship,
+              selfDeclaredRA = decs.selfDeclaredRA,
+              completedRA = decs.completedRA,
+              created = existingDeclaration.created,
+              version = existingDeclaration.version
             )
           ))
         }.getOrElse {
