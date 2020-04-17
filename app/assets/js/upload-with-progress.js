@@ -98,7 +98,7 @@ export default class UploadWithProgress {
         });
         xhr.addEventListener('error', () => {
           this.failureCallback(xhr);
-          UploadWithProgress.handleErrorInUpload(formElement);
+          UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
         });
         // start async xhr
         xhr.open('POST', formElement.getAttribute('action'), true);
