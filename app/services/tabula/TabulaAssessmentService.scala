@@ -1,13 +1,10 @@
 package services.tabula
 
-import java.io.{ByteArrayOutputStream, InputStream}
+import java.io.InputStream
 import java.time.Duration
 import java.util.UUID
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
-import play.api.mvc.MultipartFormData.FilePart
-import com.google.common.io.ByteSource
+import akka.stream.scaladsl.{Source, StreamConverters}
 import com.google.inject.ImplementedBy
 import com.google.inject.name.Named
 import domain.tabula.Assignment
@@ -20,7 +17,7 @@ import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSRequest}
 import play.api.mvc.MultipartFormData.FilePart
 import services.tabula.TabulaAssessmentService._
-import services.{AssessmentService, StudentAssessmentService, UploadedFileService}
+import services.{AssessmentService, StudentAssessmentService}
 import system.TimingCategories
 import uk.ac.warwick.sso.client.trusted.{TrustedApplicationUtils, TrustedApplicationsManager}
 import uk.ac.warwick.util.termdates.AcademicYear
@@ -37,7 +34,6 @@ import warwick.objectstore.ObjectStorageService
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
-import scala.sys.process.ProcessBuilder.Source
 
 @ImplementedBy(classOf[CachingTabulaAssessmentService])
 trait TabulaAssessmentService {
@@ -108,7 +104,6 @@ class TabulaAssessmentServiceImpl @Inject()(
   timing: TimingService,
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
-  uploadedFileSerive: UploadedFileService,
   objectStorageService: ObjectStorageService
 )(implicit ec: ExecutionContext) extends TabulaAssessmentService with Logging {
 
@@ -196,9 +191,10 @@ class TabulaAssessmentServiceImpl @Inject()(
     }
   }
 
-
+  //TODO - parameters need changing, added for time being
   private def createSubmission(assessment: Assessment, studentAssessment: StudentAssessment, assignmentId: UUID): Future[ServiceResult[Assignment]] = {
     implicit def l: Logger = logger
+
     val url = config.getCreateAssignmentSubmissionUrl(assignmentId)
 
 
@@ -207,30 +203,25 @@ class TabulaAssessmentServiceImpl @Inject()(
         startTime.plus(d.plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO)).plus(Assessment.uploadGraceDuration))
       }
     }
+    val fileInfo = studentAssessment.uploadedFiles.map { file =>
+      file -> objectStorageService.fetch(file.id.toString).orNull
 
-    val filePart: Seq[FilePart[ByteSource]] = studentAssessment.uploadedFiles.map { file => //file -> objectStorageService.fetch(file.id.toString)
-      val source: ByteSource = new ByteSource {
-        override def openStream(): InputStream = objectStorageService.fetch(file.id.toString).orNull
-      }
-
-      FilePart("files", file.fileName, Some(file.contentType), source, file.contentLength)
-    }
-
+    }.toMap
     val req = ws.url(url)
       .withHttpHeaders("Content-Type" -> "multipart/form-data")
       .withQueryStringParameters(Seq(
-        Some("universityId" -> studentAssessment.studentId),
+        Some("universityId" -> studentAssessment.studentId.string),
         Some("submittedDate" -> studentAssessment.submissionTime.get.toString),
         Some("submissionDeadline" -> deadline.get.toString),
       ).flatten: _*)
 
-    doRequest(url, "POST", req, description = "createSubmission", filePart).successFlatMapTo { jsValue =>
+    doRequest(url, "POST", req, description = "createSubmission", fileInfo).successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.responseAssignmentReads)
     }
   }
 
   override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
-    //TODO change this
+  //TODO change this whole method -  Need  to get list of studentAssessment that have actually uploaded file and then invoke create submission method
     timing.time(TimingCategories.TabulaWrite) {
       studentAssessmentService.byAssessmentId(assessment.id)
         .successFlatMapTo { students =>
@@ -266,7 +257,7 @@ class TabulaHttp @Inject()(
     * @param l           Logger, for logging
     * @return JsValue if request was trusted (but use parseAndValidate to check it was successful)
     */
-  def doRequest(url: String, method: String, wsRequest: WSRequest, description: String, filePart: Seq[FilePart[ByteSource]] = Seq.empty)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
+  def doRequest(url: String, method: String, wsRequest: WSRequest, description: String, files: Map[UploadedFile, InputStream] = Map.empty)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
     val trustedHeaders: Seq[(String, String)] = TrustedApplicationUtils.getRequestHeaders(
       trustedApplicationsManager.getCurrentApplication,
       config.usercode,
@@ -274,28 +265,27 @@ class TabulaHttp @Inject()(
     ).asScala.map(h => h.getName -> h.getValue).toSeq
 
     val req = wsRequest.addHttpHeaders(trustedHeaders: _*)
-    val res = if(filePart.isEmpty) {
+    val res = if (files.isEmpty) {
       req.execute(method)
     } else {
-       req.post(
-         Source(
-           filePart ::List()
-         )
-       )
-    }
-    res .map { r =>
-        try {
-          Right(TrustedAppsHelper.validateResponse(url, r).json)
-        } catch {
-          case ex: Exception =>
-            val msg = s"Trustedapps error in Tabula $description"
-            logger.error(msg, ex)
-            ServiceResults.exceptionToServiceResult(ex, Some(msg))
-        }
-
+      val fileParts = files.map { case (uploadeFile, inputStream) => FilePart("files", uploadeFile.fileName, Some(uploadeFile.contentType), StreamConverters.fromInputStream(() => inputStream))
       }
-  }
+      val singleFilePart = fileParts.head
+      req.post(Source(singleFilePart :: List()))
+      //req.post(Source( fileParts :: List()))--THIS DOESN'T WORK ???
+    }
+    res.map { r =>
+      try {
+        Right(TrustedAppsHelper.validateResponse(url, r).json)
+      } catch {
+        case ex: Exception =>
+          val msg = s"Trustedapps error in Tabula $description"
+          logger.error(msg, ex)
+          ServiceResults.exceptionToServiceResult(ex, Some(msg))
+      }
 
+    }
+  }
 
 
   def parseAndValidate[A](jsValue: JsValue, reads: Reads[A])(implicit l: Logger): Future[ServiceResult[A]] = Future.successful {
