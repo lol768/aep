@@ -356,6 +356,7 @@ class AssessmentsController @Inject()(
         val updatedIfAdHoc =
           if (assessment.tabulaAssessmentId.isEmpty) {
             import helpers.DateConversion._
+            // Only update fields here that are appropriate for mock assessments (other fields may be updated below)
             assessment.copy(
               moduleCode = data.moduleCode,
               paperCode = data.paperCode,
@@ -400,17 +401,31 @@ class AssessmentsController @Inject()(
 
         ServiceResults.zip(
           updateStudents,
-          assessmentService.update(updatedIfAdHoc.copy(
-            title = data.title,
-            duration = data.durationMinutes.map(Duration.ofMinutes),
-            platform = data.platform,
-            invigilators = data.invigilators,
-            brief = assessment.brief.copy(
-              text = data.description,
-              urls = data.urls
-            ),
-            state = newState
-          ), files = files.map(f => (f.in, f.metadata)))
+          assessmentService.update(
+            // Updates that are valid whether or not this is a mock assessment
+            Assessment(
+              title = data.title,
+              duration = data.durationMinutes.map(Duration.ofMinutes),
+              platform = data.platform,
+              invigilators = data.invigilators,
+              state = newState,
+              brief = assessment.brief.copy(
+                text = data.description,
+                urls = data.urls
+              ),
+              // Rest are unchanged (may have been changed above)
+              id = updatedIfAdHoc.id,
+              paperCode = updatedIfAdHoc.paperCode,
+              section = updatedIfAdHoc.section,
+              startTime = updatedIfAdHoc.startTime,
+              assessmentType = updatedIfAdHoc.assessmentType,
+              tabulaAssessmentId = updatedIfAdHoc.tabulaAssessmentId,
+              tabulaAssignments = updatedIfAdHoc.tabulaAssignments,
+              examProfileCode = updatedIfAdHoc.examProfileCode,
+              moduleCode = updatedIfAdHoc.moduleCode,
+              departmentCode = updatedIfAdHoc.departmentCode,
+              sequence = updatedIfAdHoc.sequence
+            ), files = files.map(f => (f.in, f.metadata)))
         ).successMap { _ =>
           Redirect(routes.AssessmentsController.index()).flashing {
             if (newState == State.Approved)
