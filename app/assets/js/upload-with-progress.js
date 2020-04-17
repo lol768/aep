@@ -34,14 +34,14 @@ export default class UploadWithProgress {
   /**
    * @private
    */
-  static handleErrorInUpload(formElement, errorMessage, statusCode) {
+  static handleErrorInUpload(formElement, errorMessage, contentType, statusCode) {
     let errorToDisplay = '';
 
     try {
       const parsedJson = JSON.parse(errorMessage);
       errorToDisplay = parsedJson.errors[0].message;
     } catch (e) {
-      if (errorMessage.indexOf('<html') === -1) {
+      if (contentType.indexOf('text/html') === -1) {
         errorToDisplay = errorMessage;
       } else if (statusCode in STATUS_ERRORS) {
         errorToDisplay = STATUS_ERRORS[statusCode];
@@ -90,7 +90,7 @@ export default class UploadWithProgress {
               this.successCallback(formElement);
             } else {
               this.failureCallback(xhr);
-              UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.status);
+              UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
             }
           } else if (xhr.readyState === XMLHttpRequest.OPENED) {
             formElement.querySelector('.upload-info').classList.remove('hide'); // IE10
