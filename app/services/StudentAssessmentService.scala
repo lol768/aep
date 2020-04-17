@@ -327,6 +327,11 @@ class StudentAssessmentServiceImpl @Inject()(
   override def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] =
     audit.audit(Operation.StudentAssessment.DeleteStudentAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)) {
       daoRunner.run(for {
+        existing <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
+        _ <- DBIO.from(Future.successful {
+          // The forall is true if existing doesn't exist, so this supports a delete for a deleted object as fine
+          require(existing.forall(_.startTime.isEmpty), "Cannot perform action, student assessment has been started")
+        })
         _ <- assessmentClientNetworkActivityDao.deleteAll(studentAssessment.id)
         deleted <- dao.delete(studentAssessment.studentId, studentAssessment.assessmentId)
       } yield deleted)
