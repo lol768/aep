@@ -21,8 +21,12 @@ const defaultHeartbeat = (ws) => {
 
   const inProgressAssessmentElement = document.querySelector('.in-progress-assessment-data');
   let studentAssessmentId = null;
+  let assessmentId = null;
+  let usercode = null;
   if (inProgressAssessmentElement) {
     studentAssessmentId = inProgressAssessmentElement.getAttribute('data-id');
+    assessmentId = inProgressAssessmentElement.getAttribute('data-assessment');
+    usercode = inProgressAssessmentElement.getAttribute('data-usercode');
   }
 
   const localTimezoneName = browserLocalTimezoneName();
@@ -36,6 +40,8 @@ const defaultHeartbeat = (ws) => {
       rtt,
       type,
       studentAssessmentId,
+      assessmentId,
+      usercode,
       localTimezoneName,
     },
   };
@@ -71,7 +77,17 @@ export default class WebSocketConnection {
   add({
     onConnect, onError, onClose, onData, onHeartbeat,
   } = {}) {
-    if (onConnect) this.onConnect.push(onConnect);
+    if (onConnect) {
+      this.onConnect.push(onConnect);
+
+      if (this.ws !== undefined) {
+        if (this.ws.readyState === WebSocket.OPEN) {
+          onConnect();
+        } else {
+          this.ws.addEventListener('open', onConnect);
+        }
+      }
+    }
     if (onError) this.onError.push(onError);
     if (onClose) this.onClose.push(onClose);
     if (onData) this.onData.push(onData);

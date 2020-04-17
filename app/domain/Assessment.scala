@@ -141,33 +141,39 @@ object Assessment {
 
   sealed trait AssessmentType extends EnumEntry {
     val label: String
+    val studentFriendlyLabel: String
     val validDurations: Seq[Long]
   }
 
   object AssessmentType extends PlayEnum[AssessmentType] {
 
     case object OpenBook extends AssessmentType {
-      val label = "Open Book Assessment"
+      override val label: String = "Open Book Assessment"
+      override val studentFriendlyLabel: String = "Open book"
       override val validDurations: Seq[Long] = Seq(120, 180, 1440)
     }
 
     case object OpenBookFileBased extends AssessmentType {
-      val label = "Open Book Assessment, files based"
+      override val label: String = "Open Book Assessment, files based"
+      override val studentFriendlyLabel: String = "Open book (file-based)"
       override val validDurations: Seq[Long] = Seq(120, 180, 1440)
     }
 
     case object Spoken extends AssessmentType {
-      val label = "Spoken Open Book Assessment"
+      override val label: String = "Spoken Open Book Assessment"
+      override val studentFriendlyLabel: String = "Open book (spoken)"
       override val validDurations: Seq[Long] = Seq(120, 180)
     }
 
     case object MultipleChoice extends AssessmentType {
-      val label = "MCQ"
+      override val label: String = "MCQ"
+      override val studentFriendlyLabel: String = "Multiple choice"
       override val validDurations: Seq[Long] = Seq(120, 180)
     }
 
     case object Bespoke extends AssessmentType {
-      val label = "Bespoke Option (only if previously agreed)"
+      override val label: String = "Bespoke Option (only if previously agreed)"
+      override val studentFriendlyLabel: String = "Custom (see assessment brief)"
       override val validDurations: Seq[Long] = Nil
     }
 

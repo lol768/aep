@@ -1,19 +1,14 @@
 # --- !Ups
 
-alter table student_assessment
-    add column occurrence varchar,
-    add column academic_year integer;
-
-alter table student_assessment_version
-    add column occurrence varchar,
-    add column academic_year integer;
+alter table assessment_client_network_activity alter column student_assessment_id drop not null;
+alter table assessment_client_network_activity add column assessment_id uuid;
+alter table assessment_client_network_activity add column usercode varchar;
+create index idx_assessment_client_network_activity_assessment on assessment_client_network_activity (assessment_id);
 
 # --- !Downs
 
-alter table student_assessment
-    drop column occurrence,
-    drop column academic_year;
-
-alter table student_assessment_version
-    drop column occurrence,
-    drop column academic_year;
+drop index idx_assessment_client_network_activity_assessment;
+alter table assessment_client_network_activity drop column usercode;
+alter table assessment_client_network_activity drop column assessment_id;
+delete from assessment_client_network_activity where student_assessment_id is null;
+alter table assessment_client_network_activity alter column student_assessment_id set not null;

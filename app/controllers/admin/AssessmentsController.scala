@@ -44,7 +44,7 @@ object AssessmentsController {
                   .transform[Option[LocalDateTime]](Option.apply, _.get)
 
     def studentsFieldMapping(implicit studentInformationService: TabulaStudentInformationService, ec: ExecutionContext, t: TimingContext): Mapping[Set[UniversityID]] =
-      text.transform[Set[UniversityID]](_.linesIterator.filter(_.hasText).toSet.map(UniversityID.apply), _.map(_.string).toSeq.sorted.mkString("\n"))
+      text.transform[Set[UniversityID]](_.split("\\s+").filter(_.hasText).toSet.map(UniversityID.apply), _.map(_.string).toSeq.sorted.mkString("\n"))
           .verifying(Constraint { universityIDs: Set[UniversityID] =>
             Await.result(studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs.toSeq)), scala.concurrent.duration.Duration.Inf) // Rely on HTTP timeout
               .fold(
@@ -165,6 +165,7 @@ object AssessmentsController {
         .verifying(platformConstraint)
         .verifying("error.assessment.description.required", _.description.exists(_.hasText))
         .verifying("error.assessment.invigilators.required", _.invigilators.nonEmpty)
+        .verifying("error.assessment.students.required", data => existing.exists(_.tabulaAssessmentId.nonEmpty) || data.students.nonEmpty)
       else baseMapping
     )
   }
@@ -480,5 +481,4 @@ class AssessmentsController @Inject()(
       }
     }
   }
-
 }

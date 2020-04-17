@@ -179,12 +179,14 @@ class AssessmentTables @Inject()(
     def effectiveType = column[Option[String]]("effective_type")
     def rtt = column[Option[Int]]("rtt")
     def `type` = column[Option[String]]("type")
-    def studentAssessmentId = column[UUID]("student_assessment_id")
+    def studentAssessmentId = column[Option[UUID]]("student_assessment_id")
+    def assessmentId = column[Option[UUID]]("assessment_id")
+    def usercode = column[Option[Usercode]]("usercode")
     def localTimezoneName = column[Option[LenientZoneId]]("local_timezone_name")
     def timestamp = column[OffsetDateTime]("timestamp_utc")
 
     def * = {
-      (downlink, downlinkMax, effectiveType, rtt, `type`, studentAssessmentId, localTimezoneName, timestamp).mapTo[AssessmentClientNetworkActivity]
+      (downlink, downlinkMax, effectiveType, rtt, `type`, studentAssessmentId, assessmentId, usercode, localTimezoneName, timestamp).mapTo[AssessmentClientNetworkActivity]
     }
   }
 
