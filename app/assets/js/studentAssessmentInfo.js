@@ -1,4 +1,5 @@
 import Tablesort from 'tablesort';
+import * as log from './log';
 
 const INTERVAL_MS = 30 * 1000;
 
@@ -30,8 +31,11 @@ const refreshTable = () => setTimeout(() => {
         descending: sortDirection === 'descending',
       });
       sort.refresh();
+      refreshTable();
+    }).catch((e) => {
+      log.info('Failed to update student assessment information from server. Re-scheduling', e);
+      refreshTable();
     });
-  refreshTable();
 }, INTERVAL_MS);
 
 refreshTable();
