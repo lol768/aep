@@ -9,6 +9,7 @@ import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAss
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
 import warwick.sso.{UniversityID, Usercode}
@@ -20,6 +21,8 @@ object StudentAssessmentsTables {
   case class StoredStudentAssessment(
     id: UUID,
     assessmentId: UUID,
+    occurrence: Option[String],
+    academicYear: Option[AcademicYear],
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
@@ -33,6 +36,8 @@ object StudentAssessmentsTables {
       StudentAssessment(
         id,
         assessmentId,
+        occurrence,
+        academicYear,
         studentId,
         inSeat,
         startTime,
@@ -47,6 +52,8 @@ object StudentAssessmentsTables {
       StoredStudentAssessmentVersion(
         id,
         assessmentId,
+        occurrence: Option[String],
+        academicYear: Option[AcademicYear],
         studentId,
         inSeat,
         startTime,
@@ -64,6 +71,8 @@ object StudentAssessmentsTables {
   case class StoredStudentAssessmentVersion(
     id: UUID,
     assessmentId: UUID,
+    occurrence: Option[String],
+    academicYear: Option[AcademicYear],
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],

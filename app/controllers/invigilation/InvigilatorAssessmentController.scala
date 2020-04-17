@@ -43,8 +43,9 @@ class InvigilatorAssessmentController @Inject()(
       tabulaDepartmentService.getDepartments,
       reportingService.expectedSittings(assessmentId),
       messageService.findByAssessment(assessmentId),
+      networkActivityService.getLatestInvigilatorActivityFor(assessmentId)
     ).successFlatMap {
-      case (departments, studentAssessments, queries) =>
+      case (departments, studentAssessments, queries, invigilatorActivity) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId))),
           networkActivityService.getLatestActivityFor(studentAssessments.map(_.id))
@@ -56,6 +57,7 @@ class InvigilatorAssessmentController @Inject()(
                   (profile.lastName, profile.firstName, profile.universityID.string)
                 )
               ),
+              invigilatorActivities = invigilatorActivity.map(a => a.usercode.get -> a).toMap,
               invigilators = userLookup
                 .getUsers(assessment.invigilators.toSeq)
                 .getOrElse(Nil)
@@ -68,7 +70,7 @@ class InvigilatorAssessmentController @Inject()(
               department = departments.find(_.code == assessment.departmentCode.string),
               queriesFromStudents = queries.filter(_.sender == MessageSender.Client),
               studentsWithQueries = queries.map(_.client).distinct,
-              latestActivities = latestActivities,
+              latestStudentActivities = latestActivities,
             ))
           }
     }

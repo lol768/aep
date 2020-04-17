@@ -7,6 +7,7 @@ import java.util.UUID
 import domain.tabula._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.sso.{UniversityID, Usercode}
 
 object TabulaResponseParsers {
@@ -221,6 +222,7 @@ object TabulaResponseParsers {
 
   val examPaperScheduleReads: Reads[ExamPaperSchedule] = (
     (__ \ "examProfileCode").read[String] and
+    (__ \ "academicYear").read[String].map(AcademicYear.parse) and
     (__ \ "slotId").read[String] and
     (__ \ "sequence").read[String] and
     (__ \ "locationSequence").read[String] and
@@ -280,6 +282,13 @@ object TabulaResponseParsers {
     (__ \ "parentDepartment").readNullable[DepartmentIdentity](departmentIdentity)
   ) (Department.apply _)
 
+  val assignmentReads: Reads[Assignment] = (
+    (__ \ "id").read[String] and
+    (__ \ "name").read[String] and
+    (__ \ "academicYear").read[String].map(AcademicYear.parse) and
+    (__ \ "summaryUrl").read[String]
+  ) (Assignment.apply _)
+
   // A response property containing an array of assessment components
   val responseAssessmentComponentsReads: Reads[Seq[AssessmentComponent]] =
     (__ \ "assessmentComponents").read(Reads.seq(assessmentComponentReads))
@@ -289,6 +298,8 @@ object TabulaResponseParsers {
 
   val responseDepartmentReads: Reads[Seq[Department]] =
     (__ \ "departments").read(Reads.seq(departmentReads))
+
+  val responseAssignmentReads: Reads[Assignment] = (__ \ "assignment").read(assignmentReads)
 
 
   def validateAPIResponse[A](jsValue: JsValue, parser: Reads[A]): JsResult[A] = {

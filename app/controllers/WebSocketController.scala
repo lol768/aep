@@ -25,8 +25,9 @@ object WebSocketController {
     user: Usercode,
     message: String
   ) {
-    def toAnnouncement: AssessmentAnnouncement = {
-      AssessmentAnnouncement(message, JavaTime.offsetDateTime)
+    /** Just for testing as it uses an ephemeral ID */
+    def toTestAnnouncement: AssessmentAnnouncement = {
+      AssessmentAnnouncement(UUID.randomUUID.toString, message, JavaTime.offsetDateTime)
     }
   }
 
@@ -54,6 +55,7 @@ class WebSocketController @Inject()(
   studentAssessmentService: StudentAssessmentService,
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   assessmentService: AssessmentService,
+  announcementService: AnnouncementService,
 )(implicit
   mat: Materializer,
   actorSystem: ActorSystem,
@@ -74,7 +76,7 @@ class WebSocketController @Inject()(
           case Some(user) =>
             logger.info(s"WebSocket opening for ${user.usercode.string}")
             studentAssessmentService.byUniversityId(user.universityId.get)
-                .successMapTo(_.map(_.assessment.id.toString))
+                .successMapTo(_.filter(_.inProgress).map(_.assessment.id.toString))
                 .map(_.getOrElse(Nil)).zip(
                   assessmentService.listForInvigilator(Set(user.usercode))
                     .successMapTo(_.map(_.id.toString))
@@ -86,7 +88,10 @@ class WebSocketController @Inject()(
                 out = out,
                 studentAssessmentService = studentAssessmentService,
                 assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
-                additionalTopics = relatedStudentAssessmentIds.toSet ++ relatedInvigilatorAssessmentIds.toSet,
+                announcementService = announcementService,
+                additionalTopics =
+                  (relatedStudentAssessmentIds.map(id => s"studentAssessment:$id") ++
+                    relatedInvigilatorAssessmentIds.map(id => s"invigilatorAssessment:$id")).toSet
               ))
             }.map(Right.apply)
           case None =>
@@ -106,26 +111,30 @@ class WebSocketController @Inject()(
     Ok(views.html.sysadmin.broadcastTest(broadcastForm, assessmentAnnouncementForm))
   }
 
-  def sendBroadcast: Action[AnyContent] = RequireSysadmin { implicit request =>
+  def sendTestToUser: Action[AnyContent] = RequireSysadmin { implicit request =>
     broadcastForm.bindFromRequest().fold(
       _ => BadRequest,
       data => {
-        pubSub.publish(data.user.string, data.toAnnouncement)
-        Redirect(controllers.routes.WebSocketController.sendBroadcast())
+        pubSub.publish(data.user.string, data.toTestAnnouncement)
+        Redirect(controllers.routes.WebSocketController.broadcastTest())
           .flashing("success" -> Messages("flash.websocket.published"))
       }
     )
   }
 
-  def sendAnnouncement: Action[AnyContent] = RequireSysadmin { implicit request =>
+  def sendTestToAssessment: Action[AnyContent] = RequireSysadmin { implicit request =>
     assessmentAnnouncementForm.bindFromRequest().fold(
       _ => BadRequest,
       data => {
         pubSub.publish(
-          data.assessment.toString,
-          AssessmentAnnouncement(data.message, JavaTime.offsetDateTime),
+          s"invigilatorAssessment:${data.assessment.toString}",
+          AssessmentAnnouncement(UUID.randomUUID.toString, data.message, JavaTime.offsetDateTime),
         )
-        Redirect(controllers.routes.WebSocketController.sendBroadcast())
+        pubSub.publish(
+          s"studentAssessment:${data.assessment.toString}",
+          AssessmentAnnouncement(UUID.randomUUID.toString, data.message, JavaTime.offsetDateTime),
+        )
+        Redirect(controllers.routes.WebSocketController.broadcastTest())
           .flashing("success" -> Messages("flash.websocket.published"))
 
       }
