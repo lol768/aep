@@ -49,7 +49,7 @@
         </td>
         <td>
           @if(report.finalisedSittings.nonEmpty) {
-            <a href="@controllers.admin.routes.ReportingController.expected(assessment.id)">@report.finalisedSittings.length</a>
+            <a href="@controllers.admin.routes.ReportingController.finalised(assessment.id)">@report.finalisedSittings.length</a>
           } else {
             @report.finalisedSittings.length
           }

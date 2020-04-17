@@ -4,15 +4,14 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import play.twirl.api.Html
-import warwick.sso.UniversityID
+import warwick.sso.{UniversityID, Usercode}
 
 case class AnnouncementOrQuery(
-  sender: Either[String, UniversityID],
+  sender: Either[Option[Usercode], UniversityID],
   text: String,
   date: OffsetDateTime,
+  isAnnouncement: Boolean
 ) {
-  def isAnnouncement: Boolean = sender.isLeft
-
   def isQuery: Boolean = !isAnnouncement
 
   val html: Html = Html(warwick.core.views.utils.nl2br(text).body)

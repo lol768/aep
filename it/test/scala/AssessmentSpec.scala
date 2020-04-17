@@ -134,5 +134,25 @@ class AssessmentSpec extends BrowserFeatureSpec {
       Then i_should_see_the_text "Started"
       And i_should_see_the_text "View your assessment in Moodle"
     }
+
+    "be unable to see invigilators names on announcements before they start" in {
+        Given.i_am_a_student()
+        And i_have_an_online_exam_to_sit_with_an_existing_announcement(student, Fixtures.users.staff1)
+        When i_visit_the assessmentPage
+
+        screenshot("Assessment student with announcement")
+        Then i_should_see_the_text "Test announcement number one"
+        And the_page_content_should_not_contain(Fixtures.users.staff1.name.full.get)
+    }
+
+    "be unable to see invigilators names on existing announcements after they start" in {
+      Given.i_am_a_student()
+      And i_have_an_assessment_in_progress(student, Some(Fixtures.users.staff1))
+      When i_visit_the assessmentPage
+
+      screenshot("Assessment student in progress with announcement")
+      Then i_should_see_the_text "Test announcement number one"
+      And the_page_content_should_not_contain(Fixtures.users.staff1.name.full.get)
+    }
   }
 }
