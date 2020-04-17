@@ -161,6 +161,14 @@ export default class WebSocketConnection {
     }
   }
 
+  send(data) {
+    if (this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(data);
+    } else {
+      log('WebSocket is closed');
+    }
+  }
+
   sendHeartbeat() {
     if (this.dataLastReceivedAt != null
       && this.dataLastReceivedAt < Date.now() - HEARTBEAT_INTERVAL_MS) {
@@ -179,7 +187,7 @@ export default class WebSocketConnection {
       return;
     }
 
-    this.onHeartbeat.forEach((onHeartbeat) => onHeartbeat(this.ws));
+    this.onHeartbeat.forEach((onHeartbeat) => onHeartbeat(this));
     this.heartbeatTimeout = setTimeout(() => {
       this.sendHeartbeat();
     }, HEARTBEAT_INTERVAL_MS);
