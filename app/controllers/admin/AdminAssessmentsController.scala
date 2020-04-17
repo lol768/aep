@@ -446,7 +446,7 @@ class AdminAssessmentsController @Inject()(
     val assessment = request.assessment
 
     tabulaAssessmentService.generateAssignments(assessment).successMap { _ =>
-      Redirect(routes.AssessmentsController.view(assessment.id))
+      Redirect(routes.AdminAssessmentsController.view(assessment.id))
         .flashing { "success" -> Messages("flash.assessment.generatedAssignments", assessment.title) }
     }
   }
