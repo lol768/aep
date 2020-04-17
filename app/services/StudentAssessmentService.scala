@@ -347,11 +347,16 @@ class StudentAssessmentServiceImpl @Inject()(
     audit.audit(Operation.StudentAssessment.MakeDeclarations, decs.studentAssessmentId.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
       daoRunner.run(dao.getDeclarations(decs.studentAssessmentId)).flatMap { result =>
         result.map { existingDeclaration =>
-          daoRunner.run(dao.update(existingDeclaration.copy(
-            acceptsAuthorship = decs.acceptsAuthorship,
-            selfDeclaredRA = decs.selfDeclaredRA,
-            completedRA = decs.completedRA
-          )))
+          daoRunner.run(dao.update(
+            StoredDeclarations(
+              studentAssessmentId = existingDeclaration.studentAssessmentId,
+              acceptsAuthorship = decs.acceptsAuthorship,
+              selfDeclaredRA = decs.selfDeclaredRA,
+              completedRA = decs.completedRA,
+              created = existingDeclaration.created,
+              version = existingDeclaration.version
+            )
+          ))
         }.getOrElse {
           val timestamp = JavaTime.offsetDateTime
           daoRunner.run(dao.insert(StoredDeclarations(
