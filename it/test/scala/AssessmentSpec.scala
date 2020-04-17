@@ -1,9 +1,5 @@
-import java.util.UUID
-
 import domain.Fixtures
-import org.mockito.BDDMockito
 import support.BrowserFeatureSpec
-import warwick.sso.User
 
 import scala.language.postfixOps
 import scala.languageFeature.postfixOps
