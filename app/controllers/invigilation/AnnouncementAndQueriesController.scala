@@ -16,7 +16,7 @@ import services.tabula.TabulaStudentInformationService.{GetMultipleStudentInform
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AnnouncementService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.ServiceResults
-import warwick.sso.{AuthenticatedRequest, UniversityID}
+import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService}
 
 import scala.concurrent.{ExecutionContext, Future}
 object AnnouncementAndQueriesController {
@@ -38,6 +38,7 @@ class AnnouncementAndQueriesController @Inject()(
   tabulaDepartmentService: TabulaDepartmentService,
   messageService: MessageService,
   announcementService: AnnouncementService,
+  userLookupService: UserLookupService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -72,9 +73,10 @@ class AnnouncementAndQueriesController @Inject()(
     ServiceResults.zip(
       tabulaDepartmentService.getDepartments,
       messageService.findByAssessment(assessmentId),
-      announcementService.getByAssessmentId(assessmentId)
+      announcementService.getByAssessmentId(assessmentId),
+      Future.successful(ServiceResults.fromTry(userLookupService.getUsers(assessment.invigilators.toSeq))),
     ).successFlatMap {
-      case (departments, queries, announcements) =>
+      case (departments, queries, announcements, invigilators) =>
         studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = queries.map(_.client))).successMap { students =>
           val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery)).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
           Ok(views.html.invigilation.allQueries(
@@ -83,6 +85,7 @@ class AnnouncementAndQueriesController @Inject()(
             students,
             department = departments.find(_.code == assessment.departmentCode.string),
             form,
+            invigilators,
           ))
         }
     }
@@ -93,7 +96,7 @@ class AnnouncementAndQueriesController @Inject()(
     form.bindFromRequest.fold(
       errors => render(assessmentId, req.assessment, errors),
       data => {
-        announcementService.save(Announcement(assessment = req.assessment.id, text = data.message)).map( _ =>
+        announcementService.save(Announcement(assessment = req.assessment.id, sender = Some(currentUser().usercode), text = data.message)).map( _ =>
           Redirect(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessmentId))
             .flashing("success" -> Messages("flash.assessment.announcement.created"))
         )

@@ -1,19 +1,9 @@
 # --- !Ups
 
-alter table student_assessment
-    add column occurrence varchar,
-    add column academic_year integer;
-
-alter table student_assessment_version
-    add column occurrence varchar,
-    add column academic_year integer;
+alter table announcement add column sender varchar;
+alter table announcement_version add column sender varchar;
 
 # --- !Downs
 
-alter table student_assessment
-    drop column occurrence,
-    drop column academic_year;
-
-alter table student_assessment_version
-    drop column occurrence,
-    drop column academic_year;
+alter table announcement drop column sender;
+alter table announcement_version drop column sender;
