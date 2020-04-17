@@ -10,13 +10,12 @@ import domain.messaging.MessageSender
 import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
-import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.twirl.api.Html
 import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService}
-import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 import warwick.sso.{LoginContext, UniversityID, Usercode}
@@ -195,16 +194,21 @@ class WebSocketActor @Inject() (
             data => {
               val assessmentId = data.assessmentId
 
-              announcementService.getByAssessmentId(universityID, assessmentId).foreach { result =>
+              ServiceResults.zip(
+                studentAssessmentService.get(universityID, assessmentId),
+                announcementService.getByAssessmentId(universityID, assessmentId)
+              ).foreach { result =>
                 result.fold(
                   errors => log.error(s"Error fetching announcments: $errors"),
-                  announcements => announcements.foreach { announcement =>
-                    self ! AssessmentAnnouncement.from(announcement)
+                  { case (student, announcements) =>
+                    if (student.startTime.nonEmpty) {
+                      announcements.foreach { announcement =>
+                        self ! AssessmentAnnouncement.from(announcement)
+                      }
+                    }
                   }
                 )
               }
-
-
             }
           )
 
