@@ -9,7 +9,7 @@
   <div class="row">
     <div class="col-sm-4">
       <a
-      href="@controllers.admin.routes.AssessmentsController.create()"
+      href="@controllers.admin.routes.AdminAssessmentsController.create()"
       class="btn btn-block btn-brand">
         Create mock (non-SITS) assessment
       </a>
@@ -51,8 +51,8 @@
             </label>
           </td>
           <td class="text-right">
-            <a href="@controllers.admin.routes.AssessmentsController.view(assessment.id)" class="btn btn-default btn-sm">View</a>
-            <a href="@controllers.admin.routes.AssessmentsController.updateForm(assessment.id)" class="btn btn-default btn-sm">Edit</a>
+            <a href="@controllers.admin.routes.AdminAssessmentsController.view(assessment.id)" class="btn btn-default btn-sm">View</a>
+            <a href="@controllers.admin.routes.AdminAssessmentsController.updateForm(assessment.id)" class="btn btn-default btn-sm">Edit</a>
           </td>
         </tr>
       }

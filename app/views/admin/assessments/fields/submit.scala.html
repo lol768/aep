@@ -9,7 +9,7 @@
         <button type="submit" class="btn btn-primary">Update</button>
         @if(existing.get.tabulaAssessmentId.isEmpty && includeDelete) {
             @if(canBeDeleted) {
-                <a href="@controllers.admin.routes.AssessmentsController.delete(existing.get.id)" class="btn btn-danger">Delete</a>
+                <a href="@controllers.admin.routes.AdminAssessmentsController.delete(existing.get.id)" class="btn btn-danger">Delete</a>
             } else {
                 <span data-toggle="tooltip" data-placement="top" title="This assessment cannot be deleted as some students have started">
                     <button class="btn btn-danger disabled" disabled>Delete</button>
@@ -17,6 +17,6 @@
             }
         }
     }
-    <a href="@controllers.admin.routes.AssessmentsController.index()" class="btn btn-default">Cancel</a>
+    <a href="@controllers.admin.routes.AdminAssessmentsController.index()" class="btn btn-default">Cancel</a>
 }
 

@@ -54,18 +54,18 @@ GET         /admin                                                @controllers.a
 GET         /admin/assessment/announcement/add                    @controllers.admin.CreateAnnouncementController.index
 POST        /admin/assessment/announcement/add                    @controllers.admin.CreateAnnouncementController.add
 
-GET         /admin/assessments                                    @controllers.admin.AssessmentsController.index
-GET         /admin/assessments/create                             @controllers.admin.AssessmentsController.createForm
-POST        /admin/assessments/create                             @controllers.admin.AssessmentsController.create
-GET         /admin/assessments/:id                                @controllers.admin.AssessmentsController.updateForm(id: UUID)
-POST        /admin/assessments/:id                                @controllers.admin.AssessmentsController.update(id: UUID)
-GET         /admin/assessments/:id/delete                         @controllers.admin.AssessmentsController.deleteForm(id: UUID)
-POST        /admin/assessments/:id/delete                         @controllers.admin.AssessmentsController.delete(id: UUID)
-GET         /admin/assessments/:id/view                           @controllers.admin.AssessmentsController.view(id: UUID)
-POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AssessmentsController.generateAssignments(id: UUID)
+GET         /admin/assessments                                    @controllers.admin.AdminAssessmentsController.index
+GET         /admin/assessments/create                             @controllers.admin.AdminAssessmentsController.createForm
+POST        /admin/assessments/create                             @controllers.admin.AdminAssessmentsController.create
+GET         /admin/assessments/:id                                @controllers.admin.AdminAssessmentsController.updateForm(id: UUID)
+POST        /admin/assessments/:id                                @controllers.admin.AdminAssessmentsController.update(id: UUID)
+GET         /admin/assessments/:id/delete                         @controllers.admin.AdminAssessmentsController.deleteForm(id: UUID)
+POST        /admin/assessments/:id/delete                         @controllers.admin.AdminAssessmentsController.delete(id: UUID)
+GET         /admin/assessments/:id/view                           @controllers.admin.AdminAssessmentsController.view(id: UUID)
+POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AdminAssessmentsController.generateAssignments(id: UUID)
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
-GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
+GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AdminAssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
 
 GET         /admin/reporting                                      @controllers.admin.ReportingController.index
 GET         /admin/reporting/:id                                  @controllers.admin.ReportingController.assessment(id: UUID)
