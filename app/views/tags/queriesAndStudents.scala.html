@@ -15,26 +15,20 @@
   sortByHeader: Option[String] = None,
 )(implicit context: RequestContext)
 
-@sortBy(header: Option[String], value: String, default: Option[String] = None) = {
-  @if(header.nonEmpty) {
-    @if(header.get.toLowerCase==value.toLowerCase) { data-sort-default }
-  } else {
-    @if(default.nonEmpty) { @default.get }
+@if(metadata.nonEmpty) {
+  <h2>Queries</h2>
+
+  @studentsWithQueries.map { sWQ =>
+    <div class="sets-document-title-prefix" data-document-title-prefix="@if(totalQueries > 0) { (@totalQueries) }">
+      <p>
+        <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
+        <strong>@sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.</strong>
+      </p>
+      <a class="btn btn-default" href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
+        View all queries or make announcements
+      </a>
+    </div>
   }
-}
-
-<h2>Queries</h2>
-
-@studentsWithQueries.map { sWQ =>
-  <div class="sets-document-title-prefix" data-document-title-prefix="@if(totalQueries > 0) { (@totalQueries) }">
-    <p>
-      <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
-      <strong>@sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.</strong>
-    </p>
-    <a class="btn btn-default" href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
-      View all queries or make announcements
-    </a>
-  </div>
 }
 
 <h2>Students</h2>
