@@ -28,6 +28,7 @@ export default function showWSConnectivity(websocket) {
       clearInterval(showDisconnectedTimeout);
       showDisconnectedTimeout = setTimeout(() => {
         setVisibilityByClassName('ws-connected', false);
+        setVisibilityByClassName('ws-error', false);
         setVisibilityByClassName('ws-disconnected', true);
       }, CLOSE_DELAY);
     },
