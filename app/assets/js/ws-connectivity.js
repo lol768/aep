@@ -17,11 +17,10 @@ export default function showWSConnectivity(websocket) {
       clearInterval(showDisconnectedTimeout);
       setVisibilityByClassName('ws-connected', true);
       setVisibilityByClassName('ws-disconnected', false);
-      setVisibilityByClassName('ws-error', false);
     },
     onError: () => {
       setVisibilityByClassName('ws-connected', false);
-      setVisibilityByClassName('ws-error', true);
+      setVisibilityByClassName('ws-disconnected', false);
     },
     onClose: () => {
       clearInterval(showDisconnectedTimeout);
