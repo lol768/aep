@@ -1,5 +1,5 @@
 @import views.html.b3.vertical.VerticalFieldConstructor
-@import controllers.admin.AssessmentsController.AssessmentFormData
+@import controllers.admin.AdminAssessmentsController.AssessmentFormData
 @()(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 @b3.textarea(form("description"), Symbol("_label") -> "Description", Symbol("rows") -> 5, Symbol("_help") -> "This text will be visible to students before they start the assessment. It should provide guidance about the format and content of the assessment.")

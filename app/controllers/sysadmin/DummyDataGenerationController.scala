@@ -39,7 +39,7 @@ class DummyDataGenerationController @Inject()(
       val production = configuration.get[Boolean]("environment.production")
       if (production) {
         Future.successful(Redirect(
-          controllers.admin.routes.AssessmentsController.create()
+          controllers.admin.routes.AdminAssessmentsController.create()
         ).flashing("error" -> Messages("error.dataGeneration.production")))
       } else if (data.withStudentAssessments) {
         dataGenerationService.putRandomAssessmentsWithStudentAssessmentsInDatabase(data.howMany).successMap { _ =>
