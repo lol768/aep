@@ -2,13 +2,12 @@
 @import domain.Assessment
 @import system.routes.Types.Usercode
 @import domain.tabula
-@import domain.StudentAssessment
 @import domain.AssessmentClientNetworkActivity
 @import warwick.sso.UniversityID
-@import views.html.invigilation._
 @import java.util.UUID
 @import domain.SittingMetadata
 
+@import domain.messaging.Message
 @(
         assessment: Assessment,
         sittingMetadata: Seq[SittingMetadata],
@@ -16,10 +15,12 @@
         students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID],
+        queriesFromStudents: Seq[Message],
         latestActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation") {
+@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation", extraClasses = Seq("connect-ws")) {
     <div class="id7-main-content">
+        <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
         <div class="row">
             <div class="col-md-6">
                 @moduleInfo(assessment, department)
@@ -50,7 +51,7 @@
             <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
         </div>
         <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="expected">
-            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), latestActivities)
+            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestActivities)
         </div>
         @if(assessment.isDownloadAvailable) {
             <p>

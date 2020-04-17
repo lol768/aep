@@ -1,4 +1,5 @@
 import JDDT from './jddt';
+import { checkNotificationPromise } from './notifications-api';
 
 /**
  * @typedef {Object} AnnouncementResponse
@@ -7,17 +8,6 @@ import JDDT from './jddt';
  * @property {string} messageText
  * @property {string} timestamp - Formatted date string
  */
-
-function checkNotificationPromise() {
-  // https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API
-  try {
-    Notification.requestPermission().then();
-  } catch (e) {
-    return false;
-  }
-
-  return true;
-}
 
 /**
  * Separated for testing purposes - takes data and returns it as nice HTML

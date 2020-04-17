@@ -9,7 +9,7 @@ import domain.dao.{DaoRunner, MessageDao}
 import domain.messaging.{Message, MessageSave, MessageSender}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
-import services.PubSubService
+import services.{NotificationService, PubSubService}
 import services.tabula.TabulaStudentInformationService
 import services.tabula.TabulaStudentInformationService.GetStudentInformationOptions
 import slick.dbio.DBIO
@@ -28,7 +28,8 @@ class MessageService @Inject() (
   runner: DaoRunner,
   dao: MessageDao,
   pubSubService: PubSubService,
-  studentInformationService: TabulaStudentInformationService
+  studentInformationService: TabulaStudentInformationService,
+  notificationService: NotificationService
 )(implicit ec: ExecutionContext) {
 
   /** Send a message. Currently only clients may message the staff, not vice versa. */
@@ -56,6 +57,7 @@ class MessageService @Inject() (
           topic = savedMessage.assessmentId.toString,
           AssessmentMessage(savedMessage.id.toString, savedMessage.text, savedMessage.sender, clientName, savedMessage.created)
         )
+        notificationService.newMessage(savedMessage)
         ServiceResults.success(Done)
       }
   }

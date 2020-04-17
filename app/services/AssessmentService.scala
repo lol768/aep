@@ -62,6 +62,7 @@ class AssessmentServiceImpl @Inject()(
   dao: AssessmentDao,
   studentAssessmentDao: StudentAssessmentDao,
   uploadedFileService: UploadedFileService,
+  assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao
 )(implicit ec: ExecutionContext) extends AssessmentService {
 
   private def inflate(storedAssessments: Seq[AssessmentsTables.StoredAssessment])(implicit t: TimingContext) = {
@@ -121,12 +122,12 @@ class AssessmentServiceImpl @Inject()(
           val longestAdjustments = todaysAssessments.map { assessment =>
             assessment.id -> todaysStudentAssessments
               .filter(sa => sa.assessmentId == assessment.id)
-              .maxBy(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
-              .extraTimeAdjustment.getOrElse(Duration.ZERO)
+              .maxByOption(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
+              .map(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
           }.toMap
           val now = JavaTime.offsetDateTime
           ServiceResults.success {
-            todaysAssessments.filter { a => longestAdjustments.get(a.id).exists { adjustment =>
+            todaysAssessments.filter { a => longestAdjustments.get(a.id).flatten.exists { adjustment =>
               a.startTime.exists {
                 st => st
                   .plus(a.duration.getOrElse(Duration.ZERO))
@@ -300,8 +301,9 @@ class AssessmentServiceImpl @Inject()(
     auditService.audit(Operation.Assessment.DeleteAssessment, assessment.id.toString, Target.Assessment, Json.obj()) {
       daoRunner.run(for {
         stored <- dao.getById(assessment.id)
-        students <- studentAssessmentDao.getByAssessmentId(assessment.id)
-        _ <- DBIO.sequence(students.toList.map(s => studentAssessmentDao.delete(s.studentId, s.assessmentId)))
+        studentAssessments <- studentAssessmentDao.getByAssessmentId(assessment.id)
+        _ <- assessmentClientNetworkActivityDao.deleteAll(studentAssessments.map(_.id))
+        _ <- DBIO.sequence(studentAssessments.toList.map(s => studentAssessmentDao.delete(s.studentId, s.assessmentId)))
         done <- (stored match {
           case Some(a) => dao.delete(a)
           case _ => DBIO.successful(Done) // No-op

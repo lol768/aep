@@ -25,7 +25,9 @@
       <progress value="0" max="100"></progress>
     </div>
     <p class="help-block upload-error hide">
-      <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
+      <span class="text-danger"><i class="far fa-exclamation-circle"></i>
+        <span class="upload-error-text">We couldn't upload your submission. Please try again.</span>
+      </span>
     </p>
 
     @b3.free(Symbol("_class") -> "spaced-buttons") {
@@ -113,24 +115,27 @@
         </div>
       }
 
+      @if(sitting.isCurrentForStudent || sitting.assessment.duration.isEmpty && sitting.started) {
+        <div class="panel panel-default">
+          <div class="brand-stripe"></div>
+          <div class="panel-body">
+            <h2>Contact an invigilator</h2>
+            <p>
+              If you have concerns with specific parts of the assessment, you can use this form to bring it to the attention
+              of an invigilator. Invigilators cannot assist you with understanding the assessment, but can look into
+              potential errors and alert the entire cohort if necessary.
+            </p>
+            <p>
+              <a href="@controllers.routes.MessageController.showForm(sitting.assessment.id)" target="_blank" id="contactInvigilatorLink">
+                Contact an invigilator
+              </a>
+            </p>
+          </div>
+        </div>
+      }
+
       @if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
         @if(sitting.canModify()) {
-          <div class="panel panel-default">
-            <div class="brand-stripe"></div>
-            <div class="panel-body">
-              <h2>Contact an invigilator</h2>
-              <p>
-                If you have concerns with specific parts of the assessment, you can use this form to bring it to the attention
-                of an invigilator. Invigilators cannot assist you with understanding the assessment, but can look into
-                potential errors and alert the entire cohort if necessary.
-              </p>
-              <p>
-                <a href="@controllers.routes.MessageController.showForm(sitting.assessment.id)" target="_blank" id="contactInvigilatorLink">
-                  Contact an invigilator
-                </a>
-              </p>
-            </div>
-          </div>
           <div class="panel panel-default">
             <div class="brand-stripe"></div>
             <div class="panel-body">

@@ -10,6 +10,7 @@
   metadata: Seq[SittingMetadata],
   userMap: Map[UniversityID, tabula.SitsProfile],
   studentsWithQueries: Option[Seq[UniversityID]] = None,
+  totalQueries: Int = 0,
   latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
   sortByHeader: Option[String] = None,
 )(implicit context: RequestContext)
@@ -24,7 +25,7 @@
 
 @if(metadata.nonEmpty) {
   @studentsWithQueries.map { sWQ =>
-    <div class="alert alert-info sets-document-title-prefix" data-document-title-prefix="@if(sWQ.nonEmpty) { (@sWQ.length) }">
+    <div class="alert alert-info sets-document-title-prefix" data-document-title-prefix="@if(totalQueries > 0) { (@totalQueries) }">
       <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
       @sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.
       <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
@@ -36,6 +37,7 @@
     <thead>
       <tr>
         <th @sortBy(sortByHeader, "Student", Some(s"data-sort-default"))>Student</th>
+        <th @sortBy(sortByHeader, "Email address")>Email address</th>
         <th @sortBy(sortByHeader, "Department")>Department</th>
         <th @sortBy(sortByHeader, "State")>State</th>
         <th @sortBy(sortByHeader, "Start time")>Start time</th>
@@ -55,9 +57,13 @@
         <tr>
           @userMap.get(md.studentAssessment.studentId).map { profile =>
             <td>@profile.fullName <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
+            <td>@profile.warwickEmail.map { emailAddress =>
+              <a href="mailto:@emailAddress">@emailAddress</a>
+            }.getOrElse("Unknown email")</td>
             <td>@profile.department.name</td>
           }.getOrElse {
             <td>Unknown name <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
+            <td>Unknown email</td>
             <td>Unknown department</td>
           }
           <td>
