@@ -11,7 +11,7 @@ import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import play.api.libs.json.{Format, JsObject, JsString, JsValue, Json, Reads, Writes}
+import play.api.libs.json._
 import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
@@ -212,12 +212,15 @@ trait AssessmentDao {
   def getByPaper(paperCode: String, section: Option[String], examProfileCode: String): DBIO[Option[StoredAssessment]]
 
   def getToday: DBIO[Seq[StoredAssessment]]
+  def getTodayWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
 
   def isInvigilator(usercode: Usercode): DBIO[Boolean]
 
-  def getByInvigilator(usercodes: Set[Usercode]): DBIO[Seq[StoredAssessment]]
+  def getByInvigilatorWithUploadedFiles(usercodes: Set[Usercode]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
 
-  def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]]
+  def getByIdAndInvigilatorWithUploadedFiles(id: UUID, usercodes: List[Usercode]): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
+
+  def getByExamProfileCodeWithUploadedFiles(examProfileCode: String): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
 }
 
 @Singleton
@@ -296,17 +299,41 @@ class AssessmentDaoImpl @Inject()(
       .filter(_.examProfileCode === examProfileCode)
       .result.headOption
 
-  override def getToday: DBIO[Seq[StoredAssessment]] = {
+  private def getTodayQuery: Query[Assessments, StoredAssessment, Seq] = {
     val today = JavaTime.localDate.atStartOfDay(JavaTime.timeZone).toOffsetDateTime
-    assessments.table.filter(a => a.startTime >= today && a.startTime < today.plusDays(1)).result
+    assessments.table
+      .filter(a => a.startTime >= today && a.startTime < today.plusDays(1))
   }
+
+  override def getToday: DBIO[Seq[StoredAssessment]] =
+    getTodayQuery.result
+
+  override def getTodayWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
+    getTodayQuery.withUploadedFiles.result
+      .map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
 
   override def isInvigilator(usercode: Usercode): DBIO[Boolean] =
     assessments.table.filter(_.invigilators @> List(usercode.string)).exists.result
 
-  override def getByInvigilator(usercodes: Set[Usercode]): DBIO[Seq[StoredAssessment]] =
-    assessments.table.filter(_.invigilators @> usercodes.toList.map(_.string)).result
+  override def getByInvigilatorWithUploadedFiles(usercodes: Set[Usercode]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
+    assessments.table
+      .filter(_.invigilators @> usercodes.toList.map(_.string))
+      .withUploadedFiles
+      .result
+      .map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
 
-  override def getByIdAndInvigilator(id: UUID, usercodes: List[Usercode]): DBIO[Option[StoredAssessment]] =
-    assessments.table.filter(_.id === id).filter(_.invigilators @> usercodes.map(_.string)).result.headOption
+  override def getByIdAndInvigilatorWithUploadedFiles(id: UUID, usercodes: List[Usercode]): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]] =
+    assessments.table
+      .filter(_.id === id)
+      .filter(_.invigilators @> usercodes.map(_.string))
+      .withUploadedFiles
+      .result
+      .map(OneToMany.leftJoinUnordered(_).headOption)
+
+  override def getByExamProfileCodeWithUploadedFiles(examProfileCode: String): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
+    assessments.table
+      .filter(_.examProfileCode === examProfileCode)
+      .withUploadedFiles
+      .result
+      .map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
 }
