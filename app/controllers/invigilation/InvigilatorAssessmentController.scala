@@ -3,7 +3,7 @@ package controllers.invigilation
 import java.util.UUID
 
 import controllers.BaseController
-import domain.SittingMetadata
+import domain.{Assessment, SittingMetadata}
 import domain.messaging.MessageSender
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
@@ -31,13 +31,21 @@ class InvigilatorAssessmentController @Inject()(
 
   import security._
 
+  def invigilatorsAjax(assessmentId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit req =>
+    val assessment = req.assessment
+
+    networkActivityService.getLatestInvigilatorActivityFor(assessmentId).successMap { result =>
+      Ok(views.html.invigilation.invigilatorsList(assessment, lookupInvigilatorUsers(assessment), result))
+    }
+  }
+
+  def makeUserNameMap(user: User): (Usercode, String) = {
+    user.usercode -> user.name.full.getOrElse(user.usercode.string)
+  }
+
   def view(assessmentId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit req =>
 
     val assessment = req.assessment
-
-    def makeUserNameMap(user: User): (Usercode, String) = {
-      user.usercode -> user.name.full.getOrElse(user.usercode.string)
-    }
 
     ServiceResults.zip(
       tabulaDepartmentService.getDepartments,
@@ -57,15 +65,8 @@ class InvigilatorAssessmentController @Inject()(
                   (profile.lastName, profile.firstName, profile.universityID.string)
                 )
               ),
-              invigilatorActivities = invigilatorActivity.map(a => a.usercode.get -> a).toMap,
-              invigilators = userLookup
-                .getUsers(assessment.invigilators.toSeq)
-                .getOrElse(Nil)
-                .map {
-                  case (_, user) => user
-                }
-                .map(makeUserNameMap)
-                .toMap,
+              invigilatorActivities = invigilatorActivity,
+              invigilators = lookupInvigilatorUsers(assessment),
               students = students,
               department = departments.find(_.code == assessment.departmentCode.string),
               queriesFromStudents = queries.filter(_.sender == MessageSender.Client),
@@ -74,6 +75,17 @@ class InvigilatorAssessmentController @Inject()(
             ))
           }
     }
+  }
+
+  private def lookupInvigilatorUsers(assessment: Assessment) = {
+    userLookup
+      .getUsers(assessment.invigilators.toSeq)
+      .getOrElse(Nil)
+      .map {
+        case (_, user) => user
+      }
+      .map(makeUserNameMap)
+      .toMap
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>

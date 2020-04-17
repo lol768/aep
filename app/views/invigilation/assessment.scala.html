@@ -33,37 +33,7 @@
                     <div class="panel-body">
                         <details>
                             <summary class="text-muted">Invigilators</summary>
-                            <ul>
-                            @assessment.invigilators.map { usercode =>
-                                <li>
-                                    @if(invigilatorActivities.contains(usercode)) {
-                                        @invigilatorActivities.get(usercode).map { latestActivity =>
-                                            @invigilators.get(usercode).map { username =>
-                                                <span class="@if(latestActivity.isOnline){text-success}else{text-danger}"><i class="fad @if(latestActivity.isOnline){fa-wifi}else{fa-wifi-slash}"></i> @username</span>
-                                                <span class="text-muted">(@usercode.string)</span>
-                                            }.getOrElse {
-                                                <span class="@if(latestActivity.isOnline){text-success}else{text-danger}"><i class="fad @if(latestActivity.isOnline){fa-wifi}else{fa-wifi-slash}"></i> @usercode.string</span>
-                                            }
-
-                                            <ul>
-                                                <li>Last seen online @JavaTime.Relative(latestActivity.timestamp)</li>
-                                            </ul>
-                                        }
-                                    } else {
-                                         @invigilators.get(usercode).map { username =>
-                                            <span class="text-danger"><i class="fad fa-wifi-slash"></i> @username</span>
-                                            <span class="text-muted">(@usercode.string)</span>
-                                        }.getOrElse {
-                                            <span class="text-danger"><i class="fad fa-wifi-slash"></i> @usercode.string</span>
-                                        }
-
-                                        <ul>
-                                            <li>Never seen online</li>
-                                        </ul>
-                                    }
-                                </li>
-                            }
-                            </ul>
+                            @views.html.invigilation.invigilatorsList(assessment, invigilators, invigilatorActivities)
                         </details>
                     </div>
                 </div>
