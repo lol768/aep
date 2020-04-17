@@ -102,8 +102,8 @@ GET         /sysadmin                               @controllers.sysadmin.Sysadm
 GET         /sysadmin/upload-test                   @controllers.sysadmin.SysadminTestController.uploadTest()
 GET         /sysadmin/websocket-test                @controllers.WebSocketController.websocketTest()
 GET         /sysadmin/broadcast-test                @controllers.WebSocketController.broadcastTest()
-POST        /sysadmin/broadcast-test                @controllers.WebSocketController.sendBroadcast()
-POST        /sysadmin/announcement-test             @controllers.WebSocketController.sendAnnouncement()
+POST        /sysadmin/broadcast-test                @controllers.WebSocketController.sendTestToUser()
+POST        /sysadmin/announcement-test             @controllers.WebSocketController.sendTestToAssessment()
 POST        /sysadmin/upload-test/save              @controllers.sysadmin.SysadminTestController.receiveUpload()
 GET         /sysadmin/masquerade                    @controllers.sysadmin.MasqueradeController.masquerade
 GET         /sysadmin/sent-emails                   @controllers.sysadmin.ViewEmailsController.listAll(page: Int ?= 0)

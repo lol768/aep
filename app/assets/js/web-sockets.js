@@ -8,6 +8,40 @@ import { browserLocalTimezoneName } from './jddt';
 
  */
 
+/* JSDoc type hints */
+
+/**
+ * @typedef {function} PlainEventHandler
+ * @return {void}
+ */
+
+/**
+ * @typedef {function} DataEventHandler
+ * @param {object} data
+ * @return {void}
+ */
+
+/**
+ * @typedef {function} ErrorEventHandler
+ * @param {Error} error
+ * @return {void}
+ */
+
+/**
+ * @typedef {function} SocketEventHandler
+ * @param {WebSocket} socket
+ * @return {void}
+ */
+
+/**
+ * @typedef {Object} Callbacks
+ * @property {PlainEventHandler} [onConnect] - When the connection has been established.
+ * @property {ErrorEventHandler} [onError] - If there is an error with the websocket.
+ * @property {PlainEventHandler} [onClose] - If connection is closed.
+ * @property {DataEventHandler} [onData] - When JSON data is received.
+ * @property {SocketEventHandler} [onHeartbeat] - Called at regular intervals to send messages
+ */
+
 const RECONNECT_THRESHOLD = 500;
 
 // How often should the websocket send a heartbeat to the server?
@@ -52,31 +86,41 @@ const defaultHeartbeat = (ws) => {
 export default class WebSocketConnection {
   /**
    * @param {string} endpoint Endpoint URI: e.g. wss//:warwick.ac.uk/path
-   * @param {function} onConnect Callback for when the connection has been established.
-   * @param {function} onError Callback for if there is an error with the websocket.
-   * @param {function} onClose Callback for if connection is closed.
-   * @param {function} onData Callback for when JSON data is received.
-   * @param {function} onHeartbeat Function called at regular intervals to send messages to server
+   * @param {Callbacks} callbacks
    */
-  constructor(endpoint, {
-    onConnect, onError, onClose, onData, onHeartbeat,
-  } = {}) {
+  constructor(endpoint, callbacks = {}) {
     // polyfill
     if (!endpoint.includes('wss://')) {
       throw new Error(`${endpoint} doesn't look like a valid WebSocket URL`);
     }
+    const {
+      onConnect, onError, onClose, onData, onHeartbeat,
+    } = callbacks;
     this.endpoint = endpoint;
+    /** @type {PlainEventHandler[]} */
     this.onConnect = onConnect ? [onConnect] : [];
+    /** @type {ErrorEventHandler[]} */
     this.onError = onError ? [onError] : [];
+    /** @type {PlainEventHandler[]} */
     this.onClose = onClose ? [onClose] : [];
+    /** @type {DataEventHandler[]} */
     this.onData = onData ? [onData] : [];
+    /** @type {SocketEventHandler[]} */
     this.onHeartbeat = onHeartbeat ? [defaultHeartbeat, onHeartbeat] : [defaultHeartbeat];
+    /** @type {?number} */
     this.dataLastReceivedAt = null;
+    /** @type {?WebSocket} */
+    this.ws = undefined;
   }
 
-  add({
-    onConnect, onError, onClose, onData, onHeartbeat,
-  } = {}) {
+  /**
+   * @param {Callbacks} callbacks
+   */
+  add(callbacks = {}) {
+    const {
+      onConnect, onError, onClose, onData, onHeartbeat,
+    } = callbacks;
+
     if (onConnect) {
       this.onConnect.push(onConnect);
 
@@ -93,6 +137,7 @@ export default class WebSocketConnection {
     if (onData) this.onData.push(onData);
     if (onHeartbeat) this.onHeartbeat.push(onHeartbeat);
   }
+
 
   connect() {
     this.timeout = undefined;
