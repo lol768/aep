@@ -3,6 +3,7 @@ package domain
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.fileuploads.UploadedFile
 import warwick.sso.UniversityID
 
@@ -28,6 +29,8 @@ sealed trait BaseStudentAssessment {
 case class StudentAssessment(
   id: UUID,
   assessmentId: UUID,
+  occurrence: Option[String],
+  academicYear: Option[AcademicYear],
   studentId: UniversityID,
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],

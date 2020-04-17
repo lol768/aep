@@ -5,6 +5,7 @@ import warwick.core.timing.TimingContext.Category
 object TimingCategories {
   object Http extends Category(id = "HTTP", description = Some("External HTTP calls"))
   object TabulaRead extends Category(id = "TabulaRead", description = Some("Tabula HTTP reads"), inherits = Seq(Http))
+  object TabulaWrite extends Category(id = "TabulaWrite", description = Some("Tabula HTTP writes"), inherits = Seq(Http))
   object Db extends Category(id = "DB", description = Some("Database queries"))
   object ObjectStorage extends Category(id = "ObjectStorage", description = Some("Object storage operations"))
   object ObjectStorageRead extends Category(id = "ObjectStorageRead", description = Some("Object storage reads"), inherits = Seq(ObjectStorage))

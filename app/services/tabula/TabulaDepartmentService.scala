@@ -65,7 +65,7 @@ class TabulaDepartmentServiceImpl @Inject()(
 
     implicit def l: Logger = logger
 
-    doGet(url, req, description = "getDepartments").successFlatMapTo { jsValue =>
+    doRequest(url, "GET", req, description = "getDepartments").successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.responseDepartmentReads)
     }
   }

@@ -30,4 +30,7 @@ class TabulaConfiguration @Inject() (c: Configuration) {
   def getProfileUrl(universityID: UniversityID): String =
     s"$rootUrl/profiles/view/${universityID.string}"
 
+  def getCreateAssignmentUrl(moduleCode: String): String =
+    s"$rootUrl/api/v1/module/$moduleCode/assignments"
+
 }
