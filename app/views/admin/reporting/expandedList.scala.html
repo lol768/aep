@@ -8,11 +8,7 @@
 @frontend(assessment.title) {
   @assessmentMetadata(assessment)
 
-  <h2>@title</h2>
-  <div class="alert alert-info">
-      <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
-  </div>
   <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="@route">
-    @studentAssessmentInfo(metadata, userMap, Some(studentsWithQueries))
+    @queriesAndStudents(metadata, userMap, Some(studentsWithQueries))
   </div>
 }

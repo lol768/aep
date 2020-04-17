@@ -1,0 +1,45 @@
+@import java.util.UUID
+
+@import domain.{AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import helpers.LenientTimezoneNameParsing._
+@import org.apache.commons.lang3.time.DurationFormatUtils
+@import tags._
+@import warwick.sso.UniversityID
+
+@(
+  metadata: Seq[SittingMetadata],
+  userMap: Map[UniversityID, tabula.SitsProfile],
+  studentsWithQueries: Option[Seq[UniversityID]] = None,
+  totalQueries: Int = 0,
+  latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
+  sortByHeader: Option[String] = None,
+)(implicit context: RequestContext)
+
+@sortBy(header: Option[String], value: String, default: Option[String] = None) = {
+  @if(header.nonEmpty) {
+    @if(header.get.toLowerCase==value.toLowerCase) { data-sort-default }
+  } else {
+    @if(default.nonEmpty) { @default.get }
+  }
+}
+
+<h2>Queries</h2>
+
+@studentsWithQueries.map { sWQ =>
+  <div class="sets-document-title-prefix" data-document-title-prefix="@if(totalQueries > 0) { (@totalQueries) }">
+    <p>
+      <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
+      <strong>@sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.</strong>
+    </p>
+    <a class="btn btn-default" href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
+      View all queries or make announcements
+    </a>
+  </div>
+}
+
+<h2>Students</h2>
+<div class="alert alert-info">
+  <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
+</div>
+
+@studentAssessmentInfo(metadata, userMap, studentsWithQueries, totalQueries, latestActivities, sortByHeader)
