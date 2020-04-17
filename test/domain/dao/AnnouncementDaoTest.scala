@@ -7,7 +7,7 @@ import domain.Fixtures
 import domain.Fixtures.{announcements, assessments}
 import helpers.CleanUpDatabaseAfterEachTest
 import uk.ac.warwick.util.core.DateTimeUtils
-import warwick.sso.UniversityID
+import warwick.sso.{UniversityID, Usercode}
 
 import scala.concurrent.Future
 import scala.util.Random
@@ -26,7 +26,8 @@ class AnnouncementDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachT
     "save and retrieve an announcement" in {
       DateTimeUtils.useMockDateTime(now, () => {
         val ass = assessments.storedAssessment()
-        val ann = announcements.storedAnnouncement(ass.id)
+        val usercode = Usercode("staff1")
+        val ann = announcements.storedAnnouncement(ass.id, usercode)
 
         val test = for {
           _ <- assDao.insert(ass)
@@ -37,6 +38,7 @@ class AnnouncementDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachT
             result.version.toInstant mustBe now
             result.assessmentId mustBe ass.id
             result.text mustBe ann.text
+            result.sender mustBe ann.sender
 
             existsAfter must contain(result)
           })
@@ -49,7 +51,7 @@ class AnnouncementDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachT
     "fetch all, and delete an announcement" in {
       DateTimeUtils.useMockDateTime(now, () => {
         val ass = assessments.storedAssessment()
-        val anns = (1 to 10).map(_ => Fixtures.announcements.storedAnnouncement(ass.id))
+        val anns = (1 to 10).map(_ => Fixtures.announcements.storedAnnouncement(ass.id, Usercode("staff1")))
         val firstId = anns(0).id
 
         execWithCommit(assDao.insert(ass) andThen DBIO.sequence(anns.map(dao.insert)))
@@ -75,7 +77,7 @@ class AnnouncementDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachT
 
         val anns = (1 to 10).map(i => {
           val assId = if (i < 6) ass1.id else ass2.id
-          Fixtures.announcements.storedAnnouncement(assId)
+          Fixtures.announcements.storedAnnouncement(assId, Usercode("staff1"))
         })
 
         execWithCommit(

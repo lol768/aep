@@ -46,7 +46,7 @@ class CreateAnnouncementController @Inject()(
       errors => renderForm(errors),
       data => {
         assessmentService.getByIdForInvigilator(data.assessmentId, List(currentUser().usercode)).successFlatMap { assessment =>
-          announcementService.save(Announcement(assessment = assessment.id, text = data.message)).map( _ =>
+          announcementService.save(Announcement(assessment = assessment.id, sender = Some(currentUser().usercode), text = data.message)).map( _ =>
             Redirect(controllers.admin.routes.CreateAnnouncementController.index)
               .flashing("success" -> Messages("flash.assessment.announcement.created"))
           )

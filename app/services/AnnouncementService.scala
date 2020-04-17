@@ -17,6 +17,7 @@ import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
+import warwick.sso.UserLookupService
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -36,22 +37,36 @@ class AnnouncementServiceImpl @Inject()(
   dao: AnnouncementDao,
   pubSubService: PubSubService,
   notificationService: NotificationService,
+  userLookupService: UserLookupService,
 )(implicit ec: ExecutionContext) extends AnnouncementService {
 
   override def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]] =
     auditService.audit(Operation.Assessment.MakeAnnouncement, announcement.assessment.toString, Target.Assessment, Json.obj("text" -> announcement.text)) {
       val stored = StoredAnnouncement(
         id = announcement.id,
+        sender = announcement.sender,
         assessmentId = announcement.assessment,
         text = announcement.text,
         created = announcement.created,
         version = OffsetDateTime.now()
       )
 
+      // publish announcement to students
       pubSubService.publish(
-        topic = announcement.assessment.toString,
+        topic = s"studentAssessment:${announcement.assessment.toString}",
         AssessmentAnnouncement.from(announcement)
       )
+
+      // publish announcement to invigilators
+      announcement.sender.foreach { sender =>
+        userLookupService.getUsers(Seq(sender)).toOption.flatMap(userMap => userMap.headOption.map(_._2)).foreach { user =>
+          val name = user.name.full.map(name => s"${name}: ").getOrElse("")
+          pubSubService.publish(
+            topic = s"invigilatorAssessment:${announcement.assessment.toString}",
+            AssessmentAnnouncement(announcement.id.toString, s"${name}${announcement.text.trim}", announcement.created)
+          )
+        }
+      }
 
       // Intentionally fire-and-forget to send the announcement via My Warwick as well
       notificationService.newAnnouncement(announcement)

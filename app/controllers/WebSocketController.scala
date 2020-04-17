@@ -89,7 +89,9 @@ class WebSocketController @Inject()(
                 studentAssessmentService = studentAssessmentService,
                 assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
                 announcementService = announcementService,
-                additionalTopics = relatedStudentAssessmentIds.toSet ++ relatedInvigilatorAssessmentIds.toSet,
+                additionalTopics =
+                  (relatedStudentAssessmentIds.map(id => s"studentAssessment:$id") ++
+                    relatedInvigilatorAssessmentIds.map(id => s"invigilatorAssessment:$id")).toSet
               ))
             }.map(Right.apply)
           case None =>
@@ -125,7 +127,11 @@ class WebSocketController @Inject()(
       _ => BadRequest,
       data => {
         pubSub.publish(
-          data.assessment.toString,
+          s"invigilatorAssessment:${data.assessment.toString}",
+          AssessmentAnnouncement(UUID.randomUUID.toString, data.message, JavaTime.offsetDateTime),
+        )
+        pubSub.publish(
+          s"studentAssessment:${data.assessment.toString}",
           AssessmentAnnouncement(UUID.randomUUID.toString, data.message, JavaTime.offsetDateTime),
         )
         Redirect(controllers.routes.WebSocketController.broadcastTest())
