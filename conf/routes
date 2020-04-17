@@ -88,6 +88,7 @@ GET         /admin/student-activity/filter                        @controllers.a
 
 GET         /invigilation                                         @controllers.invigilation.InvigilatorListController.list()
 GET         /invigilation/assessment/:id                          @controllers.invigilation.InvigilatorAssessmentController.view(id: UUID)
+GET         /invigilation/assessment/:id/invigilators             @controllers.invigilation.InvigilatorAssessmentController.invigilatorsAjax(id: UUID)
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /invigilation/assessment/:id/files/:fileId            @controllers.invigilation.InvigilatorAssessmentController.getFile(id: UUID, fileId: UUID)
