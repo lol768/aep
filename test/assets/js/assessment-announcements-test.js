@@ -12,12 +12,13 @@ describe('Assessment Announcements', () => {
 
   it('should nicely format a simple message provided by the websocket', () => {
     const messageData = {
+      id: '1234',
       messageText: "This is the captain of your ship, \n Colin...",
       messageHTML: "This is the captain of your ship, <br> Colin...",
       timestamp: 1586850896285
     };
 
-    const expectedFormat = '<div class="alert alert-info media"><div class="media-left"><i aria-hidden="true" class="fad fa-bullhorn"></i></div><div class="media-body">This is the captain of your ship, <br> Colin...<div class="query-time">1586850896285</div></div></div>'
+    const expectedFormat = '<div class="alert alert-info media" data-announcement-id="1234"><div class="media-left"><i aria-hidden="true" class="fad fa-bullhorn"></i></div><div class="media-body">This is the captain of your ship, <br> Colin...<div class="query-time">1586850896285</div></div></div>'
     const formattedMessage = formatAnnouncement(messageData);
     expect(formattedMessage.outerHTML).equals(expectedFormat);
   });
