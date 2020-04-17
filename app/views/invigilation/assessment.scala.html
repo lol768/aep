@@ -6,6 +6,7 @@
 @import warwick.sso.UniversityID
 @import java.util.UUID
 @import domain.SittingMetadata
+@import warwick.core.helpers.JavaTime
 
 @import domain.messaging.Message
 @(
@@ -35,10 +36,31 @@
                             <ul>
                             @assessment.invigilators.map { usercode =>
                                 <li>
-                                    @invigilators.get(usercode).map { username =>
-                                    <span>@username</span>
-                                    <span class="text-muted">(@usercode.string)</span>
-                                    }.getOrElse(usercode.string)
+                                    @if(invigilatorActivities.contains(usercode)) {
+                                        @invigilatorActivities.get(usercode).map { latestActivity =>
+                                            @invigilators.get(usercode).map { username =>
+                                                <span class="@if(latestActivity.isOnline){text-success}else{text-danger}"><i class="fad @if(latestActivity.isOnline){fa-wifi}else{fa-wifi-slash}"></i> @username</span>
+                                                <span class="text-muted">(@usercode.string)</span>
+                                            }.getOrElse {
+                                                <span class="@if(latestActivity.isOnline){text-success}else{text-danger}"><i class="fad @if(latestActivity.isOnline){fa-wifi}else{fa-wifi-slash}"></i> @usercode.string</span>
+                                            }
+
+                                            <ul>
+                                                <li>Last seen online @JavaTime.Relative(latestActivity.timestamp)</li>
+                                            </ul>
+                                        }
+                                    } else {
+                                         @invigilators.get(usercode).map { username =>
+                                            <span class="text-danger"><i class="fad fa-wifi-slash"></i> @username</span>
+                                            <span class="text-muted">(@usercode.string)</span>
+                                        }.getOrElse {
+                                            <span class="text-danger"><i class="fad fa-wifi-slash"></i> @usercode.string</span>
+                                        }
+
+                                        <ul>
+                                            <li>Never seen online</li>
+                                        </ul>
+                                    }
                                 </li>
                             }
                             </ul>
