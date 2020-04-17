@@ -35,11 +35,11 @@ class AnnouncementServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterE
       service.save(announcement)
       // students
       verify(mockPubSubService).publish(s"studentAssessment:${announcement.assessment}",
-        AssessmentAnnouncement(announcement.text, announcement.created))
+        AssessmentAnnouncement.from(announcement))
 
       // invigilators
       verify(mockPubSubService).publish(s"invigilatorAssessment:${announcement.assessment}",
-        AssessmentAnnouncement(s"${Fixtures.users.staff1.name.full.get}: ${announcement.text}", announcement.created))
+        AssessmentAnnouncement(announcement.id.toString, s"${Fixtures.users.staff1.name.full.get}: ${announcement.text}", announcement.created))
     }
   }
 }
