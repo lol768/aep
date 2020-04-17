@@ -15,7 +15,8 @@
     "mocha-bamboo-reporter": "1.1.2",
     "puppeteer": "2.1.1",
     "sinon": "9.0.0",
-    "sinon-chai": "3.5.0"
+    "sinon-chai": "3.5.0",
+    "@babel/compat-data": "7.9.0"
   },
   "dependencies": {
     "@fortawesome/fontawesome-pro": "5.12.1",
