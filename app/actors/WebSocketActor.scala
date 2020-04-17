@@ -7,13 +7,13 @@ import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
 import domain.messaging.MessageSender
-import domain.{AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
+import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.twirl.api.Html
-import services.{AssessmentClientNetworkActivityService, StudentAssessmentService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService}
 import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -31,15 +31,21 @@ object WebSocketActor {
     out: ActorRef,
     studentAssessmentService: StudentAssessmentService,
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
+    announcementService: AnnouncementService,
     additionalTopics: Set[String],
   )(implicit ec: ExecutionContext, t: TimingContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, additionalTopics))
+    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, additionalTopics))
 
-  case class AssessmentAnnouncement(messageText: String, timestamp: OffsetDateTime) {
+  case class AssessmentAnnouncement(id: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
-  case class AssessmentMessage(messageText: String, sender: MessageSender, client: String, timestamp: OffsetDateTime) {
+  object AssessmentAnnouncement {
+    def from(announcement: Announcement): AssessmentAnnouncement =
+      AssessmentAnnouncement(announcement.id.toString, announcement.text, announcement.created)
+  }
+
+  case class AssessmentMessage(id: String, messageText: String, sender: MessageSender, client: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
@@ -49,13 +55,29 @@ object WebSocketActor {
   )
   val readsClientMessage: Reads[ClientMessage] = Json.reads[ClientMessage]
 
+  object ClientMessage {
+    // For pattern matching the top ClientMessage
+    object fromJson {
+      def unapply(in: JsValue): Option[ClientMessage] = in.asOpt(readsClientMessage)
+    }
+  }
+
   val readsClientNetworkInformation: Reads[ClientNetworkInformation] = Json.reads[ClientNetworkInformation]
 
   case class RequestAssessmentTiming(
     assessmentId: UUID
   )
   object RequestAssessmentTiming {
+    val `type`: String = "RequestAssessmentTiming"
     implicit val reads: Reads[RequestAssessmentTiming] = Json.reads[RequestAssessmentTiming]
+  }
+
+  case class RequestAnnouncements(
+    assessmentId: UUID
+  )
+  object RequestAnnouncements {
+    val `type`: String = "RequestAnnouncements"
+    implicit val reads: Reads[RequestAnnouncements] = Json.reads[RequestAnnouncements]
   }
 }
 
@@ -73,12 +95,18 @@ class WebSocketActor @Inject() (
   loginContext: LoginContext,
   @Assisted studentAssessmentService: StudentAssessmentService,
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
+  @Assisted announcementService: AnnouncementService,
   additionalTopics: Set[String],
 )(implicit
   ec: ExecutionContext
 ) extends Actor with ActorLogging {
 
   import WebSocketActor._
+
+  lazy val currentUsercode: Usercode = loginContext.user.get.usercode
+  lazy val currentUniversityID: UniversityID = loginContext.user.flatMap(_.universityId).get
+
+  implicit val noTiming: TimingContext = TimingContext.none
 
   pubsubSubscribe()
 
@@ -89,14 +117,15 @@ class WebSocketActor @Inject() (
   override def receive: Receive = {
     case aa: AssessmentAnnouncement => out ! Json.obj(
       "type" -> "announcement",
+      "id" -> aa.id,
       "messageHTML" -> aa.messageHTML.body,
       "messageText" -> aa.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(aa.timestamp).toString,
-      "user" -> JsString(loginContext.user.map(u => u.usercode.string).getOrElse("Anonymous"))
     )
 
     case am: AssessmentMessage => out ! Json.obj(
       "type" -> "assessmentMessage",
+      "id" -> am.id,
       "messageHTML" -> am.messageHTML.body,
       "messageText" -> am.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(am.timestamp).toString,
@@ -107,9 +136,7 @@ class WebSocketActor @Inject() (
     case SubscribeAck(Subscribe(topic, _, _)) =>
       log.debug(s"WebSocket subscribed to PubSub messages on the topic of '$topic'")
 
-    case clientMessage: JsObject if clientMessage.validate[ClientMessage](readsClientMessage).isSuccess =>
-      val message = clientMessage.as[ClientMessage](readsClientMessage)
-
+    case ClientMessage.fromJson(message) =>
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)
@@ -141,16 +168,16 @@ class WebSocketActor @Inject() (
             "signalStrength" -> assessmentClientNetworkActivity.signalStrength
           )
 
-        case m if m.`type` == "RequestAssessmentTiming" =>
-          val universityID: UniversityID = loginContext.user.flatMap(u => u.universityId).get
-          val request: Option[RequestAssessmentTiming] = m.data.flatMap(_.validate[RequestAssessmentTiming].asOpt)
+        case m if m.`type` == RequestAssessmentTiming.`type` =>
+          val universityID: UniversityID = currentUniversityID
+          val request: Option[RequestAssessmentTiming] = m.data.flatMap(_.asOpt[RequestAssessmentTiming])
           val requestedAssessmentId: Option[UUID] = request.map(_.assessmentId)
 
           // Get single assessment or all user's assessments, depending on what was requested
           val getAssessments: Future[ServiceResult[Seq[SittingMetadata]]] = requestedAssessmentId.map { id =>
-            studentAssessmentService.getSittingsMetadata(universityID, id)(TimingContext.none).successMapTo(a => Seq(a))
+            studentAssessmentService.getSittingsMetadata(universityID, id).successMapTo(a => Seq(a))
           }.getOrElse {
-            studentAssessmentService.getSittingsMetadata(universityID)(TimingContext.none)
+            studentAssessmentService.getSittingsMetadata(universityID)
           }
 
           getAssessments.successMapTo { assessments =>
@@ -160,6 +187,27 @@ class WebSocketActor @Inject() (
               "assessments"-> assessments.map(a => Json.toJson(a.getTimingInfo))
             )
           }
+
+        case m if m.`type` == RequestAnnouncements.`type` =>
+          val universityID: UniversityID = currentUniversityID
+          m.data.getOrElse(Json.obj()).validate[RequestAnnouncements].fold(
+            invalid => log.error(s"Failed to parse RequestAnnouncements message: $invalid"),
+            data => {
+              val assessmentId = data.assessmentId
+
+              announcementService.getByAssessmentId(universityID, assessmentId).foreach { result =>
+                result.fold(
+                  errors => log.error(s"Error fetching announcments: $errors"),
+                  announcements => announcements.foreach { announcement =>
+                    self ! AssessmentAnnouncement.from(announcement)
+                  }
+                )
+              }
+
+
+            }
+          )
+
 
         case m => log.error(s"Ignoring unrecognised client message: $m")
       }

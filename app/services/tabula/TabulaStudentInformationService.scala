@@ -90,7 +90,7 @@ class TabulaStudentInformationServiceImpl @Inject() (
       )
     implicit def l: Logger = logger
 
-    doGet(url, req, description = "getStudentInformation").successFlatMapTo { jsValue =>
+    doRequest(url, "GET", req, description = "getStudentInformation").successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.TabulaProfileData.memberReads)
     }.map(_.map(_.toUserProfile))
   }

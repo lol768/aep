@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.{Duration, OffsetDateTime, ZoneId}
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import domain.Assessment.{AssessmentType, Platform, State}
@@ -13,6 +13,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json.JsValue
 import slick.lifted.ProvenShape
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.sso.{UniversityID, Usercode}
 
 @Singleton
@@ -86,6 +87,8 @@ class AssessmentTables @Inject()(
 
   trait StudentAssessmentCommonProperties { self: Table[_] =>
     def assessmentId = column[UUID]("assessment_id")
+    def occurrence = column[Option[String]]("occurrence")
+    def academicYear = column[Option[AcademicYear]]("academic_year")
     def studentId = column[UniversityID]("student_id")
     def inSeat = column[Boolean]("in_seat")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
@@ -105,7 +108,7 @@ class AssessmentTables @Inject()(
     def ck = index("ck_student_assessment", (assessmentId, studentId), unique = true)
 
     override def * : ProvenShape[StoredStudentAssessment] =
-      (id, assessmentId, studentId, inSeat, startTime, extraTimeAdjustment, finaliseTime, uploadedFiles, created, version).mapTo[StoredStudentAssessment]
+      (id, assessmentId, occurrence, academicYear, studentId, inSeat, startTime, extraTimeAdjustment, finaliseTime, uploadedFiles, created, version).mapTo[StoredStudentAssessment]
   }
 
   class StudentAssessmentVersions(tag: Tag) extends Table[StoredStudentAssessmentVersion](tag, "student_assessment_version")
@@ -117,7 +120,7 @@ class AssessmentTables @Inject()(
     def auditUser = column[Option[Usercode]]("version_user")
 
     override def * : ProvenShape[StoredStudentAssessmentVersion] =
-      (id, assessmentId, studentId, inSeat, startTime, extraTimeAdjustment, finaliseTime, uploadedFiles, created, version, operation, timestamp, auditUser).mapTo[StoredStudentAssessmentVersion]
+      (id, assessmentId, occurrence, academicYear, studentId, inSeat, startTime, extraTimeAdjustment, finaliseTime, uploadedFiles, created, version, operation, timestamp, auditUser).mapTo[StoredStudentAssessmentVersion]
     def pk = primaryKey("pk_student_assessment_version", (assessmentId, studentId, timestamp))
   }
 

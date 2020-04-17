@@ -24,20 +24,23 @@
     </div>
     <div class="col-md-6">
       @moduleBrief(assessment)
-      @if(assessment.tabulaAssignments.nonEmpty) {
-        <dl class="panel panel-default">
-          <div class="panel-body">
-            <dt>Tabula assignments</dt>
-            <dd>
-              <ul>
-                @assessment.tabulaAssignments.map { assignmentId =>
-                  <li><a href="@context.tabulaConfiguration.getAssignmentUrl(assignmentId)">@assignmentId</a></li>
-                }
-              </ul>
-            </dd>
-          </div>
-        </dl>
-      }
+      <dl class="panel panel-default">
+        <div class="panel-body">
+          <dt>Tabula assignments</dt>
+          <dd>
+            <ul>
+              @assessment.tabulaAssignments.map { assignmentId =>
+                <li><a href="@context.tabulaConfiguration.getAssignmentUrl(assignmentId)">@assignmentId</a></li>
+              }
+            </ul>
+          </dd>
+          @if(assessment.tabulaAssignments.isEmpty) {
+            @b3.vertical.formCSRF(action = controllers.admin.routes.AssessmentsController.generateAssignments(assessment.id)) { implicit vfc =>
+              <button type="submit" class="btn btn-primary">Generate assignments</button>
+            }
+          }
+        </div>
+      </dl>
       <div class="panel panel-default">
         <div class="panel-body">
           <details>

@@ -12,6 +12,7 @@ import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.{AnnouncementDao, DaoRunner}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
+import system.routes.Types.UniversityID
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.{AuditLogContext, AuditService}
@@ -25,6 +26,7 @@ trait AnnouncementService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Announcement]]
   def getByAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
+  def getByAssessmentId(student: UniversityID, id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
   def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
 }
 
@@ -52,7 +54,7 @@ class AnnouncementServiceImpl @Inject()(
       // publish announcement to students
       pubSubService.publish(
         topic = s"studentAssessment:${announcement.assessment.toString}",
-        AssessmentAnnouncement(announcement.text, announcement.created)
+        AssessmentAnnouncement.from(announcement)
       )
 
       // publish announcement to invigilators
@@ -61,7 +63,7 @@ class AnnouncementServiceImpl @Inject()(
           val name = user.name.full.map(name => s"${name}: ").getOrElse("")
           pubSubService.publish(
             topic = s"invigilatorAssessment:${announcement.assessment.toString}",
-            AssessmentAnnouncement(s"${name}${announcement.text.trim}", announcement.created)
+            AssessmentAnnouncement(announcement.id.toString, s"${name}${announcement.text.trim}", announcement.created)
           )
         }
       }
@@ -83,5 +85,8 @@ class AnnouncementServiceImpl @Inject()(
     }})
 
   override def getByAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]] =
-  daoRunner.run(dao.getByAssessmentId(id)).map(_.map(_.asAnnouncement)).map(ServiceResults.success)
+    daoRunner.run(dao.getByAssessmentId(id)).map(_.map(_.asAnnouncement)).map(ServiceResults.success)
+
+  override def getByAssessmentId(student: UniversityID, id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]] =
+    daoRunner.run(dao.getByAssessmentId(student, id)).map(_.map(_.asAnnouncement)).map(ServiceResults.success)
 }
