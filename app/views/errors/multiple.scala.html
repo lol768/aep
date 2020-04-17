@@ -17,11 +17,11 @@
     <summary class="btn btn-danger">
       Show technical details about this error
     </summary>
-    <pre class="error-stack-trace">
-    @for(error <- errors.filter(_.cause.nonEmpty)) {
-      @error.message
-      @error.cause.map { e => @views.html.errors.stacktrace(e) }
-    }
-    </pre>
+
+<pre class="error-stack-trace">@for(error <- errors.filter(_.cause.nonEmpty)) {
+@error.message
+@error.cause.map { e => @views.html.errors.stacktrace(e) }
+}
+</pre>
   </details>
 }
