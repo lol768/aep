@@ -13,6 +13,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json.JsValue
 import slick.lifted.ProvenShape
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.sso.{UniversityID, Usercode}
 
 @Singleton
@@ -87,7 +88,7 @@ class AssessmentTables @Inject()(
   trait StudentAssessmentCommonProperties { self: Table[_] =>
     def assessmentId = column[UUID]("assessment_id")
     def occurrence = column[Option[String]]("occurrence")
-    def academicYear = column[Option[Int]]("academic_year")
+    def academicYear = column[Option[AcademicYear]]("academic_year")
     def studentId = column[UniversityID]("student_id")
     def inSeat = column[Boolean]("in_seat")
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
