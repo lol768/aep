@@ -24,15 +24,6 @@
 }
 
 @if(metadata.nonEmpty) {
-  @studentsWithQueries.map { sWQ =>
-    <div class="alert alert-info sets-document-title-prefix" data-document-title-prefix="@if(totalQueries > 0) { (@totalQueries) }">
-      <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
-      @sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.
-      <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
-      View all queries.
-    </a>
-    </div>
-  }
   <table class="table table-bordered table-sortable students-taking-assessment-table">
     <thead>
       <tr>

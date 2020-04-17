@@ -69,12 +69,8 @@
                 </div>
             </div>
         </div>
-        <h2>Students</h2>
-        <div class="alert alert-info">
-            <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
-        </div>
         <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
-            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestStudentActivities)
+            @queriesAndStudents(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestStudentActivities)
         </div>
         @if(assessment.isDownloadAvailable) {
             <p>
