@@ -76,7 +76,9 @@ class AssessmentSpec extends BrowserFeatureSpec {
       Then i_should_see_the_text "The files have been uploaded to the assessment."
 
       When i_upload "night-heron-500-beautiful.jpg"
-      Then i_should_see_the_text "You uploaded at least one file, night-heron-500-beautiful.jpg, which already exists. Please delete it first."
+      eventually {
+        Then i_should_see_the_text "You uploaded at least one file, night-heron-500-beautiful.jpg, which already exists. Please delete it first."
+      }
 
       When i_delete "night-heron-500-beautiful.jpg"
       Then i_should_see_the_text "1 file has been deleted."
