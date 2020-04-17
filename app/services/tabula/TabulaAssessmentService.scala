@@ -131,7 +131,7 @@ class TabulaAssessmentServiceImpl @Inject() (
       "sequence" -> assessment.sequence
     ))
 
-    // TODO - if openEnded causes problems use assessment.lastAllowedStartTime.plusDays(1)
+    // TODO - if openEnded causes problems use assessment.lastAllowedStartTime
     // note - will may need a new create assignment API that ignores validation on close time (only supports 10-4)
 
     val isPreviousAcademicYear = academicYear != AcademicYear.forDate(JavaTime.offsetDateTime)
