@@ -3,12 +3,15 @@
 @import controllers.MessageController.MessageData
 @import domain.AnnouncementOrQuery
 @import warwick.sso.UniversityID
+@import warwick.sso.Usercode
+@import warwick.sso.User
 @import domain.tabula
 @(
     assessment: Assessment,
     messages: Seq[AnnouncementOrQuery],
     student: Map[UniversityID, tabula.SitsProfile],
     form: Form[MessageData],
+    invigilators: Map[Usercode, User] = Map.empty[Usercode, User]
 )(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
 
 @frontend(s"Log an issue for ${assessment.title}") {
@@ -45,7 +48,7 @@
         </div>
         <div class="col-sm-6">
             <h3>Issues I have logged</h3>
-            @displayAnnouncementsAndQueries(messages, student, "query")
+            @displayAnnouncementsAndQueries(messages, student, "query", invigilators)
         </div>
     </div>
 
