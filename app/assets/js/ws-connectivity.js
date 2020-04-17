@@ -21,6 +21,7 @@ export default function showWSConnectivity(websocket) {
     },
     onError: () => {
       setVisibilityByClassName('ws-connected', false);
+      setVisibilityByClassName('ws-disconnected', false);
       setVisibilityByClassName('ws-error', true);
     },
     onClose: () => {
