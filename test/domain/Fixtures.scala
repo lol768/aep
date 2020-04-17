@@ -145,13 +145,14 @@ object Fixtures {
   object announcements {
     import helpers.DateConversion._
 
-    def storedAnnouncement(assId: UUID)(implicit dataGeneration: DataGeneration): StoredAnnouncement = {
+    def storedAnnouncement(assId: UUID, usercode: Usercode)(implicit dataGeneration: DataGeneration): StoredAnnouncement = {
       import dataGeneration.random
       val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
       val text = dataGeneration.dummyWords(random.between(6,30)).trim
 
       StoredAnnouncement(
         id = UUID.randomUUID(),
+        sender = Some(usercode),
         assessmentId = assId,
         text = text,
         created = createTime.asOffsetDateTime,
