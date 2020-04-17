@@ -42,7 +42,7 @@ class NotificationServiceImpl @Inject()(
       assessmentService.get(announcement.assessment),
       studentAssessmentService.byAssessmentId(announcement.assessment),
     ).successFlatMapTo { case (assessment, students) =>
-      val universityIds = students.map(_.studentId)
+      val universityIds = students.filter(_.startTime.nonEmpty).map(_.studentId)
 
       Future.successful(ServiceResults.fromTry(userLookupService.getUsers(universityIds))).successMapTo { users =>
         val usercodes = users.values.map(_.usercode.string).toSet
