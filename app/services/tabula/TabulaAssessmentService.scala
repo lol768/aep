@@ -1,39 +1,54 @@
 package services.tabula
 
+import java.io.{ByteArrayOutputStream, InputStream}
+import java.time.Duration
 import java.util.UUID
 
-import domain.{Assessment, tabula}
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+import play.api.mvc.MultipartFormData.FilePart
+import com.google.common.io.ByteSource
 import com.google.inject.ImplementedBy
+import com.google.inject.name.Named
+import domain.tabula.Assignment
+import domain.{Assessment, StudentAssessment, tabula}
 import helpers.{TrustedAppsHelper, WSRequestUriBuilder}
 import javax.inject.{Inject, Singleton}
+import play.api.Logger
 import play.api.cache.AsyncCacheApi
 import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSRequest}
+import play.api.mvc.MultipartFormData.FilePart
+import services.tabula.TabulaAssessmentService._
+import services.{AssessmentService, StudentAssessmentService, UploadedFileService}
 import system.TimingCategories
 import uk.ac.warwick.sso.client.trusted.{TrustedApplicationUtils, TrustedApplicationsManager}
-import warwick.core.helpers.ServiceResults.{ServiceError, ServiceResult}
-import warwick.core.timing.{TimingContext, TimingService}
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.caching._
 import warwick.core.Logging
+import warwick.core.helpers.ServiceResults.Implicits._
+import warwick.core.helpers.ServiceResults.{ServiceError, ServiceResult}
 import warwick.core.helpers.{JavaTime, ServiceResults}
+import warwick.core.system.AuditLogContext
+import warwick.core.timing.{TimingContext, TimingService}
+import warwick.fileuploads.UploadedFile
+import warwick.objectstore.ObjectStorageService
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import ServiceResults.Implicits._
-import com.google.inject.name.Named
-import TabulaAssessmentService._
-import domain.tabula.Assignment
-import play.api.Logger
-import services.{AssessmentService, StudentAssessmentService}
-import uk.ac.warwick.util.termdates.AcademicYear
-import warwick.core.system.AuditLogContext
+import scala.jdk.CollectionConverters._
+import scala.sys.process.ProcessBuilder.Source
 
 @ImplementedBy(classOf[CachingTabulaAssessmentService])
 trait TabulaAssessmentService {
   def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn]
+
   def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]]
+
   def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
+
+  def generateAssignmentSubmissions(assessment: Assessment, studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
+
 }
 
 object TabulaAssessmentService {
@@ -53,9 +68,10 @@ object TabulaAssessmentService {
     academicYear: AcademicYear,
     paperCodes: Seq[String]
   )
+
 }
 
-class CachingTabulaAssessmentService @Inject() (
+class CachingTabulaAssessmentService @Inject()(
   @Named("TabulaAssessmentService-NoCache") impl: TabulaAssessmentService,
   cache: AsyncCacheApi,
   timing: TimingService,
@@ -78,10 +94,13 @@ class CachingTabulaAssessmentService @Inject() (
 
   override def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
     impl.generateAssignments(assessment)
+
+  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
+    impl.generateAssignmentSubmissions(assessment, studentAssessment)
 }
 
 @Singleton
-class TabulaAssessmentServiceImpl @Inject() (
+class TabulaAssessmentServiceImpl @Inject()(
   ws: WSClient,
   config: TabulaConfiguration,
   trustedApplicationsManager: TrustedApplicationsManager,
@@ -89,6 +108,8 @@ class TabulaAssessmentServiceImpl @Inject() (
   timing: TimingService,
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
+  uploadedFileSerive: UploadedFileService,
+  objectStorageService: ObjectStorageService
 )(implicit ec: ExecutionContext) extends TabulaAssessmentService with Logging {
 
   import tabulaHttp._
@@ -101,6 +122,7 @@ class TabulaAssessmentServiceImpl @Inject() (
         Some("inUseOnly" -> options.inUseOnly.toString),
         options.examProfileCode.map("examProfileCode" -> _),
       ).flatten: _*)
+
     implicit def l: Logger = logger
 
     doRequest(url, method = "GET", req, description = "getAssessments").successFlatMapTo { jsValue =>
@@ -114,6 +136,7 @@ class TabulaAssessmentServiceImpl @Inject() (
       .withQueryStringParameters(
         options.paperCodes.map("paperCode" -> _): _*
       )
+
     implicit def l: Logger = logger
 
     doRequest(url, method = "GET", req, description = "getAssessmentGroupMembers").successFlatMapTo { jsValue =>
@@ -168,17 +191,66 @@ class TabulaAssessmentServiceImpl @Inject() (
           createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
         }.toSeq)
       }.successFlatMapTo { assignments =>
+      val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => UUID.fromString(a.id))
+      assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
+    }
+  }
+
+
+  private def createSubmission(assessment: Assessment, studentAssessment: StudentAssessment, assignmentId: UUID): Future[ServiceResult[Assignment]] = {
+    implicit def l: Logger = logger
+    val url = config.getCreateAssignmentSubmissionUrl(assignmentId)
+
+
+    val deadline = studentAssessment.startTime.flatMap { startTime =>
+      assessment.duration.map { d =>
+        startTime.plus(d.plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO)).plus(Assessment.uploadGraceDuration))
+      }
+    }
+
+    val filePart: Seq[FilePart[ByteSource]] = studentAssessment.uploadedFiles.map { file => //file -> objectStorageService.fetch(file.id.toString)
+      val source: ByteSource = new ByteSource {
+        override def openStream(): InputStream = objectStorageService.fetch(file.id.toString).orNull
+      }
+
+      FilePart("files", file.fileName, Some(file.contentType), source, file.contentLength)
+    }
+
+    val req = ws.url(url)
+      .withHttpHeaders("Content-Type" -> "multipart/form-data")
+      .withQueryStringParameters(Seq(
+        Some("universityId" -> studentAssessment.studentId),
+        Some("submittedDate" -> studentAssessment.submissionTime.get.toString),
+        Some("submissionDeadline" -> deadline.get.toString),
+      ).flatten: _*)
+
+    doRequest(url, "POST", req, description = "createSubmission", filePart).successFlatMapTo { jsValue =>
+      parseAndValidate(jsValue, TabulaResponseParsers.responseAssignmentReads)
+    }
+  }
+
+  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
+    //TODO change this
+    timing.time(TimingCategories.TabulaWrite) {
+      studentAssessmentService.byAssessmentId(assessment.id)
+        .successFlatMapTo { students =>
+          val byYear = students.filter(_.academicYear.isDefined).groupBy(_.academicYear.get)
+          ServiceResults.futureSequence(byYear.map { case (academicYear, students) =>
+            createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
+          }.toSeq)
+        }.successFlatMapTo { assignments =>
         val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => UUID.fromString(a.id))
         assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
       }
-  }
+    }
+
 
 }
 
 /**
   * Common behaviour for Tabula HTTP API calls.
   */
-class TabulaHttp @Inject() (
+class TabulaHttp @Inject()(
   ws: WSClient,
   config: TabulaConfiguration,
   trustedApplicationsManager: TrustedApplicationsManager,
@@ -187,23 +259,31 @@ class TabulaHttp @Inject() (
   /**
     * Make a trusted request to an URL.
     *
-    * @param url Full URL
-    * @param method HTTP method
-    * @param wsRequest Request object
+    * @param url         Full URL
+    * @param method      HTTP method
+    * @param wsRequest   Request object
     * @param description Description for logging
-    * @param l Logger, for logging
+    * @param l           Logger, for logging
     * @return JsValue if request was trusted (but use parseAndValidate to check it was successful)
     */
-  def doRequest(url: String, method: String, wsRequest: WSRequest, description: String)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
+  def doRequest(url: String, method: String, wsRequest: WSRequest, description: String, filePart: Seq[FilePart[ByteSource]] = Seq.empty)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
     val trustedHeaders: Seq[(String, String)] = TrustedApplicationUtils.getRequestHeaders(
       trustedApplicationsManager.getCurrentApplication,
       config.usercode,
       WSRequestUriBuilder.buildUri(wsRequest).toString
     ).asScala.map(h => h.getName -> h.getValue).toSeq
 
-    wsRequest.addHttpHeaders(trustedHeaders: _*)
-      .execute(method)
-      .map { r =>
+    val req = wsRequest.addHttpHeaders(trustedHeaders: _*)
+    val res = if(filePart.isEmpty) {
+      req.execute(method)
+    } else {
+       req.post(
+         Source(
+           filePart ::List()
+         )
+       )
+    }
+    res .map { r =>
         try {
           Right(TrustedAppsHelper.validateResponse(url, r).json)
         } catch {
@@ -215,6 +295,8 @@ class TabulaHttp @Inject() (
 
       }
   }
+
+
 
   def parseAndValidate[A](jsValue: JsValue, reads: Reads[A])(implicit l: Logger): Future[ServiceResult[A]] = Future.successful {
     TabulaResponseParsers.validateAPIResponse(jsValue, reads).fold(

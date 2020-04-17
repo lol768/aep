@@ -33,4 +33,7 @@ class TabulaConfiguration @Inject() (c: Configuration) {
   def getCreateAssignmentUrl(moduleCode: String): String =
     s"$rootUrl/api/v1/module/$moduleCode/assignments"
 
+  def getCreateAssignmentSubmissionUrl(assignmentId: UUID): String =
+    s"$rootUrl/api/v1/private/assignments/$assignmentId"
+
 }
