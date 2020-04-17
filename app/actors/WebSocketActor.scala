@@ -48,6 +48,13 @@ object WebSocketActor {
   )
   val readsClientMessage: Reads[ClientMessage] = Json.reads[ClientMessage]
 
+  object ClientMessage {
+    object fromJson {
+      // For pattern matching
+      def unapply(in: JsValue): Option[ClientMessage] = in.asOpt(readsClientMessage)
+    }
+  }
+
   val readsClientNetworkInformation: Reads[ClientNetworkInformation] = Json.reads[ClientNetworkInformation]
 
   case class RequestAssessmentTiming(
@@ -107,9 +114,7 @@ class WebSocketActor @Inject() (
     case SubscribeAck(Subscribe(topic, _, _)) =>
       log.debug(s"WebSocket subscribed to PubSub messages on the topic of '$topic'")
 
-    case clientMessage: JsObject if clientMessage.validate[ClientMessage](readsClientMessage).isSuccess =>
-      val message = clientMessage.as[ClientMessage](readsClientMessage)
-
+    case ClientMessage.fromJson(message) =>
       message match {
         case m if m.`type` == "NetworkInformation" && m.data.exists(_.validate[ClientNetworkInformation](readsClientNetworkInformation).isSuccess) =>
           val networkInformation = m.data.get.as[ClientNetworkInformation](readsClientNetworkInformation)

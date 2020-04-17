@@ -33,11 +33,11 @@ import { browserLocalTimezoneName } from './jddt';
 
 /**
  * @typedef {Object} Callbacks
- * @property {PlainEventHandler} [onConnect] - Callback for when the connection has been established.
- * @property {ErrorEventHandler} [onError] - Callback for if there is an error with the websocket.
- * @property {PlainEventHandler} [onClose] - Callback for if connection is closed.
- * @property {DataEventHandler} [onData] - Callback for when JSON data is received.
- * @property {SocketEventHandler} [onHeartbeat] - Function called at regular intervals to send messages to server
+ * @property {PlainEventHandler} [onConnect] - When the connection has been established.
+ * @property {ErrorEventHandler} [onError] - If there is an error with the websocket.
+ * @property {PlainEventHandler} [onClose] - If connection is closed.
+ * @property {DataEventHandler} [onData] - When JSON data is received.
+ * @property {SocketEventHandler} [onHeartbeat] - Called at regular intervals to send messages
  */
 
 const RECONNECT_THRESHOLD = 500;

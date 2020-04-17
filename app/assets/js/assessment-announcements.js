@@ -58,7 +58,7 @@ export function formatAnnouncement(d) {
  */
 export default function initAnnouncements(websocket) {
   websocket.add({
-    onHeartbeat: (ws) => {
+    onHeartbeat: () => {
       // ws.send({
       //   type: 'RequestAnnouncements',
       //   assessmentId:
