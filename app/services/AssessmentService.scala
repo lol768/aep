@@ -254,16 +254,27 @@ class AssessmentServiceImpl @Inject()(
     auditService.audit(Operation.Assessment.UpdateAssessment, assessment.id.toString, Target.Assessment, Json.obj()) {
       daoRunner.run(dao.getById(assessment.id)).flatMap { storedAssessmentOption =>
         storedAssessmentOption.map { existingAssessment =>
-          daoRunner.run(dao.update(existingAssessment.copy(
-            paperCode = assessment.paperCode,
-            section = assessment.section,
-            title = assessment.title,
-            startTime = assessment.startTime,
-            duration = assessment.duration,
-            platform = assessment.platform,
-            assessmentType = assessment.assessmentType,
-            storedBrief = assessment.brief.toStoredBrief,
-          )))
+          daoRunner.run(dao.update(StoredAssessment(
+              existingAssessment.id,
+              assessment.paperCode,
+              assessment.section,
+              assessment.title,
+              assessment.startTime,
+              assessment.duration,
+              assessment.platform,
+              assessment.assessmentType,
+              assessment.brief.toStoredBrief,
+              assessment.invigilators.map(_.string).toList,
+              assessment.state,
+              assessment.tabulaAssessmentId,
+              assessment.tabulaAssignments.map(_.toString).toList,
+              assessment.examProfileCode,
+              assessment.moduleCode,
+              assessment.departmentCode,
+              assessment.sequence,
+              existingAssessment.created,
+              existingAssessment.version
+            )))
         }.getOrElse {
           val timestamp = JavaTime.offsetDateTime
           daoRunner.run(dao.insert(StoredAssessment(
