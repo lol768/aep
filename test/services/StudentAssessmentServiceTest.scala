@@ -6,6 +6,7 @@ import domain.{Fixtures, StudentAssessment}
 import domain.Fixtures.uploadedFiles.{homeOfficeStatementPDF, specialJPG}
 import domain.dao.{AbstractDaoTest, AssessmentDao, StudentAssessmentDao}
 import helpers.CleanUpDatabaseAfterEachTest
+import play.api.libs.Files.TemporaryFileCreator
 import uk.ac.warwick.util.core.DateTimeUtils
 import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
@@ -17,6 +18,7 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
     .copy(usercode = Some(Usercode("12345678")))
 
   private lazy val service = get[StudentAssessmentService]
+  private implicit lazy val temporaryFileCreator: TemporaryFileCreator = get[TemporaryFileCreator]
 
   private trait Fixture {
     private val assessmentDao = get[AssessmentDao]

@@ -1,14 +1,12 @@
 package services
 
-import java.time.ZonedDateTime
 import java.util.UUID
 
 import domain.Fixtures
 import domain.Fixtures.uploadedFiles.{homeOfficeStatementPDF, specialJPG}
 import domain.dao.{AbstractDaoTest, AssessmentDao}
 import helpers.CleanUpDatabaseAfterEachTest
-import uk.ac.warwick.util.core.DateTimeUtils
-import warwick.core.helpers.JavaTime
+import play.api.libs.Files.TemporaryFileCreator
 import warwick.core.system.AuditLogContext
 import warwick.sso.Usercode
 
@@ -18,6 +16,7 @@ class AssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterEac
     .copy(usercode = Some(Usercode("12345678")))
 
   private lazy val service = get[AssessmentService]
+  private implicit lazy val temporaryFileCreator: TemporaryFileCreator = get[TemporaryFileCreator]
 
   private trait Fixture {
     private val dao = get[AssessmentDao]
