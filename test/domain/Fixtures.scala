@@ -3,26 +3,26 @@ package domain
 import java.time._
 import java.util.UUID
 
+import com.google.common.io.Files
 import com.typesafe.config.Config
+import domain.Assessment.{AssessmentType, Platform}
+import domain.Fixtures.uploadedFiles.specialJPG.path
 import domain.dao.AnnouncementsTables.StoredAnnouncement
-import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
+import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
-import domain.Assessment.{AssessmentType, Platform}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+import play.api.libs.Files.TemporaryFileCreator
+import services.DataGenerationService
 import services.sandbox.DataGeneration
 import slick.basic.{BasicProfile, DatabaseConfig}
+import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.fileuploads.UploadedFileSave
 import warwick.sso.{Department => _, _}
-import services.DataGenerationService
-import warwick.core.helpers.JavaTime
-
-import scala.util.Random
 
 object Fixtures {
-  import warwick.core.helpers.JavaTime.{timeZone => zone}
 
   object users {
     val noUniId: User = Users.create(Usercode("nouniid"))
@@ -168,13 +168,21 @@ object Fixtures {
     object specialJPG {
       val path = "/night-heron-500-beautiful.jpg"
       val uploadedFileSave = UploadedFileSave(path, 8832L, "image/jpeg")
-      def temporaryUploadedFile = TemporaryUploadedFile("file", byteSourceResource(path), uploadedFileSave)
+      def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
+        val tempFile = temporaryFileCreator.create("night-heron-500-beautiful", ".jpg")
+        byteSourceResource(path).copyTo(Files.asByteSink(tempFile))
+        TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile.path)
+      }
     }
 
     object homeOfficeStatementPDF {
       val path = "/home-office-statement.pdf"
       val uploadedFileSave = UploadedFileSave(path, 8153L, "application/pdf")
-      def temporaryUploadedFile = TemporaryUploadedFile("file", byteSourceResource(path), uploadedFileSave)
+      def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
+        val tempFile = temporaryFileCreator.create("home-office-statement", ".pdf")
+        byteSourceResource(path).copyTo(Files.asByteSink(tempFile))
+        TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile.path)
+      }
     }
 
     def storedUploadedAssessmentFile() = {

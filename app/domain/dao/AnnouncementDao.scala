@@ -112,7 +112,7 @@ trait AnnouncementDao {
 
   def all: DBIO[Seq[StoredAnnouncement]]
   def insert(announcement: StoredAnnouncement)(implicit ac: AuditLogContext): DBIO[StoredAnnouncement]
-  def delete(id: UUID): DBIO[Int]
+  def delete(id: UUID)(implicit ac: AuditLogContext): DBIO[Int]
   def getById(id: UUID): DBIO[Option[StoredAnnouncement]]
   def getByAssessmentId(id: UUID): DBIO[Seq[StoredAnnouncement]]
   def getByAssessmentId(student: UniversityID, id: UUID): DBIO[Seq[StoredAnnouncement]]
@@ -133,8 +133,14 @@ class AnnouncementDaoImpl @Inject()(
   override def insert(announcement: StoredAnnouncement)(implicit ac: AuditLogContext): DBIO[StoredAnnouncement] =
     announcements.insert(announcement)
 
-  override def delete(id: UUID): DBIO[Int] =
-    announcements.table.filter(_.id === id).delete
+  override def delete(id: UUID)(implicit ac: AuditLogContext): DBIO[Int] =
+    for {
+      a <- announcements.table.filter(_.id === id).result.headOption
+      rows <- a match {
+        case Some(announcement) => announcements.delete(announcement).map(_ => 1)
+        case _ => DBIO.successful(0)
+      }
+    } yield rows
 
   override def getById(id: UUID): DBIO[Option[StoredAnnouncement]] =
     announcements.table.filter(_.id === id).result.headOption

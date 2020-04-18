@@ -43,9 +43,9 @@ class GenerateAssessmentZipJob @Inject()(
     val generationStarted = JavaTime.offsetDateTime
 
     studentAssessmentService.sittingsByAssessmentId(assessmentId).successFlatMapTo { sittings =>
-      // Don't try and create a zip bigger than 2gb
-      if (sittings.flatMap(_.studentAssessment.uploadedFiles).map(_.contentLength).sum > 2L * 1024 * 1024 * 1024) {
-        Future.successful(ServiceResults.error("Uploaded files sum to greater than 2gb"))
+      // Don't try and create a zip bigger than 4gb
+      if (sittings.flatMap(_.studentAssessment.uploadedFiles).map(_.contentLength).sum > 4L * 1024 * 1024 * 1024) {
+        Future.successful(ServiceResults.error("Uploaded files sum to greater than 4gb"))
       } else {
         val tempFile = temporaryFileCreator.create(assessmentId.toString, ".zip")
 

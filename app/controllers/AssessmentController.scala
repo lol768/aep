@@ -173,7 +173,7 @@ class AssessmentController @Inject()(
           }
         }
       }
-    )
+    ).map(uploadedFileControllerHelper.cleanupTemporaryFiles(_))
   }
 
   private def redirectOrReturn200(assessmentId: UUID, form: AssessmentController.UploadFilesFormData, flashMessage: (String, String)) = {
