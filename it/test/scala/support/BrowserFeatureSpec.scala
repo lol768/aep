@@ -22,6 +22,7 @@ import play.api.db.slick.DatabaseConfigProvider
 import play.api.i18n.{Langs, MessagesApi, MessagesImpl, MessagesProvider}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.Files.TemporaryFileCreator
 import play.api.mvc.{Call, Result}
 import services._
 import services.sandbox.DataGeneration
@@ -96,6 +97,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
   override val screenshotDirectory: File = new File("it/target/screenshots")
 
   implicit lazy val messagesProvider: MessagesProvider = MessagesImpl(get[Langs].availables.head, get[MessagesApi])
+  implicit lazy val temporaryFileCreator: TemporaryFileCreator = get[TemporaryFileCreator]
 
   lazy val databaseApi: DBApi = get[DBApi]
 

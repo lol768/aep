@@ -294,7 +294,7 @@ class AdminAssessmentsController @Inject()(
             controllers.admin.routes.AdminAssessmentsController.create()
           ).flashing("error" -> Messages("error.permissions.notDepartmentAdminForSelected", data.departmentCode)))
         }
-      })
+      }).map(uploadedFileControllerHelper.cleanupTemporaryFiles(_))
   }
 
   def updateForm(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
@@ -439,7 +439,7 @@ class AdminAssessmentsController @Inject()(
               "warning" -> Messages("flash.assessment.updated.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args:_*))).mkString("; "))
           }
         }
-      })
+      }).map(uploadedFileControllerHelper.cleanupTemporaryFiles(_))
   }
 
   def generateAssignments(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>

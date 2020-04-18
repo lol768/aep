@@ -136,7 +136,7 @@ class SysadminTestController @Inject()(
     val files = request.body.files.map(_.ref)
     ServiceResults.futureSequence(files.map { ref => uploadedFileService.store(ref.in, ref.metadata) }).successMap { files =>
       redirectHome.flashing("success" -> Messages("flash.files.uploaded", files.size))
-    }
+    }.map(uploadedFileControllerHelper.cleanupTemporaryFiles(_))
   }
 
   def downloadFile(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>

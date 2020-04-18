@@ -4,6 +4,7 @@ import domain.Fixtures.uploadedFiles._
 import domain.dao.AbstractDaoTest
 import helpers.CleanUpDatabaseAfterEachTest
 import helpers.FileResourceUtils._
+import play.api.libs.Files.TemporaryFileCreator
 import warwick.core.system.AuditLogContext
 import warwick.sso.Usercode
 
@@ -13,6 +14,7 @@ class UploadedFileServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterE
     .copy(usercode = Some(Usercode("12345678")))
 
   private lazy val uploadedFileService = get[UploadedFileService]
+  private implicit lazy val temporaryFileCreator: TemporaryFileCreator = get[TemporaryFileCreator]
 
   "UploadedFileService" should {
     "upload and then retrieve a file" in {
