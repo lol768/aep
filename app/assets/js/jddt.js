@@ -257,7 +257,7 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
     printDate: !sameExactDate,
 
     // These only take effect if printDate is true above
-    printYear: !sameYear,
+    printYear: sameYear ? undefined : true,
     printMonth: !sameYear || !sameMonth || isToToday,
     printDayOfMonth: !sameYear || !sameMonth || !sameDateNumber,
     printDay: !sameYear || !sameMonth || !sameDateNumber,
@@ -266,7 +266,7 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
     timezoneName,
     short,
     includeIcon: false,
-    printYear: !sameYear,
+    printYear: sameYear ? undefined : true,
   };
 
   return `${iconString} ${stringify(fromDate, fromStringifyOptions)} to ${stringify(toDate, toStringifyOptions)}`;
