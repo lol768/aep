@@ -5,6 +5,8 @@ import * as log from './log';
 /**
  * @typedef {Object} AnnouncementResponse
  * @property {string} id - Unique identifier for this announcement
+ * @property {string} assessmentId - Unique identifier for the assessment
+ * this announcement relates to
  * @property {string} messageHTML
  * @property {string} messageText
  * @property {string} timestamp - Formatted date string
@@ -46,14 +48,12 @@ export function formatAnnouncement(d) {
 
 /**
  * Separated for testing purposes - decides what to do with received data
- * @param {object} d - JSON from the web socket
+ * @param {AnnounmentResponse} d - JSON from the web socket
  * @param {string} assessmentId - UUID found in body dataset
- * @param {HTMLElement} [messageListElement] - output destination for testing purposes
+ * @param {HTMLElement} messageList - output destination
  */
-export function handleData(d, assessmentId, messageListElement) {
+export function handleData(d, assessmentId, messageList) {
   if (d.assessmentId && d.assessmentId === assessmentId) {
-    const messageList = messageListElement || document.querySelector('.message-list');
-
     if (messageList && d.type === 'announcement') {
       const existingAnnouncement = messageList.querySelector(`[data-announcement-id="${d.id}"]`);
       if (!existingAnnouncement) {
@@ -79,6 +79,7 @@ export function handleData(d, assessmentId, messageListElement) {
  */
 export default function initAnnouncements(websocket) {
   const { assessmentId } = document.body.dataset;
+  const messageList = document.querySelector('.message-list');
 
   if (!assessmentId) {
     log.error('No data-assessment-id found on body');
@@ -94,7 +95,7 @@ export default function initAnnouncements(websocket) {
         },
       }));
     },
-    onData: (d) => handleData(d, assessmentId),
+    onData: (d) => handleData(d, assessmentId, messageList),
   });
 
   const button = document.getElementById('request-notification-permission');
