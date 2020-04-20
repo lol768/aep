@@ -1,9 +1,9 @@
-package controllers.admin
+package controllers.sysadmin
 
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import controllers.admin.ViewStudentActivityController.{StudentActivityData, studentActivityForm}
+import controllers.sysadmin.ViewStudentActivityController.{StudentActivityData, studentActivityForm}
 import controllers.{BaseController, FormMappings}
 import domain.{Assessment, AssessmentClientNetworkActivity, Pagination}
 import javax.inject.{Inject, Singleton}
@@ -31,7 +31,7 @@ object ViewStudentActivityController {
 }
 
 @Singleton
-class ViewStudentActivityController  @Inject()(
+class ViewStudentActivityController @Inject()(
   security: SecurityService,
   studentAssessmentService: StudentAssessmentService,
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
@@ -68,7 +68,8 @@ class ViewStudentActivityController  @Inject()(
     page: Int = 0,
     showResults: Boolean = false
   )(implicit req: AuthenticatedRequest[_]): Future[Result] = {
-    val pagination = Pagination(total, page, controllers.admin.routes.ViewStudentActivityController.filter(), activityPerPage)
+    val pagination = Pagination(total, page, controllers.sysadmin.routes.ViewStudentActivityController.filter(), activityPerPage)
     Future.successful(Ok(views.html.admin.studentActivity.activityForm(form, pagination, assessments, results, showResults)))
   }
 }
+
