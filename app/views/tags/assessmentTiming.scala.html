@@ -1,15 +1,24 @@
 @import domain.Assessment.Platform
 @import domain.Sitting
 @import play.api.libs.json.Json
+@import tags._
+
 @(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
 @sitting.assessment.startTime.map { startTime =>
     <div class="media">
-        <div class="media-left"><i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i></div>
-        <div
-        class="media-body timing-information"
-        data-id="@sitting.assessment.id"
-        data-rendering="@Json.stringify(Json.toJson(sitting.getTimingInfo))"
-        ></div>
+        @if(sitting.assessment.platform.contains(Platform.OnlineExams) || sitting.studentAssessment.startTime.isEmpty) {
+            <div class="media-left"><i class="fad fa-fw fa-hourglass fa-hourglass-spin"></i></div>
+            <div
+            class="media-body timing-information"
+            data-id="@sitting.assessment.id"
+            data-rendering="@Json.stringify(Json.toJson(sitting.getTimingInfo))"
+            ></div>
+        } else {
+            @sitting.studentAssessment.startTime.map { studentStartTime =>
+                <div class="media-left"><i class="fad fa-fw fa-hourglass"></i></div>
+                <div class="media-body">You started this assessment on @localisedDatetime(sitting.studentAssessment.startTime.get)</div>
+            }
+        }
     </div>
 }
 
