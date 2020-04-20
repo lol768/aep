@@ -5,6 +5,7 @@ const STATUS_ERRORS = {
   413: 'One or more of your files is too large. Please compress the file or break it up into multiple files and upload separately',
   415: 'The file format of one or more of your files is not supported. You may need to convert it to a PDF',
   422: 'We couldn\'t upload your submission. Please try again.',
+  403: 'The upload failed because it looks like you might have been logged out. Do you want to refresh the page and try again?',
 };
 
 /**
@@ -55,6 +56,10 @@ export default class UploadWithProgress {
     formElement.querySelector('.upload-info').classList.add('hide'); // IE10
     formElement.querySelector('.upload-error').classList.remove('hide'); // IE10
     if (errorToDisplay && errorToDisplay !== '') {
+      /* eslint no-alert: 0 */
+      if (statusCode === 403 && window.confirm(errorToDisplay)) {
+        window.location.refresh();
+      }
       /* eslint-disable-next-line no-param-reassign */
       formElement.querySelector('.upload-error-text').innerText = errorToDisplay;
     }
