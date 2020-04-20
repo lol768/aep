@@ -12,7 +12,7 @@
 @(
         assessment: Assessment,
         sittingMetadata: Seq[SittingMetadata],
-        invigilators: Map[Usercode, String],
+        invigilators: Seq[(Usercode, String)],
         students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID],

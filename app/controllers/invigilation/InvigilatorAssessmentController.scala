@@ -78,7 +78,7 @@ class InvigilatorAssessmentController @Inject()(
     }
   }
 
-  private def lookupInvigilatorUsers(assessment: Assessment) = {
+  private def lookupInvigilatorUsers(assessment: Assessment): Seq[(Usercode, String)] = {
     val users = userLookup
       .getUsers(assessment.invigilators.toSeq)
       .getOrElse(Nil)
@@ -90,7 +90,7 @@ class InvigilatorAssessmentController @Inject()(
     val missingInvigilators = assessment.invigilators.toSeq
       .diff(usercodesWithNames.map{ case (usercode,_) => usercode})
       .map(u => u -> u.string)
-    ListMap(usercodesWithNames ++ missingInvigilators: _*)
+    usercodesWithNames ++ missingInvigilators
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>

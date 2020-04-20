@@ -7,7 +7,7 @@
 @import java.time.format.FormatStyle
 @(
         assessment: Assessment,
-        invigilators: Map[Usercode, String],
+        invigilators: Seq[(Usercode, String)],
         invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
 )(implicit request: RequestHeader, context: RequestContext)
 
@@ -27,14 +27,13 @@
           </ul>
         }
       } else {
-        @invigilators.get(usercode).map { username =>
+        @invigilators.find( _._1 == usercode).map { case (usercode, username) =>
         <span class="text-danger"><i class="fad fa-wifi-slash"></i>
           @username</span>
         <span class="text-muted">(@usercode.string)</span>
         }.getOrElse {
           <span class="text-danger"><i class="fad fa-wifi-slash"></i> @usercode.string</span>
         }
-
         <ul>
           <li>Never seen online</li>
         </ul>
