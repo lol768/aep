@@ -56,6 +56,8 @@ export default class UploadWithProgress {
     formElement.querySelector('.upload-info').classList.add('hide'); // IE10
     formElement.querySelector('.upload-error').classList.remove('hide'); // IE10
     if (errorToDisplay && errorToDisplay !== '') {
+      // We check status code zero due to CSP violation on HTTP 303 redirect
+      // which is to a non-connect-src whitelisted URI.
       /* eslint no-alert: 0 */
       const authIssue = statusCode === 403 || statusCode === 303 || statusCode === 0;
       if (authIssue && window.confirm(STATUS_ERRORS[403])) {
