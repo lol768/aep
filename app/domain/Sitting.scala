@@ -152,9 +152,7 @@ sealed trait BaseSitting {
     getProgressState map {
       case ProgressState.Late if submission == SubmissionState.OnTime => "Submitted, unfinalised"
       case ProgressState.Late if submission == SubmissionState.Late => "Submitted late, unfinalised"
-      case ProgressState.Finalised if submission == SubmissionState.OnTime => "Submitted on time, finalised late"
-      case ProgressState.Finalised if submission == SubmissionState.Late => "Submitted and finalised late"
-      case ProgressState.Finalised => "Finalised on time"
+      case ProgressState.Finalised if submission == SubmissionState.Late => "Finalised (submitted late)"
       case other => other.label
     }
 
