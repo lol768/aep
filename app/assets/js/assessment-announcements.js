@@ -65,21 +65,23 @@ export default function initAnnouncements(websocket) {
       }));
     },
     onData: (d) => {
-      const messageList = document.querySelector('.message-list');
-      if (messageList && d.type === 'announcement') {
-        const existingAnnouncement = messageList.querySelector(`[data-announcement-id="${d.id}"]`);
-        if (!existingAnnouncement) {
-          const el = formatAnnouncement(d);
-          messageList.appendChild(el);
-          JDDT.initialise(el);
+      if (d.assessmentId && d.assessmentId === assessmentId) {
+        const messageList = document.querySelector('.message-list');
+        if (messageList && d.type === 'announcement') {
+          const existingAnnouncement = messageList.querySelector(`[data-announcement-id="${d.id}"]`);
+          if (!existingAnnouncement) {
+            const el = formatAnnouncement(d);
+            messageList.appendChild(el);
+            JDDT.initialise(el);
 
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Assessment announcement', { // eslint-disable-line no-new
-              body: d.messageText,
-              requireInteraction: true,
-            });
-          } else {
-            window.alert(`New message from invigilators: \n${d.messageText}`); // eslint-disable-line no-alert
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Assessment announcement', { // eslint-disable-line no-new
+                body: d.messageText,
+                requireInteraction: true,
+              });
+            } else {
+              window.alert(`New message from invigilators: \n${d.messageText}`); // eslint-disable-line no-alert
+            }
           }
         }
       }
