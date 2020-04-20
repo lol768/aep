@@ -86,7 +86,11 @@ class InvigilatorAssessmentController @Inject()(
         case (_, user) => user
       }
       .toList.sortBy(u => (u.name.last, u.name.first))
-    ListMap(users.map(makeUserNameMap): _*)
+    val usercodesWithNames = users.map(makeUserNameMap)
+    val missingInvigilators = assessment.invigilators.toSeq
+      .diff(usercodesWithNames.map{ case (usercode,_) => usercode})
+      .map(u => u -> u.string)
+    ListMap(usercodesWithNames ++ missingInvigilators: _*)
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>
