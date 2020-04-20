@@ -85,7 +85,7 @@ class InvigilatorAssessmentController @Inject()(
       .map {
         case (_, user) => user
       }
-      .toList.sortBy(_.name.last)
+      .toList.sortBy(u => (u.name.last, u.name.first))
     ListMap(users.map(makeUserNameMap): _*)
   }
 
