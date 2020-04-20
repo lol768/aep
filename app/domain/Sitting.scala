@@ -150,8 +150,9 @@ sealed trait BaseSitting {
   def getSummaryStatusLabel: Option[String] = {
     lazy val submission = getSubmissionState
     getProgressState map {
-      case ProgressState.Late if submission == SubmissionState.OnTime => "Submitted, unfinalised"
-      case ProgressState.Late if submission == SubmissionState.Late => "Submitted late, unfinalised"
+      case ProgressState.Late if submission == SubmissionState.OnTime => "Submitted, not finalised"
+      case ProgressState.Late if submission == SubmissionState.Late => "Submitted late, not finalised"
+      case ProgressState.Finalised if submission == SubmissionState.Late => "Finalised (submitted late)"
       case other => other.label
     }
 

@@ -27,3 +27,11 @@ summary {
   font-size: 1.25rem;
   color: @text-muted;
 }
+
+.signal-loop (@i) when (@i > 0) {
+  .themed-duotone.fa-signal-@{i} {
+    --fa-secondary-color: 0.3;
+  }
+  .signal-loop(@i - 1);
+}
+.signal-loop (4);

@@ -3,12 +3,12 @@
 @import domain.Assessment
 @import domain.tabula
 @import warwick.sso.UniversityID
-@(assessment: Assessment, metadata: Seq[SittingMetadata], userMap: Map[UniversityID, tabula.SitsProfile], title: String, route: String, studentsWithQueries: Seq[UniversityID])(implicit context: RequestContext)
+@(assessment: Assessment, metadata: Seq[SittingMetadata], userMap: Map[UniversityID, tabula.SitsProfile], title: String, route: String, studentsWithQueries: Seq[UniversityID], totalQueries: Int, totalAnnouncements: Int)(implicit context: RequestContext)
 
 @frontend(assessment.title) {
   @assessmentMetadata(assessment)
 
   <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="@route">
-    @queriesAndStudents(metadata, userMap, Some(studentsWithQueries))
+    @queriesAndStudents(metadata, assessment.platform, userMap, Some(studentsWithQueries), totalQueries, totalAnnouncements)
   </div>
 }

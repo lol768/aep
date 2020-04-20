@@ -1,16 +1,18 @@
 @import java.util.UUID
 
 @import domain.{AssessmentClientNetworkActivity, SittingMetadata, tabula}
-@import helpers.LenientTimezoneNameParsing._
-@import org.apache.commons.lang3.time.DurationFormatUtils
+@import domain.Assessment.Platform
 @import tags._
 @import warwick.sso.UniversityID
+@import warwick.core.views.utils._
 
 @(
   metadata: Seq[SittingMetadata],
+  platform: Set[Platform],
   userMap: Map[UniversityID, tabula.SitsProfile],
   studentsWithQueries: Option[Seq[UniversityID]] = None,
   totalQueries: Int = 0,
+  totalAnnouncements: Int = 0,
   latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
   sortByHeader: Option[String] = None,
 )(implicit context: RequestContext)
@@ -22,10 +24,34 @@
     <div class="sets-document-title-prefix" data-document-title-prefix="@if(totalQueries > 0) { (@totalQueries) }">
       <p>
         <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
-        <strong>@sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.</strong>
+        @if(totalQueries > 0) {
+          <strong>
+            @if(totalQueries == 1) {
+              There is 1 query from 1 student.
+            } else {
+              There are @totalQueries queries from @sWQ.length @pl(sWQ.length, "student")().
+            }
+          </strong>
+        } else {
+          There are no queries.
+        }
+      </p>
+      <p>
+        <i class="fad themed-duotone fa-bullhorn mr-half"></i>
+        @if(totalAnnouncements > 0) {
+          <strong>
+            @if(totalAnnouncements == 1) {
+              There is 1 announcement.
+            } else {
+              There are @totalAnnouncements announcements.
+            }
+          </strong>
+        } else {
+          There are no announcements.
+        }
       </p>
       <a class="btn btn-default" href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
-        View all queries or make announcements
+        View all or make announcements
       </a>
     </div>
   }
@@ -36,4 +62,4 @@
   <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
 </div>
 
-@studentAssessmentInfo(metadata, userMap, studentsWithQueries, totalQueries, latestActivities, sortByHeader)
+@studentAssessmentInfo(metadata, platform, userMap, studentsWithQueries, latestActivities, sortByHeader)

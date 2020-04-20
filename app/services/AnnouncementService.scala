@@ -63,7 +63,7 @@ class AnnouncementServiceImpl @Inject()(
           val name = user.name.full.map(name => s"${name}: ").getOrElse("")
           pubSubService.publish(
             topic = s"invigilatorAssessment:${announcement.assessment.toString}",
-            AssessmentAnnouncement(announcement.id.toString, s"${name}${announcement.text.trim}", announcement.created)
+            AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, s"${name}${announcement.text.trim}", announcement.created)
           )
         }
       }

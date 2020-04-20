@@ -55,7 +55,7 @@ class MessageService @Inject() (
       .map { clientName =>
         pubSubService.publish(
           topic = savedMessage.assessmentId.toString,
-          AssessmentMessage(savedMessage.id.toString, savedMessage.text, savedMessage.sender, clientName, savedMessage.created)
+          AssessmentMessage(savedMessage.id.toString, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, clientName, savedMessage.created)
         )
         notificationService.newMessage(savedMessage)
         ServiceResults.success(Done)

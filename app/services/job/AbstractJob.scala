@@ -2,6 +2,7 @@ package services.job
 
 import java.util.Date
 
+import domain.JobKeys
 import org.quartz._
 import warwick.core.Logging
 import warwick.core.helpers.JavaTime
@@ -15,6 +16,7 @@ object JobResult {
   case object quiet extends JobResult
   case class success(summary: String) extends JobResult
   val FailedJobKeyName = "jobFailed"
+  val FailedJobErrorDetailsKeyName = "jobFailedErrorDetails"
 }
 
 @PersistJobDataAfterExecution
@@ -49,7 +51,18 @@ abstract class AbstractJob(scheduler: Scheduler) extends Job with Logging {
         throw new JobExecutionException(e)
       case e: Exception =>
         logger.error(s"Error in job: $description", e)
-        if (doFailureTracking) context.getJobDetail.getJobDataMap.put(JobResult.FailedJobKeyName, true)
+        if (doFailureTracking) {
+          val jobDetail = context.getJobDetail
+          jobDetail.getJobDataMap.put(JobResult.FailedJobKeyName, true)
+          jobDetail.getJobDataMap.put(JobResult.FailedJobErrorDetailsKeyName, e.getMessage)
+          if (!jobDetail.isDurable || Option(context.getNextFireTime).isEmpty) {
+            context.getScheduler.addJob(
+              jobDetail.getJobBuilder.withIdentity(JobKeys.toErrorJobKey(jobDetail.getKey)).build(),
+              false,
+              true
+            )
+          }
+        }
         throw new JobExecutionException(e)
     }
   }

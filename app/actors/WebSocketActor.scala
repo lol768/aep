@@ -35,16 +35,16 @@ object WebSocketActor {
   )(implicit ec: ExecutionContext, t: TimingContext): Props =
     Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, additionalTopics))
 
-  case class AssessmentAnnouncement(id: String, messageText: String, timestamp: OffsetDateTime) {
+  case class AssessmentAnnouncement(id: String, assessmentId: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
   object AssessmentAnnouncement {
     def from(announcement: Announcement): AssessmentAnnouncement =
-      AssessmentAnnouncement(announcement.id.toString, announcement.text, announcement.created)
+      AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, announcement.text, announcement.created)
   }
 
-  case class AssessmentMessage(id: String, messageText: String, sender: MessageSender, client: String, timestamp: OffsetDateTime) {
+  case class AssessmentMessage(id: String, assessmentId: String, messageText: String, sender: MessageSender, client: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
@@ -117,6 +117,7 @@ class WebSocketActor @Inject() (
     case aa: AssessmentAnnouncement => out ! Json.obj(
       "type" -> "announcement",
       "id" -> aa.id,
+      "assessmentId" -> aa.assessmentId,
       "messageHTML" -> aa.messageHTML.body,
       "messageText" -> aa.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(aa.timestamp).toString,
@@ -125,6 +126,7 @@ class WebSocketActor @Inject() (
     case am: AssessmentMessage => out ! Json.obj(
       "type" -> "assessmentMessage",
       "id" -> am.id,
+      "assessmentId" -> am.assessmentId,
       "messageHTML" -> am.messageHTML.body,
       "messageText" -> am.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(am.timestamp).toString,
@@ -142,10 +144,12 @@ class WebSocketActor @Inject() (
 
           val assessmentClientNetworkActivity =
             AssessmentClientNetworkActivity(
-              downlink = networkInformation.downlink,
-              downlinkMax = networkInformation.downlinkMax,
+              // ignore junk values over 10gbps
+              downlink = networkInformation.downlink.filter(_ <= 10000.0),
+              downlinkMax = networkInformation.downlinkMax.filter(_ <= 10000.0),
               effectiveType = networkInformation.effectiveType,
-              rtt = networkInformation.rtt,
+              // ignore some browsers that send an impossible RTT of 0ms
+              rtt = networkInformation.rtt.filter(_ > 0),
               `type` = networkInformation.`type`,
               studentAssessmentId = networkInformation.studentAssessmentId,
               assessmentId = networkInformation.assessmentId,

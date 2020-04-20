@@ -127,10 +127,15 @@ class GenerateAssessmentZipJob @Inject()(
         }
       }
     }.map { result =>
-      if (result.isLeft) {
-        logger.error(s"Errors generating zip: ${result.left.getOrElse(Nil)}")
+      result.left.foreach { errors =>
+        val message = errors.map(_.message).mkString("; ")
+        logger.error(s"Errors generating zip: $message")
+        errors.find(_.cause.nonEmpty).flatMap(_.cause).map(throwable =>
+          throw new UnsupportedOperationException(throwable)
+        ).getOrElse(
+          throw new UnsupportedOperationException(message)
+        )
       }
-
       JobResult.quiet
     }
   }

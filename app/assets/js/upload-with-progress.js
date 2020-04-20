@@ -5,6 +5,7 @@ const STATUS_ERRORS = {
   413: 'One or more of your files is too large. Please compress the file or break it up into multiple files and upload separately',
   415: 'The file format of one or more of your files is not supported. You may need to convert it to a PDF',
   422: 'We couldn\'t upload your submission. Please try again.',
+  403: 'The upload failed because it looks like you might have been logged out. Do you want to refresh the page and try again?',
 };
 
 /**
@@ -41,7 +42,7 @@ export default class UploadWithProgress {
       const parsedJson = JSON.parse(errorMessage);
       errorToDisplay = parsedJson.errors[0].message;
     } catch (e) {
-      if (contentType.indexOf('text/html') === -1) {
+      if (contentType !== null && contentType.indexOf('text/html') === -1) {
         errorToDisplay = errorMessage;
       } else if (statusCode in STATUS_ERRORS) {
         errorToDisplay = STATUS_ERRORS[statusCode];
@@ -55,6 +56,13 @@ export default class UploadWithProgress {
     formElement.querySelector('.upload-info').classList.add('hide'); // IE10
     formElement.querySelector('.upload-error').classList.remove('hide'); // IE10
     if (errorToDisplay && errorToDisplay !== '') {
+      // We check status code zero due to CSP violation on HTTP 303 redirect
+      // which is to a non-connect-src whitelisted URI.
+      /* eslint no-alert: 0 */
+      const authIssue = statusCode === 403 || statusCode === 303 || statusCode === 0;
+      if (authIssue && window.confirm(STATUS_ERRORS[403])) {
+        window.location.reload();
+      }
       /* eslint-disable-next-line no-param-reassign */
       formElement.querySelector('.upload-error-text').innerText = errorToDisplay;
     }
@@ -102,6 +110,7 @@ export default class UploadWithProgress {
         });
         // start async xhr
         xhr.open('POST', formElement.getAttribute('action'), true);
+        xhr.setRequestHeader('OnlineExams-Upload', 'true');
         xhr.send(formData);
       } catch (e) {
         // if all else fails, just submit with a normal POST

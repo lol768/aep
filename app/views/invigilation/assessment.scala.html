@@ -1,14 +1,10 @@
-@import tags._
-@import domain.Assessment
-@import system.routes.Types.Usercode
-@import domain.tabula
-@import domain.AssessmentClientNetworkActivity
-@import warwick.sso.UniversityID
 @import java.util.UUID
-@import domain.SittingMetadata
-@import warwick.core.helpers.JavaTime
 
 @import domain.messaging.Message
+@import domain.{Assessment, AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import system.routes.Types.Usercode
+@import tags._
+@import warwick.sso.UniversityID
 @(
         assessment: Assessment,
         sittingMetadata: Seq[SittingMetadata],
@@ -17,6 +13,7 @@
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID],
         queriesFromStudents: Seq[Message],
+        totalAnnouncements: Int,
         invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
         latestStudentActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
@@ -40,7 +37,7 @@
             </div>
         </div>
         <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
-            @queriesAndStudents(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestStudentActivities)
+            @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, totalAnnouncements, latestStudentActivities)
         </div>
         @if(assessment.isDownloadAvailable) {
             <p>
