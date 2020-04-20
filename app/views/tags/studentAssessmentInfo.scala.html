@@ -47,7 +47,7 @@
       @metadata.map { md =>
         <tr>
           @userMap.get(md.studentAssessment.studentId).map { profile =>
-            <td>@profile.fullName <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
+            <td data-sort="@profile.lastName, @profile.firstName">@profile.fullName <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
             <td>@profile.warwickEmail.map { emailAddress =>
               <a href="mailto:@emailAddress">@emailAddress</a>
             }.getOrElse("Unknown email")</td>
@@ -60,18 +60,28 @@
           <td>
             @md.getSummaryStatusLabel
           </td>
-          <td>
-            @md.studentAssessment.startTime.map {time =>
+          @md.studentAssessment.startTime.map {time =>
+            <td data-sort="@time.toInstant.toEpochMilli">
               @localisedDatetime(time)
-            }
-          </td>
-          <td>
-            @md.finalisedTime.map {time =>
+            </td>
+          }.getOrElse {
+            <td></td>
+          }
+          @md.finalisedTime.map {time =>
+            <td data-sort="@time.toInstant.toEpochMilli">
               @localisedDatetime(time)
-            }
-          </td>
+            </td>
+          }.getOrElse {
+            <td></td>
+          }
           @if(context.features.importStudentExtraTime) {
-            <td>@md.studentAssessment.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
+            @md.studentAssessment.extraTimeAdjustment.map { duration =>
+              <td data-sort="@duration.toMillis">
+                @DurationFormatUtils.formatDurationWords(duration.toMillis, true, true)
+              </td>
+            }.getOrElse {
+              <td></td>
+            }
           }
           <td>
             @if(md.finalised) {

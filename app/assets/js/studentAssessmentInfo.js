@@ -1,5 +1,8 @@
 import Tablesort from 'tablesort';
 import * as log from './log';
+import TablesortNumber from './tablesort.number';
+
+TablesortNumber();
 
 const INTERVAL_MS = 30 * 1000;
 
