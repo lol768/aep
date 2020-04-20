@@ -1,12 +1,14 @@
 @import java.util.UUID
 
 @import domain.{AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import domain.Assessment.Platform
 @import tags._
 @import warwick.sso.UniversityID
 @import warwick.core.views.utils._
 
 @(
   metadata: Seq[SittingMetadata],
+  platform: Set[Platform],
   userMap: Map[UniversityID, tabula.SitsProfile],
   studentsWithQueries: Option[Seq[UniversityID]] = None,
   totalQueries: Int = 0,
@@ -60,4 +62,4 @@
   <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
 </div>
 
-@studentAssessmentInfo(metadata, userMap, studentsWithQueries, latestActivities, sortByHeader)
+@studentAssessmentInfo(metadata, platform, userMap, studentsWithQueries, latestActivities, sortByHeader)
