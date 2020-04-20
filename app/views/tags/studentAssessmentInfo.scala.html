@@ -70,12 +70,14 @@
           }.getOrElse {
             <td></td>
           }
-          @md.finalisedTime.map {time =>
-            <td data-sort="@time.toInstant.toEpochMilli">
-              @localisedDatetime(time)
-            </td>
-          }.getOrElse {
-            <td></td>
+          @if(platform.contains(Platform.OnlineExams)) {
+            @md.finalisedTime.map {time =>
+              <td data-sort="@time.toInstant.toEpochMilli">
+                @localisedDatetime(time)
+              </td>
+            }.getOrElse {
+              <td></td>
+            }
           }
           @if(context.features.importStudentExtraTime) {
             @md.studentAssessment.extraTimeAdjustment.map { duration =>
