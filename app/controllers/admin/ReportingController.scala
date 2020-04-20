@@ -10,7 +10,7 @@ import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService
 import services.tabula.TabulaStudentInformationService._
-import services.{AssessmentClientNetworkActivityService, AssessmentService, ReportingService, SecurityService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, AssessmentService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.sso.{AuthenticatedRequest, UniversityID}
@@ -26,6 +26,7 @@ class ReportingController @Inject()(
   studentInformationService: TabulaStudentInformationService,
   messageService: MessageService,
   networkActivityService: AssessmentClientNetworkActivityService,
+  announcementService: AnnouncementService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -53,15 +54,16 @@ class ReportingController @Inject()(
     ServiceResults.zip(
       assessmentService.get(id),
       getSittings,
-      messageService.findByAssessment(id)
-    ).successFlatMap { case (assessment, sittings, queries) =>
+      messageService.findByAssessment(id),
+      announcementService.getByAssessmentId(id)
+    ).successFlatMap { case (assessment, sittings, queries, announcements) =>
       studentInformationService
         .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId)))
         .successMap { profiles =>
           val sorted = sittings
             .sortBy(studentAssessmentOrdering(profiles))
             .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-          Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.client).distinct))
+          Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.client).distinct, queries.count(_.sender == MessageSender.Client), announcements.length))
         }
     }
   }
@@ -70,9 +72,10 @@ class ReportingController @Inject()(
     ServiceResults.zip(
       assessmentService.get(assessmentId),
       getSittings,
-      messageService.findByAssessment(assessmentId)
+      messageService.findByAssessment(assessmentId),
+      announcementService.getByAssessmentId(assessmentId),
     ).successFlatMap {
-      case (assessment, sittings, queries) =>
+      case (assessment, sittings, queries, announcements) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId))),
           networkActivityService.getLatestActivityFor(sittings.map(_.id))
@@ -80,7 +83,7 @@ class ReportingController @Inject()(
             val sorted = sittings
               .sortBy(studentAssessmentOrdering(profiles))
               .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-            Ok(views.html.tags.queriesAndStudents(sorted, profiles, Some(queries.map(_.client).distinct), queries.count(_.sender == MessageSender.Client), latestActivities, sortByHeader))
+            Ok(views.html.tags.queriesAndStudents(sorted, profiles, Some(queries.map(_.client).distinct), queries.count(_.sender == MessageSender.Client), announcements.length, latestActivities, sortByHeader))
           }
     }
   }
