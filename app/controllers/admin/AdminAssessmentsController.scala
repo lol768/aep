@@ -18,7 +18,7 @@ import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
-import services.tabula.{TabulaAssessmentService, TabulaDepartmentService, TabulaStudentInformationService}
+import services.tabula.{TabulaAssessmentService, TabulaAssignmentService, TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -180,6 +180,7 @@ class AdminAssessmentsController @Inject()(
   departmentService: TabulaDepartmentService,
   userLookup: UserLookupService,
   tabulaAssessmentService: TabulaAssessmentService,
+  tabulaAssignmentService: TabulaAssignmentService,
   configuration: Configuration,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
@@ -323,8 +324,9 @@ class AdminAssessmentsController @Inject()(
     val assessment = request.assessment
     ServiceResults.zip(
       studentAssessmentService.byAssessmentId(assessment.id),
-      departmentService.getDepartments()
-    ).successFlatMap { case (studentAssessments, departments) =>
+      departmentService.getDepartments(),
+      tabulaAssignmentService.getByAssessment(assessment)
+    ).successFlatMap { case (studentAssessments, departments, tabulaAssignments) =>
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
@@ -336,7 +338,7 @@ class AdminAssessmentsController @Inject()(
             }
             .map(user => user.usercode -> user.name.full.getOrElse(user.usercode.string))
             .toMap
-          Ok(views.html.admin.assessments.view(assessment, studentAssessments, studentInformation, departments.find(_.code == assessment.departmentCode.string), invigilators, !overwriteAssessmentTypeOnImport))
+          Ok(views.html.admin.assessments.view(assessment, tabulaAssignments, studentAssessments, studentInformation, departments.find(_.code == assessment.departmentCode.string), invigilators, !overwriteAssessmentTypeOnImport))
         }
     }
   }

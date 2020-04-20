@@ -6,8 +6,10 @@
 @import system.routes.Types.Usercode
 @import warwick.core.views.utils._
 
+@import domain.tabula.TabulaAssignment
 @(
   assessment: Assessment,
+  tabulaAssignments: Seq[TabulaAssignment],
   studentAssessments: Seq[StudentAssessment],
   studentInformation: Map[UniversityID, SitsProfile],
   department: Option[Department],
@@ -29,14 +31,22 @@
           <dt>Tabula assignments</dt>
           <dd>
             <ul>
-              @assessment.tabulaAssignments.map { assignmentId =>
-                <li><a href="@context.tabulaConfiguration.getAssignmentUrl(assignmentId)">@assignmentId</a></li>
+              @tabulaAssignments.map { assignment =>
+                <li><a href="@context.tabulaConfiguration.getAssignmentUrl(assignment.id)">@assignment.academicYear</a></li>
               }
             </ul>
           </dd>
-          @if(assessment.tabulaAssignments.isEmpty) {
-            @b3.vertical.formCSRF(action = controllers.admin.routes.AdminAssessmentsController.generateAssignments(assessment.id)) { implicit vfc =>
-              <button type="submit" class="btn btn-primary">Generate assignments</button>
+          @if(tabulaAssignments.isEmpty) {
+            @if(studentAssessments.nonEmpty) {
+              @b3.vertical.formCSRF(action = controllers.admin.routes.AdminAssessmentsController.generateAssignments(assessment.id)) { implicit vfc =>
+                <button type="submit" class="btn btn-primary">Generate assignments</button>
+              }
+            } else {
+              <button class="btn btn-primary" disabled="disabled" data-toggle="tooltip" data-placement="top"
+                title="Unable to generate assessments - no students are linked to this assessment"
+              >
+                Generate assignments
+              </button>
             }
           }
         </div>

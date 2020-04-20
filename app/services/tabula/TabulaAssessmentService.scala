@@ -23,7 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import ServiceResults.Implicits._
 import com.google.inject.name.Named
 import TabulaAssessmentService._
-import domain.tabula.Assignment
+import domain.tabula.TabulaAssignment
 import play.api.Logger
 import services.{AssessmentService, StudentAssessmentService}
 import uk.ac.warwick.util.termdates.AcademicYear
@@ -89,6 +89,7 @@ class TabulaAssessmentServiceImpl @Inject() (
   timing: TimingService,
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
+  tabulaAssignmentService: TabulaAssignmentService
 )(implicit ec: ExecutionContext) extends TabulaAssessmentService with Logging {
 
   import tabulaHttp._
@@ -121,7 +122,7 @@ class TabulaAssessmentServiceImpl @Inject() (
     }
   }
 
-  private def createAssignment(assessment: Assessment, academicYear: AcademicYear, occurrences: Set[String]): Future[ServiceResult[Assignment]] = {
+  private def createAssignment(assessment: Assessment, academicYear: AcademicYear, occurrences: Set[String])(implicit ctx: AuditLogContext): Future[ServiceResult[TabulaAssignment]] = {
     val moduleCode = assessment.moduleCode.split("-").head.toLowerCase
     val url = config.getCreateAssignmentUrl(moduleCode)
 
@@ -157,6 +158,12 @@ class TabulaAssessmentServiceImpl @Inject() (
 
     doRequest(url, "POST", req, description = "createAssignment").successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.responseAssignmentReads)
+    }.successFlatMapTo { assignment =>
+      tabulaAssignmentService.save(TabulaAssignment(
+        UUID.fromString(assignment.id),
+        assignment.name,
+        assignment.academicYear
+      ))
     }
   }
 
@@ -168,7 +175,7 @@ class TabulaAssessmentServiceImpl @Inject() (
           createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
         }.toSeq)
       }.successFlatMapTo { assignments =>
-        val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => UUID.fromString(a.id))
+        val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => a.id)
         assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
       }
   }
