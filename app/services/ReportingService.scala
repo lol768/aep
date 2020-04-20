@@ -46,7 +46,7 @@ class ReportingServiceImpl @Inject()(
 )(implicit ec: ExecutionContext) extends ReportingService {
 
   override def todayAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
-    daoRunner.run(assDao.getToday).map(_.map(_.asAssessmentMetadata)).map(ServiceResults.success)
+    daoRunner.run(assDao.getLast48Hrs).map(_.map(_.asAssessmentMetadata)).map(ServiceResults.success)
 
   override def startedAndSubmittableAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
     assessmentService.getStartedAndSubmittable.map(_.map(_.map(_.asAssessmentMetadata)))

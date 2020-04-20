@@ -214,6 +214,9 @@ trait AssessmentDao {
   def getToday: DBIO[Seq[StoredAssessment]]
   def getTodayWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
 
+  def getLast48Hrs: DBIO[Seq[StoredAssessment]]
+  def getLast48HrsWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
+
   def isInvigilator(usercode: Usercode): DBIO[Boolean]
 
   def getByInvigilatorWithUploadedFiles(usercodes: Set[Usercode]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
@@ -305,11 +308,24 @@ class AssessmentDaoImpl @Inject()(
       .filter(a => a.startTime >= today && a.startTime < today.plusDays(1))
   }
 
+  private def getLast48HrsQuery: Query[Assessments, StoredAssessment, Seq] = {
+    val startTime = JavaTime.offsetDateTime.minusDays(2L)
+    val endTime = JavaTime.localDate.atStartOfDay(JavaTime.timeZone).toOffsetDateTime.plusDays(1L)
+    assessments.table.filter(a => a.startTime >= startTime && a.startTime < endTime)
+  }
+
   override def getToday: DBIO[Seq[StoredAssessment]] =
     getTodayQuery.result
 
   override def getTodayWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
     getTodayQuery.withUploadedFiles.result
+      .map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
+
+  override def getLast48Hrs: DBIO[Seq[StoredAssessment]] =
+    getLast48HrsQuery.result
+
+  override def getLast48HrsWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
+    getLast48HrsQuery.withUploadedFiles.result
       .map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
 
   override def isInvigilator(usercode: Usercode): DBIO[Boolean] =
