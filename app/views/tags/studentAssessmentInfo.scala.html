@@ -10,7 +10,6 @@
   metadata: Seq[SittingMetadata],
   userMap: Map[UniversityID, tabula.SitsProfile],
   studentsWithQueries: Option[Seq[UniversityID]] = None,
-  totalQueries: Int = 0,
   latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
   sortByHeader: Option[String] = None,
 )(implicit context: RequestContext)
