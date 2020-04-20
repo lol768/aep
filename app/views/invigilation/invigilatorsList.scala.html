@@ -14,21 +14,17 @@
 <div class="invigilator-list" data-uri="@controllers.invigilation.routes.InvigilatorAssessmentController.invigilatorsAjax(assessment.id)">
   <p class="hide loading"><i class="far fa-spinner-third fa-spin" aria-hidden="true"></i> Refreshing&hellip;</p>
   <ul>
-  @assessment.invigilators.map { usercode =>
+  @invigilators.map{ case (usercode, username) =>
     <li>
       @if(invigilatorActivities.contains(usercode)) {
         @invigilatorActivities.get(usercode).map { latestActivity =>
-          @invigilators.get(usercode).map { username =>
           <span class="@if(latestActivity.isOnline) {text-success} else {text-danger}"><i class="fad @if(latestActivity.isOnline) {fa-wifi} else {fa-wifi-slash}"></i>
             @username</span>
           <span class="text-muted">(@usercode.string)</span>
-          }.getOrElse {
-            <span class="@if(latestActivity.isOnline) {text-success} else {text-danger}"><i class="fad @if(latestActivity.isOnline) {fa-wifi} else {fa-wifi-slash}"></i> @usercode.string</span>
-          }
 
           <ul>
             <li>Last seen online @JavaTime.Relative(latestActivity.timestamp)</li>
-        </ul>
+          </ul>
         }
       } else {
         @invigilators.get(usercode).map { username =>
