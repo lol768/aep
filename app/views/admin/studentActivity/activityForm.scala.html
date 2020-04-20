@@ -1,4 +1,4 @@
-@import controllers.admin.ViewStudentActivityController.StudentActivityData
+@import controllers.sysadmin.ViewStudentActivityController.StudentActivityData
 @import domain.Pagination
 @import domain.AssessmentClientNetworkActivity
 @import views.tags.formatDate
@@ -14,7 +14,7 @@
 
 @adminLayout("Student activity") {
 
-    @b3.inline.formCSRF(controllers.admin.routes.ViewStudentActivityController.filter(), Symbol("class") -> "text-center") { implicit fc =>
+    @b3.inline.formCSRF(controllers.sysadmin.routes.ViewStudentActivityController.filter(), Symbol("class") -> "text-center") { implicit fc =>
         @views.html.tags.globalErrors(form)
 
         @b3.text(form("universityId"),
@@ -34,7 +34,7 @@
             <i class="fad fa-search fa-fw"></i> Find
         }
         @b3.free() {
-            <a class="btn btn-default" href="@controllers.admin.routes.ViewStudentActivityController.index" title="Clear search results">Clear</a>
+            <a class="btn btn-default" href="@controllers.sysadmin.routes.ViewStudentActivityController.index" title="Clear search results">Clear</a>
         }
     }
 

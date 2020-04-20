@@ -69,11 +69,11 @@ class NavigationServiceImpl @Inject()(
   //private lazy val approvals = NavigationPage("Approvals", controllers.admin.routes.ApprovalsController.index())
   private lazy val reporting = NavigationPage("Reporting", controllers.admin.routes.ReportingController.index())
   private lazy val dataGeneration = NavigationPage("Data generation", controllers.sysadmin.routes.DummyDataGenerationController.showForm())
-  private lazy val studentActivity = NavigationPage("View student activity", controllers.admin.routes.ViewStudentActivityController.index)
+  private lazy val studentActivity = NavigationPage("View student activity", controllers.sysadmin.routes.ViewStudentActivityController.index)
 
   private lazy val production = config.get[Boolean]("environment.production")
 
-  private lazy val navigationItems = {
+  private lazy val sysadminItems = {
     val baseItems = Seq(
       emailQueue,
       sentEmails,
@@ -85,7 +85,7 @@ class NavigationServiceImpl @Inject()(
   }
 
   private lazy val sysadmin =
-    NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), navigationItems)
+    NavigationDropdown("Sysadmin", Call("GET", "/sysadmin"), sysadminItems)
 
   private def sysadminMenuOrMasquerade(loginContext: LoginContext): Seq[Navigation] =
     if (loginContext.actualUserHasRole(Sysadmin))
