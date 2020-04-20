@@ -38,6 +38,8 @@ trait AssessmentService {
 
   def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
+  def getLast48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
   def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]]
@@ -102,9 +104,14 @@ class AssessmentServiceImpl @Inject()(
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
 
+  override def getLast48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.getLast48HrsWithUploadedFiles)
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
+
   // Returns all assessments where the start time has passed, and the latest possible finish time for any student is yet to come
   override def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
-    getTodaysAssessments.flatMap { result =>
+    getLast48HrsAssessments.flatMap { result =>
       result.toOption.map { todaysAssessments =>
         daoRunner.run(studentAssessmentDao.getByAssessmentIds(todaysAssessments.map(_.id))).map { todaysStudentAssessments =>
           val longestAdjustments = todaysAssessments.map { assessment =>
