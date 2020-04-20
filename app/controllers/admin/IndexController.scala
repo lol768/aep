@@ -18,6 +18,6 @@ class IndexController @Inject()(
   import security._
 
   def home: Action[AnyContent] = GeneralDepartmentAdminAction { implicit request =>
-    Ok(views.html.admin.home(request.context.userHasRole(Roles.Admin)))
+    Ok(views.html.admin.home(canSeeReporting = request.context.userHasRole(Roles.Admin)))
   }
 }
