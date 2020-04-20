@@ -279,6 +279,7 @@ class AssessmentsController @Inject()(
                 extraTimeAdjustment = None,
                 explicitFinaliseTime = None,
                 uploadedFiles = Nil,
+                tabulaSubmissionId = None
               )
             ))
           ).successMap(_ =>
@@ -393,6 +394,7 @@ class AssessmentsController @Inject()(
                       extraTimeAdjustment = None,
                       explicitFinaliseTime = None,
                       uploadedFiles = Nil,
+                      tabulaSubmissionId = None
                     )
                   }
 
@@ -434,6 +436,20 @@ class AssessmentsController @Inject()(
       Redirect(routes.AssessmentsController.view(assessment.id))
         .flashing { "success" -> Messages("flash.assessment.generatedAssignments", assessment.title) }
     }
+  }
+
+  def generateAssignmentSubmissions(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
+    val assessment = request.assessment
+
+
+      studentAssessmentService.byAssessmentId(assessment.id).successFlatMap { studentAssessments =>
+        tabulaAssessmentService.generateAssignmentSubmissions(assessment, studentAssessments).successMap { _ =>
+          Redirect(routes.AssessmentsController.view(assessment.id))
+            .flashing { "success" -> Messages("flash.assessment.generatedAssignments", assessment.title) }
+        }
+      }
+
+
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>

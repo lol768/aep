@@ -7,7 +7,7 @@ import java.util.UUID
 import akka.stream.scaladsl.{Source, StreamConverters}
 import com.google.inject.ImplementedBy
 import com.google.inject.name.Named
-import domain.tabula.Assignment
+import domain.tabula.{Assignment, Submission}
 import domain.{Assessment, StudentAssessment, tabula}
 import helpers.{TrustedAppsHelper, WSRequestUriBuilder}
 import javax.inject.{Inject, Singleton}
@@ -43,7 +43,7 @@ trait TabulaAssessmentService {
 
   def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
 
-  def generateAssignmentSubmissions(assessment: Assessment, studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
+  def generateAssignmentSubmissions(assessment: Assessment, studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]]
 
 }
 
@@ -91,7 +91,7 @@ class CachingTabulaAssessmentService @Inject()(
   override def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
     impl.generateAssignments(assessment)
 
-  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
+  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
     impl.generateAssignmentSubmissions(assessment, studentAssessment)
 }
 
@@ -192,7 +192,7 @@ class TabulaAssessmentServiceImpl @Inject()(
   }
 
   //TODO - parameters need changing, added for time being
-  private def createSubmission(assessment: Assessment, studentAssessment: StudentAssessment, assignmentId: UUID): Future[ServiceResult[Assignment]] = {
+  private def createSubmission(assessment: Assessment, studentAssessment: StudentAssessment, assignmentId: UUID): Future[ServiceResult[Submission]] = {
     implicit def l: Logger = logger
 
     val url = config.getCreateAssignmentSubmissionUrl(assignmentId)
@@ -216,23 +216,25 @@ class TabulaAssessmentServiceImpl @Inject()(
       ).flatten: _*)
 
     doRequest(url, "POST", req, description = "createSubmission", fileInfo).successFlatMapTo { jsValue =>
-      parseAndValidate(jsValue, TabulaResponseParsers.responseAssignmentReads)
+      parseAndValidate(jsValue, TabulaResponseParsers.responseSubmissionReads)
     }
   }
 
-  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
+  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
   //TODO change this whole method -  Need  to get list of studentAssessment that have actually uploaded file and then invoke create submission method
     timing.time(TimingCategories.TabulaWrite) {
+      val assignment = assessment.tabulaAssignments.head
       studentAssessmentService.byAssessmentId(assessment.id)
         .successFlatMapTo { students =>
-          val byYear = students.filter(_.academicYear.isDefined).groupBy(_.academicYear.get)
-          ServiceResults.futureSequence(byYear.map { case (academicYear, students) =>
-            createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
-          }.toSeq)
-        }.successFlatMapTo { assignments =>
-        val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => UUID.fromString(a.id))
-        assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
-      }
+          ServiceResults.futureSequence(students.map { studentAssessment =>
+            val sub = createSubmission(assessment, studentAssessment, assignment)
+            sub.successFlatMapTo{ submission =>
+              studentAssessmentService.upsert(studentAssessment.copy(tabulaSubmissionId =  Some(UUID.fromString(submission.id))))
+            }
+          }
+
+          )
+        }
     }
 
 
@@ -270,9 +272,10 @@ class TabulaHttp @Inject()(
     } else {
       val fileParts = files.map { case (uploadeFile, inputStream) => FilePart("files", uploadeFile.fileName, Some(uploadeFile.contentType), StreamConverters.fromInputStream(() => inputStream))
       }
-      val singleFilePart = fileParts.head
-      req.post(Source(singleFilePart :: List()))
-      //req.post(Source( fileParts :: List()))--THIS DOESN'T WORK ???
+      //val singleFilePart = fileParts.head
+      //req.post(Source(singleFilePart :: List()))
+      req.post(Source(fileParts))
+//      req.post(Source(fileParts ++ Seq(DataPart("key", "value"))
     }
     res.map { r =>
       try {

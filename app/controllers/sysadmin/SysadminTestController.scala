@@ -3,6 +3,7 @@ package controllers.sysadmin
 import java.util.UUID
 
 import controllers.BaseController
+import controllers.admin.routes
 import domain.DepartmentCode
 import domain.tabula._
 import helpers.StringUtils._
@@ -50,6 +51,7 @@ object SysadminTestController {
     )(Email.apply)(Email.unapply)
   )(EmailFormData.apply)(EmailFormData.unapply))
 
+
   case class MyWarwickFormData(
     user: Option[Usercode],
     group: Option[GroupName],
@@ -78,6 +80,16 @@ object SysadminTestController {
     "activityType" -> nonEmptyText,
     "alert" -> boolean
   )(MyWarwickFormData.apply)(MyWarwickFormData.unapply))
+
+  case class TabulaSubmissionGenarotorFormData(
+    assessmentId: String,
+    studentId: Option[UniversityID]
+  )
+
+  val tabulaSubmissionGenarotorForm: Form[TabulaSubmissionGenarotorFormData] = Form(mapping(
+    "assessmentId" -> nonEmptyText,
+    "studentId" -> text.transform[Option[UniversityID]](_.maybeText.map(UniversityID.apply), _.map(_.string).getOrElse(""))
+  )(TabulaSubmissionGenarotorFormData.apply)(TabulaSubmissionGenarotorFormData.unapply))
 }
 
 @Singleton
@@ -92,6 +104,8 @@ class SysadminTestController @Inject()(
   tabulaAssessments: TabulaAssessmentService,
   tabulaDepartments: TabulaDepartmentService,
   tabulaAssessmentImportService: TabulaAssessmentImportService,
+  assessmentService: AssessmentService,
+  studentAssessmentService: StudentAssessmentService
 )(implicit executionContext: ExecutionContext) extends BaseController {
 
   import SysadminTestController._
@@ -177,6 +191,37 @@ class SysadminTestController @Inject()(
     tabulaDepartments.getDepartments().successMap { r =>
       Ok(Json.toJson(r)(Writes.seq(writes)))
     }
+  }
+
+
+  def assignmentSubmissions: Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    uploadedFileService.listWithoutOwner().successMap { files =>
+      Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(tabulaSubmissionGenarotorForm))
+    }
+  }
+
+  def generateAssignmentSubmissions(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    tabulaSubmissionGenarotorForm.bindFromRequest().fold(
+      _ => Future.successful(BadRequest),
+      data => {
+        val assessmentId = UUID.fromString(data.assessmentId)
+        val studentId = data.studentId
+        ServiceResults.zip(
+          assessmentService.get(assessmentId),
+          studentAssessmentService.byAssessmentId(assessmentId)
+        ).successFlatMap { case (assessment, studentAssessments) =>
+          val filteredStudentAssessments = studentId match {
+            case Some(student) =>  studentAssessments.filter(_.studentId == student)
+            case _ =>  studentAssessments
+          }
+          tabulaAssessments.generateAssignmentSubmissions(assessment, filteredStudentAssessments).successMap { _ =>
+            Redirect(routes.AssessmentsController.view(assessment.id)).flashing {
+              "success" -> Messages("flash.studentAssessment.updated.count", filteredStudentAssessments.size)
+            }
+          }
+        }
+      }
+    )
   }
 
   private val redirectHome = Redirect(controllers.sysadmin.routes.SysadminTestController.home())

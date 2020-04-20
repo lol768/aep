@@ -289,6 +289,19 @@ object TabulaResponseParsers {
     (__ \ "summaryUrl").read[String]
   ) (Assignment.apply _)
 
+  val attachmentReads: Reads[Attachment] = (
+    (__ \ "id").read[String] and
+      (__ \ "fileName").read[String]
+    ) (Attachment.apply _)
+
+  val submissionReads: Reads[Submission] = (
+    (__ \ "id").read[String] and
+      (__ \ "submittedDate").read[OffsetDateTime] and
+      (__ \ "late").read[Boolean] and
+      (__ \ "authorisedLate").read[Boolean] and
+      (__ \ "attachments").read[Seq[Attachment]](Reads.seq(attachmentReads))
+    ) (Submission.apply _)
+
   // A response property containing an array of assessment components
   val responseAssessmentComponentsReads: Reads[Seq[AssessmentComponent]] =
     (__ \ "assessmentComponents").read(Reads.seq(assessmentComponentReads))
@@ -301,6 +314,7 @@ object TabulaResponseParsers {
 
   val responseAssignmentReads: Reads[Assignment] = (__ \ "assignment").read(assignmentReads)
 
+  val responseSubmissionReads: Reads[Submission] = (__ \ "submission").read(submissionReads)
 
   def validateAPIResponse[A](jsValue: JsValue, parser: Reads[A]): JsResult[A] = {
     (jsValue \ "success").validate[Boolean].flatMap {

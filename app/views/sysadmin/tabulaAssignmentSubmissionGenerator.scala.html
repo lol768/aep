@@ -1,0 +1,28 @@
+@import controllers.RequestContext
+@import play.api.data.Form
+
+@import controllers.sysadmin.SysadminTestController.TabulaSubmissionGenarotorFormData
+@(form: Form[TabulaSubmissionGenarotorFormData])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@adminLayout("Generate Tabula Submissions") {
+  <div class="alert alert-danger">
+      Clicking submit button on this page will generate tabula submissions. If student id is entered then only that submission will be loaded to tabula. Use carefully.
+  </div>
+
+  <div class="row">
+    <div class="col-sm-6">
+
+      @b3.vertical.formCSRF(controllers.sysadmin.routes.SysadminTestController.generateAssignmentSubmissions()) { implicit fc =>
+        @b3.text(form("assessmentId"),
+          Symbol("_label") -> "Enter assessment Id of the assessment that already has assignment attached"
+        )
+        @b3.text(form("studentId"),
+          Symbol("_label") -> "Enter student Id(optional)"
+        )
+        <button type="submit" class="btn btn-primary">
+          Submit
+        </button>
+      }
+    </div>
+  </div>
+}

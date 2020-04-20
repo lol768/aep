@@ -29,6 +29,7 @@ object StudentAssessmentsTables {
     extraTimeAdjustment: Option[Duration],
     finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
+    tabulaSubmissionId: Option[UUID],
     created: OffsetDateTime,
     version: OffsetDateTime
   ) extends Versioned[StoredStudentAssessment] {
@@ -43,7 +44,8 @@ object StudentAssessmentsTables {
         startTime,
         extraTimeAdjustment,
         finaliseTime,
-        uploadedFiles.map(fileMap)
+        uploadedFiles.map(fileMap),
+        tabulaSubmissionId
       )
 
     override def atVersion(at: OffsetDateTime): StoredStudentAssessment = copy(version = at)
@@ -60,6 +62,7 @@ object StudentAssessmentsTables {
         extraTimeAdjustment,
         finaliseTime,
         uploadedFiles,
+        tabulaSubmissionId,
         created,
         version,
         operation,
@@ -79,6 +82,7 @@ object StudentAssessmentsTables {
     extraTimeAdjustment: Option[Duration],
     finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
+    tabulaSubmisionId: Option[UUID],
     created: OffsetDateTime,
     version: OffsetDateTime,
     operation: DatabaseOperation,

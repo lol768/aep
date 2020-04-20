@@ -163,6 +163,7 @@ object DataGenerationService {
       extraTimeAdjustment = extraTimeAdjustment,
       finaliseTime = None,
       uploadedFiles = List.empty,
+      tabulaSubmissionId = None,
       created = createTime.asOffsetDateTime,
       version = createTime.asOffsetDateTime,
     )

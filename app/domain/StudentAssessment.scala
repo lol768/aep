@@ -36,7 +36,8 @@ case class StudentAssessment(
   startTime: Option[OffsetDateTime],
   extraTimeAdjustment: Option[Duration],
   explicitFinaliseTime: Option[OffsetDateTime],
-  uploadedFiles: Seq[UploadedFile]
+  uploadedFiles: Seq[UploadedFile],
+  tabulaSubmissionId: Option[UUID]
 ) extends BaseStudentAssessment {
 
   lazy val mostRecentFileUpload: Option[OffsetDateTime] = uploadedFiles.view.map(_.uploadStarted).maxOption

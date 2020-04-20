@@ -150,6 +150,19 @@ package object tabula {
     summaryUrl: String
   )
 
+  case class Attachment(
+    id: String,
+    fileName: String
+  )
+  case class Submission(
+    id: String,
+    submittedDate: OffsetDateTime,
+    late: Boolean,
+    authorisedLate: Boolean,
+    attachments: Seq[Attachment]
+  )
+
+
   sealed abstract class UserType extends EnumEntry with CapitalWords
 
   object UserType extends Enum[UserType] {
