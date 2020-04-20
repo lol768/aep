@@ -45,6 +45,36 @@ export function formatAnnouncement(d) {
 }
 
 /**
+ * Separated for testing purposes - decides what to do with received data
+ * @param {object} d - JSON from the web socket
+ * @param {string} assessmentId - UUID found in body dataset
+ * @param {HTMLElement} [messageListElement] - output destination for testing purposes
+ */
+export function handleData(d, assessmentId, messageListElement) {
+  if (d.assessmentId && d.assessmentId === assessmentId) {
+    const messageList = messageListElement || document.querySelector('.message-list');
+
+    if (messageList && d.type === 'announcement') {
+      const existingAnnouncement = messageList.querySelector(`[data-announcement-id="${d.id}"]`);
+      if (!existingAnnouncement) {
+        const el = formatAnnouncement(d);
+        messageList.appendChild(el);
+        JDDT.initialise(el);
+
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Assessment announcement', { // eslint-disable-line no-new
+            body: d.messageText,
+            requireInteraction: true,
+          });
+        } else {
+          window.alert(`New message from invigilators: \n${d.messageText}`); // eslint-disable-line no-alert
+        }
+      }
+    }
+  }
+}
+
+/**
  * @param {WebSocketConnection} websocket
  */
 export default function initAnnouncements(websocket) {
@@ -64,28 +94,7 @@ export default function initAnnouncements(websocket) {
         },
       }));
     },
-    onData: (d) => {
-      if (d.assessmentId && d.assessmentId === assessmentId) {
-        const messageList = document.querySelector('.message-list');
-        if (messageList && d.type === 'announcement') {
-          const existingAnnouncement = messageList.querySelector(`[data-announcement-id="${d.id}"]`);
-          if (!existingAnnouncement) {
-            const el = formatAnnouncement(d);
-            messageList.appendChild(el);
-            JDDT.initialise(el);
-
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Assessment announcement', { // eslint-disable-line no-new
-                body: d.messageText,
-                requireInteraction: true,
-              });
-            } else {
-              window.alert(`New message from invigilators: \n${d.messageText}`); // eslint-disable-line no-alert
-            }
-          }
-        }
-      }
-    },
+    onData: (d) => handleData(d, assessmentId),
   });
 
   const button = document.getElementById('request-notification-permission');
