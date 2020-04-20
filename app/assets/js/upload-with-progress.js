@@ -110,6 +110,7 @@ export default class UploadWithProgress {
         });
         // start async xhr
         xhr.open('POST', formElement.getAttribute('action'), true);
+        xhr.setRequestHeader('OnlineExams-Upload', 'true');
         xhr.send(formData);
       } catch (e) {
         // if all else fails, just submit with a normal POST
