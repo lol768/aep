@@ -80,7 +80,7 @@ class ReportingController @Inject()(
             val sorted = sittings
               .sortBy(studentAssessmentOrdering(profiles))
               .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-            Ok(views.html.tags.queriesAndStudents(sorted, profiles, Some(queries.map(_.client).distinct), queries.count(_.sender == MessageSender.Client), latestActivities, sortByHeader))
+            Ok(views.html.tags.queriesAndStudents(sorted, assessment.platform, profiles, Some(queries.map(_.client).distinct), queries.count(_.sender == MessageSender.Client), latestActivities, sortByHeader))
           }
     }
   }

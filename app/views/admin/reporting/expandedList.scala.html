@@ -9,6 +9,6 @@
   @assessmentMetadata(assessment)
 
   <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="@route">
-    @queriesAndStudents(metadata, userMap, Some(studentsWithQueries))
+    @queriesAndStudents(metadata, assessment.platform, userMap, Some(studentsWithQueries))
   </div>
 }

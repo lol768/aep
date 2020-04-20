@@ -2,6 +2,7 @@
 
 @import domain.messaging.Message
 @import domain.{Assessment, AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import domain.Assessment.Platform
 @import system.routes.Types.Usercode
 @import tags._
 @import warwick.sso.UniversityID
@@ -36,7 +37,7 @@
             </div>
         </div>
         <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
-            @queriesAndStudents(sittingMetadata, students, Some(studentsWithQueries), queriesFromStudents.size, latestStudentActivities)
+            @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, latestStudentActivities)
         </div>
         @if(assessment.isDownloadAvailable) {
             <p>

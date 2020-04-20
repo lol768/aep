@@ -1,6 +1,7 @@
 @import java.util.UUID
 
 @import domain.{AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import domain.Assessment.Platform
 @import helpers.LenientTimezoneNameParsing._
 @import org.apache.commons.lang3.time.DurationFormatUtils
 @import tags._
@@ -8,6 +9,7 @@
 
 @(
   metadata: Seq[SittingMetadata],
+  platform: Set[Platform],
   userMap: Map[UniversityID, tabula.SitsProfile],
   studentsWithQueries: Option[Seq[UniversityID]] = None,
   latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
@@ -31,7 +33,9 @@
         <th @sortBy(sortByHeader, "Department")>Department</th>
         <th @sortBy(sortByHeader, "State")>State</th>
         <th @sortBy(sortByHeader, "Start time")>Start time</th>
-        <th @sortBy(sortByHeader, "Submission time")>Submission time</th>
+        @if(platform.contains(Platform.OnlineExams)) {
+          <th @sortBy(sortByHeader, "Submission time")>Submission time</th>
+        }
         @if(context.features.importStudentExtraTime) {
           <th @sortBy(sortByHeader, "Adjustments")>Adjustments</th>
         }
