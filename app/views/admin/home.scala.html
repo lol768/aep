@@ -1,9 +1,13 @@
-@()(implicit context: RequestContext)
+@import warwick.sso.LoginContext
+@import system.Roles
+@(canSeeReporting: Boolean)(implicit context: RequestContext)
 
 @adminLayout("Administration") {
   <ul>
     <li><a href="/admin/assessments">Assessment management</a></li>
 @*    <li><a href="/admin/approvals">Approvals</a></li>*@
-    <li><a href="/admin/reporting">Reporting</a></li>
+    @if(canSeeReporting) {
+      <li><a href="/admin/reporting">Reporting</a></li>
+    }
   </ul>
 }
