@@ -144,10 +144,12 @@ class WebSocketActor @Inject() (
 
           val assessmentClientNetworkActivity =
             AssessmentClientNetworkActivity(
-              downlink = networkInformation.downlink,
-              downlinkMax = networkInformation.downlinkMax,
+              // ignore junk values over 10gbps
+              downlink = networkInformation.downlink.filter(_ <= 10000.0),
+              downlinkMax = networkInformation.downlinkMax.filter(_ <= 10000.0),
               effectiveType = networkInformation.effectiveType,
-              rtt = networkInformation.rtt,
+              // ignore some browsers that send an impossible RTT of 0ms
+              rtt = networkInformation.rtt.filter(_ > 0),
               `type` = networkInformation.`type`,
               studentAssessmentId = networkInformation.studentAssessmentId,
               assessmentId = networkInformation.assessmentId,
