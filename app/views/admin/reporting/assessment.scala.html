@@ -1,6 +1,7 @@
 @import tags._
 @import domain.Assessment
 @import services.ReportingService.AssessmentReport
+@import domain.Assessment.Platform.OnlineExams
 @(assessment: Assessment, report: AssessmentReport)(implicit context: RequestContext)
 
 @frontend(assessment.title) {
@@ -12,8 +13,10 @@
         <th>Expected</th>
         <th>Started</th>
         <th>Not started</th>
-        <th>Submitted</th>
-        <th>Finalised</th>
+        @if(assessment.platform.contains(OnlineExams)) {
+          <th>Submitted</th>
+          <th>Finalised</th>
+        }
       </tr>
     </thead>
 
@@ -40,20 +43,22 @@
             @report.notStartedSittings.length
           }
         </td>
-        <td>
-          @if(report.submittedSittings.nonEmpty) {
-            <a href="@controllers.admin.routes.ReportingController.submitted(assessment.id)">@report.submittedSittings.length</a>
-          } else {
-            @report.submittedSittings.length
-          }
-        </td>
-        <td>
-          @if(report.finalisedSittings.nonEmpty) {
-            <a href="@controllers.admin.routes.ReportingController.finalised(assessment.id)">@report.finalisedSittings.length</a>
-          } else {
-            @report.finalisedSittings.length
-          }
-        </td>
+        @if(assessment.platform.contains(OnlineExams)) {
+          <td>
+            @if(report.submittedSittings.nonEmpty) {
+              <a href="@controllers.admin.routes.ReportingController.submitted(assessment.id)">@report.submittedSittings.length</a>
+            } else {
+              @report.submittedSittings.length
+            }
+          </td>
+          <td>
+            @if(report.finalisedSittings.nonEmpty) {
+              <a href="@controllers.admin.routes.ReportingController.finalised(assessment.id)">@report.finalisedSittings.length</a>
+            } else {
+              @report.finalisedSittings.length
+            }
+          </td>
+        }
       </tr>
     </tbody>
   </table>

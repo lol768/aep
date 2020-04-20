@@ -157,14 +157,14 @@ class TabulaAssessmentServiceImpl @Inject()(
     val body: JsValue = Json.obj(
       "name" -> s"${assessment.title} - ${assessment.paperCode} (AEP submissions)",
       "openEnded" -> true,
-      "collectSubmissions" -> false,
+      "hiddenFromStudents" -> true,
       "publishFeedback" -> false,
       "automaticallySubmitToTurnitin" -> true,
-      // "resitAssessment" -> true, TODO - tabula API ignores this
-      "fileAttachmentLimit" -> 20, // TODO - we should teach our private Tabula submission API to ignore the limit
+      "resitAssessment" -> isPreviousAcademicYear,
+      "fileAttachmentLimit" -> 20, // TODO - TAB-8285 we should teach our private Tabula submission API to ignore the limit
       "academicYear" -> academicYear.toString,
       "sitsLinks" -> sitsLinks,
-      // "anonymity" -> "IDOnly" TODO - tabula API doesn't support this
+      "anonymity" -> "IDOnly"
     )
 
     val req = ws.url(url)

@@ -80,7 +80,7 @@ class ReportingServiceTest
     "ReportingService" should {
       "return expected results" in {
         DateTimeUtils.useMockDateTime(now, () => {
-          val todayResults = service.todayAssessments.serviceValue
+          val todayResults = service.last48HrsAssessments.serviceValue
           todayResults.length mustBe 24
           // one starting at every hour, on the hour
           todayResults.map(_.startTime.value.getMinute).distinct mustEqual Seq(0)

@@ -1,5 +1,13 @@
 import log from './log';
 
+// These are fallbacks only in case we don't get an intelligible short error message back
+const STATUS_ERRORS = {
+  413: 'One or more of your files is too large. Please compress the file or break it up into multiple files and upload separately',
+  415: 'The file format of one or more of your files is not supported. You may need to convert it to a PDF',
+  422: 'We couldn\'t upload your submission. Please try again.',
+  403: 'The upload failed because it looks like you might have been logged out. Do you want to refresh the page and try again?',
+};
+
 /**
  * Component which allows for file upload forms to be
  * sent via AJAX XHR, with built-in progress indicator
@@ -27,14 +35,36 @@ export default class UploadWithProgress {
   /**
    * @private
    */
-  static handleErrorInUpload(formElement, errorMessage) {
+  static handleErrorInUpload(formElement, errorMessage, contentType, statusCode) {
+    let errorToDisplay = '';
+
+    try {
+      const parsedJson = JSON.parse(errorMessage);
+      errorToDisplay = parsedJson.errors[0].message;
+    } catch (e) {
+      if (contentType !== null && contentType.indexOf('text/html') === -1) {
+        errorToDisplay = errorMessage;
+      } else if (statusCode in STATUS_ERRORS) {
+        errorToDisplay = STATUS_ERRORS[statusCode];
+      } else {
+        errorToDisplay = 'We couldn\'t upload your submission. Please try again.';
+      }
+    }
+
     log('Failed to finish upload');
     // TODO log to server
     formElement.querySelector('.upload-info').classList.add('hide'); // IE10
     formElement.querySelector('.upload-error').classList.remove('hide'); // IE10
-    if (errorMessage && errorMessage !== '') {
+    if (errorToDisplay && errorToDisplay !== '') {
+      // We check status code zero due to CSP violation on HTTP 303 redirect
+      // which is to a non-connect-src whitelisted URI.
+      /* eslint no-alert: 0 */
+      const authIssue = statusCode === 403 || statusCode === 303 || statusCode === 0;
+      if (authIssue && window.confirm(STATUS_ERRORS[403])) {
+        window.location.reload();
+      }
       /* eslint-disable-next-line no-param-reassign */
-      formElement.querySelector('.upload-error-text').innerText = errorMessage;
+      formElement.querySelector('.upload-error-text').innerText = errorToDisplay;
     }
     formElement.reset();
   }
@@ -68,7 +98,7 @@ export default class UploadWithProgress {
               this.successCallback(formElement);
             } else {
               this.failureCallback(xhr);
-              UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText);
+              UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
             }
           } else if (xhr.readyState === XMLHttpRequest.OPENED) {
             formElement.querySelector('.upload-info').classList.remove('hide'); // IE10
@@ -76,10 +106,11 @@ export default class UploadWithProgress {
         });
         xhr.addEventListener('error', () => {
           this.failureCallback(xhr);
-          UploadWithProgress.handleErrorInUpload(formElement);
+          UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
         });
         // start async xhr
         xhr.open('POST', formElement.getAttribute('action'), true);
+        xhr.setRequestHeader('OnlineExams-Upload', 'true');
         xhr.send(formData);
       } catch (e) {
         // if all else fails, just submit with a normal POST

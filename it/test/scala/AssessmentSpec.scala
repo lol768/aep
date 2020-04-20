@@ -1,9 +1,5 @@
-import java.util.UUID
-
 import domain.Fixtures
-import org.mockito.BDDMockito
 import support.BrowserFeatureSpec
-import warwick.sso.User
 
 import scala.language.postfixOps
 import scala.languageFeature.postfixOps
@@ -139,14 +135,13 @@ class AssessmentSpec extends BrowserFeatureSpec {
       And i_should_see_the_text "View your assessment in Moodle"
     }
 
-    "be unable to see invigilators names on announcements before they start" in {
+    "be unable to see announcements before they start" in {
         Given.i_am_a_student()
         And i_have_an_online_exam_to_sit_with_an_existing_announcement(student, Fixtures.users.staff1)
         When i_visit_the assessmentPage
 
-        screenshot("Assessment student with announcement")
-        Then i_should_see_the_text "Test announcement number one"
-        And the_page_content_should_not_contain(Fixtures.users.staff1.name.full.get)
+        screenshot("Assessment student before starting no announcements")
+        Then the_page_content_should_not_contain "Test announcement number one"
     }
 
     "be unable to see invigilators names on existing announcements after they start" in {

@@ -42,11 +42,18 @@ class GenerateAssessmentZipJob @Inject()(
     val usercode = Usercode(context.getMergedJobDataMap.getString("usercode"))
     val generationStarted = JavaTime.offsetDateTime
 
+    logger.info(s"[$assessmentId] Generating a zip file of submissions")
+
     studentAssessmentService.sittingsByAssessmentId(assessmentId).successFlatMapTo { sittings =>
-      // Don't try and create a zip bigger than 2gb
-      if (sittings.flatMap(_.studentAssessment.uploadedFiles).map(_.contentLength).sum > 2L * 1024 * 1024 * 1024) {
-        Future.successful(ServiceResults.error("Uploaded files sum to greater than 2gb"))
+      val uploadedFiles = sittings.flatMap(_.studentAssessment.uploadedFiles)
+      val totalFileSize = uploadedFiles.map(_.contentLength).sum
+
+      // Don't try and create a zip bigger than 4gb
+      if (totalFileSize > 4L * 1024 * 1024 * 1024) {
+        Future.successful(ServiceResults.error("Uploaded files sum to greater than 4gb"))
       } else {
+        logger.info(s"[$assessmentId] Zipping up ${uploadedFiles.size} files (total size ${helpers.humanReadableSize(totalFileSize)})")
+
         val tempFile = temporaryFileCreator.create(assessmentId.toString, ".zip")
 
         // Write items to the zip file
@@ -75,7 +82,7 @@ class GenerateAssessmentZipJob @Inject()(
         })
         zip.closeArchiveEntry()
 
-        traverseSerial(sittings.flatMap(s => s.studentAssessment.uploadedFiles.map(s -> _))) { case (sitting, file) =>
+        traverseSerial(sittings.flatMap(s => s.studentAssessment.uploadedFiles.zipWithIndex.map(s -> _))) { case (sitting, (file, index)) =>
           val source: ByteSource = new ByteSource {
             override def openStream(): InputStream = objectStorageService.fetch(file.id.toString).orNull
           }
@@ -89,9 +96,11 @@ class GenerateAssessmentZipJob @Inject()(
                 else name.substring(0, limit)
               }
 
-            zip.putArchiveEntry(new ZipArchiveEntry(s"${sitting.studentAssessment.studentId.string} - ${trunc(file.fileName, 100)}"))
+            val fileName = s"${sitting.studentAssessment.studentId.string} - ${trunc(file.fileName, 100)}"
+            zip.putArchiveEntry(new ZipArchiveEntry(fileName))
             source.copyTo(zip)
             zip.closeArchiveEntry()
+            logger.info(f"[$assessmentId] [${(index * 100) / uploadedFiles.size}%03d] Wrote zip entry for $fileName")
 
             ServiceResults.success(Done)
           }
@@ -99,6 +108,7 @@ class GenerateAssessmentZipJob @Inject()(
           zip.close()
           tempFile
         }.successFlatMapTo { _ =>
+          logger.info(s"[$assessmentId] Storing zip file of size ${helpers.humanReadableSize(tempFile.length())} in object storage")
           uploadedFileService.store(
             Files.asByteSource(tempFile),
             UploadedFileSave(
@@ -110,17 +120,22 @@ class GenerateAssessmentZipJob @Inject()(
             assessmentId,
             UploadedFileOwner.AssessmentSubmissions
           )(audit.copy(usercode = Some(usercode))).successMapTo { file =>
-            logger.info(s"Generated uploaded file for assessment: $file")
+            logger.info(s"[$assessmentId] Generated uploaded file for assessment: $file")
             temporaryFileCreator.delete(tempFile)
             file
           }
         }
       }
     }.map { result =>
-      if (result.isLeft) {
-        logger.error(s"Errors generating zip: ${result.left.getOrElse(Nil)}")
+      result.left.foreach { errors =>
+        val message = errors.map(_.message).mkString("; ")
+        logger.error(s"Errors generating zip: $message")
+        errors.find(_.cause.nonEmpty).flatMap(_.cause).map(throwable =>
+          throw new UnsupportedOperationException(throwable)
+        ).getOrElse(
+          throw new UnsupportedOperationException(message)
+        )
       }
-
       JobResult.quiet
     }
   }

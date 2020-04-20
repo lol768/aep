@@ -126,5 +126,11 @@ class UploadedFileDaoImpl @Inject()(
     uploadedFiles.insert(file)
 
   override def delete(id: UUID)(implicit ac: AuditLogContext): DBIO[Boolean] =
-    uploadedFiles.table.filter(_.id === id).delete.map(_ > 0)
+    for {
+      uf <- uploadedFiles.table.filter(_.id === id).result.headOption
+      deleted <- uf match {
+        case Some(file) => uploadedFiles.delete(file).map(_ => true)
+        case _ => DBIO.successful(false)
+      }
+    } yield deleted
 }

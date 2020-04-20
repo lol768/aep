@@ -155,13 +155,13 @@ trait StudentAssessmentDao {
   def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def get(studentId: UniversityID, assessmentId: UUID): DBIO[Option[StoredStudentAssessment]]
   def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Option[(StoredStudentAssessment, Set[StoredUploadedFile])]]
-  def delete(studentId: UniversityID, assessmentId: UUID): DBIO[Int]
+  def delete(studentId: UniversityID, assessmentId: UUID)(implicit ac: AuditLogContext): DBIO[Int]
 
   def insert(declarations: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations]
   def update(declarations: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations]
   def getDeclarations(declarationsId: UUID): DBIO[Option[StoredDeclarations]]
   def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]]
-  def deleteDeclarations(declarationsId: UUID): DBIO[Int]
+  def deleteDeclarations(declarationsId: UUID)(implicit ac: AuditLogContext): DBIO[Int]
 }
 
 @Singleton
@@ -225,8 +225,14 @@ class StudentAssessmentDaoImpl @Inject()(
     getQuery(studentId, assessmentId).withUploadedFiles.result
       .map(OneToMany.leftJoinUnordered(_).headOption)
 
-  override def delete(studentId: UniversityID, assessmentId: UUID): DBIO[Int] =
-    getQuery(studentId, assessmentId).delete
+  override def delete(studentId: UniversityID, assessmentId: UUID)(implicit ac: AuditLogContext): DBIO[Int] =
+    for {
+      sa <- getQuery(studentId, assessmentId).result.headOption
+      rows <- sa match {
+        case Some(studentAssessment) => studentAssessments.delete(studentAssessment).map(_ => 1)
+        case _ => DBIO.successful(0)
+      }
+    } yield rows
 
   override def insert(decs: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations] =
     declarations.insert(decs)
@@ -243,7 +249,13 @@ class StudentAssessmentDaoImpl @Inject()(
   override def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]] =
     declarations.table.filter(_.studentAssessmentId inSet declarationsIds).result
 
-  override def deleteDeclarations(declarationsId: UUID): DBIO[Int] =
-    getDeclarationsQuery(declarationsId).delete
+  override def deleteDeclarations(declarationsId: UUID)(implicit ac: AuditLogContext): DBIO[Int] =
+    for {
+      d <- getDeclarationsQuery(declarationsId).result.headOption
+      rows <- d match {
+        case Some(declaration) => declarations.delete(declaration).map(_ => 1)
+        case _ => DBIO.successful(0)
+      }
+    } yield rows
 
 }

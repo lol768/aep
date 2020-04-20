@@ -25,7 +25,7 @@ class PubSubActor extends Actor with ActorLogging {
 
   private lazy val mediator = DistributedPubSub(context.system).mediator
 
-  override def receive = {
+  override def receive: Receive = {
     // forward subscribes, ack will go to the original sender.
     case msg: Subscribe => mediator forward msg
     // send this message so PubSubActor is the sender and gets the ack.

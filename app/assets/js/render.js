@@ -43,9 +43,13 @@ document.addEventListener('DOMContentLoaded', () => {
       import('./are-you-sure');
     }
     import('./central-web-socket').then(({ default: websocket }) => {
-      initAnnouncements(websocket);
+      if (document.querySelector('.message-list')) {
+        initAnnouncements(websocket);
+      }
       showWSConnectivity(websocket);
-      if (document.querySelector('.timing-information')) initTiming(websocket);
+      if (document.querySelector('.timing-information')) {
+        initTiming(websocket);
+      }
     });
   }
 

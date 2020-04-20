@@ -26,7 +26,7 @@ object ReportingService {
 
 @ImplementedBy(classOf[ReportingServiceImpl])
 trait ReportingService {
-  def todayAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
+  def last48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
   def startedAndSubmittableAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
   def assessmentReport(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[AssessmentReport]]
   def expectedSittings(assessment: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
@@ -45,8 +45,8 @@ class ReportingServiceImpl @Inject()(
   sittingDao: StudentAssessmentDao,
 )(implicit ec: ExecutionContext) extends ReportingService {
 
-  override def todayAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
-    daoRunner.run(assDao.getToday).map(_.map(_.asAssessmentMetadata)).map(ServiceResults.success)
+  override def last48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
+    daoRunner.run(assDao.getLast48Hrs).map(_.map(_.asAssessmentMetadata)).map(ServiceResults.success)
 
   override def startedAndSubmittableAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
     assessmentService.getStartedAndSubmittable.map(_.map(_.map(_.asAssessmentMetadata)))

@@ -1,6 +1,7 @@
 @import java.util.UUID
 
 @import domain.{AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import domain.Assessment.Platform
 @import helpers.LenientTimezoneNameParsing._
 @import org.apache.commons.lang3.time.DurationFormatUtils
 @import tags._
@@ -8,9 +9,9 @@
 
 @(
   metadata: Seq[SittingMetadata],
+  platform: Set[Platform],
   userMap: Map[UniversityID, tabula.SitsProfile],
   studentsWithQueries: Option[Seq[UniversityID]] = None,
-  totalQueries: Int = 0,
   latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
   sortByHeader: Option[String] = None,
 )(implicit context: RequestContext)
@@ -24,15 +25,6 @@
 }
 
 @if(metadata.nonEmpty) {
-  @studentsWithQueries.map { sWQ =>
-    <div class="alert alert-info sets-document-title-prefix" data-document-title-prefix="@if(totalQueries > 0) { (@totalQueries) }">
-      <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
-      @sWQ.length @if(sWQ.length == 1) { student has } else { students have } queries.
-      <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
-      View all queries.
-    </a>
-    </div>
-  }
   <table class="table table-bordered table-sortable students-taking-assessment-table">
     <thead>
       <tr>
@@ -41,7 +33,9 @@
         <th @sortBy(sortByHeader, "Department")>Department</th>
         <th @sortBy(sortByHeader, "State")>State</th>
         <th @sortBy(sortByHeader, "Start time")>Start time</th>
-        <th @sortBy(sortByHeader, "Submission time")>Submission time</th>
+        @if(platform.contains(Platform.OnlineExams)) {
+          <th @sortBy(sortByHeader, "Submission time")>Submission time</th>
+        }
         @if(context.features.importStudentExtraTime) {
           <th @sortBy(sortByHeader, "Adjustments")>Adjustments</th>
         }
@@ -56,7 +50,7 @@
       @metadata.map { md =>
         <tr>
           @userMap.get(md.studentAssessment.studentId).map { profile =>
-            <td>@profile.fullName <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
+            <td data-sort="@profile.lastName, @profile.firstName">@profile.fullName <span class="text-muted">(@md.studentAssessment.studentId.string)</span></td>
             <td>@profile.warwickEmail.map { emailAddress =>
               <a href="mailto:@emailAddress">@emailAddress</a>
             }.getOrElse("Unknown email")</td>
@@ -69,18 +63,30 @@
           <td>
             @md.getSummaryStatusLabel
           </td>
-          <td>
-            @md.studentAssessment.startTime.map {time =>
+          @md.studentAssessment.startTime.map {time =>
+            <td data-sort="@time.toInstant.toEpochMilli">
               @localisedDatetime(time)
-            }
-          </td>
-          <td>
+            </td>
+          }.getOrElse {
+            <td></td>
+          }
+          @if(platform.contains(Platform.OnlineExams)) {
             @md.finalisedTime.map {time =>
-              @localisedDatetime(time)
+              <td data-sort="@time.toInstant.toEpochMilli">
+                @localisedDatetime(time)
+              </td>
+            }.getOrElse {
+              <td></td>
             }
-          </td>
+          }
           @if(context.features.importStudentExtraTime) {
-            <td>@md.studentAssessment.extraTimeAdjustment.map(duration => DurationFormatUtils.formatDurationWords(duration.toMillis, true, true))</td>
+            @md.studentAssessment.extraTimeAdjustment.map { duration =>
+              <td data-sort="@duration.toMillis">
+                @DurationFormatUtils.formatDurationWords(duration.toMillis, true, true)
+              </td>
+            }.getOrElse {
+              <td></td>
+            }
           }
           <td>
             @if(md.finalised) {

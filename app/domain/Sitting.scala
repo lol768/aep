@@ -2,6 +2,7 @@ package domain
 
 import java.time.{Duration, OffsetDateTime}
 
+import domain.Assessment.Platform
 import domain.BaseSitting.{ProgressState, SubmissionState}
 import enumeratum.{EnumEntry, PlayEnum}
 import views.assessment.AssessmentTimingUpdate
@@ -120,19 +121,25 @@ sealed trait BaseSitting {
           AssessmentOpenNotStarted
         }
       } else if (inProgress) {
-        val studentStartTime = studentAssessment.startTime.get
-        val inProgressState = for(ad <- assessment.duration; d <- onTimeDuration; ld <- lateDuration) yield {
-          if (studentStartTime.plus(ad).isAfter(now)) {
-            InProgress
-          } else if (studentStartTime.plus(d).isAfter(now)) {
-            OnGracePeriod
-          } else if (studentStartTime.plus(ld).isAfter(now)) {
-            Late
-          } else {
-            DeadlineMissed
+        if (!assessment.platform.contains(Platform.OnlineExams)) {
+          Started
+        } else if (assessment.hasLastAllowedStartTimePassed()) {
+          DeadlineMissed
+        } else {
+          val studentStartTime = studentAssessment.startTime.get
+          val inProgressState = for (ad <- assessment.duration; d <- onTimeDuration; ld <- lateDuration) yield {
+            if (studentStartTime.plus(ad).isAfter(now)) {
+              InProgress
+            } else if (studentStartTime.plus(d).isAfter(now)) {
+              OnGracePeriod
+            } else if (studentStartTime.plus(ld).isAfter(now)) {
+              Late
+            } else {
+              DeadlineMissed
+            }
           }
+          inProgressState.getOrElse(Started)
         }
-        inProgressState.getOrElse(Started)
       } else {
         Finalised
       }
@@ -143,8 +150,9 @@ sealed trait BaseSitting {
   def getSummaryStatusLabel: Option[String] = {
     lazy val submission = getSubmissionState
     getProgressState map {
-      case ProgressState.Late if submission == SubmissionState.OnTime => "Submitted, unfinalised"
-      case ProgressState.Late if submission == SubmissionState.Late => "Submitted late, unfinalised"
+      case ProgressState.Late if submission == SubmissionState.OnTime => "Submitted, not finalised"
+      case ProgressState.Late if submission == SubmissionState.Late => "Submitted late, not finalised"
+      case ProgressState.Finalised if submission == SubmissionState.Late => "Finalised (submitted late)"
       case other => other.label
     }
 

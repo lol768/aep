@@ -37,7 +37,30 @@
 }
 
 @defining(if (sitting.canModify()) "beforeunload" else "") { className =>
-  @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className), existingMessages = announcements) {
+  @frontend(sitting.assessment.title,
+    extraClasses = Seq("grey-nopad", "connect-ws", className),
+    dataAttributes = Map(
+      "assessment-id" -> sitting.assessment.id.toString
+    )
+  ) {
+    @if(sitting.started) {
+      <div class="message-list">
+        @announcements.map { message =>
+          <div class="alert alert-info media" data-announcement-id="@message.id">
+            <div class="media-left">
+              <i class="fad fa-bullhorn" aria-hidden="true"></i>
+            </div>
+            <div class="media-body">
+              @message.html
+              <div class="query-time">
+                @localisedDatetime(message.created)
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
     <div class="alert alert-info hidden notification-permission">
       Alternative Exams Portal needs your permission to <a href="#" class="btn btn-primary btn-xs">show system notifications</a> for assessment announcements
     </div>

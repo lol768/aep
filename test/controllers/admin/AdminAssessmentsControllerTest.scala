@@ -3,7 +3,7 @@ package controllers.admin
 import java.io.File
 import java.util.UUID
 
-import controllers.admin.AssessmentsController.AssessmentFormData
+import controllers.admin.AdminAssessmentsController.AssessmentFormData
 import domain.Assessment.{AssessmentType, Platform}
 import domain.{DepartmentCode, Fixtures}
 import helpers.{CleanUpDatabaseAfterEachTest, Scenario}
@@ -16,7 +16,7 @@ import warwick.sso.User
 
 import scala.concurrent.Future
 
-class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTest {
+class AdminAssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTest {
 
   private val appAdminUser = Fixtures.users.admin1
   private val phAdminUser = Fixtures.users.phAdmin
@@ -25,6 +25,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
 
   private val assessmentService = get[AssessmentService]
   private val file: File = new File(getClass.getResource(Fixtures.uploadedFiles.homeOfficeStatementPDF.path).getFile)
+  private val controllerRoute = controllers.admin.routes.AdminAssessmentsController
 
   "AssessmentsController" should {
     "Display the index page to an app admin or departmental admin" in {
@@ -73,14 +74,14 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
         val resSave = reqCreate(user, s.data)
         status(resSave) mustBe SEE_OTHER
         htmlErrors(resSave) mustBe empty
-        header("Location", resSave).value mustBe controllers.admin.routes.AssessmentsController.index().url
+        header("Location", resSave).value mustBe controllerRoute.index().url
       }
     }
 
     "Not allow non-admin or admin for other department to save an assessment if not correct dept" in scenario(new CreatingPhilosophyAssessmentScenario()) { s =>
       val resSaveLfAdmin = reqCreate(lfAdminUser, s.data)
       status(resSaveLfAdmin) mustBe SEE_OTHER
-      header("Location", resSaveLfAdmin).value mustBe controllers.admin.routes.AssessmentsController.create().url
+      header("Location", resSaveLfAdmin).value mustBe controllerRoute.create().url
 
       val resSaveSomeGuy = reqCreate(someGuy, s.data)
       status(resSaveSomeGuy) mustBe FORBIDDEN
@@ -90,7 +91,7 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
       Seq(appAdminUser, phAdminUser).foreach { user =>
         val resUpdate = reqUpdate(user, s.assessmentId, s.data)
         status(resUpdate) mustBe SEE_OTHER
-        header("Location", resUpdate).value mustBe controllers.admin.routes.AssessmentsController.index().url
+        header("Location", resUpdate).value mustBe controllerRoute.index().url
       }
     }
 
@@ -159,8 +160,6 @@ class AssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTe
   class NoPlatformDataCreateScenario extends CreatingPhilosophyAssessmentScenario {
     val badData: AssessmentFormData = data.copy(platform = Set.empty)
   }
-
-  private val controllerRoute = controllers.admin.routes.AssessmentsController
 
   def reqIndex(user: User): Future[Result] =
     req(controllerRoute.index().url).forUser(user).get()

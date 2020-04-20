@@ -4,7 +4,7 @@
 
 @adminLayout("Broadcast test") {
     <h4>Per user broadcast</h4>
-    @b3.vertical.formCSRF(action = controllers.routes.WebSocketController.sendBroadcast()) { implicit vfc =>
+    @b3.vertical.formCSRF(action = controllers.routes.WebSocketController.broadcastTest()) { implicit vfc =>
         @b3.text(sendBroadcastForm("user"),
             Symbol("_label") -> "Receipient user",
             Symbol("class") -> "flexi-picker",
@@ -16,6 +16,8 @@
 
         @b3.text(sendBroadcastForm("message"), Symbol("_label") -> "Message", Symbol("autocomplete") -> "off")
 
+        @b3.text(sendBroadcastForm("assessmentId"), Symbol("_label") -> "Assessment id", Symbol("autocomplete") -> "off")
+
         @b3.free(Symbol("_class") -> "spaced-buttons") {
             <button type="submit" class="btn btn-primary">Send WebSocket Broadcast Message</button>
         }
@@ -23,7 +25,7 @@
     <hr/>
 
     <h4>Per assessment broadcast (assessment announcement)</h4>
-    @b3.vertical.formCSRF(action = controllers.routes.WebSocketController.sendAnnouncement()) { implicit vfc =>
+    @b3.vertical.formCSRF(action = controllers.routes.WebSocketController.broadcastTest()) { implicit vfc =>
         @b3.text(sendBroadcastForm("assessment"),
             Symbol("_label") -> "Assessment id",
         )
