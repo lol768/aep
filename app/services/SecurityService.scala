@@ -75,9 +75,9 @@ class SecurityServiceImpl @Inject()(
   override def RequiredRoleAction(role: RoleName): AuthActionBuilder = sso.RequireRole(role, forbidden)(defaultParser)
   override def RequiredActualUserRoleAction(role: RoleName): AuthActionBuilder = sso.RequireActualUserRole(role, forbidden)(defaultParser)
 
-  val RequireAdmin: AuthActionBuilder = RequiredActualUserRoleAction(Admin)
+  val RequireAdmin: AuthActionBuilder = RequiredRoleAction(Admin)
   val RequireSysadmin: AuthActionBuilder = RequiredActualUserRoleAction(Sysadmin)
-  val RequireApprover: AuthActionBuilder = RequiredActualUserRoleAction(Approver)
+  val RequireApprover: AuthActionBuilder = RequiredRoleAction(Approver)
   val RequireMasquerader: AuthActionBuilder = RequiredActualUserRoleAction(Masquerader)
   val RequireDepartmentAssessmentManager: AuthActionBuilder = RequireDeptWebGroup(assessmentManagerGroup, forbidden)(defaultParser)
 
