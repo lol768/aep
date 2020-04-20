@@ -16,7 +16,7 @@
         } else {
             @sitting.studentAssessment.startTime.map { studentStartTime =>
                 <div class="media-left"><i class="fad fa-fw fa-hourglass"></i></div>
-                <div class="media-body">You started this assessment on @bareLocalisedDateTime(sitting.studentAssessment.startTime.get)</div>
+                <div class="media-body">You started this assessment on @bareLocalisedDateTime(studentStartTime)</div>
             }
         }
     </div>
