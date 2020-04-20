@@ -48,7 +48,7 @@ export function formatAnnouncement(d) {
 
 /**
  * Separated for testing purposes - decides what to do with received data
- * @param {AnnounmentResponse} d - JSON from the web socket
+ * @param {AnnouncementResponse} d - JSON from the web socket
  * @param {string} assessmentId - UUID found in body dataset
  * @param {HTMLElement} messageList - output destination
  */
