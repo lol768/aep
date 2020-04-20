@@ -4,6 +4,7 @@ import controllers.BaseController
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
 import services.{AssessmentService, SecurityService}
+import system.Roles
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -17,6 +18,6 @@ class IndexController @Inject()(
   import security._
 
   def home: Action[AnyContent] = GeneralDepartmentAdminAction { implicit request =>
-    Ok(views.html.admin.home())
+    Ok(views.html.admin.home(request.context.userHasRole(Roles.Admin)))
   }
 }
