@@ -28,7 +28,7 @@ flash.dataGeneration.randomAssessments=Added {0} randomly generated assessments 
 flash.dataGeneration.randomAssessmentsWithStudentAssessments=Added {0} randomly generated assessments with associated student assessments to the database.
 flash.assessment.announcement.created=Assessment announcement created
 flash.messages.sentToInvigilator=Message sent to invigilator
-
+flash.studentAssessment.updated.count=Total submissions created: {0}
 # Overrides of keys in messages.default
 
 error.required=This field is required.

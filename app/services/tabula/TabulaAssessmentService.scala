@@ -43,7 +43,7 @@ trait TabulaAssessmentService {
 
   def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
 
-  def generateAssignmentSubmissions(assessment: Assessment, studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]]
+  def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]]
 
 }
 
@@ -91,7 +91,7 @@ class CachingTabulaAssessmentService @Inject()(
   override def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
     impl.generateAssignments(assessment)
 
-  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
+  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
     impl.generateAssignmentSubmissions(assessment, studentAssessment)
 }
 
@@ -220,21 +220,33 @@ class TabulaAssessmentServiceImpl @Inject()(
     }
   }
 
-  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Seq[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
+  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
   //TODO change this whole method -  Need  to get list of studentAssessment that have actually uploaded file and then invoke create submission method
     timing.time(TimingCategories.TabulaWrite) {
       val assignment = assessment.tabulaAssignments.head
-      studentAssessmentService.byAssessmentId(assessment.id)
-        .successFlatMapTo { students =>
-          ServiceResults.futureSequence(students.map { studentAssessment =>
-            val sub = createSubmission(assessment, studentAssessment, assignment)
-            sub.successFlatMapTo{ submission =>
-              studentAssessmentService.upsert(studentAssessment.copy(tabulaSubmissionId =  Some(UUID.fromString(submission.id))))
+      studentAssessment match {
+        case Some(studentAssessment) =>  {
+          ServiceResults.futureSequence(Seq(studentAssessment).filter(s => !s.uploadedFiles.isEmpty).map { sa =>
+            val sub = createSubmission(assessment, sa, assignment)
+            sub.successFlatMapTo { submission =>
+              studentAssessmentService.upsert(studentAssessment.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
             }
-          }
-
-          )
+          })
         }
+        case _ => {
+          studentAssessmentService.byAssessmentId(assessment.id)
+            .successFlatMapTo { students =>
+              ServiceResults.futureSequence(students.filter(s => s.tabulaSubmissionId.isEmpty && !s.uploadedFiles.isEmpty).map { studentAssessment =>
+                val sub = createSubmission(assessment, studentAssessment, assignment)
+                sub.successFlatMapTo { submission =>
+                  studentAssessmentService.upsert(studentAssessment.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
+                }
+              }
+
+              )
+            }
+        }
+      }
     }
 
 

@@ -211,12 +211,12 @@ class SysadminTestController @Inject()(
           studentAssessmentService.byAssessmentId(assessmentId)
         ).successFlatMap { case (assessment, studentAssessments) =>
           val filteredStudentAssessments = studentId match {
-            case Some(student) =>  studentAssessments.filter(_.studentId == student)
-            case _ =>  studentAssessments
+            case Some(student) =>  studentAssessments.filter(_.studentId == student).headOption
+            case _ =>  None
           }
-          tabulaAssessments.generateAssignmentSubmissions(assessment, filteredStudentAssessments).successMap { _ =>
-            Redirect(routes.AssessmentsController.view(assessment.id)).flashing {
-              "success" -> Messages("flash.studentAssessment.updated.count", filteredStudentAssessments.size)
+          tabulaAssessments.generateAssignmentSubmissions(assessment, filteredStudentAssessments).successMap { submission =>
+            Redirect(routes.AdminAssessmentsController.view(assessment.id)).flashing {
+              "success" -> Messages("flash.studentAssessment.updated.count", submission.size)
             }
           }
         }
