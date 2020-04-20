@@ -23,16 +23,18 @@ import scala.concurrent.{ExecutionContext, Future}
 object WebSocketController {
   case class SendBroadcastForm(
     user: Usercode,
+    assessmentId: UUID,
     message: String
   ) {
     /** Just for testing as it uses an ephemeral ID */
     def toTestAnnouncement: AssessmentAnnouncement = {
-      AssessmentAnnouncement(UUID.randomUUID.toString, message, JavaTime.offsetDateTime)
+      AssessmentAnnouncement(UUID.randomUUID.toString, assessmentId.toString, message, JavaTime.offsetDateTime)
     }
   }
 
   val broadcastForm: Form[SendBroadcastForm] = Form(mapping(
     "user" -> nonEmptyText.transform[Usercode](s => Usercode(s), u => u.string),
+    "assessmentId" -> uuid,
     "message" -> nonEmptyText,
   )(SendBroadcastForm.apply)(SendBroadcastForm.unapply))
 
@@ -128,11 +130,11 @@ class WebSocketController @Inject()(
       data => {
         pubSub.publish(
           s"invigilatorAssessment:${data.assessment.toString}",
-          AssessmentAnnouncement(UUID.randomUUID.toString, data.message, JavaTime.offsetDateTime),
+          AssessmentAnnouncement(UUID.randomUUID.toString, data.assessment.toString, data.message, JavaTime.offsetDateTime),
         )
         pubSub.publish(
           s"studentAssessment:${data.assessment.toString}",
-          AssessmentAnnouncement(UUID.randomUUID.toString, data.message, JavaTime.offsetDateTime),
+          AssessmentAnnouncement(UUID.randomUUID.toString, data.assessment.toString, data.message, JavaTime.offsetDateTime),
         )
         Redirect(controllers.routes.WebSocketController.broadcastTest())
           .flashing("success" -> Messages("flash.websocket.published"))

@@ -16,6 +16,8 @@
 
         @b3.text(sendBroadcastForm("message"), Symbol("_label") -> "Message", Symbol("autocomplete") -> "off")
 
+        @b3.text(sendBroadcastForm("assessmentId"), Symbol("_label") -> "Assessment id", Symbol("autocomplete") -> "off")
+
         @b3.free(Symbol("_class") -> "spaced-buttons") {
             <button type="submit" class="btn btn-primary">Send WebSocket Broadcast Message</button>
         }
