@@ -14,6 +14,7 @@
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID],
         queriesFromStudents: Seq[Message],
+        totalAnnouncements: Int,
         invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
         latestStudentActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
@@ -37,7 +38,7 @@
             </div>
         </div>
         <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
-            @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, latestStudentActivities)
+            @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, totalAnnouncements, latestStudentActivities)
         </div>
         @if(assessment.isDownloadAvailable) {
             <p>

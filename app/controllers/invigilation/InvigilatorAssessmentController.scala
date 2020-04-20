@@ -10,7 +10,7 @@ import play.api.mvc.{Action, AnyContent}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
-import services.{AssessmentClientNetworkActivityService, ReportingService, SecurityService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.sso.{User, UserLookupService, Usercode}
@@ -27,6 +27,7 @@ class InvigilatorAssessmentController @Inject()(
   messageService: MessageService,
   networkActivityService: AssessmentClientNetworkActivityService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
+  announcementService: AnnouncementService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -51,9 +52,10 @@ class InvigilatorAssessmentController @Inject()(
       tabulaDepartmentService.getDepartments,
       reportingService.expectedSittings(assessmentId),
       messageService.findByAssessment(assessmentId),
-      networkActivityService.getLatestInvigilatorActivityFor(assessmentId)
+      networkActivityService.getLatestInvigilatorActivityFor(assessmentId),
+      announcementService.getByAssessmentId(assessmentId),
     ).successFlatMap {
-      case (departments, studentAssessments, queries, invigilatorActivity) =>
+      case (departments, studentAssessments, queries, invigilatorActivity, announcements) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId))),
           networkActivityService.getLatestActivityFor(studentAssessments.map(_.id))
@@ -70,6 +72,7 @@ class InvigilatorAssessmentController @Inject()(
               students = students,
               department = departments.find(_.code == assessment.departmentCode.string),
               queriesFromStudents = queries.filter(_.sender == MessageSender.Client),
+              totalAnnouncements = announcements.length,
               studentsWithQueries = queries.map(_.client).distinct,
               latestStudentActivities = latestActivities,
             ))
