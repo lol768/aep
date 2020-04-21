@@ -46,6 +46,7 @@ lazy val integration = (project in file("it"))
       Tests.Argument(TestFrameworks.ScalaTest, "-o"), // console out
       Tests.Argument(TestFrameworks.ScalaTest, "-h", s"${target.value}/test-html")
     ),
+    Test / javaOptions ++= Seq("-Xmx256m"),
     Test / test := (Test / test).dependsOn(root / webpack).value,
     // Forking changes the working dir which breaks where we look for things, so don't fork for now.
     // May be able to fix some other way by updating ForkOptions.
@@ -62,7 +63,7 @@ lazy val integration = (project in file("it"))
 val enumeratumVersion = "1.5.15"
 val enumeratumPlayVersion = "1.5.17"
 val enumeratumSlickVersion = "1.5.16"
-val playUtilsVersion = "1.52"
+val playUtilsVersion = "1.53"
 val akkaVersion = "2.6.3"
 val ssoClientVersion = "2.81"
 val warwickUtilsVersion = "20200415"
