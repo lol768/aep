@@ -2,11 +2,13 @@ package services
 
 import java.util.UUID
 
+import akka.Done
 import com.google.inject.ImplementedBy
 import domain.tabula.{AssessmentComponent, ExamPaperSchedule}
 import domain.{Assessment, StudentAssessment}
 import helpers.ServiceResultUtils.traverseSerial
 import javax.inject.{Inject, Singleton}
+import org.quartz.{JobKey, Scheduler, TriggerKey}
 import play.api.Configuration
 import services.TabulaAssessmentImportService.{AssessmentImportResult, DepartmentWithAssessments}
 import services.tabula.TabulaAssessmentService.GetAssessmentsOptions
@@ -31,7 +33,10 @@ object TabulaAssessmentImportService {
 
 @ImplementedBy(classOf[TabulaAssessmentImportServiceImpl])
 trait TabulaAssessmentImportService {
+  def getImportTriggerKey: TriggerKey
   def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]]
+  def pauseImports()(implicit ctx: AuditLogContext): ServiceResult[Unit]
+  def resumeImports()(implicit ctx: AuditLogContext): ServiceResult[Unit]
 }
 
 @Singleton
@@ -41,11 +46,14 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
   configuration: Configuration,
-  features: Features
+  features: Features,
+  scheduler: Scheduler,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
 
-  def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
+  override def getImportTriggerKey: TriggerKey = scheduler.getTriggersOfJob(new JobKey("ImportAssessment")).get(0).getKey
+
+  override def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
     tabulaDepartmentService.getDepartments().successFlatMapTo { departments =>
       logger.info(s"Import started. Total departments to process: ${departments.size}")
 
@@ -54,6 +62,18 @@ class TabulaAssessmentImportServiceImpl @Inject()(
           logger.info(s"Processed total departments: ${departmentWithAssessments.size}")
           departmentWithAssessments
         }
+    }
+
+  override def pauseImports()(implicit ctx: AuditLogContext): ServiceResult[Unit] =
+    ServiceResults.success{
+      scheduler.pauseTrigger(getImportTriggerKey)
+      logger.info("Tabula assessment imports paused")
+    }
+
+  override def resumeImports()(implicit ctx: AuditLogContext): ServiceResult[Unit] =
+    ServiceResults.success {
+      scheduler.resumeTrigger(getImportTriggerKey)
+      logger.info("Tabula assessment imports resumed")
     }
 
   private def process(departmentCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[DepartmentWithAssessments]] = {
