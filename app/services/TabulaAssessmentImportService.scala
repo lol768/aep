@@ -117,8 +117,10 @@ class TabulaAssessmentImportServiceImpl @Inject()(
             )
           }
 
+        val isExcludedFromAEP = schedule.locationName.contains("Assignment") || schedule.locationName.contains("Not required in Covid-19 alternative assesssments")
+
         assessmentService.getByTabulaAssessmentId(ac.id, examProfileCode).successFlatMapTo {
-          case Some(existingAssessment) if schedule.locationName.contains("Assignment") =>
+          case Some(existingAssessment) if isExcludedFromAEP =>
             assessmentService.delete(existingAssessment).successMapTo(_ => None)
 
           case Some(existingAssessment) =>
@@ -128,7 +130,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
             else
               assessmentService.update(updated, Nil).successMapTo(Some(_))
 
-          case None if !schedule.locationName.contains("Assignment") =>
+          case None if !isExcludedFromAEP =>
             val newAssessment = ac.asAssessment(None, schedule, features.overwriteAssessmentTypeOnImport)
             assessmentService.insert(newAssessment, Nil).successMapTo(Some(_))
 
