@@ -1,0 +1,17 @@
+@import tags._
+
+@(
+    currentState: String,
+    isPaused: Boolean,
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@adminLayout("Tabula assessment imports") {
+    <p>Tabula import quartz trigger is currently: <strong>@currentState</strong></p>
+    @b3.vertical.formCSRF(action = controllers.sysadmin.routes.TabulaAssessmentsImportsController.toggleTriggerState()) { implicit fc =>
+        @if(isPaused) {
+            <button type="submit" class="btn btn-success"><i class="fas fa-fw fa-play"></i> Resume imports</button>
+        } else {
+            <button type="submit" class="btn btn-danger"><i class="fas fa-fw fa-pause"></i> Pause imports</button>
+        }
+    }
+}
