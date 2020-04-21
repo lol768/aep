@@ -26,7 +26,7 @@ class ErrorHandler @Inject()(
   private[this] val uploadedFileConfiguration = UploadedFileConfiguration.fromConfiguration(config)
 
   private def isSysAdmin(request: RequestHeader): Boolean = {
-    request.actualUser.exists { user =>
+    requestContext(request).actualUser.exists { user =>
       val role = roleService.getRole(Roles.Sysadmin)
       groupService.isUserInGroup(user.usercode, role.groupName).fold (
         _ => false,
