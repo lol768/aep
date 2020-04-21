@@ -375,7 +375,7 @@ class AdminAssessmentsController @Inject()(
               startTime = data.startTime.map(_.asOffsetDateTime),
               assessmentType = data.assessmentType,
             )
-          } else if (!overwriteAssessmentTypeOnImport) {
+          } else if (assessment.assessmentType.isEmpty || !overwriteAssessmentTypeOnImport) {
             assessment.copy(assessmentType = data.assessmentType)
           } else assessment
 
