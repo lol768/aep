@@ -5,7 +5,7 @@ import java.util.UUID
 import com.google.inject.ImplementedBy
 import domain.AuditEvent.{Operation, Target}
 import domain.tabula.{AssessmentComponent, ExamPaperSchedule}
-import domain.{Assessment, StudentAssessment}
+import domain.{Assessment, JobKeys, StudentAssessment}
 import helpers.ServiceResultUtils.traverseSerial
 import javax.inject.{Inject, Singleton}
 import org.quartz.{JobKey, Scheduler, TriggerKey}
@@ -53,7 +53,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
 
-  override def getImportTriggerKey: TriggerKey = scheduler.getTriggersOfJob(new JobKey("ImportAssessment")).get(0).getKey
+  override def getImportTriggerKey: TriggerKey = scheduler.getTriggersOfJob(JobKeys.tabulaAssessmentImportJobKey).get(0).getKey
 
   override def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
     tabulaDepartmentService.getDepartments().successFlatMapTo { departments =>
