@@ -69,6 +69,7 @@ class NavigationServiceImpl @Inject()(
   //private lazy val approvals = NavigationPage("Approvals", controllers.admin.routes.ApprovalsController.index())
   private lazy val reporting = NavigationPage("Reporting", controllers.admin.routes.ReportingController.index())
   private lazy val dataGeneration = NavigationPage("Data generation", controllers.sysadmin.routes.DummyDataGenerationController.showForm())
+  private lazy val generateTabulaSubmissions = NavigationPage("Generate Tabula Submissions", controllers.sysadmin.routes.SysadminTestController.assignmentSubmissions())
   private lazy val studentActivity = NavigationPage("View student activity", controllers.sysadmin.routes.ViewStudentActivityController.index)
 
   private lazy val production = config.get[Boolean]("environment.production")
@@ -81,7 +82,7 @@ class NavigationServiceImpl @Inject()(
       masquerade,
       studentActivity,
     )
-    if (production) baseItems else baseItems :+ dataGeneration
+    if (production) baseItems else baseItems :+ dataGeneration :+ generateTabulaSubmissions
   }
 
   private lazy val sysadmin =
