@@ -32,8 +32,8 @@ object WebSocketActor {
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
     announcementService: AnnouncementService,
     additionalTopics: Set[String],
-  )(implicit ec: ExecutionContext, t: TimingContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, additionalTopics))
+  )(implicit ec: ExecutionContext, ac: AuditLogContext): Props =
+    Props(new WebSocketActor(out, pubsub, loginContext, ac.ipAddress, ac.userAgent, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, additionalTopics))
 
   case class AssessmentAnnouncement(id: String, assessmentId: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
@@ -92,6 +92,8 @@ class WebSocketActor @Inject() (
   out: ActorRef,
   pubsub: ActorRef,
   loginContext: LoginContext,
+  ipAddress: Option[String],
+  userAgent: Option[String],
   @Assisted studentAssessmentService: StudentAssessmentService,
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   @Assisted announcementService: AnnouncementService,
@@ -105,7 +107,13 @@ class WebSocketActor @Inject() (
   lazy val currentUsercode: Usercode = loginContext.user.get.usercode
   lazy val currentUniversityID: UniversityID = loginContext.user.flatMap(_.universityId).get
 
-  implicit val noTiming: TimingContext = TimingContext.none
+  // Keep this as a def to get a new timingData every time, so it doesn't grow forever
+  implicit def auditLogContext: AuditLogContext = AuditLogContext(
+    usercode = Some(currentUsercode),
+    ipAddress = ipAddress,
+    userAgent = userAgent,
+    timingData = new TimingContext.Data()
+  )
 
   pubsubSubscribe()
 
@@ -159,7 +167,7 @@ class WebSocketActor @Inject() (
             )
 
           if (networkInformation.studentAssessmentId.nonEmpty || networkInformation.assessmentId.nonEmpty) {
-            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
+            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)
               .recover {
                 case e: Exception =>
                   log.error(e, s"Error storing AssessmentClientNetworkActivity for ${if(networkInformation.studentAssessmentId.nonEmpty) s"StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}" else s"Assessment ${assessmentClientNetworkActivity.assessmentId}"}")
