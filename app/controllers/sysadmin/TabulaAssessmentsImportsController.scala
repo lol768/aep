@@ -33,17 +33,19 @@ class TabulaAssessmentsImportsController @Inject()(
     Ok(views.html.sysadmin.tabulaAssessmentImports(triggerState.name, isPaused))
   }
 
-  def toggleTriggerState(): Action[AnyContent] = RequireSysadmin { implicit request =>
+  def toggleTriggerState(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
     val triggerState = getTriggerState
     val isPaused = triggerState == TriggerState.PAUSED
     if (isPaused) {
-      tabulaAssessmentImportService.resumeImports()
-      Redirect(controllers.sysadmin.routes.TabulaAssessmentsImportsController.showForm())
-        .flashing("success" -> Messages("flash.tabulaAssessmentImports.resumed"))
+      tabulaAssessmentImportService.resumeImports().successMap { _ =>
+        Redirect(controllers.sysadmin.routes.TabulaAssessmentsImportsController.showForm())
+          .flashing("success" -> Messages("flash.tabulaAssessmentImports.resumed"))
+      }
     } else {
-      tabulaAssessmentImportService.pauseImports()
-      Redirect(controllers.sysadmin.routes.TabulaAssessmentsImportsController.showForm())
-        .flashing("success" -> Messages("flash.tabulaAssessmentImports.paused"))
+      tabulaAssessmentImportService.pauseImports().successMap { _ =>
+        Redirect(controllers.sysadmin.routes.TabulaAssessmentsImportsController.showForm())
+          .flashing("success" -> Messages("flash.tabulaAssessmentImports.paused"))
+      }
     }
   }
 

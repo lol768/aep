@@ -2,14 +2,15 @@ package services
 
 import java.util.UUID
 
-import akka.Done
 import com.google.inject.ImplementedBy
+import domain.AuditEvent.{Operation, Target}
 import domain.tabula.{AssessmentComponent, ExamPaperSchedule}
 import domain.{Assessment, StudentAssessment}
 import helpers.ServiceResultUtils.traverseSerial
 import javax.inject.{Inject, Singleton}
 import org.quartz.{JobKey, Scheduler, TriggerKey}
 import play.api.Configuration
+import play.api.libs.json.Json
 import services.TabulaAssessmentImportService.{AssessmentImportResult, DepartmentWithAssessments}
 import services.tabula.TabulaAssessmentService.GetAssessmentsOptions
 import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
@@ -18,7 +19,7 @@ import warwick.core.Logging
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.core.system.AuditLogContext
+import warwick.core.system.{AuditLogContext, AuditService}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,8 +36,8 @@ object TabulaAssessmentImportService {
 trait TabulaAssessmentImportService {
   def getImportTriggerKey: TriggerKey
   def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]]
-  def pauseImports()(implicit ctx: AuditLogContext): ServiceResult[Unit]
-  def resumeImports()(implicit ctx: AuditLogContext): ServiceResult[Unit]
+  def pauseImports()(implicit ctx: AuditLogContext): Future[ServiceResult[Unit]]
+  def resumeImports()(implicit ctx: AuditLogContext): Future[ServiceResult[Unit]]
 }
 
 @Singleton
@@ -48,6 +49,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   configuration: Configuration,
   features: Features,
   scheduler: Scheduler,
+  auditService: AuditService,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
 
@@ -64,16 +66,24 @@ class TabulaAssessmentImportServiceImpl @Inject()(
         }
     }
 
-  override def pauseImports()(implicit ctx: AuditLogContext): ServiceResult[Unit] =
-    ServiceResults.success{
-      scheduler.pauseTrigger(getImportTriggerKey)
-      logger.info("Tabula assessment imports paused")
+  override def pauseImports()(implicit ctx: AuditLogContext): Future[ServiceResult[Unit]] =
+    auditService.audit(Operation.TabulaAssessmentImport.Pause, "ImportAssessment", Target.TabulaAssessmentImports, Json.obj()) {
+      Future.successful {
+        ServiceResults.success {
+          scheduler.pauseTrigger(getImportTriggerKey)
+          logger.info("Tabula assessment imports paused")
+        }
+      }
     }
 
-  override def resumeImports()(implicit ctx: AuditLogContext): ServiceResult[Unit] =
-    ServiceResults.success {
-      scheduler.resumeTrigger(getImportTriggerKey)
-      logger.info("Tabula assessment imports resumed")
+  override def resumeImports()(implicit ctx: AuditLogContext): Future[ServiceResult[Unit]] =
+    auditService.audit(Operation.TabulaAssessmentImport.Resume, "ImportAssessment", Target.TabulaAssessmentImports, Json.obj()) {
+      Future.successful {
+        ServiceResults.success {
+          scheduler.resumeTrigger(getImportTriggerKey)
+          logger.info("Tabula assessment imports resumed")
+        }
+      }
     }
 
   private def process(departmentCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[DepartmentWithAssessments]] = {
