@@ -8,7 +8,7 @@ import domain.dao.TabulaAssignmentTables.StoredTabulaAssignment
 import domain.dao.{DaoRunner, TabulaAssignmentDao}
 import domain.tabula.TabulaAssignment
 import javax.inject.{Inject, Singleton}
-import warwick.core.helpers.ServiceResults
+import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
@@ -36,8 +36,8 @@ class TabulaAssignmentServiceImpl @Inject()(
       id = tabulaAssignment.id,
       name = tabulaAssignment.name,
       academicYear = tabulaAssignment.academicYear,
-      created = OffsetDateTime.now(),
-      version = OffsetDateTime.now()
+      created = JavaTime.offsetDateTime,
+      version = JavaTime.offsetDateTime
     )
 
     daoRunner.run(dao.insert(stored)).map(_ => ServiceResults.success(tabulaAssignment))
