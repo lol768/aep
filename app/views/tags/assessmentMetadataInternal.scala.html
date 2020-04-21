@@ -12,7 +12,12 @@
 
 @assessment.assessmentType.map { at =>
     <dt>Type</dt>
-    <dd>@at.studentFriendlyLabel</dd>
+    <dd>
+        @at.studentFriendlyLabel
+        @if(assessment.durationStyle == FixedStart) {
+            (fixed-time)
+        }
+    </dd>
 }
 
 @assessment.brief.text.map { description =>
