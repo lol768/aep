@@ -14,6 +14,8 @@ object JobKeys {
 
   def toErrorJobKey(original: JobKey) = new JobKey(s"${original.getName}-${JobResult.FailedJobKeyName}", original.getGroup)
 
+  val tabulaAssessmentImportJobKey = new JobKey("ImportAssessment")
+
   case object ImportAssessmentJob extends ByName {
     override val name = "ImportAssessment"
     override val healthCheckJobName = "import-assessments"

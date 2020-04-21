@@ -69,7 +69,8 @@ class NavigationServiceImpl @Inject()(
   //private lazy val approvals = NavigationPage("Approvals", controllers.admin.routes.ApprovalsController.index())
   private lazy val reporting = NavigationPage("Reporting", controllers.admin.routes.ReportingController.index())
   private lazy val dataGeneration = NavigationPage("Data generation", controllers.sysadmin.routes.DummyDataGenerationController.showForm())
-  private lazy val studentActivity = NavigationPage("View student activity", controllers.sysadmin.routes.ViewStudentActivityController.index)
+  private lazy val studentActivity = NavigationPage("View student activity", controllers.sysadmin.routes.ViewStudentActivityController.index())
+  private lazy val tabulaAssessmentImports = NavigationPage("Tabula assessment imports", controllers.sysadmin.routes.TabulaAssessmentsImportsController.showForm())
 
   private lazy val production = config.get[Boolean]("environment.production")
 
@@ -80,6 +81,7 @@ class NavigationServiceImpl @Inject()(
       myWarwickQueue,
       masquerade,
       studentActivity,
+      tabulaAssessmentImports,
     )
     if (production) baseItems else baseItems :+ dataGeneration
   }
