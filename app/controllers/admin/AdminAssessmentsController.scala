@@ -7,7 +7,7 @@ import akka.Done
 import controllers.{BaseController, FormMappings}
 import domain.Assessment.{AssessmentType, Brief, Platform, State}
 import domain.tabula.SitsProfile
-import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
+import domain.{Assessment, Department, DepartmentCode, Sitting, StudentAssessment}
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
@@ -341,6 +341,10 @@ class AdminAssessmentsController @Inject()(
           Ok(views.html.admin.assessments.view(assessment, tabulaAssignments, studentAssessments, studentInformation, departments.find(_.code == assessment.departmentCode.string), invigilators, !overwriteAssessmentTypeOnImport))
         }
     }
+  }
+
+  def studentPreview(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id) { implicit request =>
+    Ok(views.html.admin.assessments.studentPreview(request.assessment))
   }
 
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>

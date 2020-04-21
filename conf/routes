@@ -60,6 +60,7 @@ POST        /admin/assessments/:id                                @controllers.a
 GET         /admin/assessments/:id/delete                         @controllers.admin.AdminAssessmentsController.deleteForm(id: UUID)
 POST        /admin/assessments/:id/delete                         @controllers.admin.AdminAssessmentsController.delete(id: UUID)
 GET         /admin/assessments/:id/view                           @controllers.admin.AdminAssessmentsController.view(id: UUID)
+GET         /admin/assessments/:id/student-preview                @controllers.admin.AdminAssessmentsController.studentPreview(id: UUID)
 POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AdminAssessmentsController.generateAssignments(id: UUID)
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp

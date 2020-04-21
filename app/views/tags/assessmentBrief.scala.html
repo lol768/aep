@@ -1,0 +1,37 @@
+@import domain.Assessment.Platform
+@import domain.Assessment
+@import java.util.UUID
+
+@(assessment: Assessment, studentAssessmentId: Option[UUID] = None)(implicit request: RequestHeader, context: RequestContext)
+@if((assessment.platform == Set(Platform.OnlineExams) && assessment.brief.urls.contains(Platform.OnlineExams)) || assessment.brief.files.nonEmpty) {
+    @if(studentAssessmentId.isEmpty) {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+            The assessment brief is only shown to students that have started the assessment.
+        </div>
+    }
+    <div class="panel panel-default">
+        <div class="brand-stripe"></div>
+        <div class="panel-body">
+            <h2>Assessment brief</h2>
+            @studentAssessmentId.map { id =>
+                <span class="in-progress-assessment-data" data-id="@id"></span>
+            }
+
+            <p>Your department has provided the following information:</p>
+            <ul class="list-unstyled">
+                @if(assessment.platform == Set(Platform.OnlineExams) && assessment.brief.urls.contains(Platform.OnlineExams)) {
+                    <li>
+                        <a href="@assessment.brief.urls(Platform.OnlineExams)" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
+                    </li>
+                }
+                @assessment.brief.files.map { file =>
+                    <li>
+                        <a class="assessment-brief-file" target="_blank" rel="noreferrer" href="@controllers.routes.AssessmentController.downloadFile(assessment.id, file.id)">@file.fileName</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
