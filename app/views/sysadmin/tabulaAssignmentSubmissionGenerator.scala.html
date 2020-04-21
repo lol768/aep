@@ -6,18 +6,21 @@
 
 @adminLayout("Generate Tabula Submissions") {
   <div class="alert alert-danger">
-      Clicking submit button on this page will generate tabula submissions. If student id is entered then only that submission will be loaded to tabula. Use carefully.
+      Clicking submit button on this page will generate tabula submissions. If student id is entered then just that submission will be generated. You can only create submissions for students  who have not been uploaded to tabula. Use carefully.
   </div>
 
   <div class="row">
     <div class="col-sm-6">
 
       @b3.vertical.formCSRF(controllers.sysadmin.routes.SysadminTestController.generateAssignmentSubmissions()) { implicit fc =>
+        @views.html.tags.globalErrors(form)
         @b3.text(form("assessmentId"),
-          Symbol("_label") -> "Enter assessment Id of the assessment that already has assignment attached"
+          Symbol("_label") -> "Assessment Id",
+          Symbol("_help") -> "Assessment should have assignment attached and has some students at least who appeared for exams.",
         )
         @b3.text(form("studentId"),
-          Symbol("_label") -> "Enter student Id(optional)"
+          Symbol("_label") -> "Student Id(optional)",
+          Symbol("_help") -> "Student should have at least uploaded one file and not been uploaded to tabula already.",
         )
         <button type="submit" class="btn btn-primary">
           Submit

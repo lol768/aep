@@ -9,7 +9,7 @@ import domain.tabula._
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
 import org.quartz.Scheduler
-import play.api.data.Form
+import play.api.data.{Form, FormError}
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.libs.json.{JsString, Json, Writes}
@@ -215,8 +215,13 @@ class SysadminTestController @Inject()(
             case _ =>  None
           }
           tabulaAssessments.generateAssignmentSubmissions(assessment, filteredStudentAssessments).successMap { submission =>
-            Redirect(routes.AdminAssessmentsController.view(assessment.id)).flashing {
-              "success" -> Messages("flash.studentAssessment.updated.count", submission.size)
+            if(submission.isEmpty) {
+              val formWithError = tabulaSubmissionGenarotorForm.withError(FormError("", "error.tabula.assessment.invalid"))
+                Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(formWithError))
+            } else {
+              Redirect(routes.AdminAssessmentsController.view(assessment.id)).flashing {
+                "success" -> Messages("flash.studentAssessment.updated.count", submission.size)
+              }
             }
           }
         }

@@ -291,7 +291,7 @@ object TabulaResponseParsers {
 
   val attachmentReads: Reads[Attachment] = (
     (__ \ "id").read[String] and
-      (__ \ "fileName").read[String]
+      (__ \ "filename").read[String]
     ) (Attachment.apply _)
 
   val submissionReads: Reads[Submission] = (

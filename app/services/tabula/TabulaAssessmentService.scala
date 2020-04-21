@@ -1,14 +1,15 @@
 package services.tabula
 
-import java.io.InputStream
-import java.time.Duration
+import java.io.ByteArrayInputStream
 import java.util.UUID
 
+import akka.stream.IOResult
 import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.util.ByteString
 import com.google.inject.ImplementedBy
 import com.google.inject.name.Named
 import domain.tabula.{Assignment, Submission}
-import domain.{Assessment, StudentAssessment, tabula}
+import domain.{Assessment, SittingMetadata, StudentAssessment, tabula}
 import helpers.{TrustedAppsHelper, WSRequestUriBuilder}
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
@@ -28,7 +29,6 @@ import warwick.core.helpers.ServiceResults.{ServiceError, ServiceResult}
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.{TimingContext, TimingService}
-import warwick.fileuploads.UploadedFile
 import warwick.objectstore.ObjectStorageService
 
 import scala.concurrent.duration._
@@ -192,30 +192,29 @@ class TabulaAssessmentServiceImpl @Inject()(
   }
 
   //TODO - parameters need changing, added for time being
-  private def createSubmission(assessment: Assessment, studentAssessment: StudentAssessment, assignmentId: UUID): Future[ServiceResult[Submission]] = {
+  private def createSubmission(sitting: SittingMetadata, assignmentId: UUID): Future[ServiceResult[Submission]] = {
     implicit def l: Logger = logger
 
+    // Note - point this url to requestbin in case want to cross check what curl request was generated(Handy)
     val url = config.getCreateAssignmentSubmissionUrl(assignmentId)
 
-
-    val deadline = studentAssessment.startTime.flatMap { startTime =>
-      assessment.duration.map { d =>
-        startTime.plus(d.plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO)).plus(Assessment.uploadGraceDuration))
-      }
-    }
-    val fileInfo = studentAssessment.uploadedFiles.map { file =>
+    val fileInfo = sitting.studentAssessment.uploadedFiles.map { file =>
+      val inputStream = objectStorageService.fetch(file.id.toString).orNull
       file -> objectStorageService.fetch(file.id.toString).orNull
-
-    }.toMap
+      FilePart("attachments", file.fileName, Some(file.contentType), StreamConverters.fromInputStream(() => inputStream))
+    }
+    //required for API though it is blank data
+    val emptyJsonInputStream = new ByteArrayInputStream(Json.obj().toString().getBytes("UTF-8"))
+    val submissionJsonFile = FilePart("submission", "submission.json", Some("application/json"), StreamConverters.fromInputStream(() => emptyJsonInputStream))
+    val data: Seq[FilePart[Source[ByteString, Future[IOResult]]]] = fileInfo :+ submissionJsonFile
     val req = ws.url(url)
-      .withHttpHeaders("Content-Type" -> "multipart/form-data")
       .withQueryStringParameters(Seq(
-        Some("universityId" -> studentAssessment.studentId.string),
-        Some("submittedDate" -> studentAssessment.submissionTime.get.toString),
-        Some("submissionDeadline" -> deadline.get.toString),
+        Some("universityId" -> sitting.studentAssessment.studentId.string),
+        Some("submittedDate" -> sitting.studentAssessment.submissionTime.get.toString),
+         Some("submissionDeadline" -> sitting.studentAssessment.startTime.get.plus(sitting.onTimeDuration.get).toString),
       ).flatten: _*)
 
-    doRequest(url, "POST", req, description = "createSubmission", fileInfo).successFlatMapTo { jsValue =>
+    doRequest(url, "POST", req, description = "createSubmission", data).successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.responseSubmissionReads)
     }
   }
@@ -224,11 +223,12 @@ class TabulaAssessmentServiceImpl @Inject()(
   //TODO change this whole method -  Need  to get list of studentAssessment that have actually uploaded file and then invoke create submission method
     timing.time(TimingCategories.TabulaWrite) {
       val assignment = assessment.tabulaAssignments.head
+      //Only allow submission to be uploaded to tabuala if not already done in the past.
+      //and check we pick student assessments who actually sat for exams (would have uploaded some file in case some didn't finalise)
       studentAssessment match {
-        case Some(studentAssessment) =>  {
-          ServiceResults.futureSequence(Seq(studentAssessment).filter(s => !s.uploadedFiles.isEmpty).map { sa =>
-            val sub = createSubmission(assessment, sa, assignment)
-            sub.successFlatMapTo { submission =>
+        case Some(studentAssessment) => {
+          ServiceResults.futureSequence(Seq(studentAssessment).filter(s => s.tabulaSubmissionId.isEmpty && !s.uploadedFiles.isEmpty).map { sa =>
+            createSubmission(SittingMetadata(sa, assessment.asAssessmentMetadata), assignment).successFlatMapTo { submission =>
               studentAssessmentService.upsert(studentAssessment.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
             }
           })
@@ -236,10 +236,10 @@ class TabulaAssessmentServiceImpl @Inject()(
         case _ => {
           studentAssessmentService.byAssessmentId(assessment.id)
             .successFlatMapTo { students =>
-              ServiceResults.futureSequence(students.filter(s => s.tabulaSubmissionId.isEmpty && !s.uploadedFiles.isEmpty).map { studentAssessment =>
-                val sub = createSubmission(assessment, studentAssessment, assignment)
+              ServiceResults.futureSequence(students.filter(s => s.tabulaSubmissionId.isEmpty && !s.uploadedFiles.isEmpty).map { sa =>
+                val sub = createSubmission(SittingMetadata(sa, assessment.asAssessmentMetadata), assignment)
                 sub.successFlatMapTo { submission =>
-                  studentAssessmentService.upsert(studentAssessment.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
+                  studentAssessmentService.upsert(sa.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
                 }
               }
 
@@ -271,7 +271,7 @@ class TabulaHttp @Inject()(
     * @param l           Logger, for logging
     * @return JsValue if request was trusted (but use parseAndValidate to check it was successful)
     */
-  def doRequest(url: String, method: String, wsRequest: WSRequest, description: String, files: Map[UploadedFile, InputStream] = Map.empty)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
+  def doRequest(url: String, method: String, wsRequest: WSRequest, description: String, data: Seq[FilePart[Source[ByteString, Future[IOResult]]]] = Seq.empty)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
     val trustedHeaders: Seq[(String, String)] = TrustedApplicationUtils.getRequestHeaders(
       trustedApplicationsManager.getCurrentApplication,
       config.usercode,
@@ -279,15 +279,10 @@ class TabulaHttp @Inject()(
     ).asScala.map(h => h.getName -> h.getValue).toSeq
 
     val req = wsRequest.addHttpHeaders(trustedHeaders: _*)
-    val res = if (files.isEmpty) {
+    val res = if (data.isEmpty) {
       req.execute(method)
     } else {
-      val fileParts = files.map { case (uploadeFile, inputStream) => FilePart("files", uploadeFile.fileName, Some(uploadeFile.contentType), StreamConverters.fromInputStream(() => inputStream))
-      }
-      //val singleFilePart = fileParts.head
-      //req.post(Source(singleFilePart :: List()))
-      req.post(Source(fileParts))
-//      req.post(Source(fileParts ++ Seq(DataPart("key", "value"))
+      req.post(Source(data))
     }
     res.map { r =>
       try {
