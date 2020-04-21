@@ -46,7 +46,6 @@ lazy val integration = (project in file("it"))
       Tests.Argument(TestFrameworks.ScalaTest, "-o"), // console out
       Tests.Argument(TestFrameworks.ScalaTest, "-h", s"${target.value}/test-html")
     ),
-    Test / javaOptions ++= Seq("-Xmx256m"),
     Test / test := (Test / test).dependsOn(root / webpack).value,
     // Forking changes the working dir which breaks where we look for things, so don't fork for now.
     // May be able to fix some other way by updating ForkOptions.
