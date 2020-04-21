@@ -171,7 +171,7 @@ object Fixtures {
       def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
         val tempFile = temporaryFileCreator.create("night-heron-500-beautiful", ".jpg")
         byteSourceResource(path).copyTo(Files.asByteSink(tempFile))
-        TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile.path)
+        TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile)
       }
     }
 
@@ -181,7 +181,7 @@ object Fixtures {
       def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
         val tempFile = temporaryFileCreator.create("home-office-statement", ".pdf")
         byteSourceResource(path).copyTo(Files.asByteSink(tempFile))
-        TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile.path)
+        TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile)
       }
     }
 
