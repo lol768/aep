@@ -1,0 +1,26 @@
+@import domain.messaging.Message
+@import domain.tabula
+@import tags._
+@import warwick.sso.UniversityID
+@(
+  messages: Seq[Message],
+  students: Map[UniversityID, tabula.SitsProfile],
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+<div class="query-container">
+  @messages.map { query =>
+    <div class="query">
+      <div class="query-user">
+        @students.get(query.student).map { u =>
+          @u.fullName (@query.student.string)
+        }.getOrElse(query.student.string)
+      </div>
+      <div class="query-text">
+        @query.text
+      </div>
+      <div class="query-time">
+        @localisedDatetime(query.created)
+      </div>
+    </div>
+  }
+</div>

@@ -3,7 +3,7 @@ import $ from 'jquery';
 function handleMessage(data) {
   $('<div/>')
     .addClass('query new')
-    .append($('<div/>').addClass('query-user').text(data.client))
+    .append($('<div/>').addClass('query-user').text(data.senderName))
     .append($('<div/>').addClass('query-text').html(data.messageHTML))
     .append($('<div/>').addClass('query-time').html(data.timestamp))
     .prependTo($('.query-container'));

@@ -49,17 +49,17 @@ class AnnouncementAndQueriesController @Inject()(
       messageService.findByStudentAssessment(assessmentId, universityId),
       announcementService.getByAssessmentId(assessmentId),
       studentAssessmentService.get(universityId, assessmentId),
-      studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId))
+      studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId)),
+      Future.successful(ServiceResults.fromTry(userLookupService.getUsers(req.assessment.invigilators.toSeq))),
     ).successMap {
-      case (departments, queries, announcements, studentAssessment, profile) =>
-        val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery))
-          .sortBy(_.date)(Ordering[OffsetDateTime].reverse)
-        val student = Map(universityId -> profile)
+      case (departments, queries, announcements, studentAssessment, profile, invigilators) =>
         Ok(views.html.invigilation.studentQueries(
           req.assessment,
           studentAssessment,
-          announcementsAndQueries,
-          student,
+          announcements.sortBy(_.created)(Ordering[OffsetDateTime].reverse),
+          queries.sortBy(_.created)(Ordering[OffsetDateTime].reverse),
+          Map(universityId -> profile),
+          invigilators,
           department = departments.find(_.code == req.assessment.departmentCode.string),
         ))
     }
@@ -77,11 +77,11 @@ class AnnouncementAndQueriesController @Inject()(
       Future.successful(ServiceResults.fromTry(userLookupService.getUsers(assessment.invigilators.toSeq))),
     ).successFlatMap {
       case (departments, queries, announcements, invigilators) =>
-        studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = queries.map(_.client))).successMap { students =>
-          val announcementsAndQueries = (queries.map(_.asAnnouncementOrQuery) ++ announcements.map(_.asAnnouncementOrQuery)).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
+        studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = queries.map(_.student))).successMap { students =>
           Ok(views.html.invigilation.allQueries(
             assessment,
-            announcementsAndQueries,
+            announcements.sortBy(_.created)(Ordering[OffsetDateTime].reverse),
+            queries.sortBy(_.created)(Ordering[OffsetDateTime].reverse),
             students,
             department = departments.find(_.code == assessment.departmentCode.string),
             form,

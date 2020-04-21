@@ -4,23 +4,17 @@ import java.util.UUID
 
 import domain.dao.AbstractDaoTest
 import domain.messaging.MessageSender._
-import domain.messaging.{Message, MessageSave, MessageSender}
+import domain.messaging.{Message, MessageSave}
 import helpers.CleanUpDatabaseAfterEachTest
-import warwick.core.helpers.ServiceResults.ServiceResultException
 import warwick.sso.UniversityID
 
 class MessageServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTest {
 
-  val service = get[MessageService]
-  val client1 = UniversityID("1234567")
-  val client2 = UniversityID("1234568")
+  private val service = get[MessageService]
+  private val client1 = UniversityID("1234567")
+  private val client2 = UniversityID("1234568")
 
   "send" should {
-    "reject a message to client" in {
-      val sr = service.send(MessageSave("Hello", Team), client1, UUID.randomUUID).futureValue
-      sr.isLeft mustBe true
-    }
-
     "store a message to team" in {
       val message = sendMessageForAssessment(UUID.randomUUID, client1)
       val fetched = service.findById(message.id).serviceValue.value
@@ -47,5 +41,5 @@ class MessageServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTe
 
 
   private def sendMessageForAssessment(assessmentId: UUID, client: UniversityID): Message =
-    service.send(MessageSave("Hello", Client), client, assessmentId).serviceValue
+    service.send(MessageSave("Hello", Student, None), client, assessmentId).serviceValue
 }

@@ -1,14 +1,11 @@
-@import tags._
-@import domain.Assessment
 @import controllers.MessageController.MessageData
-@import domain.AnnouncementOrQuery
-@import warwick.sso.UniversityID
-@import warwick.sso.Usercode
-@import warwick.sso.User
-@import domain.tabula
+@import domain.messaging.Message
+@import domain.{Assessment, tabula}
+@import tags._
+@import warwick.sso.{UniversityID, User, Usercode}
 @(
     assessment: Assessment,
-    messages: Seq[AnnouncementOrQuery],
+    messages: Seq[Message],
     student: Map[UniversityID, tabula.SitsProfile],
     form: Form[MessageData],
     invigilators: Map[Usercode, User] = Map.empty[Usercode, User]
@@ -51,7 +48,7 @@
         </div>
         <div class="col-sm-6">
             <h3>Issues I have logged</h3>
-            @displayAnnouncementsAndQueries(messages, student, "query", invigilators)
+            @displayMessages(messages, student)
         </div>
     </div>
 

@@ -1,16 +1,15 @@
+@import domain.messaging.Message
+@import domain.{Announcement, Assessment, SittingMetadata, StudentAssessment, tabula}
 @import tags._
-@import domain.Assessment
-@import domain.tabula
-@import domain.StudentAssessment
-@import domain.SittingMetadata
-@import warwick.sso.UniversityID
-@import domain.AnnouncementOrQuery
+@import warwick.sso.{UniversityID, User, Usercode}
 @(
-        assessment: Assessment,
-        studentAssessment: StudentAssessment,
-        announcementsAndQueries: Seq[AnnouncementOrQuery],
-        student: Map[UniversityID, tabula.SitsProfile],
-        department: Option[tabula.Department],
+    assessment: Assessment,
+    studentAssessment: StudentAssessment,
+    announcements: Seq[Announcement],
+    messages: Seq[Message],
+    student: Map[UniversityID, tabula.SitsProfile],
+    invigilators: Map[Usercode, User],
+    department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout("Queries from " + student.get(studentAssessment.studentId).map(_.fullName).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode) {
     <div class="id7-main-content">
@@ -18,11 +17,11 @@
         <div class="row">
             <div class="col-md-6">
                 <h3>Announcements</h3>
-                @displayAnnouncementsAndQueries(announcementsAndQueries.filter(_.isAnnouncement), student, "announcement")
+                @displayAnnouncements(announcements, invigilators)
             </div>
             <div class="col-md-6">
                 <h3>Queries</h3>
-                @displayAnnouncementsAndQueries(announcementsAndQueries.filter(_.isQuery), student, "query")
+                @displayMessages(messages, student)
             </div>
         </div>
         <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">

@@ -44,7 +44,7 @@ object WebSocketActor {
       AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, announcement.text, announcement.created)
   }
 
-  case class AssessmentMessage(id: String, assessmentId: String, messageText: String, sender: MessageSender, client: String, timestamp: OffsetDateTime) {
+  case class AssessmentMessage(messageId: String, assessmentId: String, messageText: String, sender: MessageSender, senderName: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
@@ -125,13 +125,13 @@ class WebSocketActor @Inject() (
 
     case am: AssessmentMessage => out ! Json.obj(
       "type" -> "assessmentMessage",
-      "id" -> am.id,
+      "id" -> am.messageId,
       "assessmentId" -> am.assessmentId,
       "messageHTML" -> am.messageHTML.body,
       "messageText" -> am.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(am.timestamp).toString,
       "sender" -> am.sender.entryName,
-      "client" -> am.client
+      "senderName" -> am.senderName
     )
 
     case SubscribeAck(Subscribe(topic, _, _)) =>

@@ -1,19 +1,16 @@
-@import domain.Assessment
-@import domain.tabula
-@import domain.AnnouncementOrQuery
-@import warwick.sso.UniversityID
-@import warwick.sso.User
-@import warwick.sso.Usercode
-@import views.html.invigilation._
-@import tags._
 @import controllers.invigilation.AnnouncementAndQueriesController.AnnouncementData
+@import domain.messaging.Message
+@import domain.{Announcement, Assessment, tabula}
+@import tags._
+@import warwick.sso.{UniversityID, User, Usercode}
 @(
-        assessment: Assessment,
-        announcementsAndQueries: Seq[AnnouncementOrQuery],
-        students: Map[UniversityID, tabula.SitsProfile],
-        department: Option[tabula.Department],
-        form: Form[AnnouncementData],
-        invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
+      assessment: Assessment,
+      announcements: Seq[Announcement],
+      messages: Seq[Message],
+      students: Map[UniversityID, tabula.SitsProfile],
+      department: Option[tabula.Department],
+      form: Form[AnnouncementData],
+      invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout("Announcements and queries for " + assessment.moduleCode, extraClasses = Seq("allAnnouncementsAndQueries")) {
   <div class="id7-main-content">
@@ -27,11 +24,11 @@
 
           @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fas fa-plus fa-fw"></i> Add }
         }
-        @displayAnnouncementsAndQueries(announcementsAndQueries.filter(_.isAnnouncement), students, "announcement", invigilators)
+        @displayAnnouncements(announcements, invigilators)
       </div>
       <div class="col-md-6">
         <h3>Queries</h3>
-        @displayAnnouncementsAndQueries(announcementsAndQueries.filter(_.isQuery), students, "query", invigilators)
+        @displayMessages(messages, students)
       </div>
     </div>
 

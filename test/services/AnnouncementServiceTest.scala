@@ -3,11 +3,11 @@ package services
 import java.util.UUID
 
 import actors.WebSocketActor.AssessmentAnnouncement
-import domain.{Announcement, Fixtures}
+import controllers.WebSocketController.Topics
 import domain.dao.AbstractDaoTest
+import domain.{Announcement, Fixtures}
 import helpers.CleanUpDatabaseAfterEachTest
 import org.mockito.Mockito._
-import org.scalatest.BeforeAndAfterEach
 import play.api.Application
 import play.api.inject._
 import warwick.core.helpers.JavaTime
@@ -34,11 +34,11 @@ class AnnouncementServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterE
 
       service.save(announcement)
       // students
-      verify(mockPubSubService).publish(s"studentAssessment:${announcement.assessment}",
+      verify(mockPubSubService).publish(Topics.allStudentsAssessment(announcement.assessment),
         AssessmentAnnouncement.from(announcement))
 
       // invigilators
-      verify(mockPubSubService).publish(s"invigilatorAssessment:${announcement.assessment}",
+      verify(mockPubSubService).publish(Topics.allInvigilatorsAssessment(announcement.assessment),
         AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, s"${Fixtures.users.staff1.name.full.get}: ${announcement.text}", announcement.created))
     }
   }

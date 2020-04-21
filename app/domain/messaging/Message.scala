@@ -3,25 +3,30 @@ package domain.messaging
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import domain.{AnnouncementOrQuery, DatabaseOperation, StoredVersion, Versioned}
+import domain.{DatabaseOperation, StoredVersion, Versioned}
 import enumeratum.{EnumEntry, PlayEnum}
+import play.twirl.api.Html
 import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.sso.{UniversityID, User, Usercode}
 
 /**
   * Private message which can be sent to an invigilator.
-  * At present this is one-way only, with replies coming in the form of announcements to the entire cohort if appropriate.
+  * If features.twoWayMessages is true this is two-way between a single student and invigilators
   */
 case class Message (
   id: UUID,
   text: String,
   sender: MessageSender,
-  client: UniversityID,
+  student: UniversityID,
   assessmentId: UUID,
+  staffId: Option[Usercode],
   created: OffsetDateTime = JavaTime.offsetDateTime,
   version: OffsetDateTime = JavaTime.offsetDateTime,
 ) extends Versioned[Message] {
+
+  val html: Html = Html(warwick.core.views.utils.nl2br(text).body)
+
   override def atVersion(at: OffsetDateTime): Message = copy(version = at)
 
   override def storedVersion[B <: StoredVersion[Message]](operation: DatabaseOperation, timestamp: OffsetDateTime)(implicit ac: AuditLogContext): B =
@@ -29,8 +34,9 @@ case class Message (
       id,
       text,
       sender,
-      client,
+      student,
       assessmentId,
+      staffId,
       created,
       version,
       operation,
@@ -38,17 +44,10 @@ case class Message (
       ac.usercode
     ).asInstanceOf[B]
 
-  def asMessageData(member: Option[User]) = MessageData(
+  def asMessageData(member: Option[User]): MessageData = MessageData(
     text = text,
     sender = sender,
     created = created
-  )
-
-  def asAnnouncementOrQuery = AnnouncementOrQuery(
-    sender = Right(client),
-    text = text,
-    date = created,
-    isAnnouncement = false
   )
 }
 
@@ -57,8 +56,9 @@ case class MessageVersion (
   id: UUID,
   text: String,
   sender: MessageSender,
-  client: UniversityID,
+  student: UniversityID,
   assessmentId: UUID,
+  staffId: Option[Usercode],
   created: OffsetDateTime,
   version: OffsetDateTime = JavaTime.offsetDateTime,
   operation: DatabaseOperation,
@@ -73,16 +73,18 @@ case class MessageVersion (
 case class MessageSave (
   text: String,
   sender: MessageSender,
+  staffId: Option[Usercode],
 ) {
   def toMessage(
-    client: UniversityID,
+    student: UniversityID,
     assessmentId: UUID,
   ): Message = Message(
     id = UUID.randomUUID(),
     text = this.text,
     sender = this.sender,
-    client = client,
+    student = student,
     assessmentId = assessmentId,
+    staffId = staffId
   )
 }
 
@@ -106,8 +108,8 @@ object MessageData {
 
 sealed trait MessageSender extends EnumEntry
 object MessageSender extends PlayEnum[MessageSender] {
-  case object Client extends MessageSender
-  case object Team extends MessageSender
+  case object Student extends MessageSender
+  case object Invigilator extends MessageSender
 
   val values: IndexedSeq[MessageSender] = findValues
 }
