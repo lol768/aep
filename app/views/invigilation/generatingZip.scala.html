@@ -1,11 +1,15 @@
 @import domain.Assessment
 
-@(
-  assessment: Assessment,
-)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+@(assessment: Assessment, error: Option[String])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@adminLayout(s"Generating submissions zip for assessment ${assessment.moduleCode}", extraClasses = Seq("generating-zip")) {
-  <p>@context.appFullName is generating a zip file of submissions for @{assessment.title}.</p>
+@adminLayout(s"Generating submissions zip for assessment ${assessment.moduleCode}", extraClasses = if (error.isEmpty) Seq("generating-zip") else Seq.empty) {
+  @error.map { errorMessage =>
+    <div class="alert alert-danger">
+      There was an error generating the zip file: @errorMessage
+    </div>
+  }.getOrElse {
+    <p>@context.appFullName is generating a zip file of submissions for @{assessment.title}.</p>
 
-  <p>Your download will start once the zip file is ready&hellip; <i class="fas fa-spin fa-spinner-third"></i></p>
+    <p>Your download will start once the zip file is ready&hellip; <i class="fas fa-spin fa-spinner-third"></i></p>
+  }
 }

@@ -6,9 +6,9 @@ import java.util.UUID
 
 import scala.jdk.CollectionConverters._
 import domain.Assessment.Platform.{Moodle, OnlineExams}
-import domain.Fixtures.{assessments, studentAssessments}
+import domain.Fixtures.{announcements, assessments, studentAssessments}
 import domain.dao.AssessmentsTables.StoredBrief
-import domain.dao.{AssessmentDao, AssessmentsTables, DaoRunning, StudentAssessmentDao}
+import domain.dao.{AnnouncementDao, AssessmentDao, AssessmentsTables, DaoRunning, StudentAssessmentDao}
 import domain.{Fixtures, UploadedFileOwner}
 import helpers.{FutureServiceMixins, HasApplicationGet}
 import org.apache.commons.text.StringEscapeUtils
@@ -22,6 +22,7 @@ import play.api.db.slick.DatabaseConfigProvider
 import play.api.i18n.{Langs, MessagesApi, MessagesImpl, MessagesProvider}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.Files.TemporaryFileCreator
 import play.api.mvc.{Call, Result}
 import services._
 import services.sandbox.DataGeneration
@@ -63,6 +64,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
   private val assessmentDao = get[AssessmentDao]
   private val studentAssessmentDao = get[StudentAssessmentDao]
   private val uploadedFileService = get[UploadedFileService]
+  private val announcementDao = get[AnnouncementDao]
 
   override def fakeApplicationBuilder: GuiceApplicationBuilder = super.fakeApplicationBuilder
     .overrides(
@@ -95,6 +97,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
   override val screenshotDirectory: File = new File("it/target/screenshots")
 
   implicit lazy val messagesProvider: MessagesProvider = MessagesImpl(get[Langs].availables.head, get[MessagesApi])
+  implicit lazy val temporaryFileCreator: TemporaryFileCreator = get[TemporaryFileCreator]
 
   lazy val databaseApi: DBApi = get[DBApi]
 
@@ -212,7 +215,26 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       assessmentPage = new AssessmentPage(assessment.id)
     }
 
-    def i_have_an_assessment_in_progress(student: User): Unit = {
+
+    def i_have_an_online_exam_to_sit_with_an_existing_announcement(student: User, announcementSender: User): Unit = {
+      Given("I have an Online Exam to sit with an existing announcement")
+
+      val assessmentId: UUID = UUID.randomUUID()
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId, startTime = Some(OffsetDateTime.now))
+      val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
+
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
+      execWithCommit(studentAssessmentDao.insert(studentAssessment))
+
+      val announcement = announcements.storedAnnouncement(assessmentId, announcementSender.usercode ).copy(text = "Test announcement number one")
+      execWithCommit(announcementDao.insert(announcement))
+
+      assessmentPage = new AssessmentPage(assessment.id)
+    }
+
+
+    def i_have_an_assessment_in_progress(student: User, announcementSender: Option[User] = None): Unit = {
       Given("I have an assessment in progress")
 
       val assessmentId: UUID = UUID.randomUUID()
@@ -224,6 +246,11 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
       execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
       execWithCommit(studentAssessmentDao.insert(studentAssessment))
+
+      announcementSender.map { user =>
+        val announcement = announcements.storedAnnouncement(assessmentId, user.usercode).copy(text = "Test announcement number one")
+        execWithCommit(announcementDao.insert(announcement))
+      }
 
       assessmentPage = new AssessmentPage(assessment.id)
     }

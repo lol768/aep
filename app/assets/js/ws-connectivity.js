@@ -8,20 +8,26 @@ function setVisibilityByClassName(className, visible) {
   });
 }
 
+const CLOSE_DELAY = 5000;
+let showDisconnectedTimeout = null;
+
 export default function showWSConnectivity(websocket) {
   websocket.add({
     onConnect: () => {
+      clearInterval(showDisconnectedTimeout);
       setVisibilityByClassName('ws-connected', true);
       setVisibilityByClassName('ws-disconnected', false);
-      setVisibilityByClassName('ws-error', false);
     },
     onError: () => {
       setVisibilityByClassName('ws-connected', false);
-      setVisibilityByClassName('ws-error', true);
+      setVisibilityByClassName('ws-disconnected', false);
     },
     onClose: () => {
-      setVisibilityByClassName('ws-connected', false);
-      setVisibilityByClassName('ws-disconnected', true);
+      clearInterval(showDisconnectedTimeout);
+      showDisconnectedTimeout = setTimeout(() => {
+        setVisibilityByClassName('ws-connected', false);
+        setVisibilityByClassName('ws-disconnected', true);
+      }, CLOSE_DELAY);
     },
     onData: (d) => {
       if (d.type === 'UpdateConnectivityIndicator') {

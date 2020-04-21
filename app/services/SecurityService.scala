@@ -40,7 +40,7 @@ trait SecurityService {
 
   def StudentAssessmentAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
   def StudentAssessmentIsStartedAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
-  def StudentAssessmentInProgressAction(id: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
+  def StudentAssessmentInProgressAction(id: UUID, allowWhereNoDuration: Boolean = false): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent]
 
   def GeneralDepartmentAdminAction: ActionBuilder[DepartmentAdminRequest, AnyContent]
   def SpecificDepartmentAdminAction(deptCode: String): ActionBuilder[DepartmentAdminRequest, AnyContent]
@@ -75,9 +75,9 @@ class SecurityServiceImpl @Inject()(
   override def RequiredRoleAction(role: RoleName): AuthActionBuilder = sso.RequireRole(role, forbidden)(defaultParser)
   override def RequiredActualUserRoleAction(role: RoleName): AuthActionBuilder = sso.RequireActualUserRole(role, forbidden)(defaultParser)
 
-  val RequireAdmin: AuthActionBuilder = RequiredActualUserRoleAction(Admin)
+  val RequireAdmin: AuthActionBuilder = RequiredRoleAction(Admin)
   val RequireSysadmin: AuthActionBuilder = RequiredActualUserRoleAction(Sysadmin)
-  val RequireApprover: AuthActionBuilder = RequiredActualUserRoleAction(Approver)
+  val RequireApprover: AuthActionBuilder = RequiredRoleAction(Approver)
   val RequireMasquerader: AuthActionBuilder = RequiredActualUserRoleAction(Masquerader)
   val RequireDepartmentAssessmentManager: AuthActionBuilder = RequireDeptWebGroup(assessmentManagerGroup, forbidden)(defaultParser)
 
@@ -138,8 +138,8 @@ class SecurityServiceImpl @Inject()(
   override def StudentAssessmentIsStartedAction(assessmentId: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
     StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted
 
-  override def StudentAssessmentInProgressAction(assessmentId: UUID): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
-    StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted andThen IsStudentAssessmentNotFinalised andThen StudentCanModifySubmission
+  override def StudentAssessmentInProgressAction(assessmentId: UUID, allowWhereNoDuration: Boolean = false): ActionBuilder[StudentAssessmentSpecificRequest, AnyContent] =
+    StudentAssessmentAction(assessmentId) andThen IsStudentAssessmentStarted andThen IsStudentAssessmentNotFinalised andThen StudentCanModifySubmission(allowWhereNoDuration)
 
   override def InvigilatorAssessmentAction(id: UUID): ActionBuilder[AssessmentSpecificRequest, AnyContent] =
     SigninRequiredAction andThen WithAssessment(id) andThen IsInvigilatorOrAdmin

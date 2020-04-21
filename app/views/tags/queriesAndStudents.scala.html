@@ -1,0 +1,65 @@
+@import java.util.UUID
+
+@import domain.{AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import domain.Assessment.Platform
+@import tags._
+@import warwick.sso.UniversityID
+@import warwick.core.views.utils._
+
+@(
+  metadata: Seq[SittingMetadata],
+  platform: Set[Platform],
+  userMap: Map[UniversityID, tabula.SitsProfile],
+  studentsWithQueries: Option[Seq[UniversityID]] = None,
+  totalQueries: Int = 0,
+  totalAnnouncements: Int = 0,
+  latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
+  sortByHeader: Option[String] = None,
+)(implicit context: RequestContext)
+
+@if(metadata.nonEmpty) {
+  <h2>Queries</h2>
+
+  @studentsWithQueries.map { sWQ =>
+    <div class="sets-document-title-prefix" data-document-title-prefix="@if(totalQueries > 0) { (@totalQueries) }">
+      <p>
+        <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
+        @if(totalQueries > 0) {
+          <strong>
+            @if(totalQueries == 1) {
+              There is 1 query from 1 student.
+            } else {
+              There are @totalQueries queries from @sWQ.length @pl(sWQ.length, "student")().
+            }
+          </strong>
+        } else {
+          There are no queries.
+        }
+      </p>
+      <p>
+        <i class="fad themed-duotone fa-bullhorn mr-half"></i>
+        @if(totalAnnouncements > 0) {
+          <strong>
+            @if(totalAnnouncements == 1) {
+              There is 1 announcement.
+            } else {
+              There are @totalAnnouncements announcements.
+            }
+          </strong>
+        } else {
+          There are no announcements.
+        }
+      </p>
+      <a class="btn btn-default" href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
+        View all or make announcements
+      </a>
+    </div>
+  }
+}
+
+<h2>Students</h2>
+<div class="alert alert-info">
+  <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
+</div>
+
+@studentAssessmentInfo(metadata, platform, userMap, studentsWithQueries, latestActivities, sortByHeader)

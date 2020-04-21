@@ -1,7 +1,9 @@
 package services
 
 import com.google.inject.ImplementedBy
+import domain.messaging.Message
 import domain.{Announcement, Assessment}
+import helpers.LenientTimezoneNameParsing._
 import javax.inject.{Inject, Singleton}
 import org.quartz.Scheduler
 import play.api.Configuration
@@ -15,11 +17,11 @@ import warwick.sso.UserLookupService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
-import helpers.LenientTimezoneNameParsing._
 
 @ImplementedBy(classOf[NotificationServiceImpl])
 trait NotificationService {
   def newAnnouncement(announcement: Announcement)(implicit t: TimingContext): Future[ServiceResult[Activity]]
+  def newMessage(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]]
   def sendReminders(assessment: Assessment)(implicit t: TimingContext): Future[ServiceResult[Activity]]
 }
 
@@ -40,7 +42,7 @@ class NotificationServiceImpl @Inject()(
       assessmentService.get(announcement.assessment),
       studentAssessmentService.byAssessmentId(announcement.assessment),
     ).successFlatMapTo { case (assessment, students) =>
-      val universityIds = students.map(_.studentId)
+      val universityIds = students.filter(_.startTime.nonEmpty).map(_.studentId)
 
       Future.successful(ServiceResults.fromTry(userLookupService.getUsers(universityIds))).successMapTo { users =>
         val usercodes = users.values.map(_.usercode.string).toSet
@@ -53,14 +55,33 @@ class NotificationServiceImpl @Inject()(
           "assessment-announcement"
         )
 
-        myWarwickService.queueNotification(
-          activity,
-          scheduler
-        )
+        if (usercodes.nonEmpty) {
+          myWarwickService.queueNotification(activity, scheduler)
+        }
 
         activity
       }
     }
+
+  override def newMessage(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]] = {
+    assessmentService.get(message.assessmentId).successMapTo { assessment =>
+      val usercodes = assessment.invigilators.map(_.string)
+
+      val activity = new Activity(
+        usercodes.asJava,
+        s"${assessment.paperCode}: Query from student",
+        controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id).absoluteURL(true, domain),
+        message.text,
+        "assessment-query"
+      )
+
+      if (usercodes.nonEmpty) {
+        myWarwickService.queueNotification(activity, scheduler)
+      }
+
+      activity
+    }
+  }
 
   override def sendReminders(assessment: Assessment)(implicit t: TimingContext): Future[ServiceResult[Activity]] =
     studentAssessmentService.byAssessmentId(assessment.id).successFlatMapTo { students =>
@@ -92,10 +113,9 @@ class NotificationServiceImpl @Inject()(
           "assessment-reminder"
         )
 
-        myWarwickService.queueNotification(
-          activity,
-          scheduler
-        )
+        if (usercodes.nonEmpty) {
+          myWarwickService.queueNotification(activity, scheduler)
+        }
 
         activity
       }

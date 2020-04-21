@@ -3,16 +3,17 @@ package controllers.admin
 import java.util.UUID
 
 import controllers.BaseController
-import domain.{Assessment, SittingMetadata, StudentAssessment}
+import domain.messaging.MessageSender
+import domain.{SittingMetadata, StudentAssessment, tabula}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService
 import services.tabula.TabulaStudentInformationService._
-import services.{AssessmentClientNetworkActivityService, AssessmentService, ReportingService, SecurityService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, AssessmentService, ReportingService, SecurityService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.sso.AuthenticatedRequest
+import warwick.sso.{AuthenticatedRequest, UniversityID}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -25,13 +26,14 @@ class ReportingController @Inject()(
   studentInformationService: TabulaStudentInformationService,
   messageService: MessageService,
   networkActivityService: AssessmentClientNetworkActivityService,
+  announcementService: AnnouncementService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
 
   def index: Action[AnyContent] = RequireAdmin.async { implicit request =>
     ServiceResults.zip(
-      reportingService.todayAssessments,
+      reportingService.last48HrsAssessments,
       reportingService.startedAndSubmittableAssessments,
     ).successMap { case (today, startedAndSubmittable) =>
       val notLive = today diff startedAndSubmittable
@@ -42,15 +44,9 @@ class ReportingController @Inject()(
   def assessment(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
     ServiceResults.zip(
       assessmentService.get(id),
-      // FIXME These all run the same query and filter in memory, so needlessly the same SQL executed five times
-      reportingService.expectedSittings(id),
-      reportingService.startedSittings(id),
-      reportingService.notStartedSittings(id),
-      reportingService.submittedSittings(id),
-      reportingService.finalisedSittings(id)
-    ).successMap { case (assessment, expected, started, notStarted, submitted, finalised) =>
-      val reportingMetadata = ReportingMetadata(assessment, expected, started, notStarted, submitted, finalised)
-      Ok(views.html.admin.reporting.assessment(reportingMetadata))
+      reportingService.assessmentReport(id),
+    ).successMap { case (assessment, report) =>
+      Ok(views.html.admin.reporting.assessment(assessment, report))
     }
   }
 
@@ -58,15 +54,16 @@ class ReportingController @Inject()(
     ServiceResults.zip(
       assessmentService.get(id),
       getSittings,
-      messageService.findByAssessment(id)
-    ).successFlatMap { case (assessment, sittings, queries) =>
+      messageService.findByAssessment(id),
+      announcementService.getByAssessmentId(id)
+    ).successFlatMap { case (assessment, sittings, queries, announcements) =>
       studentInformationService
         .getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId)))
         .successMap { profiles =>
           val sorted = sittings
-            .sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+            .sortBy(studentAssessmentOrdering(profiles))
             .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-          Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.client).distinct))
+          Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.client).distinct, queries.count(_.sender == MessageSender.Client), announcements.length))
         }
     }
   }
@@ -75,19 +72,25 @@ class ReportingController @Inject()(
     ServiceResults.zip(
       assessmentService.get(assessmentId),
       getSittings,
-      messageService.findByAssessment(assessmentId)
+      messageService.findByAssessment(assessmentId),
+      announcementService.getByAssessmentId(assessmentId),
     ).successFlatMap {
-      case (assessment, sittings, queries) =>
+      case (assessment, sittings, queries, announcements) =>
         ServiceResults.zip(
           studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentId))),
           networkActivityService.getLatestActivityFor(sittings.map(_.id))
         ).successMap { case (profiles, latestActivities) =>
             val sorted = sittings
-              .sortBy(md => (profiles.get(md.studentId).map(_.lastName), profiles.get(md.studentId).map(_.firstName), md.studentId.string))
+              .sortBy(studentAssessmentOrdering(profiles))
               .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-            Ok(views.html.tags.studentAssessmentInfo(sorted, profiles, Some(queries.map(_.client).distinct), latestActivities, sortByHeader))
+            Ok(views.html.tags.queriesAndStudents(sorted, assessment.platform, profiles, Some(queries.map(_.client).distinct), queries.count(_.sender == MessageSender.Client), announcements.length, latestActivities, sortByHeader))
           }
     }
+  }
+
+  private def studentAssessmentOrdering(profiles: Map[UniversityID, tabula.SitsProfile])(studentAssessment: StudentAssessment) = {
+    val profile = profiles.get(studentAssessment.studentId)
+    (profile.map(_.lastName), profile.map(_.firstName), studentAssessment.studentId.string)
   }
 
   def expected(id: UUID): Action[AnyContent] = RequireAdmin.async { implicit request =>
@@ -131,12 +134,3 @@ class ReportingController @Inject()(
     showStudentAssessmentInfoTable(reportingService.finalisedSittings(id), id)
   }
 }
-
-case class ReportingMetadata(
-  assessment: Assessment,
-  expected: Seq[StudentAssessment],
-  started: Seq[StudentAssessment],
-  notStarted: Seq[StudentAssessment],
-  submitted: Seq[StudentAssessment],
-  finalised: Seq[StudentAssessment]
-)

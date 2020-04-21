@@ -17,6 +17,8 @@ import uk.ac.warwick.util.core.DateTimeUtils
 import uk.ac.warwick.util.mywarwick.MyWarwickService
 import uk.ac.warwick.util.mywarwick.model.request.Activity
 import uk.ac.warwick.util.mywarwick.model.response.Response
+import warwick.core.helpers.JavaTime
+import warwick.sso.Usercode
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.Future
@@ -61,14 +63,14 @@ class NotificationServiceTest
 
     val assessment: Assessment = assessmentService.insert(Fixtures.assessments.storedAssessment().asAssessment(Map.empty), Seq.empty).serviceValue
     val studentAssessments: Set[StudentAssessment] = studentAssessmentService.insert(Set(
-      Fixtures.studentAssessments.storedStudentAssessment(assessment.id, Fixtures.users.student1.universityId.get).asStudentAssessment(Map.empty),
-      Fixtures.studentAssessments.storedStudentAssessment(assessment.id, Fixtures.users.student2.universityId.get).asStudentAssessment(Map.empty),
-      Fixtures.studentAssessments.storedStudentAssessment(assessment.id, Fixtures.users.student3.universityId.get).asStudentAssessment(Map.empty),
+      Fixtures.studentAssessments.storedStudentAssessment(assessment.id, Fixtures.users.student1.universityId.get).copy(startTime = Some(JavaTime.offsetDateTime)).asStudentAssessment(Map.empty),
+      Fixtures.studentAssessments.storedStudentAssessment(assessment.id, Fixtures.users.student2.universityId.get).copy(startTime = Some(JavaTime.offsetDateTime)).asStudentAssessment(Map.empty),
+      Fixtures.studentAssessments.storedStudentAssessment(assessment.id, Fixtures.users.student3.universityId.get).copy(startTime = Some(JavaTime.offsetDateTime)).asStudentAssessment(Map.empty),
     )).serviceValue
   }
 
   private class AnnouncementFixture extends AssessmentsWithStudentsFixture {
-    val announcement: Announcement = Fixtures.announcements.storedAnnouncement(assessment.id).asAnnouncement
+    val announcement: Announcement = Fixtures.announcements.storedAnnouncement(assessment.id, Usercode("staff1")).asAnnouncement
   }
 
   "NotificationService" should {

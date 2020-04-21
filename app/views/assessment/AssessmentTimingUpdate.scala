@@ -26,5 +26,6 @@ case class AssessmentTimingUpdate(
 
 object AssessmentTimingUpdate {
   private implicit val offsetDateTimeWrites: Writes[OffsetDateTime] = (o: OffsetDateTime) => JsNumber(o.toInstant.toEpochMilli)
+  private implicit val durationWrites: Writes[Duration] = (o: Duration) => JsNumber(o.toMillis)
   implicit val writes: OWrites[AssessmentTimingUpdate] = Json.writes[AssessmentTimingUpdate]
 }

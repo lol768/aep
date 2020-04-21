@@ -9,6 +9,7 @@ import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAss
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
 import warwick.sso.{UniversityID, Usercode}
@@ -20,6 +21,8 @@ object StudentAssessmentsTables {
   case class StoredStudentAssessment(
     id: UUID,
     assessmentId: UUID,
+    occurrence: Option[String],
+    academicYear: Option[AcademicYear],
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
@@ -33,6 +36,8 @@ object StudentAssessmentsTables {
       StudentAssessment(
         id,
         assessmentId,
+        occurrence,
+        academicYear,
         studentId,
         inSeat,
         startTime,
@@ -47,6 +52,8 @@ object StudentAssessmentsTables {
       StoredStudentAssessmentVersion(
         id,
         assessmentId,
+        occurrence: Option[String],
+        academicYear: Option[AcademicYear],
         studentId,
         inSeat,
         startTime,
@@ -64,6 +71,8 @@ object StudentAssessmentsTables {
   case class StoredStudentAssessmentVersion(
     id: UUID,
     assessmentId: UUID,
+    occurrence: Option[String],
+    academicYear: Option[AcademicYear],
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
@@ -142,13 +151,13 @@ trait StudentAssessmentDao {
   def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def get(studentId: UniversityID, assessmentId: UUID): DBIO[Option[StoredStudentAssessment]]
   def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Option[(StoredStudentAssessment, Set[StoredUploadedFile])]]
-  def delete(studentId: UniversityID, assessmentId: UUID): DBIO[Int]
+  def delete(studentId: UniversityID, assessmentId: UUID)(implicit ac: AuditLogContext): DBIO[Int]
 
   def insert(declarations: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations]
   def update(declarations: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations]
   def getDeclarations(declarationsId: UUID): DBIO[Option[StoredDeclarations]]
   def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]]
-  def deleteDeclarations(declarationsId: UUID): DBIO[Int]
+  def deleteDeclarations(declarationsId: UUID)(implicit ac: AuditLogContext): DBIO[Int]
 }
 
 @Singleton
@@ -212,8 +221,14 @@ class StudentAssessmentDaoImpl @Inject()(
     getQuery(studentId, assessmentId).withUploadedFiles.result
       .map(OneToMany.leftJoinUnordered(_).headOption)
 
-  override def delete(studentId: UniversityID, assessmentId: UUID): DBIO[Int] =
-    getQuery(studentId, assessmentId).delete
+  override def delete(studentId: UniversityID, assessmentId: UUID)(implicit ac: AuditLogContext): DBIO[Int] =
+    for {
+      sa <- getQuery(studentId, assessmentId).result.headOption
+      rows <- sa match {
+        case Some(studentAssessment) => studentAssessments.delete(studentAssessment).map(_ => 1)
+        case _ => DBIO.successful(0)
+      }
+    } yield rows
 
   override def insert(decs: StoredDeclarations)(implicit ac: AuditLogContext): DBIO[StoredDeclarations] =
     declarations.insert(decs)
@@ -230,7 +245,13 @@ class StudentAssessmentDaoImpl @Inject()(
   override def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]] =
     declarations.table.filter(_.studentAssessmentId inSet declarationsIds).result
 
-  override def deleteDeclarations(declarationsId: UUID): DBIO[Int] =
-    getDeclarationsQuery(declarationsId).delete
+  override def deleteDeclarations(declarationsId: UUID)(implicit ac: AuditLogContext): DBIO[Int] =
+    for {
+      d <- getDeclarationsQuery(declarationsId).result.headOption
+      rows <- d match {
+        case Some(declaration) => declarations.delete(declaration).map(_ => 1)
+        case _ => DBIO.successful(0)
+      }
+    } yield rows
 
 }

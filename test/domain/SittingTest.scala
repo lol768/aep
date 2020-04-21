@@ -8,6 +8,7 @@ import domain.BaseSitting.ProgressState._
 import domain.BaseSitting.SubmissionState
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFile
 import warwick.sso.{UniversityID, Usercode}
@@ -48,6 +49,8 @@ class SittingTest extends PlaySpec with MockitoSugar {
       assessmentId = assessment.id,
       id = UUID.randomUUID(),
       studentId = UniversityID("1431777"),
+      occurrence = None,
+      academicYear = None,
       inSeat = true,
       startTime = studentStart,
       extraTimeAdjustment = None,

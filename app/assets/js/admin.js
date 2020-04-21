@@ -12,9 +12,10 @@ import JDDT from './jddt';
 import * as flexiPicker from './flexi-picker';
 import * as dateTimePicker from './date-time-picker';
 import './double-submit-protection';
-
 import '@universityofwarwick/statuspage-widget/dist/main';
+
 import './admin/assessment-setup';
+import './admin/update-invigilator-status';
 
 /**
  * Attach handlers to all elements inside $scope. All jQuery selects
@@ -91,5 +92,9 @@ $(() => {
       document.querySelectorAll('.fa-spinner-third').forEach((node) => node.parentNode.removeChild(node));
       window.location.reload();
     }, 5000);
+  }
+
+  if (document.body.classList.contains('connect-ws')) {
+    import('./central-web-socket');
   }
 });

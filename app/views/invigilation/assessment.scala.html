@@ -1,25 +1,25 @@
-@import tags._
-@import domain.Assessment
-@import system.routes.Types.Usercode
-@import domain.tabula
-@import domain.StudentAssessment
-@import domain.AssessmentClientNetworkActivity
-@import warwick.sso.UniversityID
-@import views.html.invigilation._
 @import java.util.UUID
-@import domain.SittingMetadata
 
+@import domain.messaging.Message
+@import domain.{Assessment, AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import system.routes.Types.Usercode
+@import tags._
+@import warwick.sso.UniversityID
 @(
         assessment: Assessment,
         sittingMetadata: Seq[SittingMetadata],
-        invigilators: Map[Usercode, String],
+        invigilators: Seq[(Usercode, String)],
         students: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
         studentsWithQueries: Seq[UniversityID],
-        latestActivities: Map[UUID, AssessmentClientNetworkActivity]
+        queriesFromStudents: Seq[Message],
+        totalAnnouncements: Int,
+        invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
+        latestStudentActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation") {
+@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation", extraClasses = Seq("connect-ws")) {
     <div class="id7-main-content">
+        <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
         <div class="row">
             <div class="col-md-6">
                 @moduleInfo(assessment, department)
@@ -30,27 +30,14 @@
                     <div class="panel-body">
                         <details>
                             <summary class="text-muted">Invigilators</summary>
-                            <ul>
-                            @assessment.invigilators.map { usercode =>
-                                <li>
-                                    @invigilators.get(usercode).map { username =>
-                                    <span>@username</span>
-                                    <span class="text-muted">(@usercode.string)</span>
-                                    }.getOrElse(usercode.string)
-                                </li>
-                            }
-                            </ul>
+                            @views.html.invigilation.invigilatorsList(assessment, invigilators, invigilatorActivities)
                         </details>
                     </div>
                 </div>
             </div>
         </div>
-        <h2>Students</h2>
-        <div class="alert alert-info">
-            <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
-        </div>
-        <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="expected">
-            @studentAssessmentInfo(sittingMetadata, students, Some(studentsWithQueries), latestActivities)
+        <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
+            @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, totalAnnouncements, latestStudentActivities)
         </div>
         @if(assessment.isDownloadAvailable) {
             <p>

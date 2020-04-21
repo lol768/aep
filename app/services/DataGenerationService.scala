@@ -157,6 +157,8 @@ object DataGenerationService {
     StoredStudentAssessment(
       id = studentAssessmentId,
       assessmentId = assessmentId,
+      occurrence = None,
+      academicYear = None,
       studentId = studentId,
       inSeat = false,
       startTime = None,

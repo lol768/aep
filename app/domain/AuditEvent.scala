@@ -26,6 +26,7 @@ object AuditEvent {
     val StudentAssessment = Symbol("StudentAssessment")
     var Declarations = Symbol("Declarations")
     val OutgoingEmail = Symbol("OutgoingEmail")
+    val TabulaAssessmentImports = Symbol("TabulaAssessmentImports")
   }
 
   object Operation {
@@ -53,6 +54,10 @@ object AuditEvent {
     }
     object OutgoingEmail {
       val SendEmail = Symbol("SendEmail")
+    }
+    object TabulaAssessmentImport {
+      val Pause = Symbol("PauseTabulaAssessmentImports")
+      val Resume = Symbol("ResumeTabulaAssessmentImports")
     }
   }
 }

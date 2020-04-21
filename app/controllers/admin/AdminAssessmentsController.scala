@@ -7,7 +7,7 @@ import akka.Done
 import controllers.{BaseController, FormMappings}
 import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform, State}
 import domain.tabula.SitsProfile
-import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
+import domain.{Assessment, Department, DepartmentCode, Sitting, StudentAssessment}
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
@@ -18,20 +18,20 @@ import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
-import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
+import services.tabula.{TabulaAssessmentService, TabulaAssignmentService, TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
-import warwick.sso.{AuthenticatedRequest, UniversityID, Usercode}
+import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService, Usercode}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-object AssessmentsController {
+object AdminAssessmentsController {
 
-  import controllers.admin.AssessmentsController.AssessmentFormData._
+  import controllers.admin.AdminAssessmentsController.AssessmentFormData._
 
   object AssessmentFormData {
     val invigilatorsFieldMapping: Mapping[Set[Usercode]] = set(text)
@@ -44,7 +44,7 @@ object AssessmentsController {
                   .transform[Option[LocalDateTime]](Option.apply, _.get)
 
     def studentsFieldMapping(implicit studentInformationService: TabulaStudentInformationService, ec: ExecutionContext, t: TimingContext): Mapping[Set[UniversityID]] =
-      text.transform[Set[UniversityID]](_.linesIterator.filter(_.hasText).toSet.map(UniversityID.apply), _.map(_.string).toSeq.sorted.mkString("\n"))
+      text.transform[Set[UniversityID]](_.split("\\s+").filter(_.hasText).toSet.map(UniversityID.apply), _.map(_.string).toSeq.sorted.mkString("\n"))
           .verifying(Constraint { universityIDs: Set[UniversityID] =>
             Await.result(studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs.toSeq)), scala.concurrent.duration.Duration.Inf) // Rely on HTTP timeout
               .fold(
@@ -102,7 +102,7 @@ object AssessmentsController {
 
   val urlConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
     val missingUrls = assessmentForm.platform.filter(_.requiresUrl).filter(platform =>
-      assessmentForm.urls.get(platform).isEmpty
+      assessmentForm.urls.get(platform).forall(!_.hasText)
     )
     if (missingUrls.isEmpty)
       Valid
@@ -166,25 +166,30 @@ object AssessmentsController {
         .verifying(durationConstraint)
         .verifying(platformConstraint)
         .verifying("error.assessment.description.required", _.description.exists(_.hasText))
+        .verifying("error.assessment.invigilators.required", _.invigilators.nonEmpty)
+        .verifying("error.assessment.students.required", data => existing.exists(_.tabulaAssessmentId.nonEmpty) || data.students.nonEmpty)
       else baseMapping
     )
   }
 }
 
 @Singleton
-class AssessmentsController @Inject()(
+class AdminAssessmentsController @Inject()(
   security: SecurityService,
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   departmentService: TabulaDepartmentService,
+  userLookup: UserLookupService,
+  tabulaAssessmentService: TabulaAssessmentService,
+  tabulaAssignmentService: TabulaAssignmentService,
   configuration: Configuration,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
   ec: ExecutionContext
 ) extends BaseController {
 
-  import AssessmentsController._
+  import AdminAssessmentsController._
   import security._
 
   private[this] lazy val overwriteAssessmentTypeOnImport = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
@@ -209,7 +214,7 @@ class AssessmentsController @Inject()(
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
-          Ok(views.html.admin.assessments.show(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport, canBeDeleted(assessment, studentAssessments)))
+          Ok(views.html.admin.assessments.form(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport, canBeDeleted(assessment, studentAssessments)))
         }
     }
 
@@ -270,6 +275,8 @@ class AssessmentsController @Inject()(
               StudentAssessment(
                 id = UUID.randomUUID(),
                 assessmentId = newAssessment.id,
+                occurrence = None,
+                academicYear = None,
                 studentId = universityID,
                 inSeat = false,
                 startTime = None,
@@ -279,7 +286,7 @@ class AssessmentsController @Inject()(
               )
             ))
           ).successMap(_ =>
-            Redirect(routes.AssessmentsController.index()).flashing {
+            Redirect(routes.AdminAssessmentsController.index()).flashing {
               if (newState == State.Approved)
                 "success" -> Messages("flash.assessment.created", data.title)
               else
@@ -288,10 +295,10 @@ class AssessmentsController @Inject()(
           )
         } else { // User is not an admin for the supplied department
           Future.successful(Redirect(
-            controllers.admin.routes.AssessmentsController.create()
+            controllers.admin.routes.AdminAssessmentsController.create()
           ).flashing("error" -> Messages("error.permissions.notDepartmentAdminForSelected", data.departmentCode)))
         }
-      })
+      }).map(uploadedFileControllerHelper.cleanupTemporaryFiles(_))
   }
 
   def updateForm(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
@@ -317,6 +324,33 @@ class AssessmentsController @Inject()(
     }
   }
 
+  def view(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
+    val assessment = request.assessment
+    ServiceResults.zip(
+      studentAssessmentService.byAssessmentId(assessment.id),
+      departmentService.getDepartments(),
+      tabulaAssignmentService.getByAssessment(assessment)
+    ).successFlatMap { case (studentAssessments, departments, tabulaAssignments) =>
+      studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
+        .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
+        .map { studentInformation =>
+          val invigilators = userLookup
+            .getUsers(assessment.invigilators.toSeq)
+            .getOrElse(Nil)
+            .map {
+              case (_, user) => user
+            }
+            .map(user => user.usercode -> user.name.full.getOrElse(user.usercode.string))
+            .toMap
+          Ok(views.html.admin.assessments.view(assessment, tabulaAssignments, studentAssessments, studentInformation, departments.find(_.code == assessment.departmentCode.string), invigilators, !overwriteAssessmentTypeOnImport))
+        }
+    }
+  }
+
+  def studentPreview(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id) { implicit request =>
+    Ok(views.html.admin.assessments.studentPreview(request.assessment))
+  }
+
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val assessment = request.assessment
     formMapping(existing = Some(assessment)).bindFromRequest().fold(
@@ -335,6 +369,7 @@ class AssessmentsController @Inject()(
         val updatedIfAdHoc =
           if (assessment.tabulaAssessmentId.isEmpty) {
             import helpers.DateConversion._
+            // Only update fields here that are appropriate for mock assessments (other fields may be updated below)
             assessment.copy(
               moduleCode = data.moduleCode,
               paperCode = data.paperCode,
@@ -361,6 +396,8 @@ class AssessmentsController @Inject()(
                     StudentAssessment(
                       id = UUID.randomUUID(),
                       assessmentId = assessment.id,
+                      occurrence = None,
+                      academicYear = None,
                       studentId = universityID,
                       inSeat = false,
                       startTime = None,
@@ -379,34 +416,56 @@ class AssessmentsController @Inject()(
 
         ServiceResults.zip(
           updateStudents,
-          assessmentService.update(updatedIfAdHoc.copy(
-            title = data.title,
-            duration = data.durationMinutes.map(Duration.ofMinutes),
-            platform = data.platform,
-            invigilators = data.invigilators,
-            brief = assessment.brief.copy(
-              text = data.description,
-              urls = data.urls
-            ),
-            state = newState
-          ), files = files.map(f => (f.in, f.metadata)))
+          assessmentService.update(
+            // Updates that are valid whether or not this is a mock assessment
+            Assessment(
+              title = data.title,
+              duration = data.durationMinutes.map(Duration.ofMinutes),
+              durationStyle = data.durationStyle,
+              platform = data.platform,
+              invigilators = data.invigilators,
+              state = newState,
+              brief = assessment.brief.copy(
+                text = data.description,
+                urls = data.urls
+              ),
+              // Rest are unchanged (may have been changed above)
+              id = updatedIfAdHoc.id,
+              paperCode = updatedIfAdHoc.paperCode,
+              section = updatedIfAdHoc.section,
+              startTime = updatedIfAdHoc.startTime,
+              assessmentType = updatedIfAdHoc.assessmentType,
+              tabulaAssessmentId = updatedIfAdHoc.tabulaAssessmentId,
+              tabulaAssignments = updatedIfAdHoc.tabulaAssignments,
+              examProfileCode = updatedIfAdHoc.examProfileCode,
+              moduleCode = updatedIfAdHoc.moduleCode,
+              departmentCode = updatedIfAdHoc.departmentCode,
+              sequence = updatedIfAdHoc.sequence
+            ), files = files.map(f => (f.in, f.metadata)))
         ).successMap { _ =>
-          Redirect(routes.AssessmentsController.index()).flashing {
+          Redirect(routes.AdminAssessmentsController.index()).flashing {
             if (newState == State.Approved)
               "success" -> Messages("flash.assessment.updated", data.title)
             else
               "warning" -> Messages("flash.assessment.updated.notReady", data.title, readyErrors.flatMap(e => e.messages.map(m => Messages(m, e.args:_*))).mkString("; "))
           }
         }
-      })
+      }).map(uploadedFileControllerHelper.cleanupTemporaryFiles(_))
   }
 
-  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireDepartmentAssessmentManager.async { implicit request =>
-    assessmentService.get(assessmentId).successFlatMap { assessment =>
-      assessment.brief.files.find(_.id == fileId)
-        .map(uploadedFileControllerHelper.serveFile)
-        .getOrElse(Future.successful(NotFound("File not found")))
+  def generateAssignments(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
+    val assessment = request.assessment
+
+    tabulaAssessmentService.generateAssignments(assessment).successMap { _ =>
+      Redirect(routes.AdminAssessmentsController.view(assessment.id))
+        .flashing { "success" -> Messages("flash.assessment.generatedAssignments", assessment.title) }
     }
+  }
+
+  def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>
+    request.assessment.brief.files.find(_.id == fileId)
+      .map(uploadedFileControllerHelper.serveFile)
+      .getOrElse(Future.successful(NotFound("File not found")))
   }
 
   def deleteForm(assessmentId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>
@@ -423,7 +482,7 @@ class AssessmentsController @Inject()(
         FormMappings.confirmForm.bindFromRequest.fold(
           formWithErrors => Future.successful(Ok(views.html.admin.assessments.delete(formWithErrors, canBeDeleted = true))),
           _ => assessmentService.delete(request.assessment).successMap(_ =>
-            Redirect(routes.AssessmentsController.index()).flashing("success" -> Messages("flash.assessmnet.deleted", request.assessment.title))
+            Redirect(routes.AdminAssessmentsController.index()).flashing("success" -> Messages("flash.assessment.deleted", request.assessment.title))
           )
         )
       }
@@ -448,5 +507,4 @@ class AssessmentsController @Inject()(
       }
     }
   }
-
 }

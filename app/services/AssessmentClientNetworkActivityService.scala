@@ -14,15 +14,21 @@ import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
+import warwick.sso.Usercode
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[AssessmentClientNetworkActivityServiceImpl])
 trait AssessmentClientNetworkActivityService {
   def record(assessmentClientNetworkActivity: AssessmentClientNetworkActivity)(implicit t: AuditLogContext): Future[ServiceResult[Done]]
+
   def findByStudentAssessmentId(studentAssessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentClientNetworkActivity]]]
-  def getClientActivityFor(assessments: Seq[StudentAssessment], startDate:Option[OffsetDateTime], endDate: Option[OffsetDateTime], page: Page)(implicit t: TimingContext): Future[ServiceResult[(Int,Seq[AssessmentClientNetworkActivity])]]
+
+  def getClientActivityFor(assessments: Seq[StudentAssessment], startDate: Option[OffsetDateTime], endDate: Option[OffsetDateTime], page: Page)(implicit t: TimingContext): Future[ServiceResult[(Int, Seq[AssessmentClientNetworkActivity])]]
+
   def getLatestActivityFor(studentAssessmentIds: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Map[UUID, AssessmentClientNetworkActivity]]]
+
+  def getLatestInvigilatorActivityFor(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Map[Usercode, AssessmentClientNetworkActivity]]]
 }
 
 @Singleton
@@ -52,7 +58,13 @@ class AssessmentClientNetworkActivityServiceImpl @Inject()(
 
   override def getLatestActivityFor(studentAssessmentIds: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Map[UUID, AssessmentClientNetworkActivity]]] = {
     daoRunner.run(dao.getLatestActivityFor(studentAssessmentIds)).map { activities =>
-      ServiceResults.success(activities.map(a => a.studentAssessmentId -> a).toMap)
+      ServiceResults.success(activities.map(a => a.studentAssessmentId.get -> a).toMap)
+    }
+  }
+
+  override def getLatestInvigilatorActivityFor(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Map[Usercode, AssessmentClientNetworkActivity]]] = {
+    daoRunner.run(dao.getLatestInvigilatorActivityFor(assessmentId)).map { activities =>
+      ServiceResults.success(activities.map(a => a.usercode.get -> a).toMap)
     }
   }
 }

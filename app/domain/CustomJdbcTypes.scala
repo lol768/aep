@@ -11,6 +11,7 @@ import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json.{Format, JsValue, Json, OFormat}
 import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.sso.{GroupName, UniversityID, Usercode}
 
 import scala.reflect.ClassTag
@@ -55,6 +56,11 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
   implicit val lenientZoneIdTypeMapper: JdbcType[LenientZoneId] = MappedColumnType.base[LenientZoneId, String](
     _.timezoneName,
     _.maybeZoneId
+  )
+
+  implicit val academicYearMapper: JdbcType[AcademicYear] = MappedColumnType.base[AcademicYear, Int](
+    _.getStartYear,
+    AcademicYear.starting
   )
 
   implicit val departmentCodeTypeMapper: JdbcType[DepartmentCode] = MappedColumnType.base(

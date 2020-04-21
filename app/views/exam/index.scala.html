@@ -25,7 +25,9 @@
       <progress value="0" max="100"></progress>
     </div>
     <p class="help-block upload-error hide">
-      <span class="text-danger"><i class="far fa-exclamation-circle"></i> We couldn't upload your submission. Please try again.</span>
+      <span class="text-danger"><i class="far fa-exclamation-circle"></i>
+        <span class="upload-error-text">We couldn't upload your submission. Please try again.</span>
+      </span>
     </p>
 
     @b3.free(Symbol("_class") -> "spaced-buttons") {
@@ -35,37 +37,37 @@
 }
 
 @defining(if (sitting.canModify()) "beforeunload" else "") { className =>
-  @frontend(sitting.assessment.title, extraClasses = Seq("grey-nopad", "connect-ws", className), existingMessages = announcements) {
+  @frontend(sitting.assessment.title,
+    extraClasses = Seq("grey-nopad", "connect-ws", className),
+    dataAttributes = Map(
+      "assessment-id" -> sitting.assessment.id.toString
+    )
+  ) {
+    @if(sitting.started) {
+      <div class="message-list">
+        @announcements.map { message =>
+          <div class="alert alert-info media" data-announcement-id="@message.id">
+            <div class="media-left">
+              <i class="fad fa-bullhorn" aria-hidden="true"></i>
+            </div>
+            <div class="media-body">
+              @message.html
+              <div class="query-time">
+                @localisedDatetime(message.created)
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
     <div class="alert alert-info hidden notification-permission">
       Alternative Exams Portal needs your permission to <a href="#" class="btn btn-primary btn-xs">show system notifications</a> for assessment announcements
     </div>
 
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
-
-      @if((sitting.assessment.platform == Set(Platform.OnlineExams) && sitting.assessment.brief.urls.get(Platform.OnlineExams).isDefined) || sitting.assessment.brief.files.nonEmpty) {
-        <div class="panel panel-default">
-          <div class="brand-stripe"></div>
-          <div class="panel-body">
-            <h2>Assessment brief</h2>
-            <span class="in-progress-assessment-data" data-id="@sitting.studentAssessment.id"></span>
-
-            <p>Your department has provided the following information:</p>
-            <ul class="list-unstyled">
-              @if(sitting.assessment.platform == Set(Platform.OnlineExams) && sitting.assessment.brief.urls.get(Platform.OnlineExams).isDefined) {
-                <li>
-                  <a href="@sitting.assessment.brief.urls(Platform.OnlineExams)" target="_blank"><i class="fa far fa-link mr-half" aria-hidden="true"></i>More information</a>
-                </li>
-              }
-              @sitting.assessment.brief.files.map { file =>
-                <li>
-                  <a class="assessment-brief-file" target="_blank" rel="noreferrer" href="@controllers.routes.AssessmentController.downloadFile(sitting.assessment.id, file.id)">@file.fileName</a>
-                </li>
-              }
-            </ul>
-          </div>
-        </div>
-      }
+      @assessmentBrief(sitting.assessment, Some(sitting.studentAssessment.id))
 
       @if(sitting.assessment.platform.exists(_ != Platform.OnlineExams)) {
         <div class="panel panel-default">
@@ -113,24 +115,27 @@
         </div>
       }
 
+      @if(sitting.isCurrentForStudent || sitting.assessment.duration.isEmpty && sitting.started) {
+        <div class="panel panel-default">
+          <div class="brand-stripe"></div>
+          <div class="panel-body">
+            <h2>Contact an invigilator</h2>
+            <p>
+              If you have concerns with specific parts of the assessment, you can use this form to bring it to the attention
+              of an invigilator. Invigilators cannot assist you with understanding the assessment, but can look into
+              potential errors and alert the entire cohort if necessary.
+            </p>
+            <p>
+              <a href="@controllers.routes.MessageController.showForm(sitting.assessment.id)" target="_blank" id="contactInvigilatorLink">
+                Contact an invigilator
+              </a>
+            </p>
+          </div>
+        </div>
+      }
+
       @if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
         @if(sitting.canModify()) {
-          <div class="panel panel-default">
-            <div class="brand-stripe"></div>
-            <div class="panel-body">
-              <h2>Contact an invigilator</h2>
-              <p>
-                If you have concerns with specific parts of the assessment, you can use this form to bring it to the attention
-                of an invigilator. Invigilators cannot assist you with understanding the assessment, but can look into
-                potential errors and alert the entire cohort if necessary.
-              </p>
-              <p>
-                <a href="@controllers.routes.MessageController.showForm(sitting.assessment.id)" target="_blank" id="contactInvigilatorLink">
-                  Contact an invigilator
-                </a>
-              </p>
-            </div>
-          </div>
           <div class="panel panel-default">
             <div class="brand-stripe"></div>
             <div class="panel-body">

@@ -3,6 +3,7 @@ package domain
 import java.util.UUID
 
 import org.quartz.JobKey
+import services.job.JobResult
 
 object JobKeys {
   sealed trait ByName {
@@ -10,6 +11,10 @@ object JobKeys {
     def key: JobKey = new JobKey(name, "DEFAULT")
     def healthCheckJobName: String
   }
+
+  def toErrorJobKey(original: JobKey) = new JobKey(s"${original.getName}-${JobResult.FailedJobKeyName}", original.getGroup)
+
+  val tabulaAssessmentImportJobKey = new JobKey("ImportAssessment")
 
   case object ImportAssessmentJob extends ByName {
     override val name = "ImportAssessment"

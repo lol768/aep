@@ -34,7 +34,11 @@ trait AssessmentService {
 
   def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
+  def listForExamProfileCode(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
   def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
+  def getLast48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
   def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
@@ -62,27 +66,8 @@ class AssessmentServiceImpl @Inject()(
   dao: AssessmentDao,
   studentAssessmentDao: StudentAssessmentDao,
   uploadedFileService: UploadedFileService,
+  assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao
 )(implicit ec: ExecutionContext) extends AssessmentService {
-
-  private def inflate(storedAssessments: Seq[AssessmentsTables.StoredAssessment])(implicit t: TimingContext) = {
-    uploadedFileService.get(storedAssessments.flatMap(_.storedBrief.fileIds)).map { uploadedFiles =>
-      ServiceResults.success(storedAssessments.map(_.asAssessment(uploadedFiles.map(f => f.id -> f).toMap)))
-    }
-  }
-
-  private def withFiles(
-    query: DBIO[Option[StoredAssessment]],
-    errorMsg: String = "Could not find results for query"
-  )(implicit t: TimingContext) =
-    daoRunner.run(query).flatMap { storedAssessmentOption =>
-      storedAssessmentOption.map { storedAssessment =>
-        uploadedFileService.get(storedAssessment.storedBrief.fileIds).map { uploadedFiles =>
-          ServiceResults.success(storedAssessment.asAssessment(uploadedFiles.map(f => f.id -> f).toMap))
-        }
-      }.getOrElse {
-        Future.successful(ServiceResults.error(errorMsg))
-      }
-    }
 
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
     daoRunner.run(dao.loadAllWithUploadedFiles)
@@ -99,34 +84,45 @@ class AssessmentServiceImpl @Inject()(
     daoRunner.run(dao.isInvigilator(usercode)).map(ServiceResults.success)
   }
 
-  override def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
-    daoRunner.run(dao.getByInvigilator(usercodes)).flatMap(inflate)
-  }
+  override def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.getByInvigilatorWithUploadedFiles(usercodes))
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
 
-  override def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] = {
-    withFiles(
-      dao.getByIdAndInvigilator(id, usercodes),
-      s"Could not find Assessment with ID $id with invigilators ${usercodes.map(_.string).mkString(",")}"
-    )
-  }
+  override def listForExamProfileCode(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.getByExamProfileCodeWithUploadedFiles(examProfileCode))
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
+
+  override def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] =
+    daoRunner.run(dao.getByIdAndInvigilatorWithUploadedFiles(id, usercodes))
+      .map(inflateRowWithUploadedFiles)
+      .map(_.fold[ServiceResult[Assessment]](ServiceResults.error(s"Could not find Assessment with ID $id with invigilators ${usercodes.map(_.string).mkString(",")}"))(ServiceResults.success))
 
   override def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
-    daoRunner.run(dao.getToday).flatMap(inflate)
+    daoRunner.run(dao.getTodayWithUploadedFiles)
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
+
+  override def getLast48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
+    daoRunner.run(dao.getLast48HrsWithUploadedFiles)
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
 
   // Returns all assessments where the start time has passed, and the latest possible finish time for any student is yet to come
   override def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
-    getTodaysAssessments.flatMap { result =>
+    getLast48HrsAssessments.flatMap { result =>
       result.toOption.map { todaysAssessments =>
         daoRunner.run(studentAssessmentDao.getByAssessmentIds(todaysAssessments.map(_.id))).map { todaysStudentAssessments =>
           val longestAdjustments = todaysAssessments.map { assessment =>
             assessment.id -> todaysStudentAssessments
               .filter(sa => sa.assessmentId == assessment.id)
-              .maxBy(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
-              .extraTimeAdjustment.getOrElse(Duration.ZERO)
+              .maxByOption(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
+              .map(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
           }.toMap
           val now = JavaTime.offsetDateTime
           ServiceResults.success {
-            todaysAssessments.filter { a => longestAdjustments.get(a.id).exists { adjustment =>
+            todaysAssessments.filter { a => longestAdjustments.get(a.id).flatten.exists { adjustment =>
               a.startTime.exists {
                 st => st
                   .plus(a.duration.getOrElse(Duration.ZERO))
@@ -255,16 +251,28 @@ class AssessmentServiceImpl @Inject()(
     auditService.audit(Operation.Assessment.UpdateAssessment, assessment.id.toString, Target.Assessment, Json.obj()) {
       daoRunner.run(dao.getById(assessment.id)).flatMap { storedAssessmentOption =>
         storedAssessmentOption.map { existingAssessment =>
-          daoRunner.run(dao.update(existingAssessment.copy(
-            paperCode = assessment.paperCode,
-            section = assessment.section,
-            title = assessment.title,
-            startTime = assessment.startTime,
-            duration = assessment.duration,
-            platform = assessment.platform,
-            assessmentType = assessment.assessmentType,
-            storedBrief = assessment.brief.toStoredBrief,
-          )))
+          daoRunner.run(dao.update(StoredAssessment(
+              id = existingAssessment.id,
+              paperCode = assessment.paperCode,
+              section = assessment.section,
+              title = assessment.title,
+              startTime = assessment.startTime,
+              duration = assessment.duration,
+              durationStyle = assessment.durationStyle,
+              platform = assessment.platform,
+              assessmentType = assessment.assessmentType,
+              storedBrief = assessment.brief.toStoredBrief,
+              invigilators = assessment.invigilators.map(_.string).toList,
+              state = assessment.state,
+              tabulaAssessmentId = assessment.tabulaAssessmentId,
+              tabulaAssignments = assessment.tabulaAssignments.map(_.toString).toList,
+              examProfileCode = assessment.examProfileCode,
+              moduleCode = assessment.moduleCode,
+              departmentCode = assessment.departmentCode,
+              sequence = assessment.sequence,
+              created = existingAssessment.created,
+              version = existingAssessment.version
+            )))
         }.getOrElse {
           val timestamp = JavaTime.offsetDateTime
           daoRunner.run(dao.insert(StoredAssessment(
@@ -303,8 +311,9 @@ class AssessmentServiceImpl @Inject()(
     auditService.audit(Operation.Assessment.DeleteAssessment, assessment.id.toString, Target.Assessment, Json.obj()) {
       daoRunner.run(for {
         stored <- dao.getById(assessment.id)
-        students <- studentAssessmentDao.getByAssessmentId(assessment.id)
-        _ <- DBIO.sequence(students.toList.map(s => studentAssessmentDao.delete(s.studentId, s.assessmentId)))
+        studentAssessments <- studentAssessmentDao.getByAssessmentId(assessment.id)
+        _ <- assessmentClientNetworkActivityDao.deleteAll(studentAssessments.map(_.id))
+        _ <- DBIO.sequence(studentAssessments.toList.map(s => studentAssessmentDao.delete(s.studentId, s.assessmentId)))
         done <- (stored match {
           case Some(a) => dao.delete(a)
           case _ => DBIO.successful(Done) // No-op

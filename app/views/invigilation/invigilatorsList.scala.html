@@ -1,0 +1,43 @@
+@import domain.Assessment
+@import system.routes.Types.Usercode
+@import domain.AssessmentClientNetworkActivity
+@import warwick.core.helpers.JavaTime
+@import java.time.OffsetDateTime
+@import java.time.format.DateTimeFormatter
+@import java.time.format.FormatStyle
+@(
+        assessment: Assessment,
+        invigilators: Seq[(Usercode, String)],
+        invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
+)(implicit request: RequestHeader, context: RequestContext)
+
+<div class="invigilator-list" data-uri="@controllers.invigilation.routes.InvigilatorAssessmentController.invigilatorsAjax(assessment.id)">
+  <p class="hide loading"><i class="far fa-spinner-third fa-spin" aria-hidden="true"></i> Refreshing&hellip;</p>
+  <ul>
+  @invigilators.map{ case (usercode, username) =>
+    <li>
+      @if(invigilatorActivities.contains(usercode)) {
+        @invigilatorActivities.get(usercode).map { latestActivity =>
+          <span class="@if(latestActivity.isOnline) {text-success} else {text-danger}"><i class="fad @if(latestActivity.isOnline) {fa-wifi} else {fa-wifi-slash}"></i>
+            @username</span>
+          <span class="text-muted">(@usercode.string)</span>
+
+          <ul>
+            <li>Last seen online @JavaTime.Relative(latestActivity.timestamp)</li>
+          </ul>
+        }
+      } else {
+        <span class="text-danger"><i class="fad fa-wifi-slash"></i>
+          @username</span>
+        <span class="text-muted">(@usercode.string)</span>
+        <ul>
+          <li>Never seen online</li>
+        </ul>
+      }
+    </li>
+  }
+  </ul>
+
+  <p><small>
+    This information automatically updates every 30 seconds. Last refreshed at @(OffsetDateTime.now().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM))). <noscript>No JS? <a href="">Click</a> to refresh.</noscript></small></p>
+</div>

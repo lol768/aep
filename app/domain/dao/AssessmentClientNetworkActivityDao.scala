@@ -8,6 +8,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import scala.concurrent.ExecutionContext
 
+
 @ImplementedBy(classOf[AssessmentClientNetworkActivityDaoImpl])
 trait AssessmentClientNetworkActivityDao {
   self: HasDatabaseConfigProvider[ExtendedPostgresProfile] =>
@@ -15,11 +16,14 @@ trait AssessmentClientNetworkActivityDao {
   import profile.api._
 
   def insert(activity: AssessmentClientNetworkActivity): DBIO[AssessmentClientNetworkActivity]
+  def deleteAll(studentAssessmentId: UUID): DBIO[Int]
+  def deleteAll(studentAssessmentIds: Seq[UUID]): DBIO[Int]
   def findByStudentAssessmentId(studentAssessmentId: UUID): DBIO[Seq[AssessmentClientNetworkActivity]]
   def getClientActivities(offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
   def getClientActivityFor(assessments: Seq[StudentAssessment], startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime], offset: Int, numberToReturn: Int): DBIO[Seq[AssessmentClientNetworkActivity]]
   def countClientActivityFor(assessments: Seq[StudentAssessment],startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime]): DBIO[Int]
   def getLatestActivityFor(studentAssessmentIds: Seq[UUID]): DBIO[Seq[AssessmentClientNetworkActivity]]
+  def getLatestInvigilatorActivityFor(assessmentId: UUID): DBIO[Seq[AssessmentClientNetworkActivity]]
 }
 
 @Singleton
@@ -30,9 +34,16 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
 )(implicit ec: ExecutionContext) extends AssessmentClientNetworkActivityDao with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
   import profile.api._
   import tables._
+  import jdbcTypes._
 
   override def insert(activity: AssessmentClientNetworkActivity): DBIO[AssessmentClientNetworkActivity] =
     (assessmentClientNetworkActivities += activity).map(_ => activity)
+
+  override def deleteAll(studentAssessmentId: UUID): DBIO[Int] =
+    assessmentClientNetworkActivities.filter { a => a.studentAssessmentId === studentAssessmentId }.delete
+
+  override def deleteAll(studentAssessmentIds: Seq[UUID]): DBIO[Int] =
+    assessmentClientNetworkActivities.filter(_.studentAssessmentId inSetBind studentAssessmentIds).delete
 
   override def findByStudentAssessmentId(studentAssessmentId: UUID): DBIO[Seq[AssessmentClientNetworkActivity]] =
     assessmentClientNetworkActivities.filter { a => a.studentAssessmentId === studentAssessmentId }.result
@@ -72,8 +83,22 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
       .result
   }
 
+  override def getLatestInvigilatorActivityFor(assessmentId: UUID): profile.api.DBIO[Seq[AssessmentClientNetworkActivity]] = {
+    assessmentClientNetworkActivities
+      .filter { a => a.assessmentId === assessmentId && a.studentAssessmentId.isEmpty }
+      .join {
+        assessmentClientNetworkActivities
+          .filter{ a => a.assessmentId === assessmentId && a.studentAssessmentId.isEmpty }
+          .groupBy(e => e.usercode)
+          .map { case (key, values) => (key, values.map(_.timestamp).max)}
+      }
+      .on { case (record, (key, timestamp)) => record.usercode === key && record.timestamp === timestamp}
+      .map { case (record, _) => record }
+      .result
+  }
+
   private def assessmentFilter(studentAssessmentIds: Seq[UUID], e: AssessmentClientNetworkActivities) =
-    if (studentAssessmentIds.nonEmpty) { e.studentAssessmentId.inSet(studentAssessmentIds) } else { LiteralColumn(true) }
+    if (studentAssessmentIds.nonEmpty) { e.studentAssessmentId.inSet(studentAssessmentIds).getOrElse(false) } else { LiteralColumn(true) }
 
   private def clientActivityForQuery(assessments: Seq[StudentAssessment],startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime]) = {
     assessmentClientNetworkActivities

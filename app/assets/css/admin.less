@@ -15,3 +15,23 @@ summary {
     outline: none;
   }
 }
+
+.invigilator-list > ul {
+  margin-top: 1.5rem;
+  list-style-type: none;
+}
+
+.invigilator-list .loading {
+  margin-top: -4.5rem;
+  float: right;
+  font-size: 1.25rem;
+  color: @text-muted;
+}
+
+.signal-loop (@i) when (@i > 0) {
+  .themed-duotone.fa-signal-@{i} {
+    --fa-secondary-color: 0.3;
+  }
+  .signal-loop(@i - 1);
+}
+.signal-loop (4);

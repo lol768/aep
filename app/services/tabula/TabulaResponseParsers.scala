@@ -7,6 +7,7 @@ import java.util.UUID
 import domain.tabula._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.sso.{UniversityID, Usercode}
 
 object TabulaResponseParsers {
@@ -56,6 +57,7 @@ object TabulaResponseParsers {
       lastName: String,
       fullName: String,
       homeDepartment: DepartmentIdentity,
+      email: Option[String],
       disability: Option[SitsDisability],
       studentCourseDetails: Option[Seq[StudentCourseDetails]],
       userType: String,
@@ -72,6 +74,7 @@ object TabulaResponseParsers {
           lastName = lastName,
           fullName = fullName,
           department = DepartmentIdentity(department.code, department.name),
+          warwickEmail = email,
           course = latestScd.map(_.course),
           attendance = latestScyd.map(_.modeOfAttendance).flatMap(Attendance.withNameOption),
           group = latestScd.map(_.courseType).flatMap(StudentGroup.withNameOption),
@@ -90,13 +93,14 @@ object TabulaResponseParsers {
       (__ \ "member" \ "lastName").read[String] and
       (__ \ "member" \ "fullName").read[String] and
       (__ \ "member" \ "homeDepartment").read[DepartmentIdentity](departmentIdentity) and
+      (__ \ "member" \ "email").readNullable[String] and
       (__ \ "member" \ "disability").readNullable[SitsDisability](disabilityReads) and
       (__ \ "member" \ "studentCourseDetails").readNullable[Seq[StudentCourseDetails]](Reads.seq(studentCourseDetailsReads)) and
       (__ \ "member" \ "userType").read[String]
     ) (Member.apply _)
     val memberFields: Seq[String] =
       Seq(
-        "universityId", "userId", "firstName", "lastName", "fullName", "homeDepartment", "userType"
+        "universityId", "userId", "firstName", "lastName", "fullName", "homeDepartment", "email", "userType"
       ).map(f => s"member.$f") ++
         disabilityFields.map(f => s"member.disability.$f") ++
         studentCourseDetailsFields.map(f => s"member.studentCourseDetails.$f")
@@ -218,6 +222,7 @@ object TabulaResponseParsers {
 
   val examPaperScheduleReads: Reads[ExamPaperSchedule] = (
     (__ \ "examProfileCode").read[String] and
+    (__ \ "academicYear").read[String].map(AcademicYear.parse) and
     (__ \ "slotId").read[String] and
     (__ \ "sequence").read[String] and
     (__ \ "locationSequence").read[String] and
@@ -277,6 +282,13 @@ object TabulaResponseParsers {
     (__ \ "parentDepartment").readNullable[DepartmentIdentity](departmentIdentity)
   ) (Department.apply _)
 
+  val assignmentReads: Reads[Assignment] = (
+    (__ \ "id").read[String] and
+    (__ \ "name").read[String] and
+    (__ \ "academicYear").read[String].map(AcademicYear.parse) and
+    (__ \ "summaryUrl").read[String]
+  ) (Assignment.apply _)
+
   // A response property containing an array of assessment components
   val responseAssessmentComponentsReads: Reads[Seq[AssessmentComponent]] =
     (__ \ "assessmentComponents").read(Reads.seq(assessmentComponentReads))
@@ -286,6 +298,8 @@ object TabulaResponseParsers {
 
   val responseDepartmentReads: Reads[Seq[Department]] =
     (__ \ "departments").read(Reads.seq(departmentReads))
+
+  val responseAssignmentReads: Reads[Assignment] = (__ \ "assignment").read(assignmentReads)
 
 
   def validateAPIResponse[A](jsValue: JsValue, parser: Reads[A]): JsResult[A] = {

@@ -1,9 +1,11 @@
-@import controllers.admin.ReportingMetadata
 @import tags._
-@(sittings: ReportingMetadata)(implicit context: RequestContext)
+@import domain.Assessment
+@import services.ReportingService.AssessmentReport
+@import domain.Assessment.Platform.OnlineExams
+@(assessment: Assessment, report: AssessmentReport)(implicit context: RequestContext)
 
-@frontend(sittings.assessment.title) {
-  @assessmentMetadata(sittings.assessment)
+@frontend(assessment.title) {
+  @assessmentMetadata(assessment)
 
   <table class="table table-bordered">
     <thead>
@@ -11,48 +13,52 @@
         <th>Expected</th>
         <th>Started</th>
         <th>Not started</th>
-        <th>Submitted</th>
-        <th>Finalised</th>
+        @if(assessment.platform.contains(OnlineExams)) {
+          <th>Submitted</th>
+          <th>Finalised</th>
+        }
       </tr>
     </thead>
 
     <tbody>
       <tr>
         <td>
-          @if(sittings.expected.nonEmpty) {
-            <a href="@controllers.admin.routes.ReportingController.expected(sittings.assessment.id)">@sittings.expected.length</a>
+          @if(report.expectedSittings.nonEmpty) {
+            <a href="@controllers.admin.routes.ReportingController.expected(assessment.id)">@report.expectedSittings.length</a>
           } else {
-            @sittings.expected.length
+            @report.expectedSittings.length
           }
         </td>
         <td>
-          @if(sittings.started.nonEmpty) {
-            <a href="@controllers.admin.routes.ReportingController.started(sittings.assessment.id)">@sittings.started.length</a>
+          @if(report.startedSittings.nonEmpty) {
+            <a href="@controllers.admin.routes.ReportingController.started(assessment.id)">@report.startedSittings.length</a>
           } else {
-            @sittings.started.length
+            @report.startedSittings.length
           }
         </td>
         <td>
-          @if(sittings.notStarted.nonEmpty) {
-            <a href="@controllers.admin.routes.ReportingController.notStarted(sittings.assessment.id)">@sittings.notStarted.length</a>
+          @if(report.notStartedSittings.nonEmpty) {
+            <a href="@controllers.admin.routes.ReportingController.notStarted(assessment.id)">@report.notStartedSittings.length</a>
           } else {
-            @sittings.notStarted.length
+            @report.notStartedSittings.length
           }
         </td>
-        <td>
-          @if(sittings.submitted.nonEmpty) {
-            <a href="@controllers.admin.routes.ReportingController.submitted(sittings.assessment.id)">@sittings.submitted.length</a>
-          } else {
-            @sittings.submitted.length
-          }
-        </td>
-        <td>
-          @if(sittings.finalised.nonEmpty) {
-            <a href="@controllers.admin.routes.ReportingController.expected(sittings.assessment.id)">@sittings.finalised.length</a>
-          } else {
-            @sittings.finalised.length
-          }
-        </td>
+        @if(assessment.platform.contains(OnlineExams)) {
+          <td>
+            @if(report.submittedSittings.nonEmpty) {
+              <a href="@controllers.admin.routes.ReportingController.submitted(assessment.id)">@report.submittedSittings.length</a>
+            } else {
+              @report.submittedSittings.length
+            }
+          </td>
+          <td>
+            @if(report.finalisedSittings.nonEmpty) {
+              <a href="@controllers.admin.routes.ReportingController.finalised(assessment.id)">@report.finalisedSittings.length</a>
+            } else {
+              @report.finalisedSittings.length
+            }
+          </td>
+        }
       </tr>
     </tbody>
   </table>

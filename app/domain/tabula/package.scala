@@ -6,6 +6,7 @@ import java.util.UUID
 import domain.Assessment.State.Imported
 import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform}
 import services.tabula.TabulaResponseParsers.SitsAssessmentType
+import uk.ac.warwick.util.termdates.AcademicYear
 
 package object tabula {
 
@@ -23,6 +24,7 @@ package object tabula {
 
   case class ExamPaperSchedule(
     examProfileCode: String,
+    academicYear: AcademicYear,
     slotId: String,
     sequence: String,
     locationSequence: String,
@@ -118,6 +120,7 @@ package object tabula {
     lastName: String,
     fullName: String,
     department: DepartmentIdentity,
+    warwickEmail: Option[String],
     course: Option[Course],
     attendance: Option[Attendance],
     group: Option[StudentGroup],
@@ -139,6 +142,13 @@ package object tabula {
   case class DepartmentIdentity(
     code: String,
     name: String
+  )
+
+  case class Assignment(
+    id: String,
+    name: String,
+    academicYear: AcademicYear,
+    summaryUrl: String
   )
 
   sealed abstract class UserType extends EnumEntry with CapitalWords

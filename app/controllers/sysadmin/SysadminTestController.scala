@@ -136,7 +136,7 @@ class SysadminTestController @Inject()(
     val files = request.body.files.map(_.ref)
     ServiceResults.futureSequence(files.map { ref => uploadedFileService.store(ref.in, ref.metadata) }).successMap { files =>
       redirectHome.flashing("success" -> Messages("flash.files.uploaded", files.size))
-    }
+    }.map(uploadedFileControllerHelper.cleanupTemporaryFiles(_))
   }
 
   def downloadFile(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
@@ -148,6 +148,7 @@ class SysadminTestController @Inject()(
   }
 
   def assessmentComponents(deptCode: DepartmentCode, examProfileCode: String): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    implicit val writeAcademicYear: Writes[AcademicYear] = ay => JsString(ay.toString)
     implicit val writeUniversityID: Writes[UniversityID] = o => JsString(o.string)
     implicit val writeExamScheduleStudent: Writes[ExamPaperScheduleStudent] = Json.writes[ExamPaperScheduleStudent]
     implicit val writeExamSchedule: Writes[ExamPaperSchedule] = Json.writes[ExamPaperSchedule]

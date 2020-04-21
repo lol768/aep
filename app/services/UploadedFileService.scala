@@ -68,47 +68,61 @@ class UploadedFileServiceImpl @Inject()(
       files.map(_.asUploadedFile)
     }
 
-  private def storeDBIO(id: UUID, in: ByteSource, metadata: UploadedFileSave, uploader: Usercode, ownerId: Option[UUID], ownerType: Option[UploadedFileOwner])(implicit ac: AuditLogContext): DBIO[UploadedFile] = {
+  private def putInObjectStorage(id: UUID, in: ByteSource, metadata: UploadedFileSave)(implicit t: TimingContext): Future[Unit] =
+    time(TimingCategories.ObjectStorageWrite) {
+      Future {
+        objectStorageService.put(id.toString, in, ObjectStorageService.Metadata(
+          contentLength = metadata.contentLength,
+          contentType = metadata.contentType,
+          fileHash = None, // This is calculated and stored by EncryptedObjectStorageService so no need to do it here
+        ))
+      }(objectStorageExecutionContext)
+    }
+
+  private def insertDBIO(id: UUID, metadata: UploadedFileSave, uploader: Usercode, ownerId: Option[UUID], ownerType: Option[UploadedFileOwner])(implicit ac: AuditLogContext): DBIO[StoredUploadedFile] =
+    dao.insert(StoredUploadedFile(
+      id,
+      metadata.fileName,
+      metadata.contentLength,
+      metadata.contentType,
+      uploader,
+      metadata.uploadStarted,
+      ownerId,
+      ownerType,
+      JavaTime.offsetDateTime,
+      JavaTime.offsetDateTime
+    ))
+
+  private def storeDBIOInTransaction(id: UUID, in: ByteSource, metadata: UploadedFileSave, uploader: Usercode, ownerId: Option[UUID], ownerType: Option[UploadedFileOwner])(implicit ac: AuditLogContext): DBIO[UploadedFile] = {
     for {
       // Treat the ObjectStorageService put as DBIO so we force a rollback if it fails (even though it won't delete the object)
-      _ <- DBIO.from(time(TimingCategories.ObjectStorageWrite) {
-        Future {
-          objectStorageService.put(id.toString, in, ObjectStorageService.Metadata(
-            contentLength = metadata.contentLength,
-            contentType = metadata.contentType,
-            fileHash = None, // This is calculated and stored by EncryptedObjectStorageService so no need to do it here
-          ))
-        }(objectStorageExecutionContext)
-      })
-      file <- dao.insert(StoredUploadedFile(
-        id,
-        metadata.fileName,
-        metadata.contentLength,
-        metadata.contentType,
-        uploader,
-        metadata.uploadStarted,
-        ownerId,
-        ownerType,
-        JavaTime.offsetDateTime,
-        JavaTime.offsetDateTime
-      ))
+      _ <- DBIO.from(putInObjectStorage(id, in, metadata))
+      file <- insertDBIO(id, metadata, uploader, ownerId, ownerType)
     } yield file.asUploadedFile
   }
 
   override def storeDBIO(in: ByteSource, metadata: UploadedFileSave, uploader: Usercode)(implicit ac: AuditLogContext): DBIO[UploadedFile] =
-    storeDBIO(UUID.randomUUID(), in, metadata, uploader, None, None)
+    storeDBIOInTransaction(UUID.randomUUID(), in, metadata, uploader, None, None)
 
   override def storeDBIO(in: ByteSource, metadata: UploadedFileSave, uploader: Usercode, ownerId: UUID, ownerType: UploadedFileOwner)(implicit ac: AuditLogContext): DBIO[UploadedFile] =
-    storeDBIO(UUID.randomUUID(), in, metadata, uploader, Some(ownerId), Some(ownerType))
+    storeDBIOInTransaction(UUID.randomUUID(), in, metadata, uploader, Some(ownerId), Some(ownerType))
 
   override def store(in: ByteSource, metadata: UploadedFileSave)(implicit ac: AuditLogContext): Future[ServiceResult[UploadedFile]] =
     auditService.audit[UploadedFile](Operation.UploadedFile.Save, (f: UploadedFile) => f.id.toString, Target.UploadedFile, Json.obj()) {
-      daoRunner.run(storeDBIO(in, metadata, ac.usercode.get)).map(Right.apply)
+      // Don't do the store in the transaction so don't delegate to storeDBIO
+      val id = UUID.randomUUID()
+      putInObjectStorage(id, in, metadata).flatMap { _ =>
+        daoRunner.run(insertDBIO(id, metadata, ac.usercode.get, None, None)).map(suf => ServiceResults.success(suf.asUploadedFile))
+      }
     }
 
   override def store(in: ByteSource, metadata: UploadedFileSave, ownerId: UUID, ownerType: UploadedFileOwner)(implicit ac: AuditLogContext): Future[ServiceResult[UploadedFile]] =
     auditService.audit[UploadedFile](Operation.UploadedFile.Save, (f: UploadedFile) => f.id.toString, Target.UploadedFile, Json.obj()) {
-      daoRunner.run(storeDBIO(in, metadata, ac.usercode.get, ownerId, ownerType)).map(Right.apply)
+      // Don't do the store in the transaction so don't delegate to storeDBIO
+      val id = UUID.randomUUID()
+      putInObjectStorage(id, in, metadata).flatMap { _ =>
+        daoRunner.run(insertDBIO(id, metadata, ac.usercode.get, Some(ownerId), Some(ownerType))).map(suf => ServiceResults.success(suf.asUploadedFile))
+      }
     }
 
   override def deleteDBIO(id: UUID)(implicit ac: AuditLogContext): DBIO[Done] = {

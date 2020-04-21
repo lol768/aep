@@ -55,6 +55,7 @@ class StudentAssessmentServiceImpl @Inject()(
   uploadedFileService: UploadedFileService,
   assessmentService: AssessmentService,
   assessmentDao: AssessmentDao,
+  assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
 
 
@@ -274,6 +275,8 @@ class StudentAssessmentServiceImpl @Inject()(
       daoRunner.run(dao.insertAll(studentAssessments.map(studentAssessment => StoredStudentAssessment(
         id = studentAssessment.id,
         assessmentId = studentAssessment.assessmentId,
+        occurrence = studentAssessment.occurrence,
+        academicYear = studentAssessment.academicYear,
         studentId = studentAssessment.studentId,
         inSeat = studentAssessment.inSeat,
         startTime = studentAssessment.startTime,
@@ -291,11 +294,19 @@ class StudentAssessmentServiceImpl @Inject()(
       daoRunner.run(dao.get(studentAssessment.studentId, studentAssessment.assessmentId)).flatMap { result =>
         result.map { existingSA =>
           daoRunner.run(for {
-            updated <- dao.update(existingSA.copy(
+            updated <- dao.update(StoredStudentAssessment(
+              id = existingSA.id,
+              assessmentId = existingSA.assessmentId,
+              studentId = existingSA.studentId,
+              occurrence = studentAssessment.occurrence,
+              academicYear = studentAssessment.academicYear,
               inSeat = studentAssessment.inSeat,
               startTime = studentAssessment.startTime,
+              extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
               finaliseTime = studentAssessment.explicitFinaliseTime,
               uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+              created = existingSA.created,
+              version = existingSA.version,
             ))
             withUploadedFiles <- dao.loadWithUploadedFiles(updated.studentId, updated.assessmentId)
           } yield inflateRowWithUploadedFiles(withUploadedFiles).get)
@@ -304,6 +315,8 @@ class StudentAssessmentServiceImpl @Inject()(
           daoRunner.run(dao.insert(StoredStudentAssessment(
             id = studentAssessment.id,
             assessmentId = studentAssessment.assessmentId,
+            occurrence = studentAssessment.occurrence,
+            academicYear = studentAssessment.academicYear,
             studentId = studentAssessment.studentId,
             inSeat = studentAssessment.inSeat,
             startTime = studentAssessment.startTime,
@@ -319,7 +332,15 @@ class StudentAssessmentServiceImpl @Inject()(
 
   override def delete(studentAssessment: StudentAssessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] =
     audit.audit(Operation.StudentAssessment.DeleteStudentAssessment, studentAssessment.id.toString, Target.StudentAssessment, Json.obj("universityId" -> studentAssessment.studentId.string)) {
-      daoRunner.run(dao.delete(studentAssessment.studentId, studentAssessment.assessmentId))
+      daoRunner.run(for {
+        existing <- dao.get(studentAssessment.studentId, studentAssessment.assessmentId)
+        _ <- DBIO.from(Future.successful {
+          // The forall is true if existing doesn't exist, so this supports a delete for a deleted object as fine
+          require(existing.forall(_.startTime.isEmpty), "Cannot perform action, student assessment has been started")
+        })
+        _ <- assessmentClientNetworkActivityDao.deleteAll(studentAssessment.id)
+        deleted <- dao.delete(studentAssessment.studentId, studentAssessment.assessmentId)
+      } yield deleted)
         .map(_ => ServiceResults.success(Done))
     }
 
@@ -337,11 +358,16 @@ class StudentAssessmentServiceImpl @Inject()(
     audit.audit(Operation.StudentAssessment.MakeDeclarations, decs.studentAssessmentId.toString, Target.Declarations, Json.obj("acceptsAuthorship" -> decs.acceptsAuthorship.toString, "selfDeclaredRA" -> decs.selfDeclaredRA.toString, "completedRA" -> decs.completedRA.toString)) {
       daoRunner.run(dao.getDeclarations(decs.studentAssessmentId)).flatMap { result =>
         result.map { existingDeclaration =>
-          daoRunner.run(dao.update(existingDeclaration.copy(
-            acceptsAuthorship = decs.acceptsAuthorship,
-            selfDeclaredRA = decs.selfDeclaredRA,
-            completedRA = decs.completedRA
-          )))
+          daoRunner.run(dao.update(
+            StoredDeclarations(
+              studentAssessmentId = existingDeclaration.studentAssessmentId,
+              acceptsAuthorship = decs.acceptsAuthorship,
+              selfDeclaredRA = decs.selfDeclaredRA,
+              completedRA = decs.completedRA,
+              created = existingDeclaration.created,
+              version = existingDeclaration.version
+            )
+          ))
         }.getOrElse {
           val timestamp = JavaTime.offsetDateTime
           daoRunner.run(dao.insert(StoredDeclarations(

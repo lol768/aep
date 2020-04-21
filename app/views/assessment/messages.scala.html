@@ -3,24 +3,27 @@
 @import controllers.MessageController.MessageData
 @import domain.AnnouncementOrQuery
 @import warwick.sso.UniversityID
+@import warwick.sso.Usercode
+@import warwick.sso.User
 @import domain.tabula
 @(
     assessment: Assessment,
     messages: Seq[AnnouncementOrQuery],
     student: Map[UniversityID, tabula.SitsProfile],
     form: Form[MessageData],
+    invigilators: Map[Usercode, User] = Map.empty[Usercode, User]
 )(implicit context: RequestContext, request: RequestHeader, messagesProvider: MessagesProvider)
 
-@frontend(s"Messages for ${assessment.title}") {
+@frontend(s"Log an issue for ${assessment.title}") {
     <div class="alert alert-info media">
         <div class="media-left">
             <i class="fas fa-info-circle" aria-hidden="true"></i>
         </div>
         <div class="media-body">
-            If you have concerns with specific parts of the assessment, you can use this
-            form to bring it to the attention of an invigilator. Invigilators cannot assist
-            you with understanding the assessment, but can look into potential errors
-            and alert the entire cohort if necessary.
+            If you have concerns with specific parts of this assessment, you can use this form
+            to log an issue with the invigilation team.  No individual replies are sent when
+            issues are logged, but if there is a problem that affects the entire cohort, the
+            invigilation team will make an announcement to all students.
         </div>
     </div>
 
@@ -28,11 +31,14 @@
         <div class="col-sm-6">
             <p>
                 @b3.vertical.formCSRF(controllers.routes.MessageController.submitForm(assessment.id)) { implicit fc =>
-                    @b3.textarea(form("messageText"),
-                        Symbol("_label") -> "Enter your message for the invigilator")
+                    @b3.textarea(
+                        form("messageText"),
+                        Symbol("_label") -> "Log an issue with the invigilation team",
+                        Symbol("_showConstraints") -> true
+                    )
 
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i> Send
+                        <i class="fas fa-paper-plane"></i> Log issue
                     </button>
                 }
             </p>
@@ -44,8 +50,8 @@
             </p>
         </div>
         <div class="col-sm-6">
-            <h3>My queries</h3>
-            @displayAnnouncementsAndQueries(messages, student, "query")
+            <h3>Issues I have logged</h3>
+            @displayAnnouncementsAndQueries(messages, student, "query", invigilators)
         </div>
     </div>
 

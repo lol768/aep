@@ -12,6 +12,7 @@ flash.assessment.created=Assessment "{0}" has been created and is now ready.
 flash.assessment.created.notReady=Assessment "{0}" has been created. To be ready: {1}
 flash.assessment.updated=Assessment "{0}" has been updated and is now ready.
 flash.assessment.updated.notReady=Assessment "{0}" has been updated. To be ready: {1}
+flash.assessment.generatedAssignments=Tabula assignments have been generated for Assessment "{0}".
 flash.assessment.declaration.must-check-box=You must tick the box to start the assessment.
 flash.assessment.declaration.must-choose-radio=You must choose an option to start the assessment.
 flash.assessment.finish.must-check-box=You must tick the box to finish the assessment.
@@ -27,6 +28,9 @@ flash.dataGeneration.randomAssessments=Added {0} randomly generated assessments 
 flash.dataGeneration.randomAssessmentsWithStudentAssessments=Added {0} randomly generated assessments with associated student assessments to the database.
 flash.assessment.announcement.created=Assessment announcement created
 flash.messages.sentToInvigilator=Message sent to invigilator
+flash.tabulaAssessmentImports.paused=Tabula assessment imports paused.
+flash.tabulaAssessmentImports.resumed=Tabula assessment imports resumed.
+
 
 # Overrides of keys in messages.default
 
@@ -36,10 +40,13 @@ error.assessment.assessment-type-not-specified=You must specify the type of this
 error.assessment.url-not-specified=You must specify the URL to the assessment for {0}
 error.assessment.files-not-provided=You must upload at least one file for an assessment
 error.assessment.fileMissing=Please attach a file.
+error.assessment.fileWithBadParts=There was a problem with your file upload. Please check to see if it is empty before uploading again.
 error.assessment.duration-not-valid=You must pick a valid duration for assessments of type: {0}.
 error.assessment.started=You cannot change anything about this assessment because it has already started.
 error.assessment.platformNumber=You must pick 1 or 2 platforms for this assessment.
 error.assessment.description.required=Please add a description for this assessment
+error.assessment.invigilators.required=Please add one or more invigilators for this assessment
+error.assessment.students.required=Please add one or more students for this assessment
 error.permissions.notDepartmentAdminForSelected=You are not an administrator for the selected department code: {0}.
 error.dataGeneration.production=Data generation is disabled on production.
 error.students.error=There was an error validating the University IDs.

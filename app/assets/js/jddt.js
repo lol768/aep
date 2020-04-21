@@ -257,7 +257,7 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
     printDate: !sameExactDate,
 
     // These only take effect if printDate is true above
-    printYear: !sameYear,
+    printYear: sameYear ? undefined : true,
     printMonth: !sameYear || !sameMonth || isToToday,
     printDayOfMonth: !sameYear || !sameMonth || !sameDateNumber,
     printDay: !sameYear || !sameMonth || !sameDateNumber,
@@ -266,7 +266,7 @@ function stringifyDateRange(fromDate, toDate, timezoneName, short) {
     timezoneName,
     short,
     includeIcon: false,
-    printYear: !sameYear,
+    printYear: sameYear ? undefined : true,
   };
 
   return `${iconString} ${stringify(fromDate, fromStringifyOptions)} to ${stringify(toDate, toStringifyOptions)}`;
@@ -399,6 +399,10 @@ export default class JDDT {
    * @param {HTMLElement} el
    */
   static applyToElement(el) {
+    if (el.classList.contains('jddt-init')) {
+      return true;
+    }
+
     if (!el.hasAttribute('data-server-timezone-offset') || !el.hasAttribute('data-server-timezone-name')) {
       throw new Error('Element with .jddt class did not have data-server-timezone-offset '
           + 'and data-server-timezone-name attributes');
@@ -419,6 +423,9 @@ export default class JDDT {
       // eslint-disable-next-line no-param-reassign
       el.innerHTML = jddt[format]();
     }
+
+    el.classList.add('jddt-init');
+    return true;
   }
 
   /**
@@ -429,6 +436,10 @@ export default class JDDT {
    * @param {HTMLElement} el
    */
   static applyToRangeElement(el) {
+    if (el.classList.contains('jddt-init')) {
+      return true;
+    }
+
     if (!el.hasAttribute('data-server-timezone-offset') || !el.hasAttribute('data-server-timezone-name')) {
       throw new Error('Element with .jddt-range class did not have data-server-timezone-offset '
         + 'and data-server-timezone-name attributes');
@@ -455,6 +466,9 @@ export default class JDDT {
         short,
       );
     }
+
+    el.classList.add('jddt-init');
+    return true;
   }
 
   /**
@@ -467,22 +481,9 @@ export default class JDDT {
   static initialise(container) {
     if (typeof MutationObserver !== 'undefined') {
       // Should exist in IE11
-      const observer = new MutationObserver((objects) => {
-        // expect Babel for this
-        objects.forEach((mutationRecord) => {
-          if (mutationRecord.type === 'childList') {
-            for (let i = 0; i < mutationRecord.target.children.length; i += 1) {
-              mutationRecord.target.children[i].querySelectorAll('.jddt[data-millis]')
-                .forEach((jddtElement) => {
-                  this.applyToElement(jddtElement);
-                });
-              mutationRecord.target.children[i].querySelectorAll('.jddt-range')
-                .forEach((jddtRangeElement) => {
-                  this.applyToRangeElement(jddtRangeElement);
-                });
-            }
-          }
-        });
+      const observer = new MutationObserver(() => {
+        container.querySelectorAll('.jddt[data-millis]').forEach(this.applyToElement);
+        container.querySelectorAll('.jddt-range').forEach(this.applyToRangeElement);
       });
       observer.observe(container, {
         childList: true,
@@ -491,12 +492,8 @@ export default class JDDT {
     } else {
       // IE9 +
       document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('.jddt[data-millis]').forEach((jddtElement) => {
-          this.applyToElement(jddtElement);
-        });
-        document.querySelectorAll('.jddt-range').forEach((jddtRangeElement) => {
-          this.applyToRangeElement(jddtRangeElement);
-        });
+        document.querySelectorAll('.jddt[data-millis]').forEach(this.applyToElement);
+        document.querySelectorAll('.jddt-range').forEach(this.applyToRangeElement);
       });
     }
   }

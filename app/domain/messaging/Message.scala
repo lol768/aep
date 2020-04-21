@@ -44,11 +44,11 @@ case class Message (
     created = created
   )
 
-
   def asAnnouncementOrQuery = AnnouncementOrQuery(
     sender = Right(client),
     text = text,
     date = created,
+    isAnnouncement = false
   )
 }
 

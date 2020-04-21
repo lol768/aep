@@ -140,19 +140,32 @@ class AssessmentController @Inject()(
 
   def uploadFiles(assessmentId: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = StudentAssessmentInProgressAction(assessmentId)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
     val files = request.body.files.map(_.ref)
+
+    def failedFileUpload(xhr: Boolean, fileError: Option[String]): Future[Result] = {
+      if (xhr) {
+        fileError.map { err =>
+          Future.successful(BadRequest(err))
+        }.getOrElse {
+          Future.successful(BadRequest)
+        }
+      } else {
+        announcementService.getByAssessmentId(assessmentId).successMap { announcements =>
+          BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes, announcements))
+        }
+      }
+    }
+
     AssessmentController.attachFilesToAssessmentForm.bindFromRequest().fold(
-      _ => announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
-        BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes, announcements))
-      ),
+      badForm => failedFileUpload(badForm.value.exists(_.xhr == true), None),
       form => {
         val existingUploadedFiles = request.sitting.studentAssessment.uploadedFiles
         val intersection = existingUploadedFiles.map(uf => uf.fileName.toLowerCase).intersect(files.map(f => f.metadata.fileName.toLowerCase))
-        if (files.isEmpty) {
-          val flashMessage = "error" -> Messages("error.assessment.fileMissing")
-          Future.successful(redirectOrReturn200(assessmentId, form, flashMessage))
+        if (request.body.badParts.nonEmpty) {
+          failedFileUpload(form.xhr, Some(Messages("error.assessment.fileWithBadParts")))
+        } else if (files.isEmpty) {
+          failedFileUpload(form.xhr, Some(Messages("error.assessment.fileMissing")))
         } else if (intersection.nonEmpty) {
-          val flashMessage = "error" -> Messages("flash.assessment.filesDuplicates", intersection.head)
-          Future.successful(redirectOrReturn200(assessmentId, form, flashMessage))
+          failedFileUpload(form.xhr, Some(Messages("flash.assessment.filesDuplicates", intersection.head)))
         } else {
           studentAssessmentService.attachFilesToAssessment(request.sitting.studentAssessment, files.map(f => (f.in, f.metadata))).successMap { _ =>
             val flashMessage = "success" -> Messages("flash.assessment.filesUploaded")
@@ -160,7 +173,7 @@ class AssessmentController @Inject()(
           }
         }
       }
-    )
+    ).map(uploadedFileControllerHelper.cleanupTemporaryFiles(_))
   }
 
   private def redirectOrReturn200(assessmentId: UUID, form: AssessmentController.UploadFilesFormData, flashMessage: (String, String)) = {
