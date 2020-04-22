@@ -101,7 +101,11 @@ object DataGenerationService {
       platforms.filter(_.requiresUrl).map(p => p -> dataGeneration.fakePath).toMap
     )
 
-  def makeStoredAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None)(implicit dataGeneration: DataGeneration): StoredAssessment = {
+  def makeStoredAssessment(
+    uuid: UUID = UUID.randomUUID,
+    platformOption: Option[Platform] = None,
+    duration: Option[Duration] = Some(Duration.ofHours(3)),
+  )(implicit dataGeneration: DataGeneration): StoredAssessment = {
     val deptCode = dataGeneration.fakeDept
     val stemModuleCode =  f"$deptCode${dataGeneration.random.between(101, 999)}%03d"
     val cats =   f"${dataGeneration.random.between(1, 99)}%02d"
@@ -123,7 +127,7 @@ object DataGenerationService {
       section = None,
       title = dataGeneration.fakeTitle,
       startTime = Some(startTime),
-      duration = Some(Duration.ofHours(3)),
+      duration = duration,
       platform = Set(platform),
       assessmentType = assType,
       storedBrief = makeStoredBrief(Set(platform)),
