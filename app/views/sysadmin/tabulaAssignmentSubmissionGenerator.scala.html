@@ -6,9 +6,9 @@
 
 @adminLayout("Generate Tabula Submissions") {
   <div class="alert alert-danger">
-      Clicking submit button on this page will generate tabula submissions. If student id is entered then just that submission will be generated. You can only create submissions for students  who have not been uploaded to tabula. Use carefully.
+    Clicking submit button on this page will generate tabula submissions. If student id is entered then just that submission will be generated. You can only create submissions for students  who have not been uploaded to tabula. Use carefully.
   </div>
-   @b3.vertical.formCSRF(controllers.sysadmin.routes.SysadminTestController.generateAssignmentSubmissions()) { implicit fc =>
+  @b3.vertical.formCSRF(controllers.sysadmin.routes.SysadminTestController.generateAssignmentSubmissions()) { implicit fc =>
     @views.html.tags.globalErrors(form)
     @b3.text(form("assessmentId"),
       Symbol("_label") -> "Assessment Id",
