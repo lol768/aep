@@ -81,6 +81,9 @@ val appDeps = Seq(
   "com.github.tminglei" %% "slick-pg" % "0.18.1",
   "com.github.tminglei" %% "slick-pg_play-json" % "0.18.1",
 
+  "com.chuusai" %% "shapeless" % "2.3.3",
+  "io.underscore" %% "slickless" % "0.3.6",
+
   "com.typesafe.play" %% "play-mailer" % "8.0.0",
   "com.typesafe.play" %% "play-mailer-guice" % "8.0.0",
 

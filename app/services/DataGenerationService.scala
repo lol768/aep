@@ -116,6 +116,7 @@ object DataGenerationService {
     val assType = Some(AssessmentType.values(dataGeneration.random.nextInt(AssessmentType.values.size)))
     val moduleCode =  s"$stemModuleCode-$cats"
     val sequence = f"E${dataGeneration.random.between(1, 9)}%02d"
+    val durationStyle = Assessment.DurationStyle.DayWindow
 
     StoredAssessment(
       id = uuid,
@@ -126,6 +127,7 @@ object DataGenerationService {
       duration = Some(Duration.ofHours(3)),
       platform = Set(platform),
       assessmentType = assType,
+      durationStyle = durationStyle,
       storedBrief = makeStoredBrief(Set(platform)),
       invigilators = List(invigilator1, invigilator2),
       state = Assessment.State.Draft,
