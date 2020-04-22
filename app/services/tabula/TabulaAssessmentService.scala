@@ -22,6 +22,7 @@ import services.{AssessmentService, StudentAssessmentService}
 import system.TimingCategories
 import uk.ac.warwick.sso.client.trusted.{TrustedApplicationUtils, TrustedApplicationsManager}
 import uk.ac.warwick.util.termdates.AcademicYear
+import views.tags.formatDate
 import warwick.caching._
 import warwick.core.Logging
 import warwick.core.helpers.ServiceResults.Implicits._
@@ -214,8 +215,8 @@ class TabulaAssessmentServiceImpl @Inject()(
     val req = ws.url(url)
       .withQueryStringParameters(Seq(
         Some("universityId" -> sitting.studentAssessment.studentId.string),
-        Some("submittedDate" -> sitting.studentAssessment.submissionTime.get.toString),
-        Some("submissionDeadline" -> sitting.onTimeEnd.get.toString),
+        Some("submittedDate" -> formatDate.sortableDateTime(sitting.studentAssessment.submissionTime.get)),
+        Some("submissionDeadline" -> formatDate.sortableDateTime(sitting.onTimeEnd.get)),
       ).flatten: _*)
 
     doRequest(url, "POST", req, description = "createSubmission", data).successFlatMapTo { jsValue =>
