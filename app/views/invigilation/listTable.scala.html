@@ -1,0 +1,44 @@
+@import domain.Assessment
+@import warwick.core.helpers.JavaTime
+@import views.html.tags.durationWords
+
+@(title: String, assessments: Seq[Assessment])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@if(assessments.nonEmpty) {
+    <h2>@title</h2>
+    <table class="table table-striped table-sortable">
+        <thead>
+            <tr>
+                <th>Date/time</th>
+                <th>Paper code</th>
+                <th>Section</th>
+                <th>Title</th>
+                <th>Duration</th>
+                <th>Type</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @assessments.sorted.map { assessment =>
+            <tr>
+                <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
+                    @assessment.startTime.map(JavaTime.Relative(_))
+                </td>
+                <td>@assessment.paperCode</td>
+                <td>@assessment.section.getOrElse("")</td>
+                <td>@assessment.title</td>
+                <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
+                @durationWords(assessment)
+                </td>
+                <td>
+                @assessment.assessmentType.map(_.label).getOrElse("")
+                </td>
+                <td class="text-right">
+                    <a href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)" class="btn btn-default btn-sm">
+                        View</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

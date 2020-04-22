@@ -28,9 +28,7 @@ sealed trait BaseSitting {
 
   lazy val inProgress: Boolean = started && !finalised
 
-  def isCurrentForStudent: Boolean = !finalised &&
-    assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
-    assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
+  def isCurrentForStudent: Boolean = !finalised && assessment.isCurrent
 
   case class DurationInfo(durationWithExtraAdjustment: Duration, onTimeDuration: Duration, lateDuration: Duration)
   case class TimingInfo(startTime: OffsetDateTime, uploadGraceStart: OffsetDateTime, onTimeEnd: OffsetDateTime, lateEnd: OffsetDateTime)
