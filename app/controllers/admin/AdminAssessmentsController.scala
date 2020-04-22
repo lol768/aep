@@ -378,6 +378,7 @@ class AdminAssessmentsController @Inject()(
               sequence = data.sequence,
               startTime = data.startTime.map(_.asOffsetDateTime),
               assessmentType = data.assessmentType,
+              durationStyle = data.durationStyle,
             )
           } else if (assessment.assessmentType.isEmpty || !overwriteAssessmentTypeOnImport) {
             assessment.copy(assessmentType = data.assessmentType)
@@ -421,7 +422,6 @@ class AdminAssessmentsController @Inject()(
             Assessment(
               title = data.title,
               duration = data.durationMinutes.map(Duration.ofMinutes),
-              durationStyle = data.durationStyle,
               platform = data.platform,
               invigilators = data.invigilators,
               state = newState,
@@ -431,6 +431,7 @@ class AdminAssessmentsController @Inject()(
               ),
               // Rest are unchanged (may have been changed above)
               id = updatedIfAdHoc.id,
+              durationStyle = updatedIfAdHoc.durationStyle,
               paperCode = updatedIfAdHoc.paperCode,
               section = updatedIfAdHoc.section,
               startTime = updatedIfAdHoc.startTime,
