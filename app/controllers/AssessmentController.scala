@@ -87,7 +87,7 @@ class AssessmentController @Inject()(
 
   def view(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
-      Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes, announcements))
+      Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements))
     )
   }
 
@@ -120,7 +120,7 @@ class AssessmentController @Inject()(
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
     AssessmentController.finishExamForm.bindFromRequest().fold(
       form => announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
-        BadRequest(views.html.exam.index(request.sitting, form, uploadedFileControllerHelper.supportedMimeTypes, announcements))
+        BadRequest(views.html.exam.index(request.sitting, form, announcements))
       ),
       _ => {
         if (request.sitting.finalised) {
@@ -150,7 +150,7 @@ class AssessmentController @Inject()(
         }
       } else {
         announcementService.getByAssessmentId(assessmentId).successMap { announcements =>
-          BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, uploadedFileControllerHelper.supportedMimeTypes, announcements))
+          BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements))
         }
       }
     }

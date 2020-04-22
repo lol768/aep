@@ -157,6 +157,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                       extraTimeAdjustment = extraTimeAdjustment,
                       explicitFinaliseTime = None,
                       uploadedFiles = Nil,
+                      tabulaSubmissionId = None
                     )
                   }
 
