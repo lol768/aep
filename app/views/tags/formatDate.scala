@@ -27,6 +27,9 @@ object formatDate {
   def sortableDateTime(date: OffsetDateTime): String =
     date.format(JavaTime.iSO8601DateFormat)
 
+  def tabulaISODateTime(date: OffsetDateTime): String =
+    date.format(JavaTime.iSO8601DateFormat)
+
   def compactDateTime(date: OffsetDateTime): String =
     date.format(compactDatetimeFormatter)
 
