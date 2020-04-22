@@ -9,7 +9,6 @@ import domain.Fixtures.studentAssessments
 import domain._
 import helpers.CleanUpDatabaseAfterEachTest
 import uk.ac.warwick.util.core.DateTimeUtils
-import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.core.helpers.JavaTime
 
 import scala.concurrent.Future
@@ -161,16 +160,17 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
     }
 
     "findUnsubmitted" in {
-      val pastAssessments = (1 to 2).map(_ => Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)))
+      val pastAssessments = (1 to 3).map(_ => Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)))
       val futureAssessment = Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(startTime =  pastAssessments.head.startTime.map(_.plusDays(2)))
       val assessments = pastAssessments :+ futureAssessment
 
       execWithCommit(DBIO.sequence(assessments.map(dao.insert)))
 
-      val unSubmitted = studentAssessments.storedStudentAssessment(pastAssessments(0).id).copy(tabulaSubmissionId = None)
-      val submitted = studentAssessments.storedStudentAssessment(pastAssessments(1).id).copy(tabulaSubmissionId = Some(UUID.randomUUID()))
+      val unSubmitted = studentAssessments.storedStudentAssessment(pastAssessments(0).id).copy(tabulaSubmissionId = None, uploadedFiles = List(UUID.randomUUID()))
+      val unSubmittedNoFile = studentAssessments.storedStudentAssessment(pastAssessments(1).id).copy(tabulaSubmissionId = None)
+      val submitted = studentAssessments.storedStudentAssessment(pastAssessments(2).id).copy(tabulaSubmissionId = Some(UUID.randomUUID()), uploadedFiles = List(UUID.randomUUID()))
 
-      execWithCommit(DBIO.sequence(Seq(submitted, unSubmitted).map(studentDao.insert)))
+      execWithCommit(DBIO.sequence(Seq(submitted, unSubmittedNoFile, unSubmitted).map(studentDao.insert)))
 
       val uploadTime = pastAssessments.head.startTime.get.plusHours(25).plusMinutes(1).toInstant
       DateTimeUtils.useMockDateTime(uploadTime, () => {

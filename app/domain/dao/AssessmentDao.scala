@@ -5,7 +5,6 @@ import java.util.UUID
 
 import akka.Done
 import com.google.inject.ImplementedBy
-import domain.Assessment.DurationStyle.DayWindow
 import domain.Assessment.Platform.OnlineExams
 import domain.Assessment._
 import domain._
@@ -347,7 +346,7 @@ class AssessmentDaoImpl @Inject()(
   override def getAssessmentsRequiringUpload: DBIO[Seq[StoredAssessment]] = {
 
     def unsubmittedStudents(id: Rep[UUID]): Rep[Boolean] = studentAssessments.table.filter(_.assessmentId === id)
-      .filter(_.tabulaSubmissionId.isEmpty)
+      .filter(sa => sa.tabulaSubmissionId.isEmpty && sa.uploadedFiles.length() > 0.bind)
       .exists
 
     pastLastSubmitTimeQuery
