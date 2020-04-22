@@ -16,6 +16,7 @@ import play.api.libs.json.Json
 import services.AssessmentService._
 import slick.dbio.DBIO
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
@@ -306,10 +307,8 @@ class AssessmentServiceImpl @Inject()(
             version = timestamp
           )))
         }.flatMap { result =>
-          uploadedFileService.get(result.storedBrief.fileIds).map { files =>
-            ServiceResults.success(result.asAssessment(files.map(f => f.id -> f).toMap))
-          }.recoverWith {
-            case e: Exception => Future.successful(ServiceResults.error(e.getMessage))
+          uploadedFileService.get(result.storedBrief.fileIds).successMapTo { files =>
+            result.asAssessment(files.map(f => f.id -> f).toMap)
           }
         }
       }

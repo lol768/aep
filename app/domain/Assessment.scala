@@ -27,6 +27,7 @@ sealed trait BaseAssessment extends DefinesStartWindow {
   val departmentCode: DepartmentCode
   val sequence: String //MAB sequence
 
+  def isCurrent: Boolean = startTime.exists(_.isBefore(JavaTime.offsetDateTime)) && lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
   def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
   def isDownloadAvailable: Boolean = platform.contains(Platform.OnlineExams) && lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime.minusHours(1)))
 }

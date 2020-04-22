@@ -58,6 +58,7 @@ class WebSocketController @Inject()(
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   assessmentService: AssessmentService,
   announcementService: AnnouncementService,
+  uploadAttemptService: UploadAttemptService
 )(implicit
   mat: Materializer,
   actorSystem: ActorSystem,
@@ -91,6 +92,7 @@ class WebSocketController @Inject()(
                 studentAssessmentService = studentAssessmentService,
                 assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
                 announcementService = announcementService,
+                uploadAttemptService = uploadAttemptService,
                 additionalTopics =
                   (relatedStudentAssessmentIds.map(id => s"studentAssessment:$id") ++
                     relatedInvigilatorAssessmentIds.map(id => s"invigilatorAssessment:$id")).toSet

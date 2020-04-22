@@ -1,0 +1,46 @@
+@import java.util.UUID
+
+@import warwick.core.helpers.JavaTime
+@import warwick.fileuploads.UploadedFile
+@(
+  files: Seq[UploadedFile],
+  form: Form[Seq[UUID]],
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@adminLayout("Object storage") {
+  @b3.vertical.formCSRF(action = controllers.sysadmin.routes.ObjectStorageDownloadController.results()) { implicit vfc =>
+    @b3.textarea(form("ids"), Symbol("_label") -> "File IDs", Symbol("rows") -> 10, Symbol("_help") -> "Enter UUIDs, one per line.")
+
+    @b3.free(Symbol("_class") -> "spaced-buttons") {
+      <button type="submit" class="btn btn-primary">Search</button>
+    }
+  }
+
+  @if(files.nonEmpty || form.data.get("ids").exists(_.nonEmpty)) {
+    <table class="table table-default">
+      <caption>Uploaded files</caption>
+      <thead>
+        <tr>
+          <th>Filename</th>
+          <th>Size</th>
+          <th>Content type</th>
+          <th>Uploaded by</th>
+          <th>Upload started</th>
+          <th>Upload completed</th>
+        </tr>
+      </thead>
+      <tbody>
+      @files.map { file =>
+        <tr>
+          <td><a href="@controllers.sysadmin.routes.ObjectStorageDownloadController.downloadFile(file.id)">@file.fileName</a></td>
+          <td>@helpers.humanReadableSize(file.contentLength)</td>
+          <td>@file.contentType</td>
+          <td>@file.uploadedBy.string</td>
+          <td>@JavaTime.Relative(file.uploadStarted)</td>
+          <td>@JavaTime.Relative(file.created)</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  }
+}
