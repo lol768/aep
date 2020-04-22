@@ -67,20 +67,16 @@ export default class FileUploadAttemptLogger {
       jsonObj.size = file.size;
       jsonObj.headerHex = '';
       if (file.size > 10) {
-        log('Reading file');
         const sliced = file.slice(0, 10);
         const promise = new Promise((resolve) => {
           const reader = new FileReader();
-          log('Made reader');
           reader.addEventListener('loadend', () => {
-            log('onloadend');
             jsonObj.headerHex = Array.prototype.map.call(
               new Uint8Array(reader.result),
               (x) => (`00${x.toString(16)}`).slice(-2),
             ).join('');
             resolve();
           });
-          log('Trigger read');
           reader.readAsArrayBuffer(sliced);
         });
 
