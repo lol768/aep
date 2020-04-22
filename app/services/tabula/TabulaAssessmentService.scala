@@ -217,7 +217,7 @@ class TabulaAssessmentServiceImpl @Inject()(
       .withQueryStringParameters(Seq(
         Some("universityId" -> sitting.studentAssessment.studentId.string),
         Some("submittedDate" -> sitting.studentAssessment.submissionTime.get.toString),
-        Some("submissionDeadline" -> sitting.studentAssessment.startTime.get.plus(sitting.onTimeDuration.get).toString),
+        Some("submissionDeadline" -> sitting.onTimeEnd.get.toString),
       ).flatten: _*)
 
     doRequest(url, "POST", req, description = "createSubmission", data).successFlatMapTo { jsValue =>
