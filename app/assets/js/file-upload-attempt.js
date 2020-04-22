@@ -60,7 +60,7 @@ export default class FileUploadAttemptLogger {
       if ('lastModified' in file) {
         jsonObj.lastModified = file.lastModified;
       } else if ('lastModifiedDate' in file) {
-        jsonObj.lastModified = file.lastModifiedDate.getDate();
+        jsonObj.lastModified = file.lastModifiedDate.getTime();
       }
       jsonObj.name = file.name;
       jsonObj.mimeType = file.type;
