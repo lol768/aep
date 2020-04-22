@@ -9,6 +9,7 @@ object UploadAttempt {
   implicit val readsInnerFile: Reads[SelectedFile] = Json.reads[SelectedFile]
   implicit val writesEnclosing: OWrites[UploadAttempt] = Json.writes[UploadAttempt]
   implicit val readsEnclosing: Reads[UploadAttempt] = Json.reads[UploadAttempt]
+  val websocketType = "UploadAttempt"
 }
 
 case class UploadAttempt(var source: String, files: Seq[SelectedFile], studentAssessmentId: UUID)

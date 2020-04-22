@@ -146,10 +146,6 @@ class WebSocketActor @Inject() (
       "client" -> am.client
     )
 
-    case uploadAttempt: UploadAttempt =>
-      uploadAttempt.source = "WebSocket"
-      uploadAttemptService.logAttempt(uploadAttempt)
-
     case SubscribeAck(Subscribe(topic, _, _)) =>
       log.debug(s"WebSocket subscribed to PubSub messages on the topic of '$topic'")
 
@@ -186,6 +182,11 @@ class WebSocketActor @Inject() (
             "type" -> "UpdateConnectivityIndicator",
             "signalStrength" -> assessmentClientNetworkActivity.signalStrength
           )
+
+        case m if m.`type` == UploadAttempt.websocketType =>
+          val data = m.data.get.as[UploadAttempt](UploadAttempt.readsEnclosing)
+          data.source = "WebSocket"
+          uploadAttemptService.logAttempt(data)
 
         case m if m.`type` == RequestAssessmentTiming.`type` =>
           val universityID: UniversityID = currentUniversityID

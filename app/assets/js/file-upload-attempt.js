@@ -30,7 +30,10 @@ export default class FileUploadAttemptLogger {
       }
 
       if (this.websocket) {
-        this.websocket.send(payload);
+        this.websocket.send(JSON.stringify({
+          type: 'UploadAttempt',
+          data,
+        }));
       }
     }).catch(() => {
       log('Problem building data for file upload attempt');
