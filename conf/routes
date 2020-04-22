@@ -62,6 +62,9 @@ POST        /admin/assessments/:id/delete                         @controllers.a
 GET         /admin/assessments/:id/view                           @controllers.admin.AdminAssessmentsController.view(id: UUID)
 GET         /admin/assessments/:id/student-preview                @controllers.admin.AdminAssessmentsController.studentPreview(id: UUID)
 POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AdminAssessmentsController.generateAssignments(id: UUID)
+GET         /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.assignmentSubmissions()
+POST        /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.generateAssignmentSubmissions()
+
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AdminAssessmentsController.getFile(assessmentId: UUID, fileId: UUID)

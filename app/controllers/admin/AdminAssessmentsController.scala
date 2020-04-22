@@ -283,6 +283,7 @@ class AdminAssessmentsController @Inject()(
                 extraTimeAdjustment = None,
                 explicitFinaliseTime = None,
                 uploadedFiles = Nil,
+                tabulaSubmissionId = None
               )
             ))
           ).successMap(_ =>
@@ -405,6 +406,7 @@ class AdminAssessmentsController @Inject()(
                       extraTimeAdjustment = None,
                       explicitFinaliseTime = None,
                       uploadedFiles = Nil,
+                      tabulaSubmissionId = None
                     )
                   }
 
@@ -462,6 +464,7 @@ class AdminAssessmentsController @Inject()(
         .flashing { "success" -> Messages("flash.assessment.generatedAssignments", assessment.title) }
     }
   }
+
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>
     request.assessment.brief.files.find(_.id == fileId)
