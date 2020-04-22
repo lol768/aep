@@ -7,12 +7,12 @@ import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
 import domain.messaging.MessageSender
-import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
+import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata, UploadAttempt}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.json._
 import play.twirl.api.Html
-import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService, UploadAttemptService}
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
@@ -31,9 +31,12 @@ object WebSocketActor {
     studentAssessmentService: StudentAssessmentService,
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
     announcementService: AnnouncementService,
+    uploadAttemptService: UploadAttemptService,
     additionalTopics: Set[String],
   )(implicit ec: ExecutionContext, ac: AuditLogContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, ac.ipAddress, ac.userAgent, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, additionalTopics))
+    Props(new WebSocketActor(out, pubsub, loginContext, ac.ipAddress, ac.userAgent, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, uploadAttemptService, additionalTopics))
+
+  import UploadAttempt._
 
   case class AssessmentAnnouncement(id: String, assessmentId: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
@@ -97,6 +100,7 @@ class WebSocketActor @Inject() (
   @Assisted studentAssessmentService: StudentAssessmentService,
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   @Assisted announcementService: AnnouncementService,
+  @Assisted uploadAttemptService: UploadAttemptService,
   additionalTopics: Set[String],
 )(implicit
   ec: ExecutionContext
@@ -178,6 +182,11 @@ class WebSocketActor @Inject() (
             "type" -> "UpdateConnectivityIndicator",
             "signalStrength" -> assessmentClientNetworkActivity.signalStrength
           )
+
+        case m if m.`type` == UploadAttempt.websocketType =>
+          val data = m.data.get.as[UploadAttempt](UploadAttempt.readsEnclosing)
+          data.source = "WebSocket"
+          uploadAttemptService.logAttempt(data)
 
         case m if m.`type` == RequestAssessmentTiming.`type` =>
           val universityID: UniversityID = currentUniversityID

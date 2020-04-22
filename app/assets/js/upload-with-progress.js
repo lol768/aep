@@ -76,6 +76,14 @@ export default class UploadWithProgress {
     element.setAttribute('data-attached', true);
     element.addEventListener('submit', (formSubmitEvent) => {
       const formElement = formSubmitEvent.target;
+
+      if (this.attemptLogger !== undefined) {
+        try {
+          this.attemptLogger.logAttempt(formElement.getAttribute('data-student-assessment-id'));
+        } catch (e) {
+          log('Attempt log failed, ignoring as there are more pressing matters', e);
+        }
+      }
       formSubmitEvent.preventDefault(); // don't want form to submit the form normally
 
       try {
@@ -159,5 +167,9 @@ export default class UploadWithProgress {
         this.registerEventListeners(this.container);
       });
     }
+  }
+
+  setAttemptLogger(attemptLogger) {
+    this.attemptLogger = attemptLogger;
   }
 }

@@ -18,6 +18,7 @@ import JDDT from './jddt';
 import initAnnouncements from './assessment-announcements';
 import initTiming from './assessment-timing';
 import showWSConnectivity from './ws-connectivity';
+import FileUploadAttemptLogger from './file-upload-attempt';
 
 
 // dynamic import, fire and forget.
@@ -29,11 +30,12 @@ import(/* webpackChunkName: "statuspage-widget" */'@universityofwarwick/statuspa
 // not doing a dynamic import at the moment, since this seems reasonably critical
 // (if relevant to the page)
 
-(new UploadWithProgress(document, () => {
+const uploadWithProgress = new UploadWithProgress(document, () => {
   window.location.reload();
 }, () => {
   log.warn('Upload failure callback');
-})).initialise();
+});
+uploadWithProgress.initialise();
 
 JDDT.initialise(document);
 
@@ -49,6 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
       showWSConnectivity(websocket);
       if (document.querySelector('.timing-information')) {
         initTiming(websocket);
+      }
+
+      if (document.querySelector('.assessment-upload-form')) {
+        const attemptLogger = new FileUploadAttemptLogger(document.querySelector('.assessment-upload-form'), websocket);
+        uploadWithProgress.setAttemptLogger(attemptLogger);
       }
     });
   }
