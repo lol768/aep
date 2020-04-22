@@ -8,8 +8,7 @@ import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import com.google.inject.ImplementedBy
 import com.google.inject.name.Named
-import domain.tabula.Submission
-import domain.tabula.TabulaAssignment
+import domain.tabula.{Submission, TabulaAssignment}
 import domain.{Assessment, SittingMetadata, StudentAssessment, tabula}
 import helpers.{TrustedAppsHelper, WSRequestUriBuilder}
 import javax.inject.{Inject, Singleton}
@@ -194,9 +193,9 @@ class TabulaAssessmentServiceImpl @Inject()(
           createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
         }.toSeq)
       }.successFlatMapTo { assignments =>
-        val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => a.id)
-        assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
-      }
+      val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => a.id)
+      assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
+    }
   }
 
   private def createSubmission(sitting: SittingMetadata, assignmentId: UUID): Future[ServiceResult[Submission]] = {
@@ -218,7 +217,7 @@ class TabulaAssessmentServiceImpl @Inject()(
       .withQueryStringParameters(Seq(
         Some("universityId" -> sitting.studentAssessment.studentId.string),
         Some("submittedDate" -> sitting.studentAssessment.submissionTime.get.toString),
-         Some("submissionDeadline" -> sitting.studentAssessment.startTime.get.plus(sitting.onTimeDuration.get).toString),
+        Some("submissionDeadline" -> sitting.studentAssessment.startTime.get.plus(sitting.onTimeDuration.get).toString),
       ).flatten: _*)
 
     doRequest(url, "POST", req, description = "createSubmission", data).successFlatMapTo { jsValue =>
@@ -227,30 +226,27 @@ class TabulaAssessmentServiceImpl @Inject()(
   }
 
   override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
-  //TODO change this whole method -  Need  to get list of studentAssessment that have actually uploaded file and then invoke create submission method
     timing.time(TimingCategories.TabulaWrite) {
-      val assignment = assessment.tabulaAssignments.head
-      //Only allow submission to be uploaded to tabuala if not already done in the past.
-      //and check we pick student assessments who actually sat for exams (would have uploaded some file in case some didn't finalise)
+      def createSubmissions(studentAssessments: Seq[StudentAssessment]): Future[ServiceResult[Seq[StudentAssessment]]] = {
+        tabulaAssignmentService.getByAssessment(assessment)
+          .successFlatMapTo { tabulaAssignments =>
+            ServiceResults.futureSequence(studentAssessments.filter(s => s.tabulaSubmissionId.isEmpty && !s.uploadedFiles.isEmpty && s.academicYear.isDefined).map { sa =>
+              createSubmission(SittingMetadata(sa, assessment.asAssessmentMetadata), tabulaAssignments.filter(_.academicYear == sa.academicYear.get).head.id).successFlatMapTo { submission =>
+                studentAssessmentService.upsert(sa.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
+              }
+            })
+          }
+      }
+
+      //Only allow tabula upload submission if not already done in the past and check we pick student assessments who actually sat for exams (would have uploaded some file in case some didn't finalise)
       studentAssessment match {
         case Some(studentAssessment) => {
-          ServiceResults.futureSequence(Seq(studentAssessment).filter(s => s.tabulaSubmissionId.isEmpty && !s.uploadedFiles.isEmpty).map { sa =>
-            createSubmission(SittingMetadata(sa, assessment.asAssessmentMetadata), assignment).successFlatMapTo { submission =>
-              studentAssessmentService.upsert(studentAssessment.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
-            }
-          })
+          createSubmissions(Seq(studentAssessment))
         }
         case _ => {
           studentAssessmentService.byAssessmentId(assessment.id)
-            .successFlatMapTo { students =>
-              ServiceResults.futureSequence(students.filter(s => s.tabulaSubmissionId.isEmpty && !s.uploadedFiles.isEmpty).map { sa =>
-                val sub = createSubmission(SittingMetadata(sa, assessment.asAssessmentMetadata), assignment)
-                sub.successFlatMapTo { submission =>
-                  studentAssessmentService.upsert(sa.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
-                }
-              }
-
-              )
+            .successFlatMapTo { studentAssessments =>
+              createSubmissions(studentAssessments)
             }
         }
       }
