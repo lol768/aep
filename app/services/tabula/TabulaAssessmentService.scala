@@ -158,7 +158,7 @@ class TabulaAssessmentServiceImpl @Inject()(
     val isPreviousAcademicYear = academicYear != AcademicYear.forDate(JavaTime.offsetDateTime)
 
     val body: JsValue = Json.obj(
-      "name" -> s"${assessment.title} - ${assessment.paperCode} (AEP submissions)",
+      "name" -> s"${assessment.title} - ${assessment.paperCode} (${config.assignmentNamespace} submissions)",
       "openEnded" -> true,
       "hiddenFromStudents" -> true,
       "publishFeedback" -> false,
