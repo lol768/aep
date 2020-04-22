@@ -10,14 +10,14 @@
 @(
   sitting: Sitting,
   finishExamForm: Form[FinishExamFormData],
-  supportedMimeTypes: Seq[MediaType],
   announcements: Seq[Announcement],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @uploadForm = {
   @b3.vertical.formCSRF(action = controllers.routes.AssessmentController.uploadFiles(sitting.assessment.id), Symbol("enctype") -> "multipart/form-data", Symbol("class") -> "upload-progress quash-beforeunload") { implicit vfc =>
     @b3.free(Symbol("_label") -> "Attach file") {
-      <input autocomplete="off" type="file" name="file" accept="@{supportedMimeTypes.map(_.getBaseType.toString).mkString(",")}" multiple>
+      @* See OE-413 for why we don't include an accept attribute here. *@
+      <input autocomplete="off" type="file" name="file" multiple>
     }
 
     <div class="help-block upload-info hide">
