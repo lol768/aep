@@ -79,12 +79,6 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
 
 }
 
-/*
-class OracleCustomJdbcTypes @Inject()(
-  dbConfigProvider: DatabaseConfigProvider
-) extends CustomJdbcTypes[JdbcProfile](dbConfigProvider)
-*/
-
 class PostgresCustomJdbcTypes @Inject()(
   dbConfigProvider: DatabaseConfigProvider
 ) extends CustomJdbcTypes[ExtendedPostgresProfile](dbConfigProvider) {
