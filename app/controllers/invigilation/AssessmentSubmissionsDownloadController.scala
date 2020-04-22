@@ -27,7 +27,7 @@ class AssessmentSubmissionsDownloadController @Inject()(
 
   def download(assessmentId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>
     if (request.assessment.lastAllowedStartTime.forall(_.isAfter(JavaTime.offsetDateTime.minus(Assessment.uploadProcessDuration)))) {
-      Future.successful(Ok(views.html.invigilation.generatingZip(request.assessment, Some(s"Submissions are not available until 1 hour after the last allowed start time"))))
+      Future.successful(Ok(views.html.invigilation.generatingZip(request.assessment, Some(s"Submissions are not available until ${Assessment.uploadProcessDuration} after the last allowed start time"))))
     } else if (!request.assessment.platform.contains(Platform.OnlineExams)) {
       Future.successful(Ok(views.html.invigilation.generatingZip(request.assessment, Some("Submissions are not available for non-AEP assessments"))))
     } else {
