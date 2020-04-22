@@ -206,6 +206,9 @@ object Assessment {
 
   private[domain] val window: Duration = Duration.ofHours(24)
 
+  // The amount of time we wait for in-progress uploads to finish before making submissions available
+  val uploadProcessDuration: Duration = Duration.ofHours(1)
+
   sealed trait State extends EnumEntry {
     val label: String = entryName
     val cssClass: String = "label label-danger"

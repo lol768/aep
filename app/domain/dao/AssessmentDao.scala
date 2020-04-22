@@ -5,9 +5,11 @@ import java.util.UUID
 
 import akka.Done
 import com.google.inject.ImplementedBy
+import domain.Assessment.Platform.OnlineExams
 import domain.Assessment._
 import domain._
 import domain.dao.AssessmentsTables.StoredAssessment
+import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -217,6 +219,8 @@ trait AssessmentDao {
   def getLast48Hrs: DBIO[Seq[StoredAssessment]]
   def getLast48HrsWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
 
+  def getAssessmentsRequiringUpload: DBIO[Seq[StoredAssessment]]
+
   def isInvigilator(usercode: Usercode): DBIO[Boolean]
 
   def getByInvigilatorWithUploadedFiles(usercodes: Set[Usercode]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
@@ -327,6 +331,38 @@ class AssessmentDaoImpl @Inject()(
   override def getLast48HrsWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
     getLast48HrsQuery.withUploadedFiles.result
       .map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
+
+
+  // finds assessments where there in no possibility of further submissions being made
+  // FIXME - doesn't cater for fixed start time assessments
+  private def pastLastSubmitTimeQuery: Query[Assessments, StoredAssessment, Seq] = {
+    assessments.table.filter(a => a.startTime < JavaTime.offsetDateTime.minus(Assessment.window).minus(Assessment.uploadProcessDuration))
+  }
+
+  override def getAssessmentsRequiringUpload: DBIO[Seq[StoredAssessment]] = {
+
+    // haven't committed any terrible slick crimes in a while - here goes ...
+
+    def unsubmittedStudents(id: Rep[UUID]) = studentAssessments.table.filter(_.assessmentId === id)
+        // TODO - add this when it's availabe
+        // .filter(_.tabulaSubmissionId.isEmpty)
+        .exists
+
+    pastLastSubmitTimeQuery
+      // platform contains OnlineExams - had to come up with this nonsense as the column is a varchar
+      .filter(_.platform.asColumnOf[String] like s"%${OnlineExams.entryName}%")
+      // TODO - filter out assignments where all submissions are sent
+      .filter(a => unsubmittedStudents(a.id))
+      .sortBy(a => (a.startTime, a.duration))
+      .result
+
+    /*
+        .join(studentAssessments.table)
+        .on((a, sa) => a.id === sa.assessmentId /* && sa.tabulaSubmissionId.isEmpty */ )
+        .map { case (a, _) => a}
+        .distinct
+     */
+  }
 
   override def isInvigilator(usercode: Usercode): DBIO[Boolean] =
     assessments.table.filter(_.invigilators @> List(usercode.string)).exists.result

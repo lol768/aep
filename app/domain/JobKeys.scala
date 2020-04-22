@@ -31,5 +31,16 @@ object JobKeys {
     override val key: JobKey = new JobKey(name, "GenerateAssessmentZip")
     override def healthCheckJobName: String = throw new IllegalArgumentException("Unscheduled job")
   }
+
+  case object TriggerSubmissionUploadsJob extends ByName {
+    override val name = "TriggerSubmissionUploads"
+    override val healthCheckJobName = "trigger-submission-uploads"
+  }
+
+  case class UploadSubmissionsJob(assessmentId: UUID) extends ByName {
+    override val name: String = assessmentId.toString
+    override val key: JobKey = new JobKey(name, "UploadSubmissions")
+    override def healthCheckJobName: String = throw new IllegalArgumentException("Unscheduled job")
+  }
 }
 

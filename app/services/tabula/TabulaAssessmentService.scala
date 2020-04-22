@@ -2,7 +2,7 @@ package services.tabula
 
 import java.util.UUID
 
-import domain.{Assessment, tabula}
+import domain.{Assessment, AssessmentMetadata, StudentAssessment, tabula}
 import com.google.inject.ImplementedBy
 import helpers.{TrustedAppsHelper, WSRequestUriBuilder}
 import javax.inject.{Inject, Singleton}
@@ -33,7 +33,8 @@ import warwick.core.system.AuditLogContext
 trait TabulaAssessmentService {
   def getAssessments(options: GetAssessmentsOptions)(implicit t: TimingContext): Future[AssessmentComponentsReturn]
   def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]]
-  def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
+  def generateAssignments(assessment: AssessmentMetadata)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
+  def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]]
 }
 
 object TabulaAssessmentService {
@@ -76,8 +77,11 @@ class CachingTabulaAssessmentService @Inject() (
   override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] =
     impl.getAssessmentGroupMembers(options)
 
-  override def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
+  override def generateAssignments(assessment: AssessmentMetadata)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
     impl.generateAssignments(assessment)
+
+  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
+    impl.generateAssignmentSubmissions(assessment, studentAssessment)
 }
 
 @Singleton
@@ -122,7 +126,7 @@ class TabulaAssessmentServiceImpl @Inject() (
     }
   }
 
-  private def createAssignment(assessment: Assessment, academicYear: AcademicYear, occurrences: Set[String])(implicit ctx: AuditLogContext): Future[ServiceResult[TabulaAssignment]] = {
+  private def createAssignment(assessment: AssessmentMetadata, academicYear: AcademicYear, occurrences: Set[String])(implicit ctx: AuditLogContext): Future[ServiceResult[TabulaAssignment]] = {
     val moduleCode = assessment.moduleCode.split("-").head.toLowerCase
     val url = config.getCreateAssignmentUrl(moduleCode)
 
@@ -167,17 +171,24 @@ class TabulaAssessmentServiceImpl @Inject() (
     }
   }
 
-  override def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] = timing.time(TimingCategories.TabulaWrite) {
-    studentAssessmentService.byAssessmentId(assessment.id)
+  override def generateAssignments(assessmentMetadata: AssessmentMetadata)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] = timing.time(TimingCategories.TabulaWrite) {
+    studentAssessmentService.byAssessmentId(assessmentMetadata.id)
       .successFlatMapTo { students =>
         val byYear = students.filter(_.academicYear.isDefined).groupBy(_.academicYear.get)
-        ServiceResults.futureSequence(byYear.map { case (academicYear, students) =>
-          createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
-        }.toSeq)
-      }.successFlatMapTo { assignments =>
+        ServiceResults.zip(
+          assessmentService.get(assessmentMetadata.id),
+          ServiceResults.futureSequence(byYear.map { case (academicYear, students) =>
+            createAssignment(assessmentMetadata, academicYear, students.flatMap(_.occurrence).toSet)
+          }.toSeq)
+        )
+      }.successFlatMapTo { case (assessment, assignments) =>
         val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => a.id)
         assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
       }
+  }
+
+  override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] = timing.time(TimingCategories.TabulaWrite) {
+    ???
   }
 
 }
