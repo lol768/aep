@@ -283,6 +283,7 @@ class StudentAssessmentServiceImpl @Inject()(
         extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
         finaliseTime = studentAssessment.explicitFinaliseTime,
         uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+        tabulaSubmissionId = None,
         created = timestamp,
         version = timestamp,
       )))).map(_.map(_.asStudentAssessment(Map.empty)))
@@ -305,8 +306,9 @@ class StudentAssessmentServiceImpl @Inject()(
               extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
               finaliseTime = studentAssessment.explicitFinaliseTime,
               uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+              tabulaSubmissionId = studentAssessment.tabulaSubmissionId,
               created = existingSA.created,
-              version = existingSA.version,
+              version = existingSA.version
             ))
             withUploadedFiles <- dao.loadWithUploadedFiles(updated.studentId, updated.assessmentId)
           } yield inflateRowWithUploadedFiles(withUploadedFiles).get)
@@ -323,6 +325,7 @@ class StudentAssessmentServiceImpl @Inject()(
             extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
             finaliseTime = studentAssessment.explicitFinaliseTime,
             uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+            tabulaSubmissionId = studentAssessment.tabulaSubmissionId,
             created = timestamp,
             version = timestamp,
           ))).map(_.asStudentAssessment(Map.empty))

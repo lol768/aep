@@ -27,7 +27,7 @@ trait UploadedFileService {
   def listWithoutOwner()(implicit t: TimingContext): Future[ServiceResult[Seq[UploadedFile]]]
   def listWithOwner(ownerId: UUID, ownerType: UploadedFileOwner)(implicit t: TimingContext): Future[ServiceResult[Seq[UploadedFile]]]
   def get(id: UUID)(implicit t: TimingContext): Future[ServiceResult[UploadedFile]]
-  def get(ids: Seq[UUID])(implicit t: TimingContext): Future[Seq[UploadedFile]]
+  def get(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[UploadedFile]]]
 
   def storeDBIO(in: ByteSource, metadata: UploadedFileSave, uploader: Usercode)(implicit ac: AuditLogContext): DBIO[UploadedFile]
   def storeDBIO(in: ByteSource, metadata: UploadedFileSave, uploader: Usercode, ownerId: UUID, ownerType: UploadedFileOwner)(implicit ac: AuditLogContext): DBIO[UploadedFile]
@@ -63,10 +63,10 @@ class UploadedFileServiceImpl @Inject()(
       ServiceResults.error(s"Could not find an UploadedFile with ID $id")
     }})
 
-  override def get(ids: Seq[UUID])(implicit t: TimingContext): Future[Seq[UploadedFile]] =
+  override def get(ids: Seq[UUID])(implicit t: TimingContext): Future[ServiceResult[Seq[UploadedFile]]] =
     daoRunner.run(dao.find(ids)).map { files =>
       files.map(_.asUploadedFile)
-    }
+    }.map(ServiceResults.success)
 
   private def putInObjectStorage(id: UUID, in: ByteSource, metadata: UploadedFileSave)(implicit t: TimingContext): Future[Unit] =
     time(TimingCategories.ObjectStorageWrite) {

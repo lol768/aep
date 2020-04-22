@@ -3,12 +3,13 @@ package controllers.sysadmin
 import java.util.UUID
 
 import controllers.BaseController
+import controllers.admin.routes
 import domain.DepartmentCode
 import domain.tabula._
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
 import org.quartz.Scheduler
-import play.api.data.Form
+import play.api.data.{Form, FormError}
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.libs.json.{JsString, Json, Writes}
@@ -50,6 +51,7 @@ object SysadminTestController {
     )(Email.apply)(Email.unapply)
   )(EmailFormData.apply)(EmailFormData.unapply))
 
+
   case class MyWarwickFormData(
     user: Option[Usercode],
     group: Option[GroupName],
@@ -78,6 +80,16 @@ object SysadminTestController {
     "activityType" -> nonEmptyText,
     "alert" -> boolean
   )(MyWarwickFormData.apply)(MyWarwickFormData.unapply))
+
+  case class TabulaSubmissionGenarotorFormData(
+    assessmentId: String,
+    studentId: Option[UniversityID]
+  )
+
+  val tabulaSubmissionGenarotorForm: Form[TabulaSubmissionGenarotorFormData] = Form(mapping(
+    "assessmentId" -> nonEmptyText,
+    "studentId" -> text.transform[Option[UniversityID]](_.maybeText.map(UniversityID.apply), _.map(_.string).getOrElse(""))
+  )(TabulaSubmissionGenarotorFormData.apply)(TabulaSubmissionGenarotorFormData.unapply))
 }
 
 @Singleton
@@ -92,6 +104,8 @@ class SysadminTestController @Inject()(
   tabulaAssessments: TabulaAssessmentService,
   tabulaDepartments: TabulaDepartmentService,
   tabulaAssessmentImportService: TabulaAssessmentImportService,
+  assessmentService: AssessmentService,
+  studentAssessmentService: StudentAssessmentService
 )(implicit executionContext: ExecutionContext) extends BaseController {
 
   import SysadminTestController._
@@ -177,6 +191,39 @@ class SysadminTestController @Inject()(
     tabulaDepartments.getDepartments().successMap { r =>
       Ok(Json.toJson(r)(Writes.seq(writes)))
     }
+  }
+
+
+  def assignmentSubmissions: Action[AnyContent] = RequireSysadmin { implicit request =>
+    Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(tabulaSubmissionGenarotorForm))
+  }
+
+  def generateAssignmentSubmissions(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+    tabulaSubmissionGenarotorForm.bindFromRequest().fold(
+      _ => Future.successful(BadRequest),
+      data => {
+        val assessmentId = UUID.fromString(data.assessmentId)
+        ServiceResults.zip(
+          assessmentService.get(assessmentId),
+          studentAssessmentService.byAssessmentId(assessmentId)
+        ).successFlatMap { case (assessment, studentAssessments) =>
+          val filteredStudentAssessments = data.studentId match {
+            case Some(student) =>  studentAssessments.filter(_.studentId == student).headOption
+            case _ =>  None
+          }
+          tabulaAssessments.generateAssignmentSubmissions(assessment, filteredStudentAssessments).successMap { studentAssessments =>
+            if(studentAssessments.isEmpty) {
+              val formWithError = tabulaSubmissionGenarotorForm.withError(FormError("", "error.tabula.assessment.invalid"))
+                Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(formWithError))
+            } else {
+              Redirect(routes.AdminAssessmentsController.view(assessment.id)).flashing {
+                "success" -> Messages("flash.studentAssessment.updated.count", studentAssessments.size)
+              }
+            }
+          }
+        }
+      }
+    )
   }
 
   private val redirectHome = Redirect(controllers.sysadmin.routes.SysadminTestController.home())
