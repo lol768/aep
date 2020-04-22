@@ -119,6 +119,11 @@ GET         /sysadmin/student-activity              @controllers.sysadmin.ViewSt
 GET         /sysadmin/student-activity/filter       @controllers.sysadmin.ViewStudentActivityController.filter(page: Int ?= 0)
 GET         /sysadmin/tabula-assessment-imports     @controllers.sysadmin.TabulaAssessmentsImportsController.showForm
 POST        /sysadmin/tabula-assessment-imports     @controllers.sysadmin.TabulaAssessmentsImportsController.toggleTriggerState
+GET         /sysadmin/object-storage                @controllers.sysadmin.ObjectStorageDownloadController.form()
+POST        /sysadmin/object-storage                @controllers.sysadmin.ObjectStorageDownloadController.results()
+# https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
++nocsp
+GET         /sysadmin/object-storage/:id            @controllers.sysadmin.ObjectStorageDownloadController.downloadFile(id: UUID)
 
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()

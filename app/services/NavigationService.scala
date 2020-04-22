@@ -71,6 +71,7 @@ class NavigationServiceImpl @Inject()(
   private lazy val dataGeneration = NavigationPage("Data generation", controllers.sysadmin.routes.DummyDataGenerationController.showForm())
   private lazy val studentActivity = NavigationPage("View student activity", controllers.sysadmin.routes.ViewStudentActivityController.index())
   private lazy val tabulaAssessmentImports = NavigationPage("Tabula assessment imports", controllers.sysadmin.routes.TabulaAssessmentsImportsController.showForm())
+  private lazy val objectStorage = NavigationPage("Object storage", controllers.sysadmin.routes.ObjectStorageDownloadController.form())
 
   private lazy val production = config.get[Boolean]("environment.production")
 
@@ -82,6 +83,7 @@ class NavigationServiceImpl @Inject()(
       masquerade,
       studentActivity,
       tabulaAssessmentImports,
+      objectStorage,
     )
     if (production) baseItems else baseItems :+ dataGeneration
   }
