@@ -21,7 +21,7 @@
         <tbody>
         @assessments.sorted.map { assessment =>
             <tr>
-                <td>
+                <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
                     @assessment.startTime.map(JavaTime.Relative(_))
                 </td>
                 <td>@assessment.paperCode</td>
