@@ -167,9 +167,8 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
 
       execWithCommit(DBIO.sequence(assessments.map(dao.insert)))
 
-      // TODO - add tabulaSubmissionId when it's availabe
-      val unSubmitted = studentAssessments.storedStudentAssessment(pastAssessments(0).id)//.copy(tabulaSubmissionId = None)
-      val submitted = studentAssessments.storedStudentAssessment(pastAssessments(1).id)//.copy(tabulaSubmissionId = Some(UUID.randomUUID())
+      val unSubmitted = studentAssessments.storedStudentAssessment(pastAssessments(0).id).copy(tabulaSubmissionId = None)
+      val submitted = studentAssessments.storedStudentAssessment(pastAssessments(1).id).copy(tabulaSubmissionId = Some(UUID.randomUUID()))
 
       execWithCommit(DBIO.sequence(Seq(submitted, unSubmitted).map(studentDao.insert)))
 
