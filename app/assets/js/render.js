@@ -18,7 +18,7 @@ import JDDT from './jddt';
 import initAnnouncements from './assessment-announcements';
 import initTiming from './assessment-timing';
 import showWSConnectivity from './ws-connectivity';
-import FileUploadAttemptLogger from "./file-upload-attempt";
+import FileUploadAttemptLogger from './file-upload-attempt';
 
 
 // dynamic import, fire and forget.

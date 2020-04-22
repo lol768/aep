@@ -16,40 +16,39 @@ export default class FileUploadAttemptLogger {
   }
 
   logAttempt(studentAssessmentId) {
-    const data = this.buildData(studentAssessmentId);
-    if (data === null) {
+    this.buildData(studentAssessmentId).then((data) => {
+      const payload = JSON.stringify(data);
+      if ('sendBeacon' in navigator) {
+        navigator.sendBeacon('/api/log-upload-attempt',
+          new Blob([payload], { type: 'application/json' }));
+      } else {
+        // Fire and forget
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/log-upload-attempt', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(payload);
+      }
+
+      if (this.websocket) {
+        this.websocket.send(payload);
+      }
+    }).catch(() => {
       log('Problem building data for file upload attempt');
-      return;
-    }
-
-    const payload = JSON.stringify(data);
-    if ('sendBeacon' in navigator) {
-      navigator.sendBeacon('/api/log-upload-attempt',
-        new Blob([payload], { type: 'application/json' }));
-    } else {
-      // Fire and forget
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/log-upload-attempt', true);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.send(payload);
-    }
-
-    if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-      this.websocket.send(payload);
-    }
+    });
   }
 
   buildData(studentAssessmentId) {
     const fileInput = this.formElement.querySelector('input[type=file]');
     if (!fileInput) {
       log('Cannot log upload attempt, no valid file input element located');
-      return null;
+      return Promise.reject(new Error('No valid files input'));
     }
     /** @type {FileList} files */
     const { files } = fileInput;
     const len = files.length;
     let i = 0;
     const results = [];
+    const promiseList = [];
 
     while (i < len) {
       const file = files[i];
@@ -63,13 +62,24 @@ export default class FileUploadAttemptLogger {
       jsonObj.name = file.name;
       jsonObj.mimeType = file.type;
       jsonObj.size = file.size;
+      jsonObj.headerHex = '';
+      if (file.size > 10) {
+        const sliced = file.slice(0, 10);
+        promiseList.push(sliced.arrayBuffer().then((ab) => {
+          jsonObj.headerHex = Array.prototype.map.call(
+            new Uint8Array(ab),
+            (x) => (`00${x.toString(16)}`).slice(-2),
+          ).join('');
+        }));
+      }
       i += 1;
       results.push(jsonObj);
     }
 
-    return {
+    return Promise.all(promiseList).then(() => ({
       files: results,
       studentAssessmentId,
-    };
+      source: '',
+    }));
   }
 }

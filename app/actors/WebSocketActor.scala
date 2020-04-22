@@ -36,6 +36,8 @@ object WebSocketActor {
   )(implicit ec: ExecutionContext, ac: AuditLogContext): Props =
     Props(new WebSocketActor(out, pubsub, loginContext, ac.ipAddress, ac.userAgent, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, uploadAttemptService, additionalTopics))
 
+  import UploadAttempt._
+
   case class AssessmentAnnouncement(id: String, assessmentId: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }

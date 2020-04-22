@@ -78,7 +78,11 @@ export default class UploadWithProgress {
       const formElement = formSubmitEvent.target;
 
       if (this.attemptLogger !== undefined) {
-        this.attemptLogger.logAttempt(formElement.getAttribute('data-student-assessment-id'));
+        try {
+          this.attemptLogger.logAttempt(formElement.getAttribute('data-student-assessment-id'));
+        } catch (e) {
+          log('Attempt log failed, ignoring as they are more pressing matters', e);
+        }
       }
       formSubmitEvent.preventDefault(); // don't want form to submit the form normally
 
