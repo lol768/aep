@@ -5,6 +5,7 @@ import java.util.UUID
 
 import akka.Done
 import com.google.inject.ImplementedBy
+import domain.Assessment.DurationStyle.DayWindow
 import domain.Assessment.Platform.OnlineExams
 import domain.Assessment._
 import domain._
@@ -338,7 +339,7 @@ class AssessmentDaoImpl @Inject()(
 
 
   // finds assessments where there in no possibility of further submissions being made
-  // FIXME - doesn't cater for fixed start time assessments
+  // FIXME - doesn't cater for fixed start time assessments (OE-422)
   private def pastLastSubmitTimeQuery: Query[Assessments, StoredAssessment, Seq] = {
     assessments.table.filter(a => a.startTime < JavaTime.offsetDateTime.minus(Assessment.dayWindow).minus(Assessment.uploadProcessDuration))
   }

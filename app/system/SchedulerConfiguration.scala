@@ -29,11 +29,13 @@ class SchedulerConfiguration @Inject()(
     CronScheduleBuilder.cronSchedule("0 0 8 * * ?") // 8am every day
   )
 
-  configureScheduledJob(
-    JobKeys.TriggerSubmissionUploadsJob.name,
-    JobBuilder.newJob(classOf[TriggerSubmissionUploadsJob]),
-    CronScheduleBuilder.cronSchedule("0 * * * * ?") //  Every hour on the hour
-  )
+  if(configuration.get[Boolean]("tabula.postSubmissions")) {
+    configureScheduledJob(
+      JobKeys.TriggerSubmissionUploadsJob.name,
+      JobBuilder.newJob(classOf[TriggerSubmissionUploadsJob]),
+      CronScheduleBuilder.cronSchedule("0 * * * * ?") //  Every hour on the hour
+    )
+  }
 
   logger.info("Starting the scheduler")
   scheduler.start()
