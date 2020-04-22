@@ -31,9 +31,10 @@ object WebSocketActor {
     studentAssessmentService: StudentAssessmentService,
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
     announcementService: AnnouncementService,
+    uploadAttemptService: UploadAttemptService,
     additionalTopics: Set[String],
   )(implicit ec: ExecutionContext, ac: AuditLogContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, ac.ipAddress, ac.userAgent, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, additionalTopics))
+    Props(new WebSocketActor(out, pubsub, loginContext, ac.ipAddress, ac.userAgent, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, uploadAttemptService, additionalTopics))
 
   case class AssessmentAnnouncement(id: String, assessmentId: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
