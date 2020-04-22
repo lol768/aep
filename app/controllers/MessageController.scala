@@ -37,7 +37,7 @@ class MessageController @Inject()(
       studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId))
     ).successMap { case (messages, profile) =>
       val student = Map(universityId -> profile)
-      val sortedMessages = messages.sortBy(_.created)(Ordering[OffsetDateTime].reverse)
+      val sortedMessages = messages.sortBy(_.created)
       Ok(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm(messageMaxLength)))
     }
   }
@@ -57,7 +57,7 @@ class MessageController @Inject()(
         studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId))
       ).successMap { case (messages, profile) =>
         val student = Map(universityId -> profile)
-        val sortedMessages = messages.sortBy(_.created)(Ordering[OffsetDateTime].reverse)
+        val sortedMessages = messages.sortBy(_.created)
         BadRequest(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm(messageMaxLength)))
       }
     }

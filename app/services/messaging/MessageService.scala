@@ -58,7 +58,7 @@ class MessageService @Inject() (
           .map { studentName =>
             pubSubService.publish(
               topic = Topics.allInvigilatorsAssessment(savedMessage.assessmentId),
-              AssessmentMessage(savedMessage.id.toString, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, studentName, savedMessage.created)
+              AssessmentMessage(savedMessage.id.toString, savedMessage.student.string, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, studentName, savedMessage.created)
             )
             notificationService.newMessageFromStudent(savedMessage)
             ServiceResults.success(Done)
@@ -68,13 +68,13 @@ class MessageService @Inject() (
         val invigilatorName = userLookupService.getUser(savedMessage.staffId.get).toOption.flatMap(_.name.full).getOrElse(s"[Unknown user (${savedMessage.staffId.get})]")
         pubSubService.publish(
           topic = Topics.allInvigilatorsAssessment(savedMessage.assessmentId),
-          AssessmentMessage(savedMessage.id.toString, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, invigilatorName, savedMessage.created)
+          AssessmentMessage(savedMessage.id.toString, savedMessage.student.string, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, invigilatorName, savedMessage.created)
         )
 
         // Send to specific student
         pubSubService.publish(
           topic = Topics.studentAssessment(savedMessage.student)(savedMessage.assessmentId),
-          AssessmentMessage(savedMessage.id.toString, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, MessageService.InvigilationSender, savedMessage.created)
+          AssessmentMessage(savedMessage.id.toString, savedMessage.student.string, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, MessageService.InvigilationSender, savedMessage.created)
         )
         notificationService.newMessageFromInvigilator(savedMessage)
         Future.successful(ServiceResults.success(Done))

@@ -2,6 +2,7 @@
 @import domain.{Announcement, Assessment, SittingMetadata, StudentAssessment, tabula}
 @import tags._
 @import warwick.sso.{UniversityID, User, Usercode}
+@import domain.messaging.MessageSender
 @(
     assessment: Assessment,
     studentAssessment: StudentAssessment,
@@ -14,16 +15,21 @@
 @adminLayout("Queries from " + student.get(studentAssessment.studentId).map(_.fullName).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode) {
     <div class="id7-main-content">
         @studentAssessmentInfo(Seq(SittingMetadata(studentAssessment, assessment.asAssessmentMetadata)), assessment.platform, student)
-        <div class="row">
-            <div class="col-md-6">
-                <h3>Announcements</h3>
-                @displayAnnouncements(announcements, invigilators)
-            </div>
-            <div class="col-md-6">
-                <h3>Queries</h3>
-                @displayMessages(messages, student)
-            </div>
-        </div>
+        <details>
+            <summary class="h3">Announcements (@announcements.size)</summary>
+            @displayAnnouncements(announcements, invigilators)
+        </details>
+        <details open>
+            <summary class="h3">Queries (@messages.count(_.sender == MessageSender.Student))</summary>
+            @displayMessages(
+                messages = messages,
+                students = student,
+                threaded = false,
+                maybeForm = None,
+                submitCall = None,
+                invigilators = invigilators
+            )
+        </details>
         <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">
             <i class="fas fa-arrow-left"></i>
             Return to invigilation screen

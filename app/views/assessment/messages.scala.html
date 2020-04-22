@@ -24,32 +24,13 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-sm-6">
-            <p>
-                @b3.vertical.formCSRF(controllers.routes.MessageController.submitForm(assessment.id)) { implicit fc =>
-                    @b3.textarea(
-                        form("messageText"),
-                        Symbol("_label") -> "Log an issue with the invigilation team",
-                        Symbol("_showConstraints") -> true
-                    )
-
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i> Log issue
-                    </button>
-                }
-            </p>
-            <p>
-                <button type="button" class="btn btn-default" id="close-messages">
-                    <i class="fas fa-times"></i>
-                    Close messages tab
-                </button>
-            </p>
-        </div>
-        <div class="col-sm-6">
-            <h3>Issues I have logged</h3>
-            @displayMessages(messages, student)
-        </div>
-    </div>
+    @displayMessages(
+        messages = messages,
+        students = student,
+        threaded = false,
+        maybeForm = Some(form),
+        submitCall = Some(u => controllers.routes.MessageController.submitForm(assessment.id)),
+        invigilators = Map.empty
+    )
 
 }

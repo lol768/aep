@@ -3,34 +3,42 @@
 @import domain.{Announcement, Assessment, tabula}
 @import tags._
 @import warwick.sso.{UniversityID, User, Usercode}
+@import warwick.core.views.utils._
 @(
-      assessment: Assessment,
-      announcements: Seq[Announcement],
-      messages: Seq[Message],
-      students: Map[UniversityID, tabula.SitsProfile],
-      department: Option[tabula.Department],
-      form: Form[AnnouncementData],
-      invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
+  assessment: Assessment,
+  announcements: Seq[Announcement],
+  messages: Seq[Message],
+  students: Map[UniversityID, tabula.SitsProfile],
+  department: Option[tabula.Department],
+  form: Form[AnnouncementData],
+  invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout("Announcements and queries for " + assessment.moduleCode, extraClasses = Seq("allAnnouncementsAndQueries")) {
   <div class="id7-main-content">
-    <div class="row">
-      <div class="col-md-6">
-        <h3>Announcements</h3>
-        @b3.vertical.formCSRF(controllers.invigilation.routes.AnnouncementAndQueriesController.addAnnouncement(assessment.id), Symbol("class") -> "double-submit-protection") { implicit fc =>
-          @views.html.tags.globalErrors(form)
+    <details open>
+      <summary class="h3">Announcements (@announcements.size)</summary>
+      @displayAnnouncements(announcements, invigilators)
+    </details>
+    @b3.vertical.formCSRF(controllers.invigilation.routes.AnnouncementAndQueriesController.addAnnouncement(assessment.id), Symbol("class") -> "double-submit-protection") { implicit fc =>
+      @views.html.tags.globalErrors(form)
 
-          @b3.textarea(form("message"), Symbol("rows") -> 10)
+      @b3.textarea(form("message"), Symbol("rows") -> 5)
 
-          @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fas fa-plus fa-fw"></i> Add }
-        }
-        @displayAnnouncements(announcements, invigilators)
-      </div>
-      <div class="col-md-6">
-        <h3>Queries</h3>
-        @displayMessages(messages, students)
-      </div>
-    </div>
+      @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fas fa-plus fa-fw"></i> Add a new announcement }
+    }
+    <details open>
+      @defining(messages.groupBy(_.student).size) { numberOfStudents: Int =>
+        <summary class="h3">Queries (@if(messages.size == 1) {1 query from 1 student}else{@messages.size queries from @numberOfStudents @pl(numberOfStudents, "student")()})</summary>
+      }
+      @displayMessages(
+        messages = messages,
+        students = students,
+        threaded = true,
+        maybeForm = None,
+        submitCall = None,
+        invigilators = invigilators
+      )
+    </details>
 
     <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">
       <i class="fas fa-arrow-left"></i>

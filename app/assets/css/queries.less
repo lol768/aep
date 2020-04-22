@@ -1,61 +1,108 @@
-.query, .announcement {
-    padding: 1em;
-    border-radius: 0.5em;
-    margin-bottom: 1em;
-
-    .query-user {
-        font-size: 0.8em;
-        font-weight: bold;
-    }
-
-    .query-text {
-        padding: 0.8em 0 0.8em;
-    }
-}
-
-.query-time {
-    font-size: 0.8em;
-    width: 100%;
-    text-align: right;
-}
-
 @keyframes new-query {
     0% { background-color: #5b3069 }
     50% { background-color: lighten(#5b3069, 20%); }
     100% { background-color: #5b3069; }
 }
 
-.query {
-    background-color: #5b3069;
-    color: white;
+.announcement, .message {
     border: 2px solid #5b3069;
-
-    .query-time {
-        .text-muted {
-            color: white;
-        }
-        .themed-duotone {
-            --fa-primary-color: grey;
-            --fa-secondary-color: white;
-            --fa-secondary-opacity: 0.6;
-        }
-    }
-
-    &.new {
-        animation: new-query 500ms linear;
-        animation-iteration-count: 3;
-    }
-}
-
-.announcement {
     background-color: white;
-    border-color: #5b3069;
     color: #5b3069;
-    border-style: solid;
-    border-width: 2px;
+    padding: 1em;
+    border-radius: 0.5em;
+    margin-bottom: 1em;
+
+    .message-author {
+        font-size: 0.8em;
+        font-weight: bold;
+    }
+
+    .message-date {
+        .pull-right();
+        font-size: 0.8em;
+    }
+
+    .message-text {
+        padding: 0.8em 0 0 0;
+    }
 }
 
-.query-container, .announcement-container {
-    max-height: 80vh;
+.announcement-container {
+    max-height: 50vh;
     overflow: auto;
+    margin-bottom: 1em;
+}
+
+.message-threads {
+    h4.panel-title {
+        font-size: @font-size-h4;
+
+        .fa-angle-down {
+            display: none;
+        }
+        .collapsed {
+            .fa-angle-down {
+                display: inline-block;
+            }
+            .fa-angle-up {
+                display: none;
+            }
+        }
+        a {
+            display: block;
+            text-decoration: none;
+            color: #333333;
+            &:hover {
+                color: #666666;
+            }
+        }
+    }
+
+    .message {
+        background-color: #5b3069;
+        color: white;
+        border: 2px solid #5b3069;
+
+        .message-date {
+            .text-muted {
+                color: white;
+            }
+            .themed-duotone {
+                --fa-primary-color: grey;
+                --fa-secondary-color: white;
+                --fa-secondary-opacity: 0.6;
+            }
+        }
+
+        &.message-student {
+            margin-right: 20%;
+        }
+        &.message-invigilator {
+            margin-left: 20%;
+            background-color: lighten(#5b3069, 20%);
+            border-color: lighten(#5b3069, 20%);
+        }
+
+        &.new {
+            animation: new-query 500ms linear;
+            animation-iteration-count: 3;
+        }
+    }
+
+    .panel-group .panel-body {
+        max-height: 50vh;
+        overflow: auto;
+    }
+}
+
+.heartbeat {
+    animation-name: heartbeat-animation;
+    animation: heartbeat-animation 1.5s ease infinite;
+}
+
+@keyframes heartbeat-animation{
+    0%{transform:scale(1)}
+    20%{transform:scale(1.2)}
+    40%{transform:scale(1)}
+    100%{transform:scale(1)}
 }

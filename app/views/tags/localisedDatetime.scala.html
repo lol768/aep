@@ -4,9 +4,9 @@
 @import helpers.LenientTimezoneNameParsing._
 @import warwick.core.helpers.JavaTime
 
-@(datetime: OffsetDateTime)
+@(datetime: OffsetDateTime, inline: Boolean = false)
 
-<i class="fad themed-duotone fa-clock fa-fw"></i> @JavaTime.Relative(datetime) <span class="text-muted">@Right(JavaTime.timeZone).timezoneAbbr(datetime)</span><br />
+<i class="fad themed-duotone fa-clock fa-fw"></i> <span class="original-date">@JavaTime.Relative(datetime) <span class="text-muted">@Right(JavaTime.timeZone).timezoneAbbr(datetime)</span></span>@if(!inline){<br />}
   <span class="jddt"
   data-format="shortLocal"
   data-millis="@datetime.toInstant.toEpochMilli"
