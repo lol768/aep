@@ -4,7 +4,7 @@ import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import domain.Assessment.State.Imported
-import domain.Assessment.{AssessmentType, Brief, Platform}
+import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform}
 import services.tabula.TabulaResponseParsers.SitsAssessmentType
 import uk.ac.warwick.util.termdates.AcademicYear
 
@@ -84,6 +84,10 @@ package object tabula {
             locationNameToAssessmentType.orElse(existingAssessment.flatMap(_.assessmentType))
           else
             existingAssessment.flatMap(_.assessmentType).orElse(locationNameToAssessmentType)
+        },
+        durationStyle = {
+          if (schedule.locationName.contains("Fixed-time assessment")) DurationStyle.FixedStart
+          else DurationStyle.DayWindow
         },
         brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, Map.empty)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),

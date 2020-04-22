@@ -5,7 +5,7 @@ import java.util.UUID
 
 import akka.Done
 import controllers.{BaseController, FormMappings}
-import domain.Assessment.{AssessmentType, Brief, Platform, State}
+import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform, State}
 import domain.tabula.SitsProfile
 import domain.{Assessment, Department, DepartmentCode, Sitting, StudentAssessment}
 import helpers.StringUtils._
@@ -76,6 +76,7 @@ object AdminAssessmentsController {
     platform: Set[Platform],
     assessmentType: Option[AssessmentType],
     durationMinutes: Option[Long],
+    durationStyle: DurationStyle,
     urls: Map[Platform, String],
     description: Option[String],
     invigilators: Set[Usercode],
@@ -131,6 +132,7 @@ object AdminAssessmentsController {
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
       "durationMinutes" -> optional(longNumber),
+      "durationStyle" -> ignored[DurationStyle](DurationStyle.DayWindow), // TODO add to create/edit forms
       "urls" -> mapping[Map[Platform, String], Option[String], Option[String], Option[String], Option[String], Option[String]](
         Platform.OnlineExams.entryName -> optional(text),
         Platform.Moodle.entryName -> optional(text),
@@ -251,6 +253,7 @@ class AdminAssessmentsController @Inject()(
               duration = data.durationMinutes.map(Duration.ofMinutes),
               platform = data.platform,
               assessmentType = data.assessmentType,
+              durationStyle = data.durationStyle,
               brief = Brief(
                 text = data.description,
                 urls = data.urls,
@@ -313,6 +316,7 @@ class AdminAssessmentsController @Inject()(
         platform = assessment.platform,
         assessmentType = assessment.assessmentType,
         durationMinutes = assessment.duration.map(_.toMinutes),
+        durationStyle = assessment.durationStyle,
         urls = assessment.brief.urls,
         description = assessment.brief.text,
         invigilators = assessment.invigilators,
@@ -417,6 +421,7 @@ class AdminAssessmentsController @Inject()(
             Assessment(
               title = data.title,
               duration = data.durationMinutes.map(Duration.ofMinutes),
+              durationStyle = data.durationStyle,
               platform = data.platform,
               invigilators = data.invigilators,
               state = newState,
