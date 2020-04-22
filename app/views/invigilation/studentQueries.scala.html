@@ -12,8 +12,9 @@
         student: Map[UniversityID, tabula.SitsProfile],
         department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout("Queries from " + student.get(studentAssessment.studentId).map(_.fullName).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode) {
+@adminLayout("Queries from " + student.get(studentAssessment.studentId).map(_.fullName).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode, extraClasses = Seq("connect-ws")) {
     <div class="id7-main-content">
+        <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
         @studentAssessmentInfo(Seq(SittingMetadata(studentAssessment, assessment.asAssessmentMetadata)), assessment.platform, student)
         <div class="row">
             <div class="col-md-6">
