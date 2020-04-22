@@ -239,12 +239,7 @@ class TabulaAssessmentServiceImpl @Inject()(
       //Only allow tabula upload submission if not already done in the past and check we pick student assessments who actually sat for exams (would have uploaded some file in case some didn't finalise)
       studentAssessment match {
         case Some(studentAssessment) => createSubmissions(Seq(studentAssessment))
-        case _ => {
-          studentAssessmentService.byAssessmentId(assessment.id)
-            .successFlatMapTo { studentAssessments =>
-              createSubmissions(studentAssessments)
-            }
-        }
+        case _ => studentAssessmentService.byAssessmentId(assessment.id).successFlatMapTo { studentAssessments => createSubmissions(studentAssessments) }
       }
     }
 
