@@ -54,7 +54,8 @@ class SittingTest extends PlaySpec with MockitoSugar {
       startTime = studentStart,
       extraTimeAdjustment = None,
       explicitFinaliseTime = None,
-      uploadedFiles = uploadedFiles
+      uploadedFiles = uploadedFiles,
+      tabulaSubmissionId = None
     )
 
     val declarations: Declarations = Declarations(studentAssessment.id)
