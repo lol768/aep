@@ -7,12 +7,12 @@ import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
 import domain.messaging.MessageSender
-import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
+import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata, UploadAttempt}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.libs.json._
 import play.twirl.api.Html
-import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService, UploadAttemptService}
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
@@ -97,6 +97,7 @@ class WebSocketActor @Inject() (
   @Assisted studentAssessmentService: StudentAssessmentService,
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   @Assisted announcementService: AnnouncementService,
+  @Assisted uploadAttemptService: UploadAttemptService,
   additionalTopics: Set[String],
 )(implicit
   ec: ExecutionContext
@@ -141,6 +142,10 @@ class WebSocketActor @Inject() (
       "sender" -> am.sender.entryName,
       "client" -> am.client
     )
+
+    case uploadAttempt: UploadAttempt =>
+      uploadAttempt.source = "WebSocket"
+      uploadAttemptService.logAttempt(uploadAttempt)
 
     case SubscribeAck(Subscribe(topic, _, _)) =>
       log.debug(s"WebSocket subscribed to PubSub messages on the topic of '$topic'")
