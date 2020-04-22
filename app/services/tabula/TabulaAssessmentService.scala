@@ -215,11 +215,11 @@ class TabulaAssessmentServiceImpl @Inject()(
     val req = ws.url(url)
       .withQueryStringParameters(Seq(
         Some("universityId" -> sitting.studentAssessment.studentId.string),
-        Some("submittedDate" -> formatDate.sortableDateTime(sitting.studentAssessment.submissionTime.get)),
+        Some("submittedDate" -> formatDate.sortableDateTime(sitting.studentAssessment.submissionTime.get)), //Explicitly decided against using Sitting.finalisedTime as some may not finalise
         Some("submissionDeadline" -> formatDate.sortableDateTime(sitting.onTimeEnd.get)),
       ).flatten: _*)
-
-    doRequest(url, "POST", req, description = "createSubmission", data).successFlatMapTo { jsValue =>
+      .withBody(Source(data))
+    doRequest(url, "POST", req, description = "createSubmission").successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.responseSubmissionReads)
     }
   }
@@ -266,7 +266,7 @@ class TabulaHttp @Inject()(
     * @param l           Logger, for logging
     * @return JsValue if request was trusted (but use parseAndValidate to check it was successful)
     */
-  def doRequest(url: String, method: String, wsRequest: WSRequest, description: String, data: Seq[FilePart[Source[ByteString, Future[IOResult]]]] = Seq.empty)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
+  def doRequest(url: String, method: String, wsRequest: WSRequest, description: String)(implicit l: Logger): Future[ServiceResult[JsValue]] = {
     val trustedHeaders: Seq[(String, String)] = TrustedApplicationUtils.getRequestHeaders(
       trustedApplicationsManager.getCurrentApplication,
       config.usercode,
@@ -274,11 +274,8 @@ class TabulaHttp @Inject()(
     ).asScala.map(h => h.getName -> h.getValue).toSeq
 
     val req = wsRequest.addHttpHeaders(trustedHeaders: _*)
-    val res = if (data.isEmpty) {
-      req.execute(method)
-    } else {
-      req.post(Source(data))
-    }
+    req.execute(method)
+    val res = req.execute(method)
     res.map { r =>
       try {
         Right(TrustedAppsHelper.validateResponse(url, r).json)
