@@ -3,10 +3,13 @@ package domain.dao
 import java.time.{Clock, LocalDateTime}
 import java.util.UUID
 
+import domain.Assessment.Platform.OnlineExams
 import domain.Assessment.State
+import domain.Fixtures.studentAssessments
 import domain._
 import helpers.CleanUpDatabaseAfterEachTest
 import uk.ac.warwick.util.core.DateTimeUtils
+import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.core.helpers.JavaTime
 
 import scala.concurrent.Future
@@ -16,6 +19,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
   import helpers.DateConversion._
 
   private val dao = get[AssessmentDao]
+  private val studentDao = get[StudentAssessmentDao]
   private def lookupException = throw new Exception("DAO lookup failed")
 
   "AssessmentDao" should {
@@ -154,6 +158,28 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
         result.length mustEqual 2
         result.head.id mustEqual first.id
       })
+    }
+
+    "findUnsubmitted" in {
+      val pastAssessments = (1 to 2).map(_ => Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)))
+      val futureAssessment = Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(startTime =  pastAssessments.head.startTime.map(_.plusDays(2)))
+      val assessments = pastAssessments :+ futureAssessment
+
+      execWithCommit(DBIO.sequence(assessments.map(dao.insert)))
+
+      // TODO - add tabulaSubmissionId when it's availabe
+      val unSubmitted = studentAssessments.storedStudentAssessment(pastAssessments(0).id)//.copy(tabulaSubmissionId = None)
+      val submitted = studentAssessments.storedStudentAssessment(pastAssessments(1).id)//.copy(tabulaSubmissionId = Some(UUID.randomUUID())
+
+      execWithCommit(DBIO.sequence(Seq(submitted, unSubmitted).map(studentDao.insert)))
+
+      val uploadTime = pastAssessments.head.startTime.get.plusHours(25).plusMinutes(1).toInstant
+      DateTimeUtils.useMockDateTime(uploadTime, () => {
+        val result = execWithCommit(dao.getAssessmentsRequiringUpload)
+        result.length mustEqual 1
+        result.head.id mustEqual pastAssessments.head.id
+      })
+
     }
   }
 }

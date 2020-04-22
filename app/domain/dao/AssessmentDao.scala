@@ -9,7 +9,6 @@ import domain.Assessment.Platform.OnlineExams
 import domain.Assessment._
 import domain._
 import domain.dao.AssessmentsTables.StoredAssessment
-import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -341,9 +340,7 @@ class AssessmentDaoImpl @Inject()(
 
   override def getAssessmentsRequiringUpload: DBIO[Seq[StoredAssessment]] = {
 
-    // haven't committed any terrible slick crimes in a while - here goes ...
-
-    def unsubmittedStudents(id: Rep[UUID]) = studentAssessments.table.filter(_.assessmentId === id)
+    def unsubmittedStudents(id: Rep[UUID]): Rep[Boolean] = studentAssessments.table.filter(_.assessmentId === id)
         // TODO - add this when it's availabe
         // .filter(_.tabulaSubmissionId.isEmpty)
         .exists
@@ -351,17 +348,9 @@ class AssessmentDaoImpl @Inject()(
     pastLastSubmitTimeQuery
       // platform contains OnlineExams - had to come up with this nonsense as the column is a varchar
       .filter(_.platform.asColumnOf[String] like s"%${OnlineExams.entryName}%")
-      // TODO - filter out assignments where all submissions are sent
       .filter(a => unsubmittedStudents(a.id))
       .sortBy(a => (a.startTime, a.duration))
       .result
-
-    /*
-        .join(studentAssessments.table)
-        .on((a, sa) => a.id === sa.assessmentId /* && sa.tabulaSubmissionId.isEmpty */ )
-        .map { case (a, _) => a}
-        .distinct
-     */
   }
 
   override def isInvigilator(usercode: Usercode): DBIO[Boolean] =
