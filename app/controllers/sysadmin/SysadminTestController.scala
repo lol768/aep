@@ -194,10 +194,8 @@ class SysadminTestController @Inject()(
   }
 
 
-  def assignmentSubmissions: Action[AnyContent] = RequireSysadmin.async { implicit request =>
-    uploadedFileService.listWithoutOwner().successMap { files =>
-      Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(tabulaSubmissionGenarotorForm))
-    }
+  def assignmentSubmissions: Action[AnyContent] = RequireSysadmin { implicit request =>
+    Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(tabulaSubmissionGenarotorForm))
   }
 
   def generateAssignmentSubmissions(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
@@ -205,22 +203,21 @@ class SysadminTestController @Inject()(
       _ => Future.successful(BadRequest),
       data => {
         val assessmentId = UUID.fromString(data.assessmentId)
-        val studentId = data.studentId
         ServiceResults.zip(
           assessmentService.get(assessmentId),
           studentAssessmentService.byAssessmentId(assessmentId)
         ).successFlatMap { case (assessment, studentAssessments) =>
-          val filteredStudentAssessments = studentId match {
+          val filteredStudentAssessments = data.studentId match {
             case Some(student) =>  studentAssessments.filter(_.studentId == student).headOption
             case _ =>  None
           }
-          tabulaAssessments.generateAssignmentSubmissions(assessment, filteredStudentAssessments).successMap { submission =>
-            if(submission.isEmpty) {
+          tabulaAssessments.generateAssignmentSubmissions(assessment, filteredStudentAssessments).successMap { studentAssessments =>
+            if(studentAssessments.isEmpty) {
               val formWithError = tabulaSubmissionGenarotorForm.withError(FormError("", "error.tabula.assessment.invalid"))
                 Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(formWithError))
             } else {
               Redirect(routes.AdminAssessmentsController.view(assessment.id)).flashing {
-                "success" -> Messages("flash.studentAssessment.updated.count", submission.size)
+                "success" -> Messages("flash.studentAssessment.updated.count", studentAssessments.size)
               }
             }
           }

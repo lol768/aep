@@ -193,9 +193,9 @@ class TabulaAssessmentServiceImpl @Inject()(
           createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
         }.toSeq)
       }.successFlatMapTo { assignments =>
-      val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => a.id)
-      assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
-    }
+        val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => a.id)
+        assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
+      }
   }
 
   private def createSubmission(sitting: SittingMetadata, assignmentId: UUID): Future[ServiceResult[Submission]] = {
@@ -204,15 +204,13 @@ class TabulaAssessmentServiceImpl @Inject()(
     //Point this url to the requestbin in case want to cross check what curl request was generated(Handy)
     val url = config.getCreateAssignmentSubmissionUrl(assignmentId)
 
-    val fileInfo = sitting.studentAssessment.uploadedFiles.map { file =>
-      val inputStream = objectStorageService.fetch(file.id.toString).orNull
-      file -> objectStorageService.fetch(file.id.toString).orNull
-      FilePart("attachments", file.fileName, Some(file.contentType), StreamConverters.fromInputStream(() => inputStream))
+    val fileParts = sitting.studentAssessment.uploadedFiles.map { file =>
+      FilePart("attachments", file.fileName, Some(file.contentType), StreamConverters.fromInputStream(() => objectStorageService.fetch(file.id.toString).orNull))
     }
     //Required for API though it is blank data
     val emptyJsonInputStream = new ByteArrayInputStream(Json.obj().toString().getBytes("UTF-8"))
     val submissionJsonFile = FilePart("submission", "submission.json", Some("application/json"), StreamConverters.fromInputStream(() => emptyJsonInputStream))
-    val data: Seq[FilePart[Source[ByteString, Future[IOResult]]]] = fileInfo :+ submissionJsonFile
+    val data: Seq[FilePart[Source[ByteString, Future[IOResult]]]] = fileParts :+ submissionJsonFile
     val req = ws.url(url)
       .withQueryStringParameters(Seq(
         Some("universityId" -> sitting.studentAssessment.studentId.string),
@@ -240,9 +238,7 @@ class TabulaAssessmentServiceImpl @Inject()(
 
       //Only allow tabula upload submission if not already done in the past and check we pick student assessments who actually sat for exams (would have uploaded some file in case some didn't finalise)
       studentAssessment match {
-        case Some(studentAssessment) => {
-          createSubmissions(Seq(studentAssessment))
-        }
+        case Some(studentAssessment) => createSubmissions(Seq(studentAssessment))
         case _ => {
           studentAssessmentService.byAssessmentId(assessment.id)
             .successFlatMapTo { studentAssessments =>
