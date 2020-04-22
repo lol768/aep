@@ -1,15 +1,22 @@
-@import domain.Assessment
+@import domain.Assessment.DurationStyle._
 @import domain.Sitting
 @import views.html.tags._
-@import domain.Assessment.Platform
 @(assessment: Sitting)(implicit context: RequestContext)
 
 <dl>
     @assessmentMetadataInternal(assessment.assessment)
 
     @if(assessment.finalised) {
-        <dt>Started at</dt>
-        <dd>@tags.localisedDatetime(assessment.studentAssessment.startTime.get)</dd>
+        @assessment.assessment.durationStyle match {
+            case DayWindow => {
+                <dt>Started at</dt>
+                <dd>@tags.localisedDatetime(assessment.studentAssessment.startTime.get)</dd>
+            }
+            case FixedStart => {
+                <dt>Started at</dt>
+                <dd>@tags.localisedDatetime(assessment.assessment.startTime.get)</dd>
+            }
+        }
 
         <dt>Finished at</dt>
         @assessment.studentAssessment.submissionTime.map { time =>

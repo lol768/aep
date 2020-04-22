@@ -1,8 +1,10 @@
 package support
 
 import java.io.File
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
+
+import domain.Assessment.DurationStyle
 
 import scala.jdk.CollectionConverters._
 import domain.Assessment.Platform.{Moodle, OnlineExams}
@@ -28,6 +30,7 @@ import services._
 import services.sandbox.DataGeneration
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
+import warwick.core.helpers.JavaTime
 import warwick.functional._
 import warwick.html._
 import warwick.sso._
@@ -278,6 +281,20 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get).copy(
         startTime = Some(OffsetDateTime.now().minusMinutes(5))
       )
+
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
+      execWithCommit(studentAssessmentDao.insert(studentAssessment))
+
+      assessmentPage = new AssessmentPage(assessment.id)
+    }
+
+    def i_have_a_fixed_start_assessment_to_take(student: User, startTime: OffsetDateTime = JavaTime.offsetDateTime): Unit = {
+      Given("I have a fixed-start assessment to take")
+
+      val assessmentId: UUID = UUID.randomUUID()
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment().copy(id = assessmentId, durationStyle = DurationStyle.FixedStart, startTime = Some(startTime), platform = Set(OnlineExams))
+      val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
 
       val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
       execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))

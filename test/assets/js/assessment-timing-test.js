@@ -235,4 +235,50 @@ describe('calculateTimingInfo', () => {
     });
   });
 
+  it('describes fixed-start before start', () => {
+    const result = calculateTimingInfo({
+      ...dataDefaults,
+      durationStyle: 'FixedStart',
+      windowStart: BASE_TIME + 90*MINUTE,
+      windowEnd: BASE_TIME + 360*MINUTE,
+    }, BASE_TIME);
+    expect(result).to.deep.equal({
+      warning: true,
+      text: 'This assessment will start at 18:56, Thursday 11th April 2019, in 1 hour and 30 minutes.',
+      allowStart: false,
+      hourglassSpins: true
+    })
+  });
+
+  it('describes fixed-start after start', () => {
+    const result = calculateTimingInfo({
+      ...dataDefaults,
+      durationStyle: 'FixedStart',
+      windowStart: BASE_TIME - 10*MINUTE,
+      windowEnd: BASE_TIME + 350*MINUTE,
+    }, BASE_TIME);
+    expect(result).to.deep.equal({
+      warning: true,
+      text: 'This assessment began at 17:16, Thursday 11th April 2019. Start now.',
+      allowStart: true,
+      hourglassSpins: true
+    })
+  });
+
+  it('describes fixed-start before end', () => {
+    const result = calculateTimingInfo({
+      ...dataDefaults,
+      durationStyle: 'FixedStart',
+      windowStart: BASE_TIME - 300*MINUTE,
+      windowEnd: BASE_TIME - 10*MINUTE,
+    }, BASE_TIME);
+    expect(result).to.deep.equal({
+      warning: true,
+      text: 'The assessment has ended.',
+      allowStart: false,
+      hourglassSpins: false
+    })
+  });
+
+
 });

@@ -5,9 +5,9 @@ import java.util.UUID
 
 import akka.Done
 import controllers.{BaseController, FormMappings}
-import domain.Assessment.{AssessmentType, Brief, Platform, State}
+import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform, State}
 import domain.tabula.SitsProfile
-import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
+import domain.{Assessment, Department, DepartmentCode, Sitting, StudentAssessment}
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
@@ -18,7 +18,7 @@ import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
-import services.tabula.{TabulaAssessmentService, TabulaDepartmentService, TabulaStudentInformationService}
+import services.tabula.{TabulaAssessmentService, TabulaAssignmentService, TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -76,6 +76,7 @@ object AdminAssessmentsController {
     platform: Set[Platform],
     assessmentType: Option[AssessmentType],
     durationMinutes: Option[Long],
+    durationStyle: DurationStyle,
     urls: Map[Platform, String],
     description: Option[String],
     invigilators: Set[Usercode],
@@ -131,6 +132,7 @@ object AdminAssessmentsController {
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
       "durationMinutes" -> optional(longNumber),
+      "durationStyle" -> ignored[DurationStyle](DurationStyle.DayWindow), // TODO add to create/edit forms
       "urls" -> mapping[Map[Platform, String], Option[String], Option[String], Option[String], Option[String], Option[String]](
         Platform.OnlineExams.entryName -> optional(text),
         Platform.Moodle.entryName -> optional(text),
@@ -180,6 +182,7 @@ class AdminAssessmentsController @Inject()(
   departmentService: TabulaDepartmentService,
   userLookup: UserLookupService,
   tabulaAssessmentService: TabulaAssessmentService,
+  tabulaAssignmentService: TabulaAssignmentService,
   configuration: Configuration,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
@@ -250,6 +253,7 @@ class AdminAssessmentsController @Inject()(
               duration = data.durationMinutes.map(Duration.ofMinutes),
               platform = data.platform,
               assessmentType = data.assessmentType,
+              durationStyle = data.durationStyle,
               brief = Brief(
                 text = data.description,
                 urls = data.urls,
@@ -312,6 +316,7 @@ class AdminAssessmentsController @Inject()(
         platform = assessment.platform,
         assessmentType = assessment.assessmentType,
         durationMinutes = assessment.duration.map(_.toMinutes),
+        durationStyle = assessment.durationStyle,
         urls = assessment.brief.urls,
         description = assessment.brief.text,
         invigilators = assessment.invigilators,
@@ -323,8 +328,9 @@ class AdminAssessmentsController @Inject()(
     val assessment = request.assessment
     ServiceResults.zip(
       studentAssessmentService.byAssessmentId(assessment.id),
-      departmentService.getDepartments()
-    ).successFlatMap { case (studentAssessments, departments) =>
+      departmentService.getDepartments(),
+      tabulaAssignmentService.getByAssessment(assessment)
+    ).successFlatMap { case (studentAssessments, departments, tabulaAssignments) =>
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
@@ -336,9 +342,13 @@ class AdminAssessmentsController @Inject()(
             }
             .map(user => user.usercode -> user.name.full.getOrElse(user.usercode.string))
             .toMap
-          Ok(views.html.admin.assessments.view(assessment, studentAssessments, studentInformation, departments.find(_.code == assessment.departmentCode.string), invigilators, !overwriteAssessmentTypeOnImport))
+          Ok(views.html.admin.assessments.view(assessment, tabulaAssignments, studentAssessments, studentInformation, departments.find(_.code == assessment.departmentCode.string), invigilators, !overwriteAssessmentTypeOnImport))
         }
     }
+  }
+
+  def studentPreview(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id) { implicit request =>
+    Ok(views.html.admin.assessments.studentPreview(request.assessment))
   }
 
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
@@ -368,8 +378,9 @@ class AdminAssessmentsController @Inject()(
               sequence = data.sequence,
               startTime = data.startTime.map(_.asOffsetDateTime),
               assessmentType = data.assessmentType,
+              durationStyle = data.durationStyle,
             )
-          } else if (!overwriteAssessmentTypeOnImport) {
+          } else if (assessment.assessmentType.isEmpty || !overwriteAssessmentTypeOnImport) {
             assessment.copy(assessmentType = data.assessmentType)
           } else assessment
 
@@ -420,6 +431,7 @@ class AdminAssessmentsController @Inject()(
               ),
               // Rest are unchanged (may have been changed above)
               id = updatedIfAdHoc.id,
+              durationStyle = updatedIfAdHoc.durationStyle,
               paperCode = updatedIfAdHoc.paperCode,
               section = updatedIfAdHoc.section,
               startTime = updatedIfAdHoc.startTime,

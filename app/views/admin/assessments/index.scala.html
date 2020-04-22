@@ -51,7 +51,8 @@
             </label>
           </td>
           <td class="text-right">
-            <a href="@controllers.admin.routes.AdminAssessmentsController.view(assessment.id)" class="btn btn-default btn-sm">View</a>
+            <a href="@controllers.admin.routes.AdminAssessmentsController.view(assessment.id)" class="btn btn-default btn-sm">View all information</a>
+            <a href="@controllers.admin.routes.AdminAssessmentsController.studentPreview(assessment.id)" class="btn btn-default btn-sm">Preview as student</a>
             <a href="@controllers.admin.routes.AdminAssessmentsController.updateForm(assessment.id)" class="btn btn-default btn-sm">Edit</a>
           </td>
         </tr>
