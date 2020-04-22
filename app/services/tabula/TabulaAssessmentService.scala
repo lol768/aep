@@ -8,7 +8,8 @@ import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import com.google.inject.ImplementedBy
 import com.google.inject.name.Named
-import domain.tabula.{Assignment, Submission}
+import domain.tabula.Submission
+import domain.tabula.TabulaAssignment
 import domain.{Assessment, SittingMetadata, StudentAssessment, tabula}
 import helpers.{TrustedAppsHelper, WSRequestUriBuilder}
 import javax.inject.{Inject, Singleton}
@@ -104,6 +105,7 @@ class TabulaAssessmentServiceImpl @Inject()(
   timing: TimingService,
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
+  tabulaAssignmentService: TabulaAssignmentService,
   objectStorageService: ObjectStorageService
 )(implicit ec: ExecutionContext) extends TabulaAssessmentService with Logging {
 
@@ -139,7 +141,7 @@ class TabulaAssessmentServiceImpl @Inject()(
     }
   }
 
-  private def createAssignment(assessment: Assessment, academicYear: AcademicYear, occurrences: Set[String]): Future[ServiceResult[Assignment]] = {
+  private def createAssignment(assessment: Assessment, academicYear: AcademicYear, occurrences: Set[String])(implicit ctx: AuditLogContext): Future[ServiceResult[TabulaAssignment]] = {
     val moduleCode = assessment.moduleCode.split("-").head.toLowerCase
     val url = config.getCreateAssignmentUrl(moduleCode)
 
@@ -175,6 +177,12 @@ class TabulaAssessmentServiceImpl @Inject()(
 
     doRequest(url, "POST", req, description = "createAssignment").successFlatMapTo { jsValue =>
       parseAndValidate(jsValue, TabulaResponseParsers.responseAssignmentReads)
+    }.successFlatMapTo { assignment =>
+      tabulaAssignmentService.save(TabulaAssignment(
+        UUID.fromString(assignment.id),
+        assignment.name,
+        assignment.academicYear
+      ))
     }
   }
 
@@ -186,16 +194,15 @@ class TabulaAssessmentServiceImpl @Inject()(
           createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
         }.toSeq)
       }.successFlatMapTo { assignments =>
-      val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => UUID.fromString(a.id))
-      assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
-    }
+        val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => a.id)
+        assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
+      }
   }
 
-  //TODO - parameters need changing, added for time being
   private def createSubmission(sitting: SittingMetadata, assignmentId: UUID): Future[ServiceResult[Submission]] = {
     implicit def l: Logger = logger
 
-    // Note - point this url to requestbin in case want to cross check what curl request was generated(Handy)
+    //Point this url to the requestbin in case want to cross check what curl request was generated(Handy)
     val url = config.getCreateAssignmentSubmissionUrl(assignmentId)
 
     val fileInfo = sitting.studentAssessment.uploadedFiles.map { file =>
@@ -203,7 +210,7 @@ class TabulaAssessmentServiceImpl @Inject()(
       file -> objectStorageService.fetch(file.id.toString).orNull
       FilePart("attachments", file.fileName, Some(file.contentType), StreamConverters.fromInputStream(() => inputStream))
     }
-    //required for API though it is blank data
+    //Required for API though it is blank data
     val emptyJsonInputStream = new ByteArrayInputStream(Json.obj().toString().getBytes("UTF-8"))
     val submissionJsonFile = FilePart("submission", "submission.json", Some("application/json"), StreamConverters.fromInputStream(() => emptyJsonInputStream))
     val data: Seq[FilePart[Source[ByteString, Future[IOResult]]]] = fileInfo :+ submissionJsonFile

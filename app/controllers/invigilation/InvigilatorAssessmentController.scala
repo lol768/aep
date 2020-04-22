@@ -15,6 +15,7 @@ import warwick.core.helpers.ServiceResults
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.sso.{User, UserLookupService, Usercode}
 
+import scala.collection.immutable.ListMap
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -80,15 +81,19 @@ class InvigilatorAssessmentController @Inject()(
     }
   }
 
-  private def lookupInvigilatorUsers(assessment: Assessment) = {
-    userLookup
+  private def lookupInvigilatorUsers(assessment: Assessment): Seq[(Usercode, String)] = {
+    val users = userLookup
       .getUsers(assessment.invigilators.toSeq)
       .getOrElse(Nil)
       .map {
         case (_, user) => user
       }
-      .map(makeUserNameMap)
-      .toMap
+      .toList.sortBy(u => (u.name.last, u.name.first))
+    val usercodesWithNames = users.map(makeUserNameMap)
+    val missingInvigilators = assessment.invigilators.toSeq
+      .diff(usercodesWithNames.map{ case (usercode,_) => usercode})
+      .map(u => u -> u.string)
+    usercodesWithNames ++ missingInvigilators
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>

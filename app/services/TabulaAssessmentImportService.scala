@@ -3,11 +3,14 @@ package services
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
+import domain.AuditEvent.{Operation, Target}
 import domain.tabula.{AssessmentComponent, ExamPaperSchedule}
-import domain.{Assessment, StudentAssessment}
+import domain.{Assessment, JobKeys, StudentAssessment}
 import helpers.ServiceResultUtils.traverseSerial
 import javax.inject.{Inject, Singleton}
+import org.quartz.{JobKey, Scheduler, TriggerKey}
 import play.api.Configuration
+import play.api.libs.json.Json
 import services.TabulaAssessmentImportService.{AssessmentImportResult, DepartmentWithAssessments}
 import services.tabula.TabulaAssessmentService.GetAssessmentsOptions
 import services.tabula.{TabulaAssessmentService, TabulaDepartmentService}
@@ -16,7 +19,7 @@ import warwick.core.Logging
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.core.system.AuditLogContext
+import warwick.core.system.{AuditLogContext, AuditService}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -31,7 +34,10 @@ object TabulaAssessmentImportService {
 
 @ImplementedBy(classOf[TabulaAssessmentImportServiceImpl])
 trait TabulaAssessmentImportService {
+  def getImportTriggerKey: TriggerKey
   def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]]
+  def pauseImports()(implicit ctx: AuditLogContext): Future[ServiceResult[Unit]]
+  def resumeImports()(implicit ctx: AuditLogContext): Future[ServiceResult[Unit]]
 }
 
 @Singleton
@@ -41,11 +47,15 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
   configuration: Configuration,
-  features: Features
+  features: Features,
+  scheduler: Scheduler,
+  auditService: AuditService,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
 
-  def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
+  override def getImportTriggerKey: TriggerKey = scheduler.getTriggersOfJob(JobKeys.tabulaAssessmentImportJobKey).get(0).getKey
+
+  override def importAssessments()(implicit ctx: AuditLogContext): Future[ServiceResult[AssessmentImportResult]] =
     tabulaDepartmentService.getDepartments().successFlatMapTo { departments =>
       logger.info(s"Import started. Total departments to process: ${departments.size}")
 
@@ -54,6 +64,26 @@ class TabulaAssessmentImportServiceImpl @Inject()(
           logger.info(s"Processed total departments: ${departmentWithAssessments.size}")
           departmentWithAssessments
         }
+    }
+
+  override def pauseImports()(implicit ctx: AuditLogContext): Future[ServiceResult[Unit]] =
+    auditService.audit(Operation.TabulaAssessmentImport.Pause, "ImportAssessment", Target.TabulaAssessmentImports, Json.obj()) {
+      Future.successful {
+        ServiceResults.success {
+          scheduler.pauseTrigger(getImportTriggerKey)
+          logger.info("Tabula assessment imports paused")
+        }
+      }
+    }
+
+  override def resumeImports()(implicit ctx: AuditLogContext): Future[ServiceResult[Unit]] =
+    auditService.audit(Operation.TabulaAssessmentImport.Resume, "ImportAssessment", Target.TabulaAssessmentImports, Json.obj()) {
+      Future.successful {
+        ServiceResults.success {
+          scheduler.resumeTrigger(getImportTriggerKey)
+          logger.info("Tabula assessment imports resumed")
+        }
+      }
     }
 
   private def process(departmentCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[DepartmentWithAssessments]] = {
@@ -87,8 +117,10 @@ class TabulaAssessmentImportServiceImpl @Inject()(
             )
           }
 
+        val isExcludedFromAEP = schedule.locationName.contains("Assignment") || schedule.locationName.contains("Not required in Covid-19 alternative assesssments")
+
         assessmentService.getByTabulaAssessmentId(ac.id, examProfileCode).successFlatMapTo {
-          case Some(existingAssessment) if schedule.locationName.contains("Assignment") =>
+          case Some(existingAssessment) if isExcludedFromAEP =>
             assessmentService.delete(existingAssessment).successMapTo(_ => None)
 
           case Some(existingAssessment) =>
@@ -98,7 +130,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
             else
               assessmentService.update(updated, Nil).successMapTo(Some(_))
 
-          case None if !schedule.locationName.contains("Assignment") =>
+          case None if !isExcludedFromAEP =>
             val newAssessment = ac.asAssessment(None, schedule, features.overwriteAssessmentTypeOnImport)
             assessmentService.insert(newAssessment, Nil).successMapTo(Some(_))
 

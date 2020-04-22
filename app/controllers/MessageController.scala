@@ -5,6 +5,7 @@ import java.util.UUID
 
 import domain.messaging.{MessageSave, MessageSender}
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
@@ -20,11 +21,14 @@ import scala.concurrent.ExecutionContext
 @Singleton
 class MessageController @Inject()(
   security: SecurityService,
+  configuration: Configuration,
   messageService: MessageService,
   studentInformationService: TabulaStudentInformationService,
 )(implicit executionContext: ExecutionContext) extends BaseController {
   import MessageController._
   import security._
+
+  private lazy val messageMaxLength: Int = configuration.get[Int]("app.messageMaxLength")
 
   def showForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId, allowWhereNoDuration = true).async { implicit request =>
     val universityId = request.sitting.studentAssessment.studentId
@@ -34,7 +38,7 @@ class MessageController @Inject()(
     ).successMap { case (messages, profile) =>
       val student = Map(universityId -> profile)
       val sortedMessages = messages.map(_.asAnnouncementOrQuery).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
-      Ok(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm))
+      Ok(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm(messageMaxLength)))
     }
   }
 
@@ -54,11 +58,11 @@ class MessageController @Inject()(
       ).successMap { case (messages, profile) =>
         val student = Map(universityId -> profile)
         val sortedMessages = messages.map(_.asAnnouncementOrQuery).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
-        BadRequest(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm))
+        BadRequest(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm(messageMaxLength)))
       }
     }
 
-    blankForm.bindFromRequest().fold(failure, success)
+    blankForm(messageMaxLength).bindFromRequest().fold(failure, success)
   }
 }
 
@@ -67,8 +71,8 @@ object MessageController {
     messageText: String
   )
 
-  val blankForm: Form[MessageData] = Form(mapping(
-    "messageText" -> nonEmptyText
+  def blankForm(maxLength: Int): Form[MessageData] = Form(mapping(
+    "messageText" -> nonEmptyText(maxLength = maxLength)
   )(MessageData.apply)(MessageData.unapply))
 }
 

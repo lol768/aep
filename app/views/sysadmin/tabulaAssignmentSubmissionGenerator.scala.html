@@ -16,7 +16,7 @@
         @views.html.tags.globalErrors(form)
         @b3.text(form("assessmentId"),
           Symbol("_label") -> "Assessment Id",
-          Symbol("_help") -> "Assessment should have assignment attached and has some students at least who appeared for exams.",
+          Symbol("_help") -> "Assessment should have assignment attached and at least one student who appeared for exam.",
         )
         @b3.text(form("studentId"),
           Symbol("_label") -> "Student Id(optional)",

@@ -1,12 +1,17 @@
 @import play.api.Mode
-@(e: Throwable, appMode: Mode)(implicit context: RequestContext)
+@(e: Throwable, appMode: Mode, isSysAdmin: Boolean)(implicit context: RequestContext)
 
 @frontend("Error") {
 
   <p>Sorry, there's been a problem and we weren't able to complete your request.</p>
 
-  @if(appMode == Mode.Dev) {
-    <div class="label label-info">Dev mode only</div>
+  @if(appMode == Mode.Dev || isSysAdmin) {
+    @if(appMode == Mode.Dev) {
+      <div class="label label-info">Dev mode</div>
+    }
+    @if(isSysAdmin) {
+      <div class="label label-info">SysAdmin</div>
+    }
     <pre class="error-stack-trace">@views.html.errors.stacktrace(e)</pre>
   }
 

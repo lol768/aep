@@ -43,7 +43,7 @@ GET         /websocket                              @controllers.WebSocketContro
 
 ## Admins ##
 
-GET         /admin                                                @controllers.admin.IndexController.home
+GET          /admin                                                @controllers.admin.IndexController.home
 #GET         /admin/approvals                                      @controllers.admin.ApprovalsController.index
 #GET         /admin/approvals/:id                                  @controllers.admin.ApprovalsController.show(id: UUID)
 #POST        /admin/approvals/:id                                  @controllers.admin.ApprovalsController.update(id: UUID)
@@ -60,6 +60,7 @@ POST        /admin/assessments/:id                                @controllers.a
 GET         /admin/assessments/:id/delete                         @controllers.admin.AdminAssessmentsController.deleteForm(id: UUID)
 POST        /admin/assessments/:id/delete                         @controllers.admin.AdminAssessmentsController.delete(id: UUID)
 GET         /admin/assessments/:id/view                           @controllers.admin.AdminAssessmentsController.view(id: UUID)
+GET         /admin/assessments/:id/student-preview                @controllers.admin.AdminAssessmentsController.studentPreview(id: UUID)
 POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AdminAssessmentsController.generateAssignments(id: UUID)
 GET         /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.assignmentSubmissions()
 POST        /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.generateAssignmentSubmissions()
@@ -118,7 +119,9 @@ GET         /sysadmin/departments-test              @controllers.sysadmin.Sysadm
 GET         /sysadmin/dummy-data-generation         @controllers.sysadmin.DummyDataGenerationController.showForm()
 POST        /sysadmin/dummy-data-generation         @controllers.sysadmin.DummyDataGenerationController.submitForm()
 GET         /sysadmin/student-activity              @controllers.sysadmin.ViewStudentActivityController.index
-GET         /sysadmin/student-activity/filter        @controllers.sysadmin.ViewStudentActivityController.filter(page: Int ?= 0)
+GET         /sysadmin/student-activity/filter       @controllers.sysadmin.ViewStudentActivityController.filter(page: Int ?= 0)
+GET         /sysadmin/tabula-assessment-imports     @controllers.sysadmin.TabulaAssessmentsImportsController.showForm
+POST        /sysadmin/tabula-assessment-imports     @controllers.sysadmin.TabulaAssessmentsImportsController.toggleTriggerState
 
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()
