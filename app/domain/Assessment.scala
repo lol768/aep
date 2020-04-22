@@ -19,6 +19,7 @@ sealed trait BaseAssessment extends DefinesStartWindow {
   val duration: Option[Duration]
   val platform: Set[Platform]
   val assessmentType: Option[AssessmentType]
+  val durationStyle: DurationStyle
   val state: State
   val tabulaAssessmentId: Option[UUID]
   val examProfileCode: String
@@ -33,8 +34,21 @@ sealed trait BaseAssessment extends DefinesStartWindow {
 trait DefinesStartWindow {
   // (earliest allowed) start time
   val startTime: Option[OffsetDateTime]
+  val duration: Option[Duration]
+  val durationStyle: DurationStyle
 
-  val lastAllowedStartTime: Option[OffsetDateTime] = startTime.map(_.plus(Assessment.window))
+  val lastAllowedStartTime: Option[OffsetDateTime] = durationStyle match {
+    case DurationStyle.DayWindow => startTime.map(_.plus(Assessment.dayWindow))
+    case DurationStyle.FixedStart => for {
+        start <- startTime
+        dur <- duration
+      } yield {
+        start
+          .plus(dur)
+          .plus(Assessment.uploadGraceDuration)
+          .plus(Assessment.lateSubmissionPeriod)
+      }
+  }
 
   def hasLastAllowedStartTimePassed(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = lastAllowedStartTime.exists(_.isBefore(referenceDate))
 
@@ -50,6 +64,7 @@ case class Assessment(
   duration: Option[Duration],
   platform: Set[Platform],
   assessmentType: Option[AssessmentType],
+  durationStyle: DurationStyle,
   brief: Brief,
   invigilators: Set[Usercode],
   state: State,
@@ -69,6 +84,7 @@ case class Assessment(
     duration,
     platform,
     assessmentType,
+    durationStyle,
     state,
     tabulaAssessmentId,
     tabulaAssignments,
@@ -95,6 +111,7 @@ case class AssessmentMetadata(
   duration: Option[Duration],
   platform: Set[Platform],
   assessmentType: Option[AssessmentType],
+  durationStyle: DurationStyle,
   state: State,
   tabulaAssessmentId: Option[UUID],
   tabulaAssignments: Set[UUID],
@@ -180,6 +197,15 @@ object Assessment {
     val values: IndexedSeq[AssessmentType] = findValues
   }
 
+  sealed trait DurationStyle extends EnumEntry
+  object DurationStyle extends PlayEnum[DurationStyle] {
+    /** 24 hour window to start */
+    case object DayWindow extends DurationStyle
+    /** No window, exam starts at fixed time */
+    case object FixedStart extends DurationStyle
+    override def values: IndexedSeq[DurationStyle] = findValues
+  }
+
   case class Brief(
     text: Option[String],
     files: Seq[UploadedFile],
@@ -204,7 +230,7 @@ object Assessment {
 
   val uploadGraceDuration: Duration = Duration.ofMinutes(45)
 
-  private[domain] val window: Duration = Duration.ofHours(24)
+  private[domain] val dayWindow: Duration = Duration.ofHours(24)
 
   // The amount of time we wait for in-progress uploads to finish before making submissions available
   val uploadProcessDuration: Duration = Duration.ofHours(1)

@@ -72,7 +72,7 @@
           }
           @if(platform.contains(Platform.OnlineExams)) {
             @md.finalisedTime.map {time =>
-              <td data-sort="@time.toInstant.toEpochMilli">
+              <td data-sort="@views.tags.formatDate.sortableDateTime(time)">
                 @localisedDatetime(time)
               </td>
             }.getOrElse {

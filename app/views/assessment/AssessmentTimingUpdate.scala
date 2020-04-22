@@ -3,6 +3,7 @@ package views.assessment
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
+import domain.Assessment.DurationStyle
 import domain.BaseSitting.{ProgressState, SubmissionState}
 import play.api.libs.json._
 
@@ -19,7 +20,8 @@ case class AssessmentTimingUpdate(
   extraTimeAdjustment: Option[Duration],
   showTimeRemaining: Boolean,
   progressState: Option[ProgressState],
-  submissionState: SubmissionState
+  submissionState: SubmissionState,
+  durationStyle: DurationStyle,
 )
 
 object AssessmentTimingUpdate {
