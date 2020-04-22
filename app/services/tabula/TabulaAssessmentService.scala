@@ -215,8 +215,8 @@ class TabulaAssessmentServiceImpl @Inject()(
     val req = ws.url(url)
       .withQueryStringParameters(Seq(
         Some("universityId" -> sitting.studentAssessment.studentId.string),
-        Some("submittedDate" -> formatDate.tabulaISODateTime(sitting.studentAssessment.submissionTime.get)), //Explicitly decided against using Sitting.finalisedTime as some may not finalise
-        Some("submissionDeadline" -> formatDate.tabulaISODateTime(sitting.onTimeEnd.get)),
+        Some("submittedDate" -> formatDate.tabulaDateTime(sitting.studentAssessment.submissionTime.get)), //Explicitly decided against using Sitting.finalisedTime as some may not finalise
+        Some("submissionDeadline" -> formatDate.tabulaDateTime(sitting.onTimeEnd.get)),
       ).flatten: _*)
       .withBody(Source(data))
     doRequest(url, "POST", req, description = "createSubmission").successFlatMapTo { jsValue =>
