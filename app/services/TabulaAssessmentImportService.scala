@@ -106,7 +106,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
           if (schedules.size == 1) schedules.head
           else {
             // Some information _must_ match, otherwise we need to change our approach
-            require(schedules.forall(_.slotId == schedules.head.slotId))
+            require(schedules.forall(_.slotId == schedules.head.slotId), s"Multiple schedules for $ac but slot ID doesn't match")
             require(schedules.forall(_.startTime == schedules.head.startTime))
 
             // We allow locationSequence and location to differ, but we treat them as one assessment
