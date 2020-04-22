@@ -273,19 +273,17 @@ class TabulaHttp @Inject()(
       WSRequestUriBuilder.buildUri(wsRequest).toString
     ).asScala.map(h => h.getName -> h.getValue).toSeq
 
-    val req = wsRequest.addHttpHeaders(trustedHeaders: _*)
-    req.execute(method)
-    val res = req.execute(method)
-    res.map { r =>
-      try {
-        Right(TrustedAppsHelper.validateResponse(url, r).json)
-      } catch {
-        case ex: Exception =>
-          val msg = s"Trustedapps error in Tabula $description"
-          logger.error(msg, ex)
-          ServiceResults.exceptionToServiceResult(ex, Some(msg))
-      }
-
+    wsRequest.addHttpHeaders(trustedHeaders: _*)
+      .execute(method)
+      .map { r =>
+        try {
+          Right(TrustedAppsHelper.validateResponse(url, r).json)
+        } catch {
+          case ex: Exception =>
+            val msg = s"Trustedapps error in Tabula $description"
+            logger.error(msg, ex)
+            ServiceResults.exceptionToServiceResult(ex, Some(msg))
+        }
     }
   }
 
