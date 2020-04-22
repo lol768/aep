@@ -12,6 +12,6 @@ object UploadAttempt {
   val websocketType = "UploadAttempt"
 }
 
-case class UploadAttempt(var source: String, files: Seq[SelectedFile], studentAssessmentId: UUID)
+case class UploadAttempt(var source: String, proposedFiles: Seq[SelectedFile], studentAssessmentId: UUID)
 
 case class SelectedFile(lastModified: Long, name: String, size: Long, mimeType: String, headerHex: String)

@@ -80,7 +80,7 @@ export default class FileUploadAttemptLogger {
     }
 
     return Promise.all(promiseList).then(() => ({
-      files: results,
+      proposedFiles: results,
       studentAssessmentId,
       source: '',
     }));
