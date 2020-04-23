@@ -89,9 +89,9 @@ class InvigilatorAssessmentController @Inject()(
               invigilators = lookupInvigilatorUsers(assessment)(userLookup),
               students = students,
               department = departments.find(_.code == assessment.departmentCode.string),
-              queriesFromStudents = queries.filter(_.sender == MessageSender.Client),
+              queriesFromStudents = queries.filter(_.sender == MessageSender.Student),
               totalAnnouncements = announcements.length,
-              studentsWithQueries = queries.map(_.client).distinct,
+              studentsWithQueries = queries.map(_.student).distinct,
               latestStudentActivities = latestActivities,
             ))
           }

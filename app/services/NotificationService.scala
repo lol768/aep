@@ -21,7 +21,8 @@ import scala.jdk.CollectionConverters._
 @ImplementedBy(classOf[NotificationServiceImpl])
 trait NotificationService {
   def newAnnouncement(announcement: Announcement)(implicit t: TimingContext): Future[ServiceResult[Activity]]
-  def newMessage(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]]
+  def newMessageFromStudent(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]]
+  def newMessageFromInvigilator(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]]
   def sendReminders(assessment: Assessment)(implicit t: TimingContext): Future[ServiceResult[Activity]]
 }
 
@@ -63,7 +64,7 @@ class NotificationServiceImpl @Inject()(
       }
     }
 
-  override def newMessage(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]] = {
+  override def newMessageFromStudent(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]] = {
     assessmentService.get(message.assessmentId).successMapTo { assessment =>
       val usercodes = assessment.invigilators.map(_.string)
 
@@ -71,6 +72,29 @@ class NotificationServiceImpl @Inject()(
         usercodes.asJava,
         s"${assessment.paperCode}: Query from student",
         controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id).absoluteURL(true, domain),
+        message.text,
+        "assessment-query"
+      )
+
+      if (usercodes.nonEmpty) {
+        myWarwickService.queueNotification(activity, scheduler)
+      }
+
+      activity
+    }
+  }
+
+  override def newMessageFromInvigilator(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]] = {
+    ServiceResults.zip(
+      Future.successful(ServiceResults.fromTry(userLookupService.getUsers(Seq(message.student)))),
+      assessmentService.get(message.assessmentId),
+    ).successMapTo { case (users, assessment) =>
+      val usercodes = users.get(message.student).map(_.usercode.string).toSet
+
+      val activity = new Activity(
+        usercodes.asJava,
+        s"${assessment.paperCode}: Reply from invigilator",
+        controllers.routes.MessageController.showForm(assessment.id).absoluteURL(true, domain),
         message.text,
         "assessment-query"
       )

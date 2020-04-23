@@ -14,10 +14,4 @@ case class Announcement(
   created: OffsetDateTime = OffsetDateTime.now(),
 ) {
   val html: Html = Html(warwick.core.views.utils.nl2br(text).body)
-  def asAnnouncementOrQuery = AnnouncementOrQuery(
-    sender = Left(sender),
-    text = text,
-    date = created,
-    isAnnouncement = true
-  )
 }

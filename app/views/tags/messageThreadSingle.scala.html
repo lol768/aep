@@ -1,0 +1,42 @@
+@import domain.messaging.{Message, MessageSender}
+@import domain.tabula
+@import services.messaging.MessageService
+@import tags._
+@import warwick.sso.{UniversityID, User, Usercode}
+
+@(
+  student: UniversityID,
+  threadMessages: Seq[Message],
+  students: Map[UniversityID, tabula.SitsProfile],
+  invigilators: Map[Usercode, User],
+  latestMessageOnTop: Boolean,
+  form: UniversityID => Html
+)
+
+<div class="panel-body" data-student-id="@student.string">
+  @defining(if (!latestMessageOnTop) threadMessages.reverse else threadMessages) { orderedThreadMessages =>
+    @orderedThreadMessages.map { message =>
+      <div class="message message-@message.sender.entryName.toLowerCase">
+        <div class="message-date">@localisedDatetime(message.created, inline = true)</div>
+        <div class="message-author">
+        @message.sender match {
+          case MessageSender.Student => {
+            @students.get(message.student).map { u =>
+              @u.fullName (@message.student.string)
+            }.getOrElse(message.student.string)
+          }
+          case MessageSender.Invigilator => {
+            @message.staffId.map { staffId =>
+              @invigilators.get(staffId).map { u =>
+                @u.name.full.getOrElse(MessageService.InvigilationSender)
+              }.getOrElse(MessageService.InvigilationSender)
+            }.getOrElse(MessageService.InvigilationSender)
+          }
+        }
+        </div>
+        <div class="message-text">@message.html</div>
+      </div>
+    }
+  }
+</div>
+@form(student)
