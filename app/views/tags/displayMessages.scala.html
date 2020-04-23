@@ -1,0 +1,37 @@
+@import domain.messaging.Message
+@import domain.tabula
+@import tags._
+@import warwick.sso.{UniversityID, User, Usercode}
+@(
+  messages: Seq[Message],
+  students: Map[UniversityID, tabula.SitsProfile],
+  threaded: Boolean,
+  invigilators: Map[Usercode, User],
+  latestMessageOnTop: Boolean = true,
+)(form: UniversityID => Html)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+<div class="message-threads">
+  @if(threaded) {
+    <div class="panel-group" id="messages-accordion">
+      @defining(messages.groupBy(_.student)) { groupedMessages =>
+        @groupedMessages.keys.toSeq.sortBy(u => groupedMessages(u).head.created).reverse.map { universityID =>
+          @defining(students.get(universityID)) { profile =>
+            @defining(
+              students.get(groupedMessages(universityID).head.student).map(u =>
+                s"${u.fullName} (${groupedMessages(universityID).head.student.string})"
+              ).getOrElse(groupedMessages(universityID).head.student.string)
+            ) { studentName =>
+              @messageThread(universityID, studentName, groupedMessages(universityID).head.created) {
+                @messageThreadSingle(universityID, groupedMessages(universityID), students, invigilators, latestMessageOnTop, form)
+              }
+            }
+          }
+        }
+      }
+    </div>
+  } else {
+    <div class="panel">
+      @messageThreadSingle(students.keys.head, messages, students, invigilators, latestMessageOnTop, form)
+    </div>
+  }
+</div>

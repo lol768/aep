@@ -37,6 +37,7 @@
 
     @b3.free(Symbol("_class") -> "spaced-buttons") {
       <button type="submit" class="btn btn-primary quash-beforeunload" id="uploadFilesButton">Upload files</button>
+      <button type="button" data-action="cancelUpload" class="btn btn-danger hide" id="uploadFilesCancel">Cancel upload</button>
     }
   }
 }
@@ -174,7 +175,7 @@
                           </div>
                           <div class="media-body">
                             <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" target="_blank" rel="noreferrer">@file.fileName</a></h4>
-                            <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@JavaTime.Relative(file.created)</small></p>
+                            <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@localisedDatetime(file.created)</small></p>
                             @b3.inline.formCSRF(controllers.routes.AssessmentController.deleteFile(sitting.assessment.id, file.id), Symbol("class") -> "quash-beforeunload") { implicit ifc =>
                               <p>
                                 <a download target="_blank" rel="noreferrer" href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
@@ -237,7 +238,7 @@
                     </div>
                     <div class="media-body">
                       <h4 class="media-heading"><a href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" target="_blank" rel="noreferrer">@file.fileName</a></h4>
-                      <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@JavaTime.Relative(file.created)</small></p>
+                      <p>@helpers.humanReadableSize(file.contentLength) <small class="text-muted">@localisedDatetime(file.created)</small></p>
                       <a download target="_blank" rel="noreferrer" href="@controllers.routes.AssessmentController.downloadAttachment(sitting.assessment.id, file.id)" class="btn btn-sm btn-default mr-half"><i class="fas fa-file-download"></i>
                         Download</a>
                     </div>

@@ -1,0 +1,27 @@
+@import domain.Announcement
+@import tags._
+@import warwick.sso.{User, Usercode}
+@(
+  announcements: Seq[Announcement],
+  invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+<div class="announcement-container">
+  @announcements.map { announcement =>
+    <div class="announcement">
+      <div class="message-date">
+        @localisedDatetime(announcement.created, inline = true)
+      </div>
+      <div class="message-author">
+        @announcement.sender.map { sender =>
+          @invigilators.get(sender).map { u =>
+            @u.name.full.getOrElse("Announcement")
+          }.getOrElse("Announcement")
+        }.getOrElse("Announcement")
+      </div>
+      <div class="message-text">
+        @announcement.html
+      </div>
+    </div>
+  }
+</div>

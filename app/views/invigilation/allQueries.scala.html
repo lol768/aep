@@ -1,40 +1,54 @@
-@import domain.Assessment
-@import domain.tabula
-@import domain.AnnouncementOrQuery
-@import warwick.sso.UniversityID
-@import warwick.sso.User
-@import warwick.sso.Usercode
-@import views.html.invigilation._
+@import domain.messaging.{Message, MessageSender}
+@import domain.{Announcement, Assessment, tabula}
 @import tags._
-@import controllers.invigilation.AnnouncementAndQueriesController.AnnouncementData
+@import warwick.core.views.utils._
+@import warwick.sso.{UniversityID, User, Usercode}
 @(
-        assessment: Assessment,
-        announcementsAndQueries: Seq[AnnouncementOrQuery],
-        students: Map[UniversityID, tabula.SitsProfile],
-        department: Option[tabula.Department],
-        form: Form[AnnouncementData],
-        invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
+  assessment: Assessment,
+  announcements: Seq[Announcement],
+  messages: Seq[Message],
+  students: Map[UniversityID, tabula.SitsProfile],
+  department: Option[tabula.Department],
+  form: Form[String],
+  invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout("Announcements and queries for " + assessment.moduleCode, extraClasses = Seq("connect-ws", "allAnnouncementsAndQueries")) {
   <div class="id7-main-content">
     <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
-    <div class="row">
-      <div class="col-md-6">
-        <h3>Announcements</h3>
-        @b3.vertical.formCSRF(controllers.invigilation.routes.AnnouncementAndQueriesController.addAnnouncement(assessment.id), Symbol("class") -> "double-submit-protection") { implicit fc =>
-          @views.html.tags.globalErrors(form)
 
-          @b3.textarea(form("message"), Symbol("rows") -> 10)
+    <details open>
+      <summary class="h3">Announcements (@announcements.size)</summary>
+      @displayAnnouncements(announcements, invigilators)
+    </details>
+    @b3.vertical.formCSRF(controllers.invigilation.routes.AnnouncementAndQueriesController.addAnnouncement(assessment.id), Symbol("class") -> "double-submit-protection") { implicit fc =>
+      @views.html.tags.globalErrors(form)
 
-          @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fas fa-plus fa-fw"></i> Add }
+      @b3.textarea(form("message"), Symbol("rows") -> 5)
+
+      @b3.submit(Symbol("class") -> "btn btn-default"){ <i class="fas fa-plus fa-fw"></i> Add a new announcement }
+    }
+    <details open>
+      @defining(messages.groupBy(_.student).size) { numberOfStudents: Int =>
+        @defining(messages.count(_.sender == MessageSender.Student)) { numberOfMessages: Int =>
+          @if(numberOfStudents == 0) {
+            <summary class="h3">Queries (no queries received)</summary>
+          } else {
+            <summary class="h3">Queries (@numberOfMessages @pl(numberOfMessages, "query")(plural = "queries") from @numberOfStudents @pl(numberOfStudents, "student")())</summary>
+          }
         }
-        @displayAnnouncementsAndQueries(announcementsAndQueries.filter(_.isAnnouncement), students, "announcement", invigilators)
-      </div>
-      <div class="col-md-6">
-        <h3>Queries</h3>
-        @displayAnnouncementsAndQueries(announcementsAndQueries.filter(_.isQuery), students, "query", invigilators)
-      </div>
-    </div>
+      }
+      @displayMessages(
+        messages = messages,
+        students = students,
+        threaded = true,
+        invigilators = invigilators,
+        latestMessageOnTop = !context.features.twoWayMessages
+      ) { universityID =>
+        @if(context.features.twoWayMessages) {
+          @views.html.invigilation.messageForm(assessment.id, universityID, students.get(universityID).map(s => s"${s.fullName} (${s.universityID.string})").getOrElse(universityID.string))
+        }
+      }
+    </details>
 
     <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">
       <i class="fas fa-arrow-left"></i>

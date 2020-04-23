@@ -21,7 +21,7 @@ object ThreadPoolHealthCheck {
 class ThreadPoolHealthCheck(id: String, configLocation: String)
   extends ServiceHealthcheckProvider(new ServiceHealthcheck(name(id), Status.Unknown, now)) {
 
-  def this(id: String) {
+  def this(id: String) = {
     this(id, s"threads.$id")
   }
 

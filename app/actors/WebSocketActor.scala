@@ -10,9 +10,11 @@ import domain.messaging.MessageSender
 import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata, UploadAttempt}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
+import play.api.i18n.Messages
 import play.api.libs.json._
 import play.twirl.api.Html
 import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService, UploadAttemptService}
+import system.Features
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
@@ -32,11 +34,24 @@ object WebSocketActor {
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
     announcementService: AnnouncementService,
     uploadAttemptService: UploadAttemptService,
+    features: Features,
+    messages: Messages,
     additionalTopics: Set[String],
   )(implicit ec: ExecutionContext, ac: AuditLogContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, ac.ipAddress, ac.userAgent, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, uploadAttemptService, additionalTopics))
-
-  import UploadAttempt._
+    Props(new WebSocketActor(
+      out,
+      pubsub,
+      loginContext,
+      ac.ipAddress,
+      ac.userAgent,
+      studentAssessmentService,
+      assessmentClientNetworkActivityService,
+      announcementService,
+      uploadAttemptService,
+      features,
+      messages,
+      additionalTopics
+    ))
 
   case class AssessmentAnnouncement(id: String, assessmentId: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
@@ -47,7 +62,7 @@ object WebSocketActor {
       AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, announcement.text, announcement.created)
   }
 
-  case class AssessmentMessage(id: String, assessmentId: String, messageText: String, sender: MessageSender, client: String, timestamp: OffsetDateTime) {
+  case class AssessmentMessage(messageId: String, studentId: String, assessmentId: String, messageText: String, sender: MessageSender, senderName: String, studentName: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
@@ -101,6 +116,8 @@ class WebSocketActor @Inject() (
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   @Assisted announcementService: AnnouncementService,
   @Assisted uploadAttemptService: UploadAttemptService,
+  @Assisted features: Features,
+  @Assisted messages: Messages,
   additionalTopics: Set[String],
 )(implicit
   ec: ExecutionContext
@@ -137,13 +154,27 @@ class WebSocketActor @Inject() (
 
     case am: AssessmentMessage => out ! Json.obj(
       "type" -> "assessmentMessage",
-      "id" -> am.id,
+      "id" -> am.messageId,
+      "studentId" -> am.studentId,
       "assessmentId" -> am.assessmentId,
       "messageHTML" -> am.messageHTML.body,
       "messageText" -> am.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(am.timestamp).toString,
       "sender" -> am.sender.entryName,
-      "client" -> am.client
+      "senderName" -> am.senderName,
+      "messageThread" -> (am.sender match {
+        case MessageSender.Student =>
+          val form = if (features.twoWayMessages) { _: UniversityID =>
+            views.html.invigilation.messageForm(UUID.fromString(am.assessmentId), UniversityID(am.studentId), am.studentName)(messages, null)
+          } else { _: UniversityID =>
+            Html("")
+          }
+          views.html.tags.messageThread(UniversityID(am.studentId), am.senderName, am.timestamp)(
+            views.html.tags.messageThreadSingle(UniversityID(am.studentId), Seq.empty, Map.empty, Map.empty, latestMessageOnTop = false, form)
+          ).toString
+        case MessageSender.Invigilator =>
+          ""
+      })
     )
 
     case SubscribeAck(Subscribe(topic, _, _)) =>

@@ -195,6 +195,7 @@ class AdminAssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterE
       "title" -> data.title,
       "description" -> data.description.getOrElse(""),
       "durationMinutes" -> data.durationMinutes.map(_.toString).getOrElse(""),
+      "durationStyle" -> data.durationStyle.entryName,
       "platform[]" -> data.platform.mkString(","),
       "assessmentType" -> data.assessmentType.map(_.toString).getOrElse(""),
       "students" -> data.students.toSeq.map(_.string).sorted.mkString("\n"),

@@ -6,18 +6,18 @@ import java.util.UUID
 import actors.WebSocketActor.AssessmentAnnouncement
 import akka.Done
 import com.google.inject.ImplementedBy
+import controllers.WebSocketController.Topics
 import domain.Announcement
 import domain.AuditEvent.{Operation, Target}
 import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.{AnnouncementDao, DaoRunner}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
-import system.routes.Types.UniversityID
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
-import warwick.sso.UserLookupService
+import warwick.sso.{UniversityID, UserLookupService}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -53,17 +53,17 @@ class AnnouncementServiceImpl @Inject()(
 
       // publish announcement to students
       pubSubService.publish(
-        topic = s"studentAssessment:${announcement.assessment.toString}",
+        topic = Topics.allStudentsAssessment(announcement.assessment),
         AssessmentAnnouncement.from(announcement)
       )
 
       // publish announcement to invigilators
       announcement.sender.foreach { sender =>
         userLookupService.getUsers(Seq(sender)).toOption.flatMap(userMap => userMap.headOption.map(_._2)).foreach { user =>
-          val name = user.name.full.map(name => s"${name}: ").getOrElse("")
+          val name = user.name.full.map(name => s"$name: ").getOrElse("")
           pubSubService.publish(
-            topic = s"invigilatorAssessment:${announcement.assessment.toString}",
-            AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, s"${name}${announcement.text.trim}", announcement.created)
+            topic = Topics.allInvigilatorsAssessment(announcement.assessment),
+            AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, s"$name${announcement.text.trim}", announcement.created)
           )
         }
       }

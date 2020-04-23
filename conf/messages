@@ -28,6 +28,7 @@ flash.dataGeneration.randomAssessments=Added {0} randomly generated assessments 
 flash.dataGeneration.randomAssessmentsWithStudentAssessments=Added {0} randomly generated assessments with associated student assessments to the database.
 flash.assessment.announcement.created=Assessment announcement created
 flash.messages.sentToInvigilator=Message sent to invigilator
+flash.messages.sentToStudent=Message sent to student
 flash.tabulaAssessmentImports.paused=Tabula assessment imports paused.
 flash.tabulaAssessmentImports.resumed=Tabula assessment imports resumed.
 

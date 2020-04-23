@@ -37,14 +37,14 @@ class MessageController @Inject()(
       studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId))
     ).successMap { case (messages, profile) =>
       val student = Map(universityId -> profile)
-      val sortedMessages = messages.map(_.asAnnouncementOrQuery).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
+      val sortedMessages = messages.sortBy(_.created)
       Ok(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm(messageMaxLength)))
     }
   }
 
   def submitForm(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId, allowWhereNoDuration = true).async { implicit request =>
     def success(data: MessageData) =
-      messageService.send(MessageSave(data.messageText, MessageSender.Client), currentUniversityId(), assessmentId).successMap { _ =>
+      messageService.send(MessageSave(data.messageText, MessageSender.Student, None), currentUniversityId(), assessmentId).successMap { _ =>
         Redirect(controllers.routes.MessageController.showForm(assessmentId))
           .flashing("success" -> Messages("flash.messages.sentToInvigilator"))
       }
@@ -57,7 +57,7 @@ class MessageController @Inject()(
         studentInformationService.getStudentInformation(GetStudentInformationOptions(universityId))
       ).successMap { case (messages, profile) =>
         val student = Map(universityId -> profile)
-        val sortedMessages = messages.map(_.asAnnouncementOrQuery).sortBy(_.date)(Ordering[OffsetDateTime].reverse)
+        val sortedMessages = messages.sortBy(_.created)
         BadRequest(views.html.assessment.messages(request.sitting.assessment, sortedMessages, student, blankForm(messageMaxLength)))
       }
     }

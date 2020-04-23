@@ -24,16 +24,16 @@ trait ExtendedPostgresProfile
 
   override val pgjson = "jsonb"
 
-  override val columnTypes = new JdbcTypes
+  override val columnTypes: ExtendedJdbcTypes = new ExtendedJdbcTypes
 
-  class JdbcTypes extends super.JdbcTypes
+  class ExtendedJdbcTypes extends super.JdbcTypes
     with NullByteStrippingStringType
     with JdbcDateTypesUtc
     with FixedLocalDateType
 
-  override val api: API = new API {}
+  override val api: ExtendedAPI = new ExtendedAPI {}
 
-  trait API
+  trait ExtendedAPI
     extends super.API
       with ArrayImplicits
       with JsonImplicits {

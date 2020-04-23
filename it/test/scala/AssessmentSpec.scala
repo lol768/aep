@@ -153,5 +153,52 @@ class AssessmentSpec extends BrowserFeatureSpec {
       Then i_should_see_the_text "Test announcement number one"
       And the_page_content_should_not_contain(Fixtures.users.staff1.name.full.get)
     }
+
+    "be able to see the grace upload period added to the duration" in {
+      Given.i_am_a_student()
+      And i_have_an_assessment_in_progress (student)
+      // ...and that assessment started five minutes ago
+
+      When i_visit_the assessmentPage
+      screenshot("Assessment duration")
+      Then i_should_see_the_text("You have 3 hours and 39 minutes remaining until you should upload your answers")
+      And i_should_see_the_text("This is a 3 hour paper, plus 45 minutes to upload your answers")
+      And i_should_see_the_text("You have 45 minutes until")
+    }
+
+    "be able to upload files and finish the exam during the grace upload period" in {
+      Given.i_am_a_student()
+      And i_have_an_assessment_in_progress_that_started_x_minutes_ago(student, assessmentStart = 195.toLong, studentStart = 185.toLong)
+
+      When i_visit_the assessmentPage
+      Then i_should_see_the_text("You have 39 minutes remaining until you should upload your answers")
+
+      When i_upload "night-heron-500-beautiful.jpg"
+      Then i_should_see_the_text "The files have been uploaded to the assessment."
+
+      When.i_finish_the_assessment()
+      Then the_page_content_should_not_contain "Finish exam"
+    }
+
+    "see a late message after the grace upload period" in {
+      Given.i_am_a_student()
+      // assessment started 5h 56 ago, student started 3h 46 minutes ago
+      And i_have_an_assessment_in_progress_that_started_x_minutes_ago(student, assessmentStart = 356.toLong, studentStart = 226.toLong)
+
+      When i_visit_the assessmentPage
+      screenshot("Assessment late message")
+      Then i_should_see_the_text("You started this assessment, but missed the deadline to upload your answers.")
+      And i_should_see_the_text("Exceeded deadline by 1 minute")
+    }
+
+    "be unable to upload files after the late period" in {
+      Given.i_am_a_student()
+      // assessment is 3 hours long, grace period 45 minutes
+      // assessment started 5h 56 ago, student started 5h 46 minutes ago
+      And i_have_an_assessment_in_progress_that_started_x_minutes_ago(student, assessmentStart = 356.toLong, studentStart = 346.toLong)
+
+      When i_visit_the assessmentPage
+      Then the_page_content_should_not_contain "Uploaded answer files"
+    }
   }
 }

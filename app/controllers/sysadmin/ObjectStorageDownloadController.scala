@@ -10,7 +10,6 @@ import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc.{Action, AnyContent}
 import services.{SecurityService, UploadedFileService}
-import system.routes.Types.UUID
 import warwick.fileuploads.UploadedFileControllerHelper
 
 import scala.concurrent.{ExecutionContext, Future}
