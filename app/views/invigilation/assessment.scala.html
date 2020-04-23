@@ -31,7 +31,7 @@
       </div>
     </div>
     <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
-      @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, totalAnnouncements, latestStudentActivities, viewAnnouncementsAndQueries = Some(_ => controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessment.id)))
+      @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, totalAnnouncements, latestStudentActivities, viewAllAnnouncementsAndQueries = Some(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessment.id)), viewSingleAnnouncementsAndQueries = Some(sa => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, sa.studentId)))
     </div>
   </div>
 }

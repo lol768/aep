@@ -9,6 +9,6 @@
   @assessmentMetadata(assessment)
 
   <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="@route">
-    @queriesAndStudents(metadata, assessment.platform, userMap, Some(studentsWithQueries), totalQueries, totalAnnouncements, viewAnnouncementsAndQueries = None)
+    @queriesAndStudents(metadata, assessment.platform, userMap, Some(studentsWithQueries), totalQueries, totalAnnouncements, viewAllAnnouncementsAndQueries = Some(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessment.id)), viewSingleAnnouncementsAndQueries = Some(sa => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, sa.studentId)))
   </div>
 }
