@@ -3,7 +3,7 @@ import warwick.Changes
 
 ThisBuild / organization := "uk.ac.warwick"
 ThisBuild / version := "1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "2.13.1"
+ThisBuild / scalaVersion := "2.13.2"
 
 ThisBuild / javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 ThisBuild / scalacOptions ++= Seq(

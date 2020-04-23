@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets
 import akka.actor.ActorSystem
 import com.google.common.io.CharSource
 import javax.inject.{Inject, Named, Singleton}
+import org.jclouds.blobstore.domain.Blob
 import services.healthcheck.EncryptedObjectStorageHealthCheck._
 import uk.ac.warwick.util.service.ServiceHealthcheck.Status
 import uk.ac.warwick.util.service.ServiceHealthcheck.Status._
@@ -20,8 +21,9 @@ import scala.io.Source
 import scala.util.Try
 
 object EncryptedObjectStorageHealthCheck {
-  val objectKey = "healthcheck-test"
-  val contents = "Here is a short sentence that we'll store in the encrypted object storage."
+  val ObjectKey = "healthcheck-test"
+  val ObjectKeyCTR = "healthcheck-test.ctr"
+  val Contents = "Here is a short sentence that we'll store in the encrypted object storage."
 }
 
 @Singleton
@@ -37,47 +39,102 @@ class EncryptedObjectStorageHealthCheck @Inject()(
     Try {
       val startTime = System.currentTimeMillis()
 
-      objectStorageService.fetchBlob(objectKey)
-        .orElse {
-          val byteSource = CharSource.wrap(contents).asByteSource(StandardCharsets.UTF_8)
-          objectStorageService.put(objectKey, byteSource, ObjectStorageService.Metadata(
-            contentLength = byteSource.size(),
-            contentType = "text/plain",
-            fileHash = None
-          ))
+      def fetchOrCreateBlob(objectKey: String): Option[Blob] =
+        objectStorageService.fetchBlob(objectKey)
+          .orElse {
+            val byteSource = CharSource.wrap(Contents).asByteSource(StandardCharsets.UTF_8)
+            objectStorageService.put(objectKey, byteSource, ObjectStorageService.Metadata(
+              contentLength = byteSource.size(),
+              contentType = "text/plain",
+              fileHash = None
+            ))
 
-          objectStorageService.fetchBlob(objectKey)
-        }
+            objectStorageService.fetchBlob(ObjectKey)
+          }
+
+      fetchOrCreateBlob(ObjectKey)
         .map { blob =>
           // Do we have an IV stored in the user metadata?
-          if (!blob.getMetadata.getUserMetadata.containsKey(EncryptedObjectStorageService.metadataIVKey)) {
+          if (!blob.getMetadata.getUserMetadata.containsKey(EncryptedObjectStorageService.MetadataIVKey)) {
             new ServiceHealthcheck(
               name,
               Error,
               now,
-              s"Couldn't find ${EncryptedObjectStorageService.metadataIVKey} in the metadata for object $objectKey - object not encrypted?"
+              s"Couldn't find ${EncryptedObjectStorageService.MetadataIVKey} in the metadata for object $ObjectKey - object not encrypted?"
             )
           } else {
             // Check the decrypted contents match the original
             val actualContents = Source.fromInputStream(blob.getPayload.openStream()).mkString
-            if (actualContents != contents) {
+            if (actualContents != Contents) {
               new ServiceHealthcheck(
                 name,
                 Error,
                 now,
-                s"Encrypted contents $actualContents didn't match expected $contents"
+                s"Encrypted contents $actualContents didn't match expected $Contents"
               )
             } else {
-              val endTime = System.currentTimeMillis()
-              val timeTakenMs = endTime - startTime
+              if (EncryptedObjectStorageService.StreamingTransformation != blob.getMetadata.getUserMetadata.get(EncryptedObjectStorageService.MetadataAlgorithm)) {
+                // Do the same but for the streaming algorithm
+                fetchOrCreateBlob(ObjectKeyCTR)
+                  .map { ctrBlob =>
+                    // Do we have an IV stored in the user metadata?
+                    if (!ctrBlob.getMetadata.getUserMetadata.containsKey(EncryptedObjectStorageService.MetadataIVKey)) {
+                      new ServiceHealthcheck(
+                        name,
+                        Error,
+                        now,
+                        s"Couldn't find ${EncryptedObjectStorageService.MetadataIVKey} in the metadata for object $ObjectKeyCTR - object not encrypted?"
+                      )
+                    } else if (EncryptedObjectStorageService.StreamingTransformation != ctrBlob.getMetadata.getUserMetadata.get(EncryptedObjectStorageService.MetadataAlgorithm)) {
+                      new ServiceHealthcheck(
+                        name,
+                        Error,
+                        now,
+                        s"Couldn't find ${EncryptedObjectStorageService.MetadataAlgorithm} in the metadata for object $ObjectKeyCTR - was ${ctrBlob.getMetadata.getUserMetadata.get(EncryptedObjectStorageService.MetadataAlgorithm)}"
+                      )
+                    } else {
+                      val actualContentsCTR = Source.fromInputStream(ctrBlob.getPayload.openStream()).mkString
+                      if (actualContentsCTR != Contents) {
+                        new ServiceHealthcheck(
+                          name,
+                          Error,
+                          now,
+                          s"Encrypted contents $actualContentsCTR didn't match expected $Contents for $ObjectKeyCTR"
+                        )
+                      } else {
+                        val endTime = System.currentTimeMillis()
+                        val timeTakenMs = endTime - startTime
 
-              new ServiceHealthcheck(
-                name,
-                Okay,
-                now,
-                s"Fetched and decrypted $objectKey in ${timeTakenMs}ms",
-                Seq[ServiceHealthcheck.PerformanceData[_]](new ServiceHealthcheck.PerformanceData("time_taken_ms", timeTakenMs)).asJava
-              )
+                        new ServiceHealthcheck(
+                          name,
+                          Okay,
+                          now,
+                          s"Fetched and decrypted $ObjectKey and $ObjectKeyCTR in ${timeTakenMs}ms",
+                          Seq[ServiceHealthcheck.PerformanceData[_]](new ServiceHealthcheck.PerformanceData("time_taken_ms", timeTakenMs)).asJava
+                        )
+                      }
+                    }
+                  }
+                  .getOrElse {
+                    new ServiceHealthcheck(
+                      name,
+                      Error,
+                      now,
+                      s"Couldn't find object with key $ObjectKey in the object store"
+                    )
+                  }
+              } else {
+                val endTime = System.currentTimeMillis()
+                val timeTakenMs = endTime - startTime
+
+                new ServiceHealthcheck(
+                  name,
+                  Okay,
+                  now,
+                  s"Fetched and decrypted $ObjectKey in ${timeTakenMs}ms",
+                  Seq[ServiceHealthcheck.PerformanceData[_]](new ServiceHealthcheck.PerformanceData("time_taken_ms", timeTakenMs)).asJava
+                )
+              }
             }
           }
         }
@@ -86,10 +143,12 @@ class EncryptedObjectStorageHealthCheck @Inject()(
             name,
             Error,
             now,
-            s"Couldn't find object with key $objectKey in the object store"
+            s"Couldn't find object with key $ObjectKey in the object store"
           )
         }
     }.recover { case t =>
+      logger.error("Error performing encrypted object storage health check", t)
+
       new ServiceHealthcheck(
         name,
         Unknown,
