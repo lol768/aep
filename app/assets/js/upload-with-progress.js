@@ -8,6 +8,14 @@ const STATUS_ERRORS = {
   403: 'The upload failed because it looks like you might have been logged out. Do you want to refresh the page and try again?',
 };
 
+function addEventListenerOnce(element, event, fn) {
+  const func = () => {
+    element.removeEventListener(event, func);
+    fn();
+  };
+  element.addEventListener(event, func);
+}
+
 /**
  * Component which allows for file upload forms to be
  * sent via AJAX XHR, with built-in progress indicator
@@ -89,6 +97,8 @@ export default class UploadWithProgress {
 
       try {
         const submitBtns = formElement.parentElement.querySelectorAll('[type=submit]');
+        const cancelBtns = formElement.parentElement.querySelectorAll('[data-action="cancelUpload"]');
+        let cancelledByUser = false;
         const xhr = new XMLHttpRequest();
         xhr.withCredentials = true;
         // IE 10
@@ -107,7 +117,7 @@ export default class UploadWithProgress {
             submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
             if (xhr.status === 200) {
               this.successCallback(formElement);
-            } else {
+            } else if (!cancelledByUser) {
               this.failureCallback(xhr);
               UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
             }
@@ -125,6 +135,15 @@ export default class UploadWithProgress {
         xhr.setRequestHeader('OnlineExams-Upload', 'true');
         xhr.send(formData);
         submitBtns.forEach((e) => UploadWithProgress.disableButtonWithTitle(e, 'Please wait for the file to be uploaded'));
+        cancelBtns.forEach((e) => e.classList.remove('hide'));
+        cancelBtns.forEach((el) => addEventListenerOnce(el, 'click', () => {
+          // TODO log to server
+          cancelledByUser = true;
+          xhr.abort();
+          submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
+          formElement.querySelector('.upload-info').classList.add('hide');
+          cancelBtns.forEach((e) => e.classList.add('hide'));
+        }));
       } catch (e) {
         // if all else fails, just submit with a normal POST
         formElement.submit();
