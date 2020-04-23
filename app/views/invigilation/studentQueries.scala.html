@@ -1,9 +1,6 @@
-@import domain.{AnnouncementOrQuery, Assessment, SittingMetadata, StudentAssessment, tabula}
 @import domain.messaging.{Message, MessageSender}
 @import domain.{Announcement, Assessment, SittingMetadata, StudentAssessment, tabula}
 @import tags._
-@import warwick.sso.UniversityID
-
 @import warwick.sso.{UniversityID, User, Usercode}
 @(
     assessment: Assessment,
@@ -20,23 +17,23 @@
     <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
     @studentAssessmentInfo(Seq(SittingMetadata(studentAssessment, assessment.asAssessmentMetadata)), assessment.platform, student, viewAnnouncementsAndQueries = Some(s => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, s.studentId)))
     <details>
-        <summary class="h3">Announcements (@announcements.size)</summary>
-        @displayAnnouncements(announcements, invigilators)
-        </details>
-        <details open>
-            <summary class="h3">Queries (@messages.count(_.sender == MessageSender.Student))</summary>
-            @displayMessages(
-                messages = messages,
-                students = student,
-                threaded = false,
-                invigilators = invigilators,
-                latestMessageOnTop = !context.features.twoWayMessages
-            ) { universityID =>
-                @if(context.features.twoWayMessages) {
-                    @views.html.invigilation.messageForm(assessment.id, universityID, student.get(universityID).map(s => s"${s.fullName} (${s.universityID.string})").getOrElse(universityID.string))
-                }
-            }
-        </details>
+      <summary class="h3">Announcements (@announcements.size)</summary>
+      @displayAnnouncements(announcements, invigilators)
+    </details>
+    <details open>
+      <summary class="h3">Queries (@messages.count(_.sender == MessageSender.Student))</summary>
+      @displayMessages(
+        messages = messages,
+        students = student,
+        threaded = false,
+        invigilators = invigilators,
+        latestMessageOnTop = !context.features.twoWayMessages
+      ) { universityID =>
+        @if(context.features.twoWayMessages) {
+          @views.html.invigilation.messageForm(assessment.id, universityID, student.get(universityID).map(s => s"${s.fullName} (${s.universityID.string})").getOrElse(universityID.string))
+        }
+      }
+    </details>
     <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">
       <i class="fas fa-arrow-left"></i>
       Return to invigilation screen

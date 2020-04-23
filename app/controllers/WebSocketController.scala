@@ -104,7 +104,7 @@ class WebSocketController @Inject()(
                 features = features,
                 messages = request2Messages,
                 additionalTopics = (
-
+                  // Things relevant ao ALL student on the assessment e.g. announcements
                   relatedStudentAssessmentIds.map(Topics.allStudentsAssessment) ++
                   // Things relevant to this specific student on each assessment e.g. messages from invigilators
                   relatedStudentAssessmentIds.map(Topics.studentAssessment(user.universityId.get)) ++
