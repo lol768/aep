@@ -15,7 +15,8 @@
   totalAnnouncements: Int = 0,
   latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
   sortByHeader: Option[String] = None,
-  viewAnnouncementsAndQueries: Option[StudentAssessment => Call] = None,
+  viewAllAnnouncementsAndQueries: Option[Call],
+  viewSingleAnnouncementsAndQueries: Option[StudentAssessment => Call],
 )(implicit context: RequestContext)
 
 @if(metadata.nonEmpty) {
@@ -51,7 +52,7 @@
           There are no announcements.
         }
       </p>
-      @viewAnnouncementsAndQueries.map { route =>
+      @viewAllAnnouncementsAndQueries.map { route =>
         <a class="btn btn-default" href="@route">
           View all or make announcements
         </a>
@@ -65,4 +66,4 @@
   <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
 </div>
 
-@studentAssessmentInfo(metadata, platform, userMap, studentsWithQueries, latestActivities, sortByHeader, viewAnnouncementsAndQueries)
+@studentAssessmentInfo(metadata, platform, userMap, studentsWithQueries, latestActivities, sortByHeader, viewSingleAnnouncementsAndQueries)
