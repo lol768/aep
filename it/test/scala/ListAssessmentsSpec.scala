@@ -15,7 +15,7 @@ class ListAssessmentsSpec extends BrowserFeatureSpec {
       Given.i_am_a_student()
       And i_have_an_online_exam_to_sit(student)
       When i_visit_the assessmentsListPage
-      Then the_page_should_contain "This page lists all the assessments you are scheduled to take during April and early May 2020"
+      Then the_page_should_contain "This page lists all the assessments"
       And the_page_should_contain student.name.full.value
 
       screenshot("Assessments list student")
