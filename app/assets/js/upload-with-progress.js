@@ -74,6 +74,7 @@ export default class UploadWithProgress {
    */
   attachFormListeners(element) {
     element.setAttribute('data-attached', true);
+    UploadWithProgress.setDisabledByDefault(element);
     element.addEventListener('submit', (formSubmitEvent) => {
       const formElement = formSubmitEvent.target;
 
@@ -87,6 +88,7 @@ export default class UploadWithProgress {
       formSubmitEvent.preventDefault(); // don't want form to submit the form normally
 
       try {
+        const submitBtn = formElement.querySelector('[type=submit]');
         const xhr = new XMLHttpRequest();
         xhr.withCredentials = true;
         // IE 10
@@ -104,8 +106,10 @@ export default class UploadWithProgress {
             formElement.querySelector('.upload-info').classList.add('hide'); // IE10
             if (xhr.status === 200) {
               this.successCallback(formElement);
+              // don't undisable button, we're about to refresh.
             } else {
               this.failureCallback(xhr);
+              UploadWithProgress.undisableButton(submitBtn);
               UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
             }
           } else if (xhr.readyState === XMLHttpRequest.OPENED) {
@@ -113,6 +117,7 @@ export default class UploadWithProgress {
           }
         });
         xhr.addEventListener('error', () => {
+          UploadWithProgress.undisableButton(submitBtn);
           this.failureCallback(xhr);
           UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
         });
@@ -120,12 +125,36 @@ export default class UploadWithProgress {
         xhr.open('POST', formElement.getAttribute('action'), true);
         xhr.setRequestHeader('OnlineExams-Upload', 'true');
         xhr.send(formData);
+        UploadWithProgress.setDisabledWithTitle(submitBtn, 'Please wait for the file to be uploaded');
       } catch (e) {
         // if all else fails, just submit with a normal POST
         formElement.submit();
       }
       return false;
     });
+  }
+
+  static setDisabledByDefault(targetElement) {
+    const submitBtn = targetElement.querySelector('[type=submit]');
+    this.setDisabledWithTitle(submitBtn);
+    const fileList = targetElement.querySelector('input[type=file]');
+    fileList.addEventListener('change', () => {
+      if (fileList.files.length !== 0) {
+        UploadWithProgress.undisableButton(submitBtn);
+      } else {
+        UploadWithProgress.setDisabledWithTitle(submitBtn);
+      }
+    });
+  }
+
+  static undisableButton(submitBtn) {
+    submitBtn.removeAttribute('disabled');
+    submitBtn.removeAttribute('title');
+  }
+
+  static setDisabledWithTitle(submitBtn, title = 'Please pick at least one file') {
+    submitBtn.setAttribute('disabled', 'disabled');
+    submitBtn.setAttribute('title', title);
   }
 
   /**
