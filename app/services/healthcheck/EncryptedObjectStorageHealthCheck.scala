@@ -120,7 +120,7 @@ class EncryptedObjectStorageHealthCheck @Inject()(
                       name,
                       Error,
                       now,
-                      s"Couldn't find object with key $ObjectKey in the object store"
+                      s"Couldn't find object with key $ObjectKeyCTR in the object store"
                     )
                   }
               } else {
