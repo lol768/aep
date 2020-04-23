@@ -22,7 +22,9 @@ class TriggerSubmissionUploadsJob @Inject()(
   override def run(implicit context: JobExecutionContext, auditLogContext: AuditLogContext): Future[JobResult] = {
     if (configuration.get[Boolean]("tabula.postSubmissions")) {
       logger.info(s"Triggering submission uploads for finished assessments")
+
       case class UploadAssessmentInfo(assessment: AssessmentMetadata, uploadAssessmentJobfailed: Boolean)
+
       assessmentService.getFinishedWithUnsentSubmissions.successMapTo { assessments =>
         logger.info(s"Found ${assessments.length} finished assessments with submissions to send")
         assessments.map { assessmentMetadata =>
