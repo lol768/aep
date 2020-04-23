@@ -24,7 +24,6 @@
     <div class="row">
       <div class="col-md-6">
         @moduleInfo(assessment, department)
-        @downloadSubmissionsPanel(assessment, controllers.invigilation.routes.InvigilatorSubmissionsDownloadController.download(assessment.id))
       </div>
       <div class="col-md-6">
         @moduleBrief(assessment, (a, f) => controllers.invigilation.routes.InvigilatorAssessmentController.getFile(a.id, f.id))
