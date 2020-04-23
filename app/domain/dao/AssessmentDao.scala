@@ -338,9 +338,13 @@ class AssessmentDaoImpl @Inject()(
 
 
   // finds assessments where there in no possibility of further submissions being made
-  // FIXME - doesn't cater for fixed start time assessments (OE-422)
   private def pastLastSubmitTimeQuery: Query[Assessments, StoredAssessment, Seq] = {
-    assessments.table.filter(a => a.startTime < JavaTime.offsetDateTime.minus(Assessment.dayWindow).minus(Assessment.uploadProcessDuration))
+    assessments.table.filter { a =>
+      val lastTime: Rep[Option[OffsetDateTime]] =
+        a.startTime +++ (a.totalTime + Assessment.uploadProcessDuration)
+
+      lastTime < JavaTime.offsetDateTime
+    }
   }
 
   override def getAssessmentsRequiringUpload: DBIO[Seq[StoredAssessment]] = {
