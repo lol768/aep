@@ -1,32 +1,36 @@
 @import domain.Assessment.Platform
 @import domain.Sitting
 @import domain.BaseSitting.ProgressState._
+@import domain.Assessment.DurationStyle
 @import tags._
 
 @import domain.Assessment
 @(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
 @for(
     startTime <- sitting.studentAssessment.startTime;
-    durationInfo <- sitting.durationInfo
+    durationInfo <- sitting.durationInfo;
+    timingInfo <- sitting.timingInfo
     if sitting.assessment.platform.contains(Platform.OnlineExams)
 ) {
     <div class="timeline" data-id="@sitting.assessment.id">
-        <div class="block turqoise @if(sitting.getProgressState.contains(AssessmentOpenNotStarted)) { active } else {}" data-state="@AssessmentOpenNotStarted.entryName">
-            <div class="left">
-                <div class="bubble"><i class="fal fa-2x fa-clock"></i></div>
-                <div class="stick"></div>
+        @if(sitting.assessment.durationStyle == DurationStyle.DayWindow) {
+            <div class="block turqoise @if(sitting.getProgressState.contains(AssessmentOpenNotStarted)) { active } else {}" data-state="@AssessmentOpenNotStarted.entryName">
+                <div class="left">
+                    <div class="bubble"><i class="fal fa-2x fa-clock"></i></div>
+                    <div class="stick"></div>
+                </div>
+                <div class="middle">
+                    <div class="peg"></div>
+                </div>
+                <div class="right">
+                    <h1>@bareLocalisedDateTime(sitting.assessment.startTime.get) Assessment opened</h1>
+                    @sitting.assessment.lastAllowedStartTime.map { end =>
+                        <p>
+                            The assessment can be started any time between @bareLocalisedDateTime(sitting.assessment.startTime.get) and @bareLocalisedDateTime(end, includeFullStop = true)</p>
+                    }
+                </div>
             </div>
-            <div class="middle">
-                <div class="peg"></div>
-            </div>
-            <div class="right">
-                <h1>@bareLocalisedDateTime(sitting.assessment.startTime.get) Assessment opened</h1>
-                @sitting.assessment.lastAllowedStartTime.map { end =>
-                    <p>
-                        The assessment can be started any time between @bareLocalisedDateTime(sitting.assessment.startTime.get) and @bareLocalisedDateTime(end, includeFullStop = true)</p>
-                }
-            </div>
-        </div>
+        }
         <div class="block green @if(sitting.getProgressState.contains(InProgress)) { active } else {}" data-state="@InProgress.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-2x fa-stopwatch"></i></div>
@@ -36,9 +40,16 @@
                 <div class="peg"></div>
             </div>
             <div class="right">
-                <h1>@bareLocalisedDateTime(startTime) You started the assessment</h1>
+                <h1>
+                    @bareLocalisedDateTime(timingInfo.startTime)
+                    @if(sitting.assessment.durationStyle == DurationStyle.DayWindow) {
+                        You started the assessment
+                    } else {
+                        The assessment started
+                    }
+                </h1>
                 <p>
-                This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus @Assessment.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(startTime.plus(durationInfo.durationWithExtraAdjustment), includeFullStop = true)</p>
+                This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus @Assessment.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(timingInfo.uploadGraceStart, includeFullStop = true)</p>
                 <p>Please plan your time accordingly.</p>
                 @if(durationInfo.durationWithExtraAdjustment.toHours==3) {
                     <div class="duration-3-spacer"></div>
@@ -54,8 +65,8 @@
                 <div class="peg"></div>
             </div>
             <div class="right">
-                <h1 class="mb-1">@bareLocalisedDateTime(startTime.plus(durationInfo.durationWithExtraAdjustment))
-                    You have @Assessment.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(startTime.plus(durationInfo.onTimeDuration)) to upload your answers</h1>
+                <h1 class="mb-1">@bareLocalisedDateTime(timingInfo.uploadGraceStart)
+                    You have @Assessment.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(timingInfo.onTimeEnd) to upload your answers</h1>
             </div>
         </div>
         <div class="block pink @if(sitting.getProgressState.contains(Late)) { active } else {}" data-state="@Late.entryName">
@@ -67,7 +78,7 @@
                 <div class="peg"></div>
             </div>
             <div class="right">
-                <h1>@bareLocalisedDateTime(startTime.plus(durationInfo.onTimeDuration))
+                <h1>@bareLocalisedDateTime(timingInfo.onTimeEnd)
                     Your assessment is now late</h1>
                 <p>
                 You can still upload your answers but you may be subject to late penalties, unless you have reasonable adjustments.</p>
@@ -82,7 +93,7 @@
                 <div class="peg"></div>
             </div>
             <div class="right">
-                <h1>@bareLocalisedDateTime(startTime.plus(durationInfo.lateDuration)) You can't upload answers at all after this point</h1>
+                <h1>@bareLocalisedDateTime(timingInfo.lateEnd) You can't upload answers at all after this point</h1>
             </div>
         </div>
     </div>

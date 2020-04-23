@@ -1,17 +1,19 @@
-@import domain.Assessment
-@import system.routes.Types.Usercode
-@import domain.AssessmentClientNetworkActivity
-@import warwick.core.helpers.JavaTime
 @import java.time.OffsetDateTime
-@import java.time.format.DateTimeFormatter
-@import java.time.format.FormatStyle
+@import java.time.format.{DateTimeFormatter, FormatStyle}
+
+@import domain.{Assessment, AssessmentClientNetworkActivity}
+@import warwick.core.helpers.JavaTime
+@import warwick.sso.Usercode
+@import tags._
+
 @(
-        assessment: Assessment,
-        invigilators: Seq[(Usercode, String)],
-        invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
+  assessment: Assessment,
+  invigilators: Seq[(Usercode, String)],
+  invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
+  refreshUri: Call,
 )(implicit request: RequestHeader, context: RequestContext)
 
-<div class="invigilator-list" data-uri="@controllers.invigilation.routes.InvigilatorAssessmentController.invigilatorsAjax(assessment.id)">
+<div class="invigilator-list" data-uri="@refreshUri">
   <p class="hide loading"><i class="far fa-spinner-third fa-spin" aria-hidden="true"></i> Refreshing&hellip;</p>
   <ul>
   @invigilators.map{ case (usercode, username) =>
@@ -23,7 +25,7 @@
           <span class="text-muted">(@usercode.string)</span>
 
           <ul>
-            <li>Last seen online @JavaTime.Relative(latestActivity.timestamp)</li>
+            <li>Last seen online @localisedDatetime(latestActivity.timestamp)</li>
           </ul>
         }
       } else {

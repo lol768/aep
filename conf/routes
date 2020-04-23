@@ -60,8 +60,13 @@ POST        /admin/assessments/:id                                @controllers.a
 GET         /admin/assessments/:id/delete                         @controllers.admin.AdminAssessmentsController.deleteForm(id: UUID)
 POST        /admin/assessments/:id/delete                         @controllers.admin.AdminAssessmentsController.delete(id: UUID)
 GET         /admin/assessments/:id/view                           @controllers.admin.AdminAssessmentsController.view(id: UUID)
+GET         /admin/assessments/:id/invigilators                   @controllers.admin.AdminAssessmentsController.invigilatorsAjax(id: UUID)
+GET         /admin/assessments/:id/submissions.zip                @controllers.admin.AdminSubmissionsDownloadController.download(id: UUID)
 GET         /admin/assessments/:id/student-preview                @controllers.admin.AdminAssessmentsController.studentPreview(id: UUID)
 POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AdminAssessmentsController.generateAssignments(id: UUID)
+GET         /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.assignmentSubmissions()
+POST        /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.generateAssignmentSubmissions()
+
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /admin/assessments/:assessmentId/files/:fileId        @controllers.admin.AdminAssessmentsController.getFile(assessmentId: UUID, fileId: UUID)
@@ -92,7 +97,6 @@ GET         /invigilation/assessment/:id/student/:uniid/queries   @controllers.i
 GET         /invigilation/assessment/:id/queries                  @controllers.invigilation.AnnouncementAndQueriesController.viewAll(id: UUID)
 POST        /invigilation/assessment/:id/announcement/add         @controllers.invigilation.AnnouncementAndQueriesController.addAnnouncement(id: UUID)
 POST        /invigilation/assessment/:id/student/:uniid           @controllers.invigilation.AnnouncementAndQueriesController.addMessage(id: UUID, uniid: UniversityID)
-GET         /invigilation/assessment/:id/submissions.zip          @controllers.invigilation.AssessmentSubmissionsDownloadController.download(id: UUID)
 
 ## Sysadmins ##
 
@@ -120,6 +124,11 @@ GET         /sysadmin/student-activity              @controllers.sysadmin.ViewSt
 GET         /sysadmin/student-activity/filter       @controllers.sysadmin.ViewStudentActivityController.filter(page: Int ?= 0)
 GET         /sysadmin/tabula-assessment-imports     @controllers.sysadmin.TabulaAssessmentsImportsController.showForm
 POST        /sysadmin/tabula-assessment-imports     @controllers.sysadmin.TabulaAssessmentsImportsController.toggleTriggerState
+GET         /sysadmin/object-storage                @controllers.sysadmin.ObjectStorageDownloadController.form()
+POST        /sysadmin/object-storage                @controllers.sysadmin.ObjectStorageDownloadController.results()
+# https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
++nocsp
+GET         /sysadmin/object-storage/:id            @controllers.sysadmin.ObjectStorageDownloadController.downloadFile(id: UUID)
 
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()
@@ -130,6 +139,9 @@ GET         /sysadmin/test/:id/download             @controllers.sysadmin.Sysadm
 
 +nocsrf
 POST        /api/errors/js                          @controllers.api.ErrorsController.js
++nocsrf
+POST        /api/log-upload-attempt                 @controllers.api.UploadAttemptController.log
+
 
 ## Fallbacks ##
 

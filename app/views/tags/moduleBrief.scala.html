@@ -1,46 +1,49 @@
 @import domain.Assessment
 @import tags._
+@import warwick.fileuploads.UploadedFile
 
 @(
-    assessment: Assessment,
+  assessment: Assessment,
+  downloadFile: (Assessment, UploadedFile) => Call,
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
 <dl class="panel panel-default">
-    <div class="panel-body">
-        <dt>Brief</dt>
-        @assessment.brief.text.map { text =>
-            <dd>@formattedBriefText(text)</dd>
-        }
+  <div class="panel-body">
+    <dt>Brief</dt>
+    @assessment.brief.text.map { text =>
+      <dd>@formattedBriefText(text)</dd>
+    }
 
-        @if(assessment.platform.exists(_.requiresUrl)) {
-            <dt>URLs</dt>
-            <dd>
-                @if(assessment.platform.count(_.requiresUrl) > 1) {
-                    <ul>
-                        @assessment.platform.filter(_.requiresUrl).toSeq.map { platform =>
-                            <li>@platform.label: @assessment.brief.urls(platform)</li>
-                        }
-                    </ul>
-                } else {
-                    @assessment.platform.find(_.requiresUrl).map { platform =>
-                        @platform.label: @assessment.brief.urls(platform)
-                    }
-                }
-            </dd>
+    @if(assessment.platform.exists(_.requiresUrl)) {
+      <dt>URLs</dt>
+      <dd>
+      @if(assessment.platform.count(_.requiresUrl) > 1) {
+        <ul>
+          @assessment.platform.filter(_.requiresUrl).toSeq.map { platform =>
+            <li>@platform.label: @assessment.brief.urls(platform)</li>
+          }
+        </ul>
+      } else {
+        @assessment.platform.find(_.requiresUrl).map { platform =>
+          @platform.label: @assessment.brief.urls(platform)
         }
+      }
+      </dd>
+    }
 
-        @if(assessment.brief.files.nonEmpty) {
-            <dt>Attached files</dt>
-            <dd>
-                <ul>
-                @assessment.brief.files.map { file =>
-                    <li>
-                        <a href="@controllers.invigilation.routes.InvigilatorAssessmentController.getFile(assessment.id, file.id)" target="_blank" rel="noreferrer">
-                            <i class="fad fa-file fa-fw"></i>@file.fileName
-                        </a>
-                    </li>
-                }
-                </ul>
-            </dd>
-        }
-    </div>
+    @if(assessment.brief.files.nonEmpty) {
+      <dt>Attached files</dt>
+      <dd>
+        <ul>
+          @assessment.brief.files.map { file =>
+            <li>
+              <a href="@downloadFile(assessment, file)" target="_blank" rel="noreferrer">
+                <i class="fad fa-file fa-fw"></i>@file.fileName
+              </a>
+            </li>
+          }
+        </ul>
+      </dd>
+    }
+  </div>
 </dl>

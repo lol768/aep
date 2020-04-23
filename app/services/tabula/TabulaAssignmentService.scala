@@ -1,15 +1,13 @@
 package services.tabula
 
-import java.time.OffsetDateTime
-
 import com.google.inject.ImplementedBy
 import domain.Assessment
 import domain.dao.TabulaAssignmentTables.StoredTabulaAssignment
 import domain.dao.{DaoRunner, TabulaAssignmentDao}
 import domain.tabula.TabulaAssignment
 import javax.inject.{Inject, Singleton}
-import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.AuditLogContext
 import warwick.core.timing.TimingContext
 

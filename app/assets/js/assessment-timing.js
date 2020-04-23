@@ -20,6 +20,7 @@ import JDDT from './jddt';
  * @property {boolean} showTimeRemaining - should the time remaining be displayed
  * @property {string} progressState - the ProgressState value
  * @property {string} submissionState - the SubmissionState value
+ * @property {string} durationStyle - the DurationStyle value
  */
 
 /**
@@ -108,6 +109,7 @@ export function calculateTimingInfo(data, now) {
     showTimeRemaining,
     progressState,
     submissionState,
+    durationStyle,
   } = data;
 
   const hasWindowPassed = now > windowEnd;
@@ -150,20 +152,39 @@ export function calculateTimingInfo(data, now) {
         warning = true;
       }
     }
-  } else if (timeUntilStart > 0) {
-    text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
-    warning = true;
-    hourglassSpins = true;
-  } else if (timeUntilEndOfWindow > 0) {
-    text = `This assessment opened at ${new JDDT(windowStart).localString(false)}, and closes ${new JDDT(windowEnd).localString(true)}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
-    if (timeUntilLastRecommendedStart > 0) {
-      text += ` To give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
-    }
-    hourglassSpins = true;
-    warning = true;
   } else {
-    text = 'The assessment window has now passed.';
-    warning = true;
+    switch (durationStyle) {
+      case 'FixedStart':
+        if (timeUntilStart > 0) {
+          text = `This assessment will start at ${new JDDT(windowStart).localString(false)}, in ${msToHumanReadable(timeUntilStart)}.`;
+          warning = true;
+          hourglassSpins = true;
+        } else if (timeUntilEndOfWindow > 0) {
+          text = `This assessment began at ${new JDDT(windowStart).localString(false)}. Start now.`;
+          hourglassSpins = true;
+          warning = true;
+        } else {
+          text = 'The assessment has ended.';
+          warning = true;
+        }
+        break;
+      default:
+        if (timeUntilStart > 0) {
+          text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
+          warning = true;
+          hourglassSpins = true;
+        } else if (timeUntilEndOfWindow > 0) {
+          text = `This assessment opened at ${new JDDT(windowStart).localString(false)}, and closes ${new JDDT(windowEnd).localString(true)}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
+          if (timeUntilLastRecommendedStart > 0) {
+            text += ` To give yourself the full time available, you should start in the next ${msToHumanReadable(timeUntilLastRecommendedStart)}.`;
+          }
+          hourglassSpins = true;
+          warning = true;
+        } else {
+          text = 'The assessment window has now passed.';
+          warning = true;
+        }
+    }
   }
 
   return {

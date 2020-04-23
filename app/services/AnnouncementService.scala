@@ -13,12 +13,11 @@ import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.{AnnouncementDao, DaoRunner}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
-import system.routes.Types.UniversityID
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
-import warwick.sso.UserLookupService
+import warwick.sso.{UniversityID, UserLookupService}
 
 import scala.concurrent.{ExecutionContext, Future}
 

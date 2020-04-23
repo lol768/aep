@@ -7,13 +7,13 @@ import akka.actor._
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck, Unsubscribe}
 import com.google.inject.assistedinject.Assisted
 import domain.messaging.MessageSender
-import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
+import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata, UploadAttempt}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
 import play.api.i18n.Messages
 import play.api.libs.json._
 import play.twirl.api.Html
-import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService, UploadAttemptService}
 import system.Features
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -33,11 +33,14 @@ object WebSocketActor {
     studentAssessmentService: StudentAssessmentService,
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
     announcementService: AnnouncementService,
+    uploadAttemptService: UploadAttemptService,
     features: Features,
     messages: Messages,
     additionalTopics: Set[String],
-  )(implicit ec: ExecutionContext, t: TimingContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, features, messages, additionalTopics))
+  )(implicit ec: ExecutionContext, ac: AuditLogContext): Props =
+    Props(new WebSocketActor(out, pubsub, loginContext, ac.ipAddress, ac.userAgent, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, uploadAttemptService, features, messages, additionalTopics))
+
+  import UploadAttempt._
 
   case class AssessmentAnnouncement(id: String, assessmentId: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
@@ -96,9 +99,12 @@ class WebSocketActor @Inject() (
   out: ActorRef,
   pubsub: ActorRef,
   loginContext: LoginContext,
+  ipAddress: Option[String],
+  userAgent: Option[String],
   @Assisted studentAssessmentService: StudentAssessmentService,
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   @Assisted announcementService: AnnouncementService,
+  @Assisted uploadAttemptService: UploadAttemptService,
   @Assisted features: Features,
   @Assisted messages: Messages,
   additionalTopics: Set[String],
@@ -111,7 +117,13 @@ class WebSocketActor @Inject() (
   lazy val currentUsercode: Usercode = loginContext.user.get.usercode
   lazy val currentUniversityID: UniversityID = loginContext.user.flatMap(_.universityId).get
 
-  implicit val noTiming: TimingContext = TimingContext.none
+  // Keep this as a def to get a new timingData every time, so it doesn't grow forever
+  implicit def auditLogContext: AuditLogContext = AuditLogContext(
+    usercode = Some(currentUsercode),
+    ipAddress = ipAddress,
+    userAgent = userAgent,
+    timingData = new TimingContext.Data()
+  )
 
   pubsubSubscribe()
 
@@ -179,7 +191,7 @@ class WebSocketActor @Inject() (
             )
 
           if (networkInformation.studentAssessmentId.nonEmpty || networkInformation.assessmentId.nonEmpty) {
-            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)(AuditLogContext.empty())
+            assessmentClientNetworkActivityService.record(assessmentClientNetworkActivity)
               .recover {
                 case e: Exception =>
                   log.error(e, s"Error storing AssessmentClientNetworkActivity for ${if(networkInformation.studentAssessmentId.nonEmpty) s"StudentAssessment ${assessmentClientNetworkActivity.studentAssessmentId}" else s"Assessment ${assessmentClientNetworkActivity.assessmentId}"}")
@@ -190,6 +202,11 @@ class WebSocketActor @Inject() (
             "type" -> "UpdateConnectivityIndicator",
             "signalStrength" -> assessmentClientNetworkActivity.signalStrength
           )
+
+        case m if m.`type` == UploadAttempt.websocketType =>
+          val data = m.data.get.as[UploadAttempt](UploadAttempt.readsEnclosing)
+          data.source = "WebSocket"
+          uploadAttemptService.logAttempt(data)
 
         case m if m.`type` == RequestAssessmentTiming.`type` =>
           val universityID: UniversityID = currentUniversityID

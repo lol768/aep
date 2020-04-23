@@ -1,6 +1,9 @@
+@import domain.{AnnouncementOrQuery, Assessment, SittingMetadata, StudentAssessment, tabula}
 @import domain.messaging.{Message, MessageSender}
 @import domain.{Announcement, Assessment, SittingMetadata, StudentAssessment, tabula}
 @import tags._
+@import warwick.sso.UniversityID
+
 @import warwick.sso.{UniversityID, User, Usercode}
 @(
     assessment: Assessment,
@@ -11,12 +14,14 @@
     invigilators: Map[Usercode, User],
     department: Option[tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout("Queries from " + student.get(studentAssessment.studentId).map(_.fullName).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode) {
-    <div class="id7-main-content">
-        @studentAssessmentInfo(Seq(SittingMetadata(studentAssessment, assessment.asAssessmentMetadata)), assessment.platform, student)
-        <details>
-            <summary class="h3">Announcements (@announcements.size)</summary>
-            @displayAnnouncements(announcements, invigilators)
+
+@adminLayout("Queries from " + student.get(studentAssessment.studentId).map(_.fullName).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode, extraClasses = Seq("connect-ws")) {
+  <div class="id7-main-content">
+    <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
+    @studentAssessmentInfo(Seq(SittingMetadata(studentAssessment, assessment.asAssessmentMetadata)), assessment.platform, student, viewAnnouncementsAndQueries = Some(s => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, s.studentId)))
+    <details>
+        <summary class="h3">Announcements (@announcements.size)</summary>
+        @displayAnnouncements(announcements, invigilators)
         </details>
         <details open>
             <summary class="h3">Queries (@messages.count(_.sender == MessageSender.Student))</summary>
@@ -32,9 +37,9 @@
                 }
             }
         </details>
-        <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">
-            <i class="fas fa-arrow-left"></i>
-            Return to invigilation screen
-        </a>
-    </div>
+    <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">
+      <i class="fas fa-arrow-left"></i>
+      Return to invigilation screen
+    </a>
+  </div>
 }

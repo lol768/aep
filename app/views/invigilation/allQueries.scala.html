@@ -12,8 +12,10 @@
   form: Form[String],
   invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-@adminLayout("Announcements and queries for " + assessment.moduleCode, extraClasses = Seq("allAnnouncementsAndQueries")) {
+@adminLayout("Announcements and queries for " + assessment.moduleCode, extraClasses = Seq("connect-ws", "allAnnouncementsAndQueries")) {
   <div class="id7-main-content">
+    <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
+
     <details open>
       <summary class="h3">Announcements (@announcements.size)</summary>
       @displayAnnouncements(announcements, invigilators)

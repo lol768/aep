@@ -65,6 +65,7 @@ class WebSocketController @Inject()(
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   assessmentService: AssessmentService,
   announcementService: AnnouncementService,
+  uploadAttemptService: UploadAttemptService,
   features: Features,
 )(implicit
   mat: Materializer,
@@ -99,16 +100,17 @@ class WebSocketController @Inject()(
                 studentAssessmentService = studentAssessmentService,
                 assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
                 announcementService = announcementService,
+                uploadAttemptService = uploadAttemptService,
                 features = features,
                 messages = request2Messages,
                 additionalTopics = (
-                  // Things relevant ao ALL student on the assessment e.g. announcements
+
                   relatedStudentAssessmentIds.map(Topics.allStudentsAssessment) ++
                   // Things relevant to this specific student on each assessment e.g. messages from invigilators
                   relatedStudentAssessmentIds.map(Topics.studentAssessment(user.universityId.get)) ++
                   // Things relevant to all invigilators e.g. announcements and messages
                   relatedInvigilatorAssessmentIds.map(Topics.allInvigilatorsAssessment)
-                ).toSet
+                  ).toSet
               ))
             }.map(Right.apply)
           case None =>

@@ -1,5 +1,6 @@
 @import domain.Assessment
 @import views.html.tags._
+@import Assessment.DurationStyle._
 
 @(assessment: Assessment)(implicit context: RequestContext)
 
@@ -11,7 +12,12 @@
 
 @assessment.assessmentType.map { at =>
     <dt>Type</dt>
-    <dd>@at.studentFriendlyLabel</dd>
+    <dd>
+        @at.studentFriendlyLabel
+        @if(assessment.durationStyle == FixedStart) {
+            (fixed-time)
+        }
+    </dd>
 }
 
 @assessment.brief.text.map { description =>
@@ -27,5 +33,20 @@
     <dt>Duration</dt>
     <dd>
         <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@durationWords(assessment)
+
+        @if(!assessment.hasLastAllowedStartTimePassed()) {
+            @assessment.durationStyle match {
+                case DayWindow => {
+                    <div>
+                        <i class="fad fa-fw fa-calendar-day" aria-hidden="true"></i> Complete anytime within the 24 hours
+                    </div>
+                }
+                case FixedStart => {
+                    <div class="text-danger">
+                        <i class="fad fa-fw fa-watch" aria-hidden="true"></i> This is a fixed time assessment. It does not run in a 24 hour window, so you must begin at the start time.
+                    </div>
+                }
+            }
+        }
     </dd>
 }

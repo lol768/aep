@@ -3,7 +3,7 @@ package domain
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
-import domain.Assessment.{AssessmentType, Brief, Platform}
+import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform}
 import domain.BaseSitting.ProgressState._
 import domain.BaseSitting.SubmissionState
 import org.scalatestplus.mockito.MockitoSugar
@@ -33,6 +33,7 @@ class SittingTest extends PlaySpec with MockitoSugar {
       duration = assessmentDuration,
       platform = Set(Platform.OnlineExams),
       assessmentType = Some(AssessmentType.Bespoke),
+      durationStyle = DurationStyle.DayWindow,
       state = Assessment.State.Approved,
       tabulaAssessmentId = Some(UUID.randomUUID()),
       tabulaAssignments = Set.empty,
@@ -54,7 +55,8 @@ class SittingTest extends PlaySpec with MockitoSugar {
       startTime = studentStart,
       extraTimeAdjustment = None,
       explicitFinaliseTime = None,
-      uploadedFiles = uploadedFiles
+      uploadedFiles = uploadedFiles,
+      tabulaSubmissionId = None
     )
 
     val declarations: Declarations = Declarations(studentAssessment.id)

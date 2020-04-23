@@ -10,12 +10,13 @@ import domain.Assessment.State
 import domain.AuditEvent.{Operation, Target}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao._
-import domain.{Assessment, UploadedFileOwner}
+import domain.{Assessment, AssessmentMetadata, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import services.AssessmentService._
 import slick.dbio.DBIO
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
@@ -39,6 +40,8 @@ trait AssessmentService {
   def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
   def getLast48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
+  def getFinishedWithUnsentSubmissions(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
 
   def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
@@ -109,6 +112,12 @@ class AssessmentServiceImpl @Inject()(
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
 
+  def getFinishedWithUnsentSubmissions(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] = {
+    daoRunner.run(dao.getAssessmentsRequiringUpload)
+      .map(_.map(_.asAssessmentMetadata))
+      .map(ServiceResults.success)
+  }
+
   // Returns all assessments where the start time has passed, and the latest possible finish time for any student is yet to come
   override def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
     getLast48HrsAssessments.flatMap { result =>
@@ -178,6 +187,7 @@ class AssessmentServiceImpl @Inject()(
           duration = assessment.duration,
           platform = assessment.platform,
           assessmentType = assessment.assessmentType,
+          durationStyle = assessment.durationStyle,
           storedBrief = StoredBrief(
             text = assessment.brief.text,
             fileIds = fileIds,
@@ -221,6 +231,7 @@ class AssessmentServiceImpl @Inject()(
           duration = assessment.duration,
           platform = assessment.platform,
           assessmentType = assessment.assessmentType,
+          durationStyle = assessment.durationStyle,
           storedBrief = StoredBrief(
             text = assessment.brief.text,
             fileIds = fileIds,
@@ -256,6 +267,7 @@ class AssessmentServiceImpl @Inject()(
               title = assessment.title,
               startTime = assessment.startTime,
               duration = assessment.duration,
+              durationStyle = assessment.durationStyle,
               platform = assessment.platform,
               assessmentType = assessment.assessmentType,
               storedBrief = assessment.brief.toStoredBrief,
@@ -281,6 +293,7 @@ class AssessmentServiceImpl @Inject()(
             duration = assessment.duration,
             platform = assessment.platform,
             assessmentType = assessment.assessmentType,
+            durationStyle = assessment.durationStyle,
             storedBrief = assessment.brief.toStoredBrief,
             invigilators = sortedInvigilators(assessment),
             state = assessment.state,
@@ -294,10 +307,8 @@ class AssessmentServiceImpl @Inject()(
             version = timestamp
           )))
         }.flatMap { result =>
-          uploadedFileService.get(result.storedBrief.fileIds).map { files =>
-            ServiceResults.success(result.asAssessment(files.map(f => f.id -> f).toMap))
-          }.recoverWith {
-            case e: Exception => Future.successful(ServiceResults.error(e.getMessage))
+          uploadedFileService.get(result.storedBrief.fileIds).successMapTo { files =>
+            result.asAssessment(files.map(f => f.id -> f).toMap)
           }
         }
       }

@@ -1,0 +1,22 @@
+@import domain.Assessment
+@import domain.Assessment.Platform
+@import warwick.core.helpers.JavaTime
+@import tags._
+
+@(
+  assessment: Assessment,
+  downloadUri: Call,
+)(implicit request: RequestHeader, context: RequestContext)
+
+@if(assessment.platform.contains(Platform.OnlineExams)) {
+  <div class="panel panel-default">
+    <div class="panel-body">
+      @if(assessment.isDownloadAvailable) {
+        <a href="@downloadUri" class="btn btn-default"><i class="fad themed-duotone fa-folder-download"></i> Download submissions</a>
+      } else {
+        <button type="button" class="btn btn-default disabled"><i class="fad themed-duotone fa-folder-download"></i> Download submissions</button>
+        @assessment.lastAllowedStartTime.map(_.plus(Assessment.uploadProcessDuration)).map { t => <div class="text-muted">Available at @localisedDatetime(t)</div> }
+      }
+    </div>
+  </div>
+}
