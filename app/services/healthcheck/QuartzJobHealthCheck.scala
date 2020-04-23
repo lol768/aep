@@ -19,12 +19,13 @@ class QuartzJobHealthCheck(jobKey: JobKeys.ByName)
   @Inject private var scheduler: Scheduler = _
 
   override def run(): Unit = {
+    val errorMessage = Option(scheduler.getJobDetail(jobKey.key)).map(_.getJobDataMap.getString(JobResult.FailedJobErrorDetailsKeyName)).getOrElse("")
     val serviceHealthCheck = Option(scheduler.getJobDetail(jobKey.key)).map(_.getJobDataMap.getBoolean(JobResult.FailedJobKeyName)) match {
       case Some(true) => new ServiceHealthcheck(
         jobKey.healthCheckJobName,
         ServiceHealthcheck.Status.Error,
         now,
-        s"${jobKey.healthCheckJobName} job has failed"
+        s"${jobKey.healthCheckJobName} job has failed $errorMessage"
       )
       case Some(false) => new ServiceHealthcheck(
         jobKey.healthCheckJobName,
@@ -44,7 +45,7 @@ class QuartzJobHealthCheck(jobKey: JobKeys.ByName)
 
   // Called by HealthChecksStartup (Guice has no PostConstruct support)
   def init(): Unit = {
-    actorSystem.scheduler.scheduleAtFixedRate(0.seconds, interval = 30.minutes)(() => {
+    actorSystem.scheduler.scheduleAtFixedRate(0.seconds, interval = 5.minutes)(() => {
       try run()
       catch {
         case e: Throwable =>

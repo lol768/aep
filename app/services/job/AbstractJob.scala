@@ -40,7 +40,10 @@ abstract class AbstractJob(scheduler: Scheduler) extends Job with Logging {
     try {
       if (doLog) logger.info(s"Starting job: $description")
       val result = Await.result(run(context, audit), timeout)
-      if (doFailureTracking) context.getJobDetail.getJobDataMap.put(JobResult.FailedJobKeyName, false)
+      if (doFailureTracking) {
+        context.getJobDetail.getJobDataMap.put(JobResult.FailedJobKeyName, false)
+        context.getJobDetail.getJobDataMap.put(JobResult.FailedJobErrorDetailsKeyName, "")
+      }
       if (doLog) logger.info(s"Completed job: $description with result: $result")
     } catch {
       // We log errors regardless of doLog
@@ -56,11 +59,15 @@ abstract class AbstractJob(scheduler: Scheduler) extends Job with Logging {
           jobDetail.getJobDataMap.put(JobResult.FailedJobKeyName, true)
           jobDetail.getJobDataMap.put(JobResult.FailedJobErrorDetailsKeyName, e.getMessage)
           if (!jobDetail.isDurable || Option(context.getNextFireTime).isEmpty) {
-            context.getScheduler.addJob(
-              jobDetail.getJobBuilder.withIdentity(JobKeys.toErrorJobKey(jobDetail.getKey)).build(),
-              false,
-              true
-            )
+            val errorKey = JobKeys.toErrorJobKey(jobDetail.getKey)
+            // avoids ObjectAlreadyExistsException thrown when trying to save the error again with the same error key
+            if (!scheduler.checkExists(errorKey)) {
+              context.getScheduler.addJob(
+                jobDetail.getJobBuilder.withIdentity(errorKey).build(),
+                false,
+                true
+              )
+            }
           }
         }
         throw new JobExecutionException(e)
