@@ -28,9 +28,21 @@
         messages = messages,
         students = student,
         threaded = false,
-        maybeForm = Some(form),
-        submitCall = Some(u => controllers.routes.MessageController.submitForm(assessment.id)),
         invigilators = Map.empty
-    )
+    ) { u =>
+        <div class="panel-footer">
+            @b3.vertical.formCSRF(controllers.routes.MessageController.submitForm(assessment.id)) { implicit fc =>
+                @b3.textarea(
+                    form("messageText"),
+                    Symbol("_label") -> "Log an issue with the invigilation team",
+                    Symbol("_showConstraints") -> true
+                )
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Log issue
+                </button>
+            }
+        </div>
+    }
 
 }

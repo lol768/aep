@@ -1,62 +1,14 @@
 @import domain.messaging.Message
 @import domain.tabula
 @import tags._
-@import warwick.sso.UniversityID
-@import controllers.MessageController.MessageData
-@import domain.messaging.MessageSender
-@import warwick.sso.Usercode
-@import warwick.sso.User
-@import services.messaging.MessageService
+@import warwick.sso.{UniversityID, User, Usercode}
 @(
   messages: Seq[Message],
   students: Map[UniversityID, tabula.SitsProfile],
   threaded: Boolean,
   invigilators: Map[Usercode, User],
-  maybeForm: Option[Form[MessageData]],
-  submitCall: Option[Function1[UniversityID, Call]]
-)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
-
-@singleThread(student: UniversityID, threadMessages: Seq[Message]) = {
-  <div class="panel-body" data-student-id="@student.string">
-      @threadMessages.map { message =>
-        <div class="message message-@message.sender.entryName.toLowerCase">
-          <div class="message-date">@localisedDatetime(message.created, inline = true)</div>
-          <div class="message-author">
-          @message.sender match {
-            case MessageSender.Student => {
-              @students.get(message.student).map { u =>
-                @u.fullName (@message.student.string)
-              }.getOrElse(message.student.string)
-            }
-            case MessageSender.Invigilator => {
-              @message.staffId.map { staffId =>
-                @invigilators.get(staffId).map { u =>
-                  @u.name.full.getOrElse(MessageService.InvigilationSender)
-                }.getOrElse(MessageService.InvigilationSender)
-              }.getOrElse(MessageService.InvigilationSender)
-            }
-          }
-          </div>
-          <div class="message-text">@message.html</div>
-        </div>
-      }
-    </div>
-    @maybeForm.map { form =>
-      <div class="panel-footer">
-        @b3.vertical.formCSRF(submitCall.get(student)) { implicit fc =>
-          @b3.textarea(
-            form("messageText"),
-            Symbol("_label") -> "Log an issue with the invigilation team",
-            Symbol("_showConstraints") -> true
-          )
-
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-paper-plane"></i> Log issue
-          </button>
-        }
-      </div>
-    }
-}
+  latestMessageOnTop: Boolean = true,
+)(form: UniversityID => Html)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 <div class="message-threads">
   @if(threaded) {
@@ -70,7 +22,7 @@
               ).getOrElse(groupedMessages(universityID).head.student.string)
             ) { studentName =>
               @messageThread(universityID, studentName, groupedMessages(universityID).head.created) {
-                @singleThread(universityID, groupedMessages(universityID))
+                @messageThreadSingle(universityID, groupedMessages(universityID), students, invigilators, latestMessageOnTop, form)
               }
             }
           }
@@ -79,7 +31,7 @@
     </div>
   } else {
     <div class="panel">
-      @singleThread(students.keys.head, messages)
+      @messageThreadSingle(students.keys.head, messages, students, invigilators, latestMessageOnTop, form)
     </div>
   }
 </div>

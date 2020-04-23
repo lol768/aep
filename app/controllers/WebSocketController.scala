@@ -15,6 +15,7 @@ import play.api.libs.json.JsValue
 import play.api.libs.streams.ActorFlow
 import play.api.mvc.{Action, AnyContent, Results, WebSocket}
 import services._
+import system.Features
 import warwick.core.helpers.JavaTime
 import warwick.sso.{LoginContext, UniversityID, Usercode}
 
@@ -64,6 +65,7 @@ class WebSocketController @Inject()(
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   assessmentService: AssessmentService,
   announcementService: AnnouncementService,
+  features: Features,
 )(implicit
   mat: Materializer,
   actorSystem: ActorSystem,
@@ -97,6 +99,8 @@ class WebSocketController @Inject()(
                 studentAssessmentService = studentAssessmentService,
                 assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
                 announcementService = announcementService,
+                features = features,
+                messages = request2Messages,
                 additionalTopics = (
                   // Things relevant ao ALL student on the assessment e.g. announcements
                   relatedStudentAssessmentIds.map(Topics.allStudentsAssessment) ++

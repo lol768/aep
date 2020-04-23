@@ -1,16 +1,15 @@
-@import controllers.invigilation.AnnouncementAndQueriesController.AnnouncementData
-@import domain.messaging.Message
+@import domain.messaging.{Message, MessageSender}
 @import domain.{Announcement, Assessment, tabula}
 @import tags._
-@import warwick.sso.{UniversityID, User, Usercode}
 @import warwick.core.views.utils._
+@import warwick.sso.{UniversityID, User, Usercode}
 @(
   assessment: Assessment,
   announcements: Seq[Announcement],
   messages: Seq[Message],
   students: Map[UniversityID, tabula.SitsProfile],
   department: Option[tabula.Department],
-  form: Form[AnnouncementData],
+  form: Form[String],
   invigilators: Map[Usercode, User] = Map.empty[Usercode, User],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout("Announcements and queries for " + assessment.moduleCode, extraClasses = Seq("allAnnouncementsAndQueries")) {
@@ -28,16 +27,25 @@
     }
     <details open>
       @defining(messages.groupBy(_.student).size) { numberOfStudents: Int =>
-        <summary class="h3">Queries (@if(messages.size == 1) {1 query from 1 student}else{@messages.size queries from @numberOfStudents @pl(numberOfStudents, "student")()})</summary>
+        @defining(messages.count(_.sender == MessageSender.Student)) { numberOfMessages: Int =>
+          @if(numberOfStudents == 0) {
+            <summary class="h3">Queries (no queries received)</summary>
+          } else {
+            <summary class="h3">Queries (@numberOfMessages @pl(numberOfMessages, "query")(plural = "queries") from @numberOfStudents @pl(numberOfStudents, "student")())</summary>
+          }
+        }
       }
       @displayMessages(
         messages = messages,
         students = students,
         threaded = true,
-        maybeForm = None,
-        submitCall = None,
-        invigilators = invigilators
-      )
+        invigilators = invigilators,
+        latestMessageOnTop = !context.features.twoWayMessages
+      ) { universityID =>
+        @if(context.features.twoWayMessages) {
+          @views.html.invigilation.messageForm(assessment.id, universityID, students.get(universityID).map(s => s"${s.fullName} (${s.universityID.string})").getOrElse(universityID.string))
+        }
+      }
     </details>
 
     <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">

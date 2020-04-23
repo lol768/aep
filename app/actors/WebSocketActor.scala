@@ -10,9 +10,11 @@ import domain.messaging.MessageSender
 import domain.{Announcement, AssessmentClientNetworkActivity, ClientNetworkInformation, SittingMetadata}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.Inject
+import play.api.i18n.Messages
 import play.api.libs.json._
 import play.twirl.api.Html
 import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService}
+import system.Features
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
@@ -31,9 +33,11 @@ object WebSocketActor {
     studentAssessmentService: StudentAssessmentService,
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
     announcementService: AnnouncementService,
+    features: Features,
+    messages: Messages,
     additionalTopics: Set[String],
   )(implicit ec: ExecutionContext, t: TimingContext): Props =
-    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, additionalTopics))
+    Props(new WebSocketActor(out, pubsub, loginContext, studentAssessmentService, assessmentClientNetworkActivityService, announcementService, features, messages, additionalTopics))
 
   case class AssessmentAnnouncement(id: String, assessmentId: String, messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
@@ -44,7 +48,7 @@ object WebSocketActor {
       AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, announcement.text, announcement.created)
   }
 
-  case class AssessmentMessage(messageId: String, studentId: String, assessmentId: String, messageText: String, sender: MessageSender, senderName: String, timestamp: OffsetDateTime) {
+  case class AssessmentMessage(messageId: String, studentId: String, assessmentId: String, messageText: String, sender: MessageSender, senderName: String, studentName: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
@@ -95,6 +99,8 @@ class WebSocketActor @Inject() (
   @Assisted studentAssessmentService: StudentAssessmentService,
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   @Assisted announcementService: AnnouncementService,
+  @Assisted features: Features,
+  @Assisted messages: Messages,
   additionalTopics: Set[String],
 )(implicit
   ec: ExecutionContext
@@ -134,8 +140,17 @@ class WebSocketActor @Inject() (
       "sender" -> am.sender.entryName,
       "senderName" -> am.senderName,
       "messageThread" -> (am.sender match {
-        case MessageSender.Student => views.html.tags.messageThread(UniversityID(am.studentId), am.senderName, am.timestamp)(Html("")).toString
-        case _ => ""
+        case MessageSender.Student =>
+          val form = if (features.twoWayMessages) { _: UniversityID =>
+            views.html.invigilation.messageForm(UUID.fromString(am.assessmentId), UniversityID(am.studentId), am.studentName)(messages, null)
+          } else { _: UniversityID =>
+            Html("")
+          }
+          views.html.tags.messageThread(UniversityID(am.studentId), am.senderName, am.timestamp)(
+            views.html.tags.messageThreadSingle(UniversityID(am.studentId), Seq.empty, Map.empty, Map.empty, latestMessageOnTop = false, form)
+          ).toString
+        case MessageSender.Invigilator =>
+          ""
       })
     )
 

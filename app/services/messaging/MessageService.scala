@@ -50,34 +50,34 @@ class MessageService @Inject() (
 
   /** Called after a new message is persisted */
   private def onSent(savedMessage: Message)(implicit tc: TimingContext): Future[ServiceResult[Done]] = {
-    savedMessage.sender match {
-      case MessageSender.Student =>
-        studentInformationService.getStudentInformation(GetStudentInformationOptions(savedMessage.student))
-          .successMapTo(profile => s"${profile.fullName} (${profile.universityID.string})")
-          .map(_.getOrElse(savedMessage.student.string))
-          .map { studentName =>
+    studentInformationService.getStudentInformation(GetStudentInformationOptions(savedMessage.student))
+      .successMapTo(profile => s"${profile.fullName} (${profile.universityID.string})")
+      .map(_.getOrElse(savedMessage.student.string))
+      .map { studentName =>
+        savedMessage.sender match {
+          case MessageSender.Student =>
             pubSubService.publish(
               topic = Topics.allInvigilatorsAssessment(savedMessage.assessmentId),
-              AssessmentMessage(savedMessage.id.toString, savedMessage.student.string, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, studentName, savedMessage.created)
+              AssessmentMessage(savedMessage.id.toString, savedMessage.student.string, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, studentName, studentName, savedMessage.created)
             )
             notificationService.newMessageFromStudent(savedMessage)
             ServiceResults.success(Done)
-          }
-      case MessageSender.Invigilator =>
-        // Send to other invigilators (but don't notify)
-        val invigilatorName = userLookupService.getUser(savedMessage.staffId.get).toOption.flatMap(_.name.full).getOrElse(s"[Unknown user (${savedMessage.staffId.get})]")
-        pubSubService.publish(
-          topic = Topics.allInvigilatorsAssessment(savedMessage.assessmentId),
-          AssessmentMessage(savedMessage.id.toString, savedMessage.student.string, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, invigilatorName, savedMessage.created)
-        )
+          case MessageSender.Invigilator =>
+            // Send to other invigilators (but don't notify)
+            val invigilatorName = userLookupService.getUser(savedMessage.staffId.get).toOption.flatMap(_.name.full).getOrElse(s"[Unknown user (${savedMessage.staffId.get})]")
+            pubSubService.publish(
+              topic = Topics.allInvigilatorsAssessment(savedMessage.assessmentId),
+              AssessmentMessage(savedMessage.id.toString, savedMessage.student.string, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, invigilatorName, studentName, savedMessage.created)
+            )
 
-        // Send to specific student
-        pubSubService.publish(
-          topic = Topics.studentAssessment(savedMessage.student)(savedMessage.assessmentId),
-          AssessmentMessage(savedMessage.id.toString, savedMessage.student.string, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, MessageService.InvigilationSender, savedMessage.created)
-        )
-        notificationService.newMessageFromInvigilator(savedMessage)
-        Future.successful(ServiceResults.success(Done))
+            // Send to specific student
+            pubSubService.publish(
+              topic = Topics.studentAssessment(savedMessage.student)(savedMessage.assessmentId),
+              AssessmentMessage(savedMessage.id.toString, savedMessage.student.string, savedMessage.assessmentId.toString, savedMessage.text, savedMessage.sender, MessageService.InvigilationSender, studentName, savedMessage.created)
+            )
+            notificationService.newMessageFromInvigilator(savedMessage)
+            ServiceResults.success(Done)
+        }
     }
 
   }

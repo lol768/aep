@@ -1,4 +1,6 @@
 import $ from 'jquery';
+import { postJsonWithCredentials } from '@universityofwarwick/serverpipe';
+import log from 'loglevel';
 
 function handleMessage(data) {
   const $newMessage = $('<div/>')
@@ -7,14 +9,14 @@ function handleMessage(data) {
     .append($('<div/>').addClass('message-author').text(data.senderName))
     .append($('<div/>').addClass('message-text').html(data.messageHTML));
 
-  const $container = $(`.panel-body[data-student-id="${data.studentId}"]`);
+  let $container = $(`.panel-body[data-student-id="${data.studentId}"]`);
   const $threadContainer = $('#messages-accordion');
 
   if ($threadContainer.length > 0) {
     let $thread = $container.closest('.panel');
     if ($container.length === 0) {
       $thread = $(data.messageThread);
-      $thread.find('.panel-collapse').append($('<div/>').addClass('panel-body').attr('data-student-id', data.studentId).prepend($newMessage));
+      $container = $thread.find('.panel-body');
       $thread.prependTo($threadContainer);
     } else {
       $container.prepend($newMessage);
@@ -22,7 +24,15 @@ function handleMessage(data) {
       $thread.remove().prependTo($threadContainer);
     }
 
-    if ($thread.find('.collapsed').length > 0) {
+    if ($thread.find('.panel-footer form').length > 0) {
+      $container.append($newMessage);
+      $container.scrollTop(Number.MAX_SAFE_INTEGER);
+    } else {
+      $container.prepend($newMessage);
+    }
+
+
+    if ($thread.find('.collapsed').length > 0 && $thread.find('.panel-title i.heartbeat').length === 0) {
       const $title = $thread.find('.panel-title');
       $('<i/>').addClass('fad fa-comment-edit heartbeat').insertAfter($title.find('a div.pull-right'));
     }
@@ -64,7 +74,35 @@ function init() {
   });
 
   $('#messages-accordion').on('shown.bs.collapse', (e) => {
-    $(e.target).closest('.panel').find('.panel-title i.heartbeat').remove();
+    const $target = $(e.target);
+    $target.find('.panel-body').scrollTop(Number.MAX_SAFE_INTEGER);
+    $target.closest('.panel').find('.panel-title i.heartbeat').remove();
+  }).on('submit', (e) => {
+    e.preventDefault();
+    const $form = $(e.target);
+    $form.find('.alert-danger').empty().addClass('hidden');
+    $form.find('button').prop('disabled', true);
+    postJsonWithCredentials($form.attr('action'), { message: $form.find('textarea').val() })
+      .then((response) => response.json())
+      .then((response) => {
+        $form.find('button').prop('disabled', false);
+        if (response.success) {
+          $form.find('.alert-danger').empty().addClass('hidden');
+          $form.find('textarea').val('');
+          $form.closest('.panel').find('.panel-body').scrollTop(Number.MAX_SAFE_INTEGER);
+        } else {
+          let errorMessage = 'The reply couldn\'t be sent';
+          if (response.errors) {
+            errorMessage = response.errors.map((error) => error.message || error).join(', ');
+          }
+          $form.find('.alert-danger').removeClass('hidden').text(errorMessage);
+        }
+      })
+      .catch((error) => {
+        log.error(error);
+        $form.find('.alert-danger').removeClass('hidden').text(error.message || error);
+        $form.find('button').prop('disabled', false);
+      });
   });
 }
 

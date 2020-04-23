@@ -3,31 +3,30 @@ package controllers.invigilation
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import controllers.BaseController
-import controllers.invigilation.AnnouncementAndQueriesController.{AnnouncementData, form}
+import controllers.{API, BaseController}
+import controllers.invigilation.AnnouncementAndQueriesController.form
+import domain.messaging.{MessageSave, MessageSender}
 import domain.{Announcement, Assessment}
 import javax.inject.{Inject, Singleton}
-import play.api.data.Form
-import play.api.data.Forms.{mapping, _}
+import play.api.data.Forms._
+import play.api.data.{Form, Forms}
 import play.api.i18n.Messages
+import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService.{GetMultipleStudentInformationOptions, GetStudentInformationOptions}
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AnnouncementService, SecurityService, StudentAssessmentService}
+import system.Features
 import warwick.core.helpers.ServiceResults
 import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService}
 
 import scala.concurrent.{ExecutionContext, Future}
 object AnnouncementAndQueriesController {
 
-  case class AnnouncementData(
-    message: String
-  )
-
-  val form: Form[AnnouncementData] = Form(mapping(
+  val form: Form[String] = Form(Forms.single(
     "message" -> nonEmptyText
-  )(AnnouncementData.apply)(AnnouncementData.unapply))
+  ))
 }
 
 @Singleton
@@ -39,6 +38,7 @@ class AnnouncementAndQueriesController @Inject()(
   messageService: MessageService,
   announcementService: AnnouncementService,
   userLookupService: UserLookupService,
+  features: Features,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -66,10 +66,10 @@ class AnnouncementAndQueriesController @Inject()(
   }
 
   def viewAll(assessmentId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit req =>
-    render(assessmentId, req.assessment, form)
+    renderAll(assessmentId, req.assessment, form)
   }
 
-  def render(assessmentId: UUID, assessment: Assessment, form: Form[AnnouncementData])(implicit req: AuthenticatedRequest[_]): Future[Result] =
+  def renderAll(assessmentId: UUID, assessment: Assessment, form: Form[String])(implicit req: AuthenticatedRequest[_]): Future[Result] =
     ServiceResults.zip(
       tabulaDepartmentService.getDepartments,
       messageService.findByAssessment(assessmentId),
@@ -94,14 +94,36 @@ class AnnouncementAndQueriesController @Inject()(
 
   def addAnnouncement(assessmentId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit req =>
     form.bindFromRequest.fold(
-      errors => render(assessmentId, req.assessment, errors),
+      errors => renderAll(assessmentId, req.assessment, errors),
       data => {
-        announcementService.save(Announcement(assessment = req.assessment.id, sender = Some(currentUser().usercode), text = data.message)).map( _ =>
+        announcementService.save(Announcement(assessment = req.assessment.id, sender = Some(currentUser().usercode), text = data)).map( _ =>
           Redirect(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessmentId))
             .flashing("success" -> Messages("flash.assessment.announcement.created"))
         )
       }
     )
+  }
+
+  def addMessage(assessmentId: UUID, studentId: UniversityID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit req =>
+    if (features.twoWayMessages) {
+      form.bindFromRequest.fold(
+        errors => render.async {
+          case Accepts.Json() => Future.successful(API.badRequestJson(errors))
+          case _ => renderAll(assessmentId, req.assessment, errors)
+        },
+        data => {
+          messageService.send(MessageSave(data, MessageSender.Invigilator, Some(currentUser().usercode)), studentId, assessmentId).successMap { _ =>
+            render {
+              case Accepts.Json() => Ok(Json.toJson(API.Success(data = Json.obj())))
+              case _ => Redirect(controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessmentId, studentId))
+                .flashing("success" -> Messages("flash.messages.sentToStudent"))
+            }
+          }
+        }
+      )
+    } else {
+      Future.successful(NotFound(views.html.errors.notFound()))
+    }
   }
 
 

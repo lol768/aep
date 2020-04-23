@@ -1,8 +1,7 @@
-@import domain.messaging.Message
+@import domain.messaging.{Message, MessageSender}
 @import domain.{Announcement, Assessment, SittingMetadata, StudentAssessment, tabula}
 @import tags._
 @import warwick.sso.{UniversityID, User, Usercode}
-@import domain.messaging.MessageSender
 @(
     assessment: Assessment,
     studentAssessment: StudentAssessment,
@@ -25,10 +24,13 @@
                 messages = messages,
                 students = student,
                 threaded = false,
-                maybeForm = None,
-                submitCall = None,
-                invigilators = invigilators
-            )
+                invigilators = invigilators,
+                latestMessageOnTop = !context.features.twoWayMessages
+            ) { universityID =>
+                @if(context.features.twoWayMessages) {
+                    @views.html.invigilation.messageForm(assessment.id, universityID, student.get(universityID).map(s => s"${s.fullName} (${s.universityID.string})").getOrElse(universityID.string))
+                }
+            }
         </details>
         <a class="btn btn-default" href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)">
             <i class="fas fa-arrow-left"></i>

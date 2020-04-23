@@ -1,0 +1,29 @@
+@import controllers.invigilation.AnnouncementAndQueriesController
+@import system.routes.Types.UUID
+@import warwick.sso.UniversityID
+@import views.html.b3.B3FieldConstructor
+@(assessmentID: UUID, studentID: UniversityID, studentName: String)(implicit messagesProvider: MessagesProvider, requestHeader: RequestHeader)
+
+@form(implicit fc: B3FieldConstructor) = {
+  @b3.textarea(
+    AnnouncementAndQueriesController.form("message"),
+    Symbol("_label") -> s"Reply to $studentName"
+  )
+
+  <button type="submit" class="btn btn-primary">
+    <i class="fas fa-paper-plane"></i> Send reply
+  </button>
+  <div class="alert alert-danger hidden"></div>
+}
+
+<div class="panel-footer">
+  @Option(requestHeader).map { _ =>
+    @b3.vertical.formCSRF(controllers.invigilation.routes.AnnouncementAndQueriesController.addMessage(assessmentID, studentID)) { implicit fc =>
+      @form
+    }
+  }.getOrElse {
+    @b3.vertical.form(controllers.invigilation.routes.AnnouncementAndQueriesController.addMessage(assessmentID, studentID)) { implicit fc =>
+      @form
+    }
+  }
+</div>
