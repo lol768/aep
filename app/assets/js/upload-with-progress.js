@@ -104,12 +104,11 @@ export default class UploadWithProgress {
         xhr.addEventListener('readystatechange', () => {
           if (xhr.readyState === XMLHttpRequest.DONE) {
             formElement.querySelector('.upload-info').classList.add('hide'); // IE10
+            UploadWithProgress.undisableButton(submitBtn);
             if (xhr.status === 200) {
               this.successCallback(formElement);
-              // don't undisable button, we're about to refresh.
             } else {
               this.failureCallback(xhr);
-              UploadWithProgress.undisableButton(submitBtn);
               UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
             }
           } else if (xhr.readyState === XMLHttpRequest.OPENED) {
