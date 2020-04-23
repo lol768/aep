@@ -45,7 +45,7 @@ class QuartzJobHealthCheck(jobKey: JobKeys.ByName)
 
   // Called by HealthChecksStartup (Guice has no PostConstruct support)
   def init(): Unit = {
-    actorSystem.scheduler.scheduleAtFixedRate(0.seconds, interval = 5.minutes)(() => {
+    actorSystem.scheduler.scheduleAtFixedRate(0.seconds, interval = 30.minutes)(() => {
       try run()
       catch {
         case e: Throwable =>
