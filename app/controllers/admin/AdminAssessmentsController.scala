@@ -19,7 +19,7 @@ import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaAssessmentService, TabulaAssignmentService, TabulaDepartmentService, TabulaStudentInformationService}
-import services.{AssessmentService, SecurityService, StudentAssessmentService}
+import services.{AssessmentClientNetworkActivityService, AssessmentService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
@@ -28,6 +28,7 @@ import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService, Usercode}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
+import controllers.invigilation.InvigilatorAssessmentController.lookupInvigilatorUsers
 
 object AdminAssessmentsController {
 
@@ -132,7 +133,7 @@ object AdminAssessmentsController {
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
       "durationMinutes" -> optional(longNumber),
-      "durationStyle" -> ignored[DurationStyle](DurationStyle.DayWindow), // TODO add to create/edit forms
+      "durationStyle" -> existing.filter(_.tabulaAssessmentId.nonEmpty).map(a => ignored[DurationStyle](a.durationStyle)).getOrElse(DurationStyle.formField),
       "urls" -> mapping[Map[Platform, String], Option[String], Option[String], Option[String], Option[String], Option[String]](
         Platform.OnlineExams.entryName -> optional(text),
         Platform.Moodle.entryName -> optional(text),
@@ -183,6 +184,7 @@ class AdminAssessmentsController @Inject()(
   userLookup: UserLookupService,
   tabulaAssessmentService: TabulaAssessmentService,
   tabulaAssignmentService: TabulaAssignmentService,
+  networkActivityService: AssessmentClientNetworkActivityService,
   configuration: Configuration,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
@@ -280,7 +282,7 @@ class AdminAssessmentsController @Inject()(
                 studentId = universityID,
                 inSeat = false,
                 startTime = None,
-                extraTimeAdjustment = None,
+                extraTimeAdjustmentPerHour = None,
                 explicitFinaliseTime = None,
                 uploadedFiles = Nil,
                 tabulaSubmissionId = None
@@ -330,20 +332,22 @@ class AdminAssessmentsController @Inject()(
     ServiceResults.zip(
       studentAssessmentService.byAssessmentId(assessment.id),
       departmentService.getDepartments(),
-      tabulaAssignmentService.getByAssessment(assessment)
-    ).successFlatMap { case (studentAssessments, departments, tabulaAssignments) =>
+      tabulaAssignmentService.getByAssessment(assessment),
+      networkActivityService.getLatestInvigilatorActivityFor(assessment.id),
+    ).successFlatMap { case (studentAssessments, departments, tabulaAssignments, invigilatorActivity) =>
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
-          val invigilators = userLookup
-            .getUsers(assessment.invigilators.toSeq)
-            .getOrElse(Nil)
-            .map {
-              case (_, user) => user
-            }
-            .map(user => user.usercode -> user.name.full.getOrElse(user.usercode.string))
-            .toMap
-          Ok(views.html.admin.assessments.view(assessment, tabulaAssignments, studentAssessments, studentInformation, departments.find(_.code == assessment.departmentCode.string), invigilators, !overwriteAssessmentTypeOnImport))
+          Ok(views.html.admin.assessments.view(
+            assessment,
+            tabulaAssignments,
+            studentAssessments,
+            studentInformation,
+            departments.find(_.code == assessment.departmentCode.string),
+            lookupInvigilatorUsers(assessment)(userLookup),
+            invigilatorActivity,
+            !overwriteAssessmentTypeOnImport
+          ))
         }
     }
   }
@@ -403,7 +407,7 @@ class AdminAssessmentsController @Inject()(
                       studentId = universityID,
                       inSeat = false,
                       startTime = None,
-                      extraTimeAdjustment = None,
+                      extraTimeAdjustmentPerHour = None,
                       explicitFinaliseTime = None,
                       uploadedFiles = Nil,
                       tabulaSubmissionId = None
@@ -459,7 +463,7 @@ class AdminAssessmentsController @Inject()(
   def generateAssignments(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
     val assessment = request.assessment
 
-    tabulaAssessmentService.generateAssignments(assessment).successMap { _ =>
+    tabulaAssessmentService.generateAssignments(assessment.asAssessmentMetadata).successMap { _ =>
       Redirect(routes.AdminAssessmentsController.view(assessment.id))
         .flashing { "success" -> Messages("flash.assessment.generatedAssignments", assessment.title) }
     }
@@ -491,6 +495,14 @@ class AdminAssessmentsController @Inject()(
         )
       }
     )
+  }
+
+  def invigilatorsAjax(assessmentId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit req =>
+    val assessment = req.assessment
+
+    networkActivityService.getLatestInvigilatorActivityFor(assessmentId).successMap { result =>
+      Ok(views.html.tags.invigilatorsList(assessment, lookupInvigilatorUsers(assessment)(userLookup), result, routes.AdminAssessmentsController.invigilatorsAjax(assessmentId)))
+    }
   }
 
   private def deptAdminCanView(assessment: Assessment)(

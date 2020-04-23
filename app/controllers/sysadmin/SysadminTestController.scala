@@ -81,15 +81,15 @@ object SysadminTestController {
     "alert" -> boolean
   )(MyWarwickFormData.apply)(MyWarwickFormData.unapply))
 
-  case class TabulaSubmissionGenarotorFormData(
+  case class TabulaSubmissionGenaratorFormData(
     assessmentId: String,
     studentId: Option[UniversityID]
   )
 
-  val tabulaSubmissionGenarotorForm: Form[TabulaSubmissionGenarotorFormData] = Form(mapping(
+  val tabulaSubmissionGenaratorForm: Form[TabulaSubmissionGenaratorFormData] = Form(mapping(
     "assessmentId" -> nonEmptyText,
     "studentId" -> text.transform[Option[UniversityID]](_.maybeText.map(UniversityID.apply), _.map(_.string).getOrElse(""))
-  )(TabulaSubmissionGenarotorFormData.apply)(TabulaSubmissionGenarotorFormData.unapply))
+  )(TabulaSubmissionGenaratorFormData.apply)(TabulaSubmissionGenaratorFormData.unapply))
 }
 
 @Singleton
@@ -195,11 +195,11 @@ class SysadminTestController @Inject()(
 
 
   def assignmentSubmissions: Action[AnyContent] = RequireSysadmin { implicit request =>
-    Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(tabulaSubmissionGenarotorForm))
+    Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(tabulaSubmissionGenaratorForm))
   }
 
   def generateAssignmentSubmissions(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
-    tabulaSubmissionGenarotorForm.bindFromRequest().fold(
+    tabulaSubmissionGenaratorForm.bindFromRequest().fold(
       _ => Future.successful(BadRequest),
       data => {
         val assessmentId = UUID.fromString(data.assessmentId)
@@ -213,7 +213,7 @@ class SysadminTestController @Inject()(
           }
           tabulaAssessments.generateAssignmentSubmissions(assessment, filteredStudentAssessments).successMap { studentAssessments =>
             if(studentAssessments.isEmpty) {
-              val formWithError = tabulaSubmissionGenarotorForm.withError(FormError("", "error.tabula.assessment.invalid"))
+              val formWithError = tabulaSubmissionGenaratorForm.withError(FormError("", "error.tabula.assessment.invalid"))
                 Ok(views.html.sysadmin.tabulaAssignmentSubmissionGenerator(formWithError))
             } else {
               Redirect(routes.AdminAssessmentsController.view(assessment.id)).flashing {

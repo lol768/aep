@@ -37,7 +37,7 @@
           <td>@assessment.section.getOrElse("")</td>
           <td>@assessment.title</td>
           <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
-            @assessment.startTime.map(JavaTime.Relative(_))
+            @assessment.startTime.map(views.html.tags.localisedDatetime(_))
           </td>
           <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
             @durationWords(assessment)

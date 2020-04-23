@@ -22,7 +22,7 @@
         @assessments.sorted.map { assessment =>
             <tr>
                 <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
-                    @assessment.startTime.map(JavaTime.Relative(_))
+                    @assessment.startTime.map(views.html.tags.localisedDatetime(_))
                 </td>
                 <td>@assessment.paperCode</td>
                 <td>@assessment.section.getOrElse("")</td>

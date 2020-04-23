@@ -2,6 +2,7 @@
 @import org.apache.tika.mime.MediaType
 @import warwick.core.helpers.JavaTime
 @import warwick.fileuploads.UploadedFile
+@import tags._
 
 @(
   emailForm: Form[EmailFormData],
@@ -95,7 +96,7 @@
         <td>@helpers.humanReadableSize(file.contentLength)</td>
         <td>@file.contentType</td>
         <td>@file.uploadedBy.string</td>
-        <td>@JavaTime.Relative(file.created)</td>
+        <td>@localisedDatetime(file.created)</td>
       </tr>
     }
     </tbody>

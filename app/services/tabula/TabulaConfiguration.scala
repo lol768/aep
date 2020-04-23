@@ -4,13 +4,14 @@ import java.util.UUID
 
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
-import system.routes.Types.UniversityID
 import uk.ac.warwick.util.termdates.AcademicYear
+import warwick.sso.UniversityID
 
 @Singleton
 class TabulaConfiguration @Inject() (c: Configuration) {
   lazy val usercode: String = c.get[String]("tabula.usercode")
   lazy val rootUrl: String = c.get[String]("tabula.root.url")
+  lazy val assignmentNamespace: String = c.get[String]("assignmentNamespace")
 
   def getAssessmentsUrl(deptCode: String): String =
     s"$rootUrl/api/v1/department/$deptCode/upstreamassessments"

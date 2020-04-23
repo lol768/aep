@@ -9,7 +9,7 @@ import org.quartz.TriggerBuilder._
 import org.quartz._
 import play.api.Configuration
 import play.api.db.evolutions.ApplicationEvolutions
-import services.job.{ImportTabulaAssessmentsJob, SendAssessmentRemindersJob}
+import services.job.{ImportTabulaAssessmentsJob, SendAssessmentRemindersJob, TriggerSubmissionUploadsJob}
 import warwick.core.Logging
 
 @Singleton
@@ -27,6 +27,13 @@ class SchedulerConfiguration @Inject()(
     JobKeys.SendAssessmentRemindersJob.name,
     JobBuilder.newJob(classOf[SendAssessmentRemindersJob]),
     CronScheduleBuilder.cronSchedule("0 0 8 * * ?") // 8am every day
+  )
+
+
+  configureScheduledJob(
+    JobKeys.TriggerSubmissionUploadsJob.name,
+    JobBuilder.newJob(classOf[TriggerSubmissionUploadsJob]),
+    CronScheduleBuilder.cronSchedule("0 * * * * ?") //  Every hour on the hour
   )
 
   logger.info("Starting the scheduler")

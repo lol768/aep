@@ -2,6 +2,8 @@
 
 @import warwick.core.helpers.JavaTime
 @import warwick.fileuploads.UploadedFile
+@import tags._
+
 @(
   files: Seq[UploadedFile],
   form: Form[Seq[UUID]],
@@ -36,8 +38,8 @@
           <td>@helpers.humanReadableSize(file.contentLength)</td>
           <td>@file.contentType</td>
           <td>@file.uploadedBy.string</td>
-          <td>@JavaTime.Relative(file.uploadStarted)</td>
-          <td>@JavaTime.Relative(file.created)</td>
+          <td>@localisedDatetime(file.uploadStarted)</td>
+          <td>@localisedDatetime(file.created)</td>
         </tr>
       }
       </tbody>

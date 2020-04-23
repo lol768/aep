@@ -1,6 +1,6 @@
 @import java.util.UUID
 
-@import domain.{AssessmentClientNetworkActivity, SittingMetadata, tabula}
+@import domain.{AssessmentClientNetworkActivity, SittingMetadata, StudentAssessment, tabula}
 @import domain.Assessment.Platform
 @import tags._
 @import warwick.sso.UniversityID
@@ -15,6 +15,7 @@
   totalAnnouncements: Int = 0,
   latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
   sortByHeader: Option[String] = None,
+  viewAnnouncementsAndQueries: Option[StudentAssessment => Call] = None,
 )(implicit context: RequestContext)
 
 @if(metadata.nonEmpty) {
@@ -50,9 +51,11 @@
           There are no announcements.
         }
       </p>
-      <a class="btn btn-default" href="@controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(metadata.head.assessment.id)">
-        View all or make announcements
-      </a>
+      @viewAnnouncementsAndQueries.map { route =>
+        <a class="btn btn-default" href="@route">
+          View all or make announcements
+        </a>
+      }
     </div>
   }
 }
@@ -62,4 +65,4 @@
   <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
 </div>
 
-@studentAssessmentInfo(metadata, platform, userMap, studentsWithQueries, latestActivities, sortByHeader)
+@studentAssessmentInfo(metadata, platform, userMap, studentsWithQueries, latestActivities, sortByHeader, viewAnnouncementsAndQueries)

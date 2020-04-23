@@ -6,6 +6,7 @@ import java.util.UUID
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
+import domain.AssessmentMetadata
 import com.google.inject.ImplementedBy
 import com.google.inject.name.Named
 import domain.tabula.{Submission, TabulaAssignment}
@@ -42,7 +43,7 @@ trait TabulaAssessmentService {
 
   def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]]
 
-  def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
+  def generateAssignments(assessment: AssessmentMetadata)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]]
 
   def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]]
 
@@ -89,7 +90,7 @@ class CachingTabulaAssessmentService @Inject()(
   override def getAssessmentGroupMembers(options: GetAssessmentGroupMembersOptions)(implicit t: TimingContext): Future[ServiceResult[Map[String, tabula.ExamMembership]]] =
     impl.getAssessmentGroupMembers(options)
 
-  override def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
+  override def generateAssignments(assessment: AssessmentMetadata)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] =
     impl.generateAssignments(assessment)
 
   override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
@@ -141,7 +142,7 @@ class TabulaAssessmentServiceImpl @Inject()(
     }
   }
 
-  private def createAssignment(assessment: Assessment, academicYear: AcademicYear, occurrences: Set[String])(implicit ctx: AuditLogContext): Future[ServiceResult[TabulaAssignment]] = {
+  private def createAssignment(assessment: AssessmentMetadata, academicYear: AcademicYear, occurrences: Set[String])(implicit ctx: AuditLogContext): Future[ServiceResult[TabulaAssignment]] = {
     val moduleCode = assessment.moduleCode.split("-").head.toLowerCase
     val url = config.getCreateAssignmentUrl(moduleCode)
 
@@ -157,7 +158,7 @@ class TabulaAssessmentServiceImpl @Inject()(
     val isPreviousAcademicYear = academicYear != AcademicYear.forDate(JavaTime.offsetDateTime)
 
     val body: JsValue = Json.obj(
-      "name" -> s"${assessment.title} - ${assessment.paperCode} (AEP submissions)",
+      "name" -> s"${assessment.title} - ${assessment.paperCode} (${config.assignmentNamespace} submissions)",
       "openEnded" -> true,
       "hiddenFromStudents" -> true,
       "publishFeedback" -> false,
@@ -186,14 +187,17 @@ class TabulaAssessmentServiceImpl @Inject()(
     }
   }
 
-  override def generateAssignments(assessment: Assessment)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] = timing.time(TimingCategories.TabulaWrite) {
-    studentAssessmentService.byAssessmentId(assessment.id)
+  override def generateAssignments(assessmentMetadata: AssessmentMetadata)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] = timing.time(TimingCategories.TabulaWrite) {
+    studentAssessmentService.byAssessmentId(assessmentMetadata.id)
       .successFlatMapTo { students =>
         val byYear = students.filter(_.academicYear.isDefined).groupBy(_.academicYear.get)
-        ServiceResults.futureSequence(byYear.map { case (academicYear, students) =>
-          createAssignment(assessment, academicYear, students.flatMap(_.occurrence).toSet)
-        }.toSeq)
-      }.successFlatMapTo { assignments =>
+        ServiceResults.zip(
+          assessmentService.get(assessmentMetadata.id),
+          ServiceResults.futureSequence(byYear.map { case (academicYear, students) =>
+            createAssignment(assessmentMetadata, academicYear, students.flatMap(_.occurrence).toSet)
+          }.toSeq)
+        )
+      }.successFlatMapTo { case (assessment, assignments) =>
         val allAssignments = assessment.tabulaAssignments ++ assignments.map(a => a.id)
         assessmentService.update(assessment.copy(tabulaAssignments = allAssignments), Nil)
       }
@@ -229,7 +233,7 @@ class TabulaAssessmentServiceImpl @Inject()(
       def createSubmissions(studentAssessments: Seq[StudentAssessment]): Future[ServiceResult[Seq[StudentAssessment]]] = {
         tabulaAssignmentService.getByAssessment(assessment)
           .successFlatMapTo { tabulaAssignments =>
-            ServiceResults.futureSequence(studentAssessments.filter(s => s.tabulaSubmissionId.isEmpty && !s.uploadedFiles.isEmpty && s.academicYear.isDefined).map { sa =>
+            ServiceResults.futureSequence(studentAssessments.filter(s => s.tabulaSubmissionId.isEmpty && s.uploadedFiles.nonEmpty && s.academicYear.isDefined).map { sa =>
               createSubmission(SittingMetadata(sa, assessment.asAssessmentMetadata), tabulaAssignments.filter(_.academicYear == sa.academicYear.get).head.id).successFlatMapTo { submission =>
                 studentAssessmentService.upsert(sa.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
               }

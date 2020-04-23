@@ -3,7 +3,7 @@ import warwick.Changes
 
 ThisBuild / organization := "uk.ac.warwick"
 ThisBuild / version := "1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "2.13.1"
+ThisBuild / scalaVersion := "2.13.2"
 
 ThisBuild / javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 ThisBuild / scalacOptions ++= Seq(
@@ -62,7 +62,7 @@ lazy val integration = (project in file("it"))
 val enumeratumVersion = "1.5.15"
 val enumeratumPlayVersion = "1.5.17"
 val enumeratumSlickVersion = "1.5.16"
-val playUtilsVersion = "1.53"
+val playUtilsVersion = "1.54"
 val akkaVersion = "2.6.3"
 val ssoClientVersion = "2.81"
 val warwickUtilsVersion = "20200415"
