@@ -60,7 +60,7 @@ class FixedStartAssessmentSpec extends BrowserFeatureSpec {
       val uploadGraceStart = startTime.plusHours(3)
       val onTimeEnd = startTime.plusHours(3).plusMinutes(45)
       val lateEnd = startTime.plusHours(3).plusMinutes(45).plusHours(2)
-      def time(odt: OffsetDateTime) = odt.toLocalTime.format(DateTimeFormatter.ofPattern("HH:mm"))
+      def time(odt: OffsetDateTime) = JavaTime.Relative(odt, printToday = false)
 
       And i_should_see_the_text s"you should be aiming to finish answering by ${time(uploadGraceStart)}"
       And i_should_see_the_text s"${time(uploadGraceStart)} You have 45 minutes until ${time(onTimeEnd)} to upload your answers"
