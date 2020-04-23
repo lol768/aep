@@ -258,6 +258,24 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       assessmentPage = new AssessmentPage(assessment.id)
     }
 
+    def i_have_an_assessment_in_progress_that_started_x_minutes_ago(student: User, assessmentStart: Long, studentStart: Long): Unit = {
+      Given(s"I have an assessment in progress that I started ${studentStart} minutes ago")
+
+      val assessmentId: UUID = UUID.randomUUID()
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId, startTime = Some(OffsetDateTime.now().minusMinutes(assessmentStart)))
+      val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get).copy(
+        startTime = Some(OffsetDateTime.now().minusMinutes(studentStart))
+      )
+
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
+      execWithCommit(studentAssessmentDao.insert(studentAssessment))
+
+      assessmentPage = new AssessmentPage(assessment.id)
+    }
+
+
+
     def i_have_a_moodle_assignment_to_take(student: User): Unit = {
       Given("I have a Moodle assignment to take")
 
