@@ -3,8 +3,9 @@ package controllers.invigilation
 import java.util.UUID
 
 import controllers.BaseController
-import domain.{Assessment, SittingMetadata}
+import controllers.invigilation.InvigilatorAssessmentController.lookupInvigilatorUsers
 import domain.messaging.MessageSender
+import domain.{Assessment, SittingMetadata}
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
 import services.messaging.MessageService
@@ -15,8 +16,28 @@ import warwick.core.helpers.ServiceResults
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.sso.{User, UserLookupService, Usercode}
 
-import scala.collection.immutable.ListMap
 import scala.concurrent.{ExecutionContext, Future}
+
+object InvigilatorAssessmentController {
+  def lookupInvigilatorUsers(assessment: Assessment)(implicit userLookup: UserLookupService): Seq[(Usercode, String)] = {
+    val users = userLookup
+      .getUsers(assessment.invigilators.toSeq)
+      .getOrElse(Nil)
+      .map {
+        case (_, user) => user
+      }
+      .toList.sortBy(u => (u.name.last, u.name.first))
+    val usercodesWithNames = users.map(makeUserNameMap)
+    val missingInvigilators = assessment.invigilators.toSeq
+      .diff(usercodesWithNames.map{ case (usercode,_) => usercode})
+      .map(u => u -> u.string)
+    usercodesWithNames ++ missingInvigilators
+  }
+
+  private def makeUserNameMap(user: User): (Usercode, String) = {
+    user.usercode -> user.name.full.getOrElse(user.usercode.string)
+  }
+}
 
 @Singleton
 class InvigilatorAssessmentController @Inject()(
@@ -37,12 +58,8 @@ class InvigilatorAssessmentController @Inject()(
     val assessment = req.assessment
 
     networkActivityService.getLatestInvigilatorActivityFor(assessmentId).successMap { result =>
-      Ok(views.html.invigilation.invigilatorsList(assessment, lookupInvigilatorUsers(assessment), result))
+      Ok(views.html.tags.invigilatorsList(assessment, lookupInvigilatorUsers(assessment)(userLookup), result, routes.InvigilatorAssessmentController.invigilatorsAjax(assessmentId)))
     }
-  }
-
-  def makeUserNameMap(user: User): (Usercode, String) = {
-    user.usercode -> user.name.full.getOrElse(user.usercode.string)
   }
 
   def view(assessmentId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit req =>
@@ -69,7 +86,7 @@ class InvigilatorAssessmentController @Inject()(
                 )
               ),
               invigilatorActivities = invigilatorActivity,
-              invigilators = lookupInvigilatorUsers(assessment),
+              invigilators = lookupInvigilatorUsers(assessment)(userLookup),
               students = students,
               department = departments.find(_.code == assessment.departmentCode.string),
               queriesFromStudents = queries.filter(_.sender == MessageSender.Client),
@@ -79,21 +96,6 @@ class InvigilatorAssessmentController @Inject()(
             ))
           }
     }
-  }
-
-  private def lookupInvigilatorUsers(assessment: Assessment): Seq[(Usercode, String)] = {
-    val users = userLookup
-      .getUsers(assessment.invigilators.toSeq)
-      .getOrElse(Nil)
-      .map {
-        case (_, user) => user
-      }
-      .toList.sortBy(u => (u.name.last, u.name.first))
-    val usercodesWithNames = users.map(makeUserNameMap)
-    val missingInvigilators = assessment.invigilators.toSeq
-      .diff(usercodesWithNames.map{ case (usercode,_) => usercode})
-      .map(u => u -> u.string)
-    usercodesWithNames ++ missingInvigilators
   }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>
