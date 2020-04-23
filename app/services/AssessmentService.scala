@@ -10,7 +10,7 @@ import domain.Assessment.State
 import domain.AuditEvent.{Operation, Target}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao._
-import domain.{Assessment, UploadedFileOwner}
+import domain.{Assessment, AssessmentMetadata, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import services.AssessmentService._
@@ -40,6 +40,8 @@ trait AssessmentService {
   def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
   def getLast48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
+  def getFinishedWithUnsentSubmissions(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
 
   def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
@@ -109,6 +111,12 @@ class AssessmentServiceImpl @Inject()(
     daoRunner.run(dao.getLast48HrsWithUploadedFiles)
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
+
+  def getFinishedWithUnsentSubmissions(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] = {
+    daoRunner.run(dao.getAssessmentsRequiringUpload)
+      .map(_.map(_.asAssessmentMetadata))
+      .map(ServiceResults.success)
+  }
 
   // Returns all assessments where the start time has passed, and the latest possible finish time for any student is yet to come
   override def getStartedAndSubmittable(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =

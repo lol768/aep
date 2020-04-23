@@ -4,7 +4,7 @@ import java.util.UUID
 
 import controllers.BaseController
 import domain.Assessment.Platform
-import domain.{JobKeys, UploadedFileOwner}
+import domain.{Assessment, JobKeys, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
 import org.quartz.{JobBuilder, Scheduler, TriggerBuilder}
 import play.api.mvc.{Action, AnyContent}
@@ -26,8 +26,8 @@ class AssessmentSubmissionsDownloadController @Inject()(
   import security._
 
   def download(assessmentId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>
-    if (request.assessment.lastAllowedStartTime.forall(_.isAfter(JavaTime.offsetDateTime.minusHours(1)))) {
-      Future.successful(Ok(views.html.invigilation.generatingZip(request.assessment, Some("Submissions are not available until 1 hour after the last allowed start time"))))
+    if (request.assessment.lastAllowedStartTime.forall(_.isAfter(JavaTime.offsetDateTime.minus(Assessment.uploadProcessDuration)))) {
+      Future.successful(Ok(views.html.invigilation.generatingZip(request.assessment, Some(s"Submissions are not available until ${Assessment.uploadProcessDuration} after the last allowed start time"))))
     } else if (!request.assessment.platform.contains(Platform.OnlineExams)) {
       Future.successful(Ok(views.html.invigilation.generatingZip(request.assessment, Some("Submissions are not available for non-AEP assessments"))))
     } else {

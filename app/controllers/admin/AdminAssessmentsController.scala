@@ -459,7 +459,7 @@ class AdminAssessmentsController @Inject()(
   def generateAssignments(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
     val assessment = request.assessment
 
-    tabulaAssessmentService.generateAssignments(assessment).successMap { _ =>
+    tabulaAssessmentService.generateAssignments(assessment.asAssessmentMetadata).successMap { _ =>
       Redirect(routes.AdminAssessmentsController.view(assessment.id))
         .flashing { "success" -> Messages("flash.assessment.generatedAssignments", assessment.title) }
     }
