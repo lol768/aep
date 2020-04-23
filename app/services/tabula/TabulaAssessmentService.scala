@@ -152,23 +152,28 @@ class TabulaAssessmentServiceImpl @Inject()(
       "sequence" -> assessment.sequence
     ))
 
-    // TODO - if openEnded causes problems use assessment.lastAllowedStartTime
-    // note - will may need a new create assignment API that ignores validation on close time (only supports 10-4)
-
     val isPreviousAcademicYear = academicYear != AcademicYear.forDate(JavaTime.offsetDateTime)
+
+    val closeDateParams = (for {
+      st <- assessment.startTime;
+      et <- assessment.lastAllowedStartTime
+    } yield Json.obj(
+      "openDate" -> formatDate.tabulaDate(st.toLocalDate),
+      "closeDate" -> formatDate.tabulaDate(et.toLocalDate),
+      "closeTime" -> formatDate.tabulaTime(et.toLocalTime),
+    )).getOrElse(Json.obj("openEnded" -> true))
 
     val body: JsValue = Json.obj(
       "name" -> s"${assessment.title} - ${assessment.paperCode} (${config.assignmentNamespace} submissions)",
-      "openEnded" -> true,
-      "hiddenFromStudents" -> true,
+      "createdByAEP" -> true,
+      "unlimitedAttachments" -> true,
       "publishFeedback" -> false,
       "automaticallySubmitToTurnitin" -> true,
       "resitAssessment" -> isPreviousAcademicYear,
-      "fileAttachmentLimit" -> 20, // TODO - TAB-8285 we should teach our private Tabula submission API to ignore the limit
       "academicYear" -> academicYear.toString,
       "sitsLinks" -> sitsLinks,
       "anonymity" -> "IDOnly"
-    )
+    ) ++ closeDateParams
 
     val req = ws.url(url)
       .withHttpHeaders("Content-Type" -> "application/json")
