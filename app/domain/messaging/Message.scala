@@ -112,5 +112,8 @@ object MessageSender extends PlayEnum[MessageSender] {
   case object Invigilator extends MessageSender
 
   val values: IndexedSeq[MessageSender] = findValues
+  // TODO: Support old values in the DB. Can removed in the next deploy
+  override lazy val namesToValuesMap: Map[String, MessageSender] =
+    values.map(v => v.entryName -> v).toMap + ("Client" -> Student)
 }
 
