@@ -109,7 +109,7 @@ trait BaseSpecLike
       val filePart = file.map { f =>
         Seq(FilePart[File](
           key = "file",
-          filename = "file.csv",
+          filename = s"/${f.getName}", // "/" prepended because this is what onlineexams does with existing files
           contentType = Some("application/csv"),
           ref = f
         ))

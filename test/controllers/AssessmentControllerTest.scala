@@ -4,18 +4,18 @@ import java.io.File
 import java.time.Duration
 import java.util.UUID
 
-import controllers.admin.AdminAssessmentsController.AssessmentFormData
-import domain.Assessment.{AssessmentType, Platform}
-import domain.dao.{AssessmentDao, StudentAssessmentDao}
+import controllers.AssessmentController.UploadFilesFormData
+import domain.Assessment.Platform
+import domain.dao.{AssessmentDao, StudentAssessmentDao, UploadedFileDao}
 import domain.dao.AssessmentsTables.StoredAssessment
-import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
-import domain.{Assessment, Declarations, DepartmentCode, Fixtures, Sitting, StudentAssessment}
+import domain.dao.StudentAssessmentsTables.{StoredStudentAssessment}
+import domain.{Assessment, Declarations, Fixtures, StudentAssessment}
 import helpers.{CleanUpDatabaseAfterEachTest, Scenario, SimpleSemanticRelativeTime}
 import play.api.mvc._
 import play.api.test.Helpers._
-import services.{AssessmentService, StudentAssessmentService}
+import services.{AssessmentService, StudentAssessmentService, UploadedFileService}
 import specs.BaseSpec
-import warwick.core.helpers.JavaTime
+import warwick.fileuploads.UploadedFile
 import warwick.sso.{UniversityID, User}
 
 import scala.concurrent.Future
@@ -26,6 +26,9 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
   private val studentAssessmentDao = get[StudentAssessmentDao]
   private val assessmentService = get[AssessmentService]
   private val studentAssessmentService = get[StudentAssessmentService]
+  private val uploadedFileService = get[UploadedFileService]
+  private val uploadedFileDao = get[UploadedFileDao]
+  private val RupertsSubmission: File = new File(getClass.getResource(Fixtures.uploadedFiles.specialJPG.path).getFile)
 
   "AssessmentController" should {
     "Allow a student to view the assessment they have scheduled" in new AssessmentNotStartedScenario() { s =>
@@ -60,6 +63,45 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
       private val resStart = reqStart(s.TheAssessment, s.Rupert)
       status(resStart) mustBe SEE_OTHER
       header("Location", resStart).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
+    }
+
+    "Not allow upload of files to an assessment that has not yet started" in new OnlyAuthorshipDeclarationAcceptedScenario() { s =>
+      private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
+      status(resFileUpload) mustBe FORBIDDEN
+      contentAsString(resFileUpload) must include("This assessment has not been started.")
+    }
+
+    "Allow file uploads once assessment has started" in new AssessmentStartedScenario() { s =>
+      private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
+      status(resFileUpload) mustBe OK
+    }
+
+    "Prevent a user from uploading a file to someone else's assessment" in new AssessmentStartedScenario() { s =>
+      private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Herbert, UploadFilesFormData(xhr = true))
+      status(resFileUpload) mustBe NOT_FOUND
+    }
+
+    "Warn a user if they upload no files at all" in new AssessmentStartedScenario { s =>
+      private val resNoFileUpload = reqNoFileUpload(s.TheAssessment, s.Rupert, UploadFilesFormData(xhr = true))
+      status(resNoFileUpload) mustBe BAD_REQUEST
+      contentAsString(resNoFileUpload) must include("Please attach a file")
+    }
+
+    "Allow a user to delete a file submission while the assessment is ongoing" in new FileUploadedScenario() { s =>
+      private val resDeleteFile = reqDeleteFile(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
+      status(resDeleteFile) mustBe SEE_OTHER
+      header("Location", resDeleteFile).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
+    }
+
+    "Prevent a user from deleting somebody else's submitted file" in new FileUploadedScenario { s =>
+      private val resDeleteFile = reqDeleteFile(s.TheAssessment, s.RupertsUploadedFile, s.Herbert)
+      status(resDeleteFile) mustBe NOT_FOUND
+    }
+
+    "Prevent a user from uploading a duplicate of an already uploaded file" in new FileUploadedScenario() { s =>
+      private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
+      status(resFileUpload) mustBe BAD_REQUEST
+      contentAsString(resFileUpload) must include("which already exists")
     }
   }
 
@@ -112,13 +154,55 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     studentAssessmentService.upsert(declarations).futureValue
   }
 
+  class AssessmentStartedScenario extends AllDeclarationsAcceptedScenario {
+    studentAssessmentService.startAssessment(RupertsAssessment).futureValue
+    val RupertsStartedAssessment: StudentAssessment = studentAssessmentService.get(RupertsId, assessmentId).futureValue.toOption.get
+  }
+
+  class FileUploadedScenario extends AssessmentStartedScenario {
+    // Faffy way of uploading file to get round troublesome audit log context
+    private val fileId = UUID.randomUUID
+    private val storedFile = Fixtures.uploadedFiles.storedUploadedStudentAssessmentFile(
+      studentAssessmentId = RupertsAssessment.id,
+      id = fileId,
+      createTime = now,
+    )
+    execWithCommit(uploadedFileDao.insert(storedFile))
+
+    val RupertsUploadedFile: UploadedFile = uploadedFileService.get(fileId).futureValue.toOption.get
+    private val updatedStudentAssessment = RupertsStartedAssessment.copy(
+      uploadedFiles = Seq(RupertsUploadedFile)
+    )
+    studentAssessmentService.upsert(updatedStudentAssessment).futureValue
+
+    val RupertsAssessmentWithFile: StudentAssessment = studentAssessmentService.get(RupertsId, TheAssessment.id).futureValue.toOption.get
+  }
+
+  private val controller = controllers.routes.AssessmentController
+
   def reqView(assessment: Assessment, user: User): Future[Result] =
-    req(controllers.routes.AssessmentController.view(assessment.id).url)
+    req(controller.view(assessment.id).url)
       .forUser(user)
       .get()
 
   def reqStart(assessment: Assessment, user: User): Future[Result] =
-    req(controllers.routes.AssessmentController.start(assessment.id).url)
+    req(controller.start(assessment.id).url)
+      .forUser(user)
+      .post(Seq.empty)
+
+  def reqFileUpload(assessment: Assessment, file: File, user: User, data: UploadFilesFormData): Future[Result] =
+    req(controller.uploadFiles(assessment.id).url)
+      .forUser(user)
+      .withFile(file)
+      .postMultiPartForm(Seq("xhr" -> data.xhr.toString))
+
+  def reqNoFileUpload(assessment: Assessment, user: User, data: UploadFilesFormData): Future[Result] =
+    req(controller.uploadFiles(assessment.id).url)
+      .forUser(user)
+      .postMultiPartForm(Seq("xhr" -> data.xhr.toString))
+
+  def reqDeleteFile(assessment: Assessment, file: UploadedFile, user: User): Future[Result] =
+    req(controller.deleteFile(assessment.id, file.id).url)
       .forUser(user)
       .post(Seq.empty)
 
