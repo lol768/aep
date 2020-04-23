@@ -92,7 +92,7 @@ object DataGenerationService {
   private val invigilator1 = "Mary"
   private val invigilator2 = "Bob"
 
-  private val extraTimeAdjustmentDurations = Seq(20, 30, 45, 60, 90, 120).map(_.toLong)
+  private val extraTimeAdjustmentDurations = Seq(10, 15, 20, 30, 45, 60).map(_.toLong)
 
   def makeStoredBrief(platforms: Set[Platform])(implicit dataGeneration: DataGeneration): StoredBrief =
     StoredBrief(
@@ -152,7 +152,7 @@ object DataGenerationService {
     // Random but deterministic for a given student
     val r = new Random(studentId.string.toLong)
     val twentyPercentChance = r.nextInt(5) == 0
-    val extraTimeAdjustment = Option.when(twentyPercentChance)(Duration.ofMinutes(extraTimeAdjustmentDurations(r.nextInt(extraTimeAdjustmentDurations.length))))
+    val extraTimeAdjustmentPerHour = Option.when(twentyPercentChance)(Duration.ofMinutes(extraTimeAdjustmentDurations(r.nextInt(extraTimeAdjustmentDurations.length))))
 
     StoredStudentAssessment(
       id = studentAssessmentId,
@@ -162,7 +162,7 @@ object DataGenerationService {
       studentId = studentId,
       inSeat = false,
       startTime = None,
-      extraTimeAdjustment = extraTimeAdjustment,
+      extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour,
       finaliseTime = None,
       uploadedFiles = List.empty,
       tabulaSubmissionId = None,

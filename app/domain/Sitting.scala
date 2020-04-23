@@ -35,7 +35,7 @@ sealed trait BaseSitting {
 
   // How long the student has to complete the assessment (excludes upload grace duration)
   lazy val duration: Option[Duration] = assessment.duration.map { d =>
-    d.plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
+    d.plus(studentAssessment.extraTimeAdjustment(d).getOrElse(Duration.ZERO))
   }
 
   // How long the student has to complete the assessment including submission uploads
@@ -107,7 +107,7 @@ sealed trait BaseSitting {
       end = onTimeEnd,
       hasStarted = studentAssessment.startTime.nonEmpty,
       hasFinalised = finalised,
-      extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+      extraTimeAdjustment = assessment.duration.flatMap(studentAssessment.extraTimeAdjustment),
       showTimeRemaining = duration.isDefined,
       progressState = getProgressState,
       submissionState = getSubmissionState,

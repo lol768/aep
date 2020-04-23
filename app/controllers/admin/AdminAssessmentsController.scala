@@ -282,7 +282,7 @@ class AdminAssessmentsController @Inject()(
                 studentId = universityID,
                 inSeat = false,
                 startTime = None,
-                extraTimeAdjustment = None,
+                extraTimeAdjustmentPerHour = None,
                 explicitFinaliseTime = None,
                 uploadedFiles = Nil,
                 tabulaSubmissionId = None
@@ -407,7 +407,7 @@ class AdminAssessmentsController @Inject()(
                       studentId = universityID,
                       inSeat = false,
                       startTime = None,
-                      extraTimeAdjustment = None,
+                      extraTimeAdjustmentPerHour = None,
                       explicitFinaliseTime = None,
                       uploadedFiles = Nil,
                       tabulaSubmissionId = None
