@@ -81,7 +81,7 @@
             }
           }
           @if(context.features.importStudentExtraTime) {
-            @md.studentAssessment.extraTimeAdjustment.map { duration =>
+            @md.assessment.duration.flatMap(md.studentAssessment.extraTimeAdjustment).map { duration =>
               <td data-sort="@duration.toMillis">
                 @DurationFormatUtils.formatDurationWords(duration.toMillis, true, true)
               </td>

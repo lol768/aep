@@ -26,13 +26,13 @@ object StudentAssessmentsTables {
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
-    extraTimeAdjustment: Option[Duration],
+    extraTimeAdjustmentPerHour: Option[Duration],
     finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
     tabulaSubmissionId: Option[UUID],
     created: OffsetDateTime,
     version: OffsetDateTime
-  ) extends Versioned[StoredStudentAssessment] {
+  ) extends Versioned[StoredStudentAssessment] with DefinesExtraTimeAdjustment {
     def asStudentAssessment(fileMap: Map[UUID, UploadedFile]): StudentAssessment =
       StudentAssessment(
         id,
@@ -42,7 +42,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
-        extraTimeAdjustment,
+        extraTimeAdjustmentPerHour,
         finaliseTime,
         uploadedFiles.map(fileMap),
         tabulaSubmissionId
@@ -59,7 +59,7 @@ object StudentAssessmentsTables {
         studentId,
         inSeat,
         startTime,
-        extraTimeAdjustment,
+        extraTimeAdjustmentPerHour,
         finaliseTime,
         uploadedFiles,
         tabulaSubmissionId,
@@ -79,7 +79,7 @@ object StudentAssessmentsTables {
     studentId: UniversityID,
     inSeat: Boolean,
     startTime: Option[OffsetDateTime],
-    extraTimeAdjustment: Option[Duration],
+    extraTimeAdjustmentPerHour: Option[Duration],
     finaliseTime: Option[OffsetDateTime],
     uploadedFiles: List[UUID],
     tabulaSubmisionId: Option[UUID],

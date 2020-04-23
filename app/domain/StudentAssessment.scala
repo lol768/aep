@@ -7,12 +7,11 @@ import uk.ac.warwick.util.termdates.AcademicYear
 import warwick.fileuploads.UploadedFile
 import warwick.sso.UniversityID
 
-sealed trait BaseStudentAssessment {
+sealed trait BaseStudentAssessment extends DefinesExtraTimeAdjustment {
   val assessmentId: UUID
   val studentId: UniversityID
   val inSeat: Boolean
   val startTime: Option[OffsetDateTime]
-  val extraTimeAdjustment: Option[Duration]
   val explicitFinaliseTime: Option[OffsetDateTime]
 
   val hasExplicitlyFinalised: Boolean = explicitFinaliseTime.nonEmpty
@@ -26,6 +25,16 @@ sealed trait BaseStudentAssessment {
   val submissionTime: Option[OffsetDateTime] = mostRecentFileUpload
 }
 
+trait DefinesExtraTimeAdjustment {
+  val extraTimeAdjustmentPerHour: Option[Duration]
+
+  def extraTimeAdjustment(assessmentDuration: Duration): Option[Duration] =
+    extraTimeAdjustmentPerHour.map { extraTimePerHour =>
+      // toLong is basically Math.floor
+      Duration.ofSeconds((extraTimePerHour.getSeconds * (assessmentDuration.getSeconds.toDouble / Duration.ofHours(1).getSeconds)).toLong)
+    }
+}
+
 case class StudentAssessment(
   id: UUID,
   assessmentId: UUID,
@@ -34,7 +43,7 @@ case class StudentAssessment(
   studentId: UniversityID,
   inSeat: Boolean,
   startTime: Option[OffsetDateTime],
-  extraTimeAdjustment: Option[Duration],
+  extraTimeAdjustmentPerHour: Option[Duration],
   explicitFinaliseTime: Option[OffsetDateTime],
   uploadedFiles: Seq[UploadedFile],
   tabulaSubmissionId: Option[UUID]

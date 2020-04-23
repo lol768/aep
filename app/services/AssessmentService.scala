@@ -126,8 +126,8 @@ class AssessmentServiceImpl @Inject()(
           val longestAdjustments = todaysAssessments.map { assessment =>
             assessment.id -> todaysStudentAssessments
               .filter(sa => sa.assessmentId == assessment.id)
-              .maxByOption(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
-              .map(_.extraTimeAdjustment.getOrElse(Duration.ZERO))
+              .maxByOption(sa => assessment.duration.flatMap(sa.extraTimeAdjustment).getOrElse(Duration.ZERO))
+              .map(sa => assessment.duration.flatMap(sa.extraTimeAdjustment).getOrElse(Duration.ZERO))
           }.toMap
           val now = JavaTime.offsetDateTime
           ServiceResults.success {

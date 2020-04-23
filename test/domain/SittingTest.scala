@@ -19,7 +19,7 @@ class SittingTest extends PlaySpec with MockitoSugar {
     assessmentStart: Option[OffsetDateTime] = None,
     assessmentDuration: Option[Duration] = None,
     studentStart: Option[OffsetDateTime] = None,
-    extraTimeAdjustment: Option[Duration] = None,
+    extraTimeAdjustmentPerHour: Option[Duration] = None,
     finaliseTime: Option[OffsetDateTime] = None,
     uploadedFiles: Seq[UploadedFile] = Seq.empty,
   ) {
@@ -53,7 +53,7 @@ class SittingTest extends PlaySpec with MockitoSugar {
       academicYear = None,
       inSeat = true,
       startTime = studentStart,
-      extraTimeAdjustment = None,
+      extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour,
       explicitFinaliseTime = None,
       uploadedFiles = uploadedFiles,
       tabulaSubmissionId = None
