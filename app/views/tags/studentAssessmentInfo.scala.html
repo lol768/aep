@@ -1,7 +1,7 @@
 @import java.util.UUID
 
-@import domain.{AssessmentClientNetworkActivity, SittingMetadata, tabula}
 @import domain.Assessment.Platform
+@import domain.{AssessmentClientNetworkActivity, SittingMetadata, StudentAssessment, tabula}
 @import helpers.LenientTimezoneNameParsing._
 @import org.apache.commons.lang3.time.DurationFormatUtils
 @import tags._
@@ -14,6 +14,7 @@
   studentsWithQueries: Option[Seq[UniversityID]] = None,
   latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
   sortByHeader: Option[String] = None,
+  viewAnnouncementsAndQueries: Option[StudentAssessment => Call] = None,
 )(implicit context: RequestContext)
 
 @sortBy(header: Option[String], value: String, default: Option[String] = None) = {
@@ -40,7 +41,7 @@
           <th @sortBy(sortByHeader, "Adjustments")>Adjustments</th>
         }
         <th @sortBy(sortByHeader, "Connection")>Connection</th>
-        @studentsWithQueries.map { sWQ =>
+        @studentsWithQueries.filter(_ => viewAnnouncementsAndQueries.nonEmpty).map { sWQ =>
           <th><i class="fad themed-duotone fa-comment-alt-lines mr-half"></i></th>
         }
       </tr>
@@ -109,13 +110,15 @@
             }
           </td>
           @studentsWithQueries.map { sWQ =>
-            <td>
-              @if(sWQ.contains(md.studentAssessment.studentId)) {
-                <a href="@controllers.invigilation.routes.AnnouncementAndQueriesController.view(md.studentAssessment.assessmentId, md.studentAssessment.studentId)" title="View queries">
-                  <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
-                </a>
-              }
-            </td>
+            @viewAnnouncementsAndQueries.map { call =>
+              <td>
+                @if(sWQ.contains(md.studentAssessment.studentId)) {
+                  <a href="@call(md.studentAssessment)" title="View queries">
+                    <i class="fad themed-duotone fa-comment-alt-lines mr-half"></i>
+                  </a>
+                }
+              </td>
+            }
           }
         </tr>
       }

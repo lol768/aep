@@ -4,8 +4,8 @@ import java.util.UUID
 
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
-import system.routes.Types.UniversityID
 import uk.ac.warwick.util.termdates.AcademicYear
+import warwick.sso.UniversityID
 
 @Singleton
 class TabulaConfiguration @Inject() (c: Configuration) {

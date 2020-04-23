@@ -1,0 +1,19 @@
+@import domain.{Assessment, AssessmentClientNetworkActivity}
+@import warwick.sso.Usercode
+@import tags._
+
+@(
+  assessment: Assessment,
+  invigilators: Seq[(Usercode, String)],
+  invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
+  refreshUri: Call,
+)(implicit request: RequestHeader, context: RequestContext)
+
+<div class="panel panel-default">
+  <div class="panel-body">
+    <details>
+      <summary class="text-muted">Invigilators</summary>
+      @invigilatorsList(assessment, invigilators, invigilatorActivities, refreshUri)
+    </details>
+  </div>
+</div>

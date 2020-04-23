@@ -2,47 +2,37 @@
 
 @import domain.messaging.Message
 @import domain.{Assessment, AssessmentClientNetworkActivity, SittingMetadata, tabula}
-@import system.routes.Types.Usercode
 @import tags._
-@import warwick.sso.UniversityID
+@import warwick.sso.{UniversityID, Usercode}
+
 @(
-        assessment: Assessment,
-        sittingMetadata: Seq[SittingMetadata],
-        invigilators: Seq[(Usercode, String)],
-        students: Map[UniversityID, tabula.SitsProfile],
-        department: Option[tabula.Department],
-        studentsWithQueries: Seq[UniversityID],
-        queriesFromStudents: Seq[Message],
-        totalAnnouncements: Int,
-        invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
-        latestStudentActivities: Map[UUID, AssessmentClientNetworkActivity]
+  assessment: Assessment,
+  sittingMetadata: Seq[SittingMetadata],
+  invigilators: Seq[(Usercode, String)],
+  students: Map[UniversityID, tabula.SitsProfile],
+  department: Option[tabula.Department],
+  studentsWithQueries: Seq[UniversityID],
+  queriesFromStudents: Seq[Message],
+  totalAnnouncements: Int,
+  invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
+  latestStudentActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
 @adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation", extraClasses = Seq("connect-ws")) {
-    <div class="id7-main-content">
-        <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
-        <div class="row">
-            <div class="col-md-6">
-                @moduleInfo(assessment, department)
-            </div>
-            <div class="col-md-6">
-                @moduleBrief(assessment)
-                <div class="panel panel-default">
-                    <div class="panel-body">
-                        <details>
-                            <summary class="text-muted">Invigilators</summary>
-                            @views.html.invigilation.invigilatorsList(assessment, invigilators, invigilatorActivities)
-                        </details>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
-            @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, totalAnnouncements, latestStudentActivities)
-        </div>
-        @if(assessment.isDownloadAvailable) {
-            <p>
-                <a href="@controllers.invigilation.routes.AssessmentSubmissionsDownloadController.download(assessment.id)" class="btn btn-default"><i class="fad themed-duotone fa-folder-download"></i> Download submissions</a>
-            </p>
-        }
+  <div class="id7-main-content">
+    <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
+    <div class="row">
+      <div class="col-md-6">
+        @moduleInfo(assessment, department)
+        @downloadSubmissionsPanel(assessment, controllers.invigilation.routes.InvigilatorSubmissionsDownloadController.download(assessment.id))
+      </div>
+      <div class="col-md-6">
+        @moduleBrief(assessment, (a, f) => controllers.invigilation.routes.InvigilatorAssessmentController.getFile(a.id, f.id))
+        @invigilatorsPanel(assessment, invigilators, invigilatorActivities, controllers.invigilation.routes.InvigilatorAssessmentController.invigilatorsAjax(assessment.id))
+      </div>
     </div>
+    <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
+      @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, totalAnnouncements, latestStudentActivities, viewAnnouncementsAndQueries = Some(_ => controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessment.id)))
+    </div>
+  </div>
 }

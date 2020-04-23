@@ -14,13 +14,13 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import services.StudentAssessmentService._
 import slick.dbio.DBIO
-import system.routes.Types.UniversityID
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileSave
+import warwick.sso.UniversityID
 
 import scala.concurrent.{ExecutionContext, Future}
 
