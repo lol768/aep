@@ -198,12 +198,18 @@ object Assessment {
     val values: IndexedSeq[AssessmentType] = findValues
   }
 
-  sealed trait DurationStyle extends EnumEntry
+  sealed trait DurationStyle extends EnumEntry {
+    def label: String
+  }
   object DurationStyle extends PlayEnum[DurationStyle] {
     /** 24 hour window to start */
-    case object DayWindow extends DurationStyle
+    case object DayWindow extends DurationStyle {
+      override val label: String = "24-hour window"
+    }
     /** No window, exam starts at fixed time */
-    case object FixedStart extends DurationStyle
+    case object FixedStart extends DurationStyle {
+      override val label: String = "Fixed start time"
+    }
     override def values: IndexedSeq[DurationStyle] = findValues
   }
 
