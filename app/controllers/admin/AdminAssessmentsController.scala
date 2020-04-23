@@ -133,7 +133,7 @@ object AdminAssessmentsController {
       "platform" -> platformsMapping,
       "assessmentType" -> optional(AssessmentType.formField),
       "durationMinutes" -> optional(longNumber),
-      "durationStyle" -> ignored[DurationStyle](DurationStyle.DayWindow), // TODO add to create/edit forms
+      "durationStyle" -> existing.filter(_.tabulaAssessmentId.nonEmpty).map(_ => ignored[DurationStyle](DurationStyle.DayWindow)).getOrElse(DurationStyle.formField),
       "urls" -> mapping[Map[Platform, String], Option[String], Option[String], Option[String], Option[String], Option[String]](
         Platform.OnlineExams.entryName -> optional(text),
         Platform.Moodle.entryName -> optional(text),
