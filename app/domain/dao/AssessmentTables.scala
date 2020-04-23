@@ -84,16 +84,6 @@ class AssessmentTables @Inject()(
     def isDayWindow: Rep[Boolean] =
       durationStyle === (DurationStyle.DayWindow: DurationStyle)
 
-    /*
-      Should match Assessment.lastAllowedStartTime
-     */
-    def totalTime: Rep[Option[Duration]] =
-      Case If isDayWindow Then {
-        LiteralColumn(Option(Assessment.dayWindow))
-      } Else {
-        duration + Assessment.uploadGraceDuration + Assessment.lateSubmissionPeriod
-      }
-
     def paperCodeIndex = index("idx_assessment_papercode", (paperCode, section, examProfileCode))
     def tabulaAssessmentIndex = index("idx_assessment_tabula", (tabulaAssessmentId, examProfileCode), unique = true)
   }
