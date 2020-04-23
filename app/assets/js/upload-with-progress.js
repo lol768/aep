@@ -88,7 +88,7 @@ export default class UploadWithProgress {
       formSubmitEvent.preventDefault(); // don't want form to submit the form normally
 
       try {
-        const submitBtn = formElement.querySelector('[type=submit]');
+        const submitBtns = formElement.parentElement.querySelectorAll('[type=submit]');
         const xhr = new XMLHttpRequest();
         xhr.withCredentials = true;
         // IE 10
@@ -104,7 +104,7 @@ export default class UploadWithProgress {
         xhr.addEventListener('readystatechange', () => {
           if (xhr.readyState === XMLHttpRequest.DONE) {
             formElement.querySelector('.upload-info').classList.add('hide'); // IE10
-            UploadWithProgress.undisableButton(submitBtn);
+            submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
             if (xhr.status === 200) {
               this.successCallback(formElement);
             } else {
@@ -116,7 +116,7 @@ export default class UploadWithProgress {
           }
         });
         xhr.addEventListener('error', () => {
-          UploadWithProgress.undisableButton(submitBtn);
+          submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
           this.failureCallback(xhr);
           UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
         });
@@ -124,7 +124,7 @@ export default class UploadWithProgress {
         xhr.open('POST', formElement.getAttribute('action'), true);
         xhr.setRequestHeader('OnlineExams-Upload', 'true');
         xhr.send(formData);
-        UploadWithProgress.setDisabledWithTitle(submitBtn, 'Please wait for the file to be uploaded');
+        submitBtns.forEach((e) => UploadWithProgress.disableButtonWithTitle(e, 'Please wait for the file to be uploaded'));
       } catch (e) {
         // if all else fails, just submit with a normal POST
         formElement.submit();
@@ -134,14 +134,14 @@ export default class UploadWithProgress {
   }
 
   static setDisabledByDefault(targetElement) {
-    const submitBtn = targetElement.querySelector('[type=submit]');
-    this.setDisabledWithTitle(submitBtn);
+    const submitBtns = targetElement.querySelectorAll('[type=submit]');
+    submitBtns.forEach((e) => UploadWithProgress.disableButtonWithTitle(e));
     const fileList = targetElement.querySelector('input[type=file]');
     fileList.addEventListener('change', () => {
       if (fileList.files.length !== 0) {
-        UploadWithProgress.undisableButton(submitBtn);
+        submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
       } else {
-        UploadWithProgress.setDisabledWithTitle(submitBtn);
+        submitBtns.forEach((e) => UploadWithProgress.disableButtonWithTitle(e));
       }
     });
   }
@@ -151,7 +151,7 @@ export default class UploadWithProgress {
     submitBtn.removeAttribute('title');
   }
 
-  static setDisabledWithTitle(submitBtn, title = 'Please pick at least one file') {
+  static disableButtonWithTitle(submitBtn, title = 'Please pick at least one file') {
     submitBtn.setAttribute('disabled', 'disabled');
     submitBtn.setAttribute('title', title);
   }
