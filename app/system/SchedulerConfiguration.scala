@@ -33,7 +33,7 @@ class SchedulerConfiguration @Inject()(
   configureScheduledJob(
     JobKeys.TriggerSubmissionUploadsJob.name,
     JobBuilder.newJob(classOf[TriggerSubmissionUploadsJob]),
-    CronScheduleBuilder.cronSchedule("0 * * * * ?") //  Every hour on the hour
+    CronScheduleBuilder.cronSchedule("0 0 * * * ?") //  Every hour on the hour
   )
 
   logger.info("Starting the scheduler")
