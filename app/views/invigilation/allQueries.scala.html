@@ -16,6 +16,10 @@
   <div class="id7-main-content">
     <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
 
+    <div class="alert alert-info hidden notification-permission">
+      Alternative Exams Portal needs your permission to <a href="#" class="btn btn-primary btn-xs">show system notifications</a> for student queries
+    </div>
+
     <details open>
       <summary class="h3">Announcements (@announcements.size)</summary>
       @displayAnnouncements(announcements, invigilators)
