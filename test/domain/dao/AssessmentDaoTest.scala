@@ -1,10 +1,10 @@
 package domain.dao
 
-import java.time.{Clock, LocalDateTime}
+import java.time.{Clock, Duration, LocalDateTime}
 import java.util.UUID
 
 import domain.Assessment.Platform.OnlineExams
-import domain.Assessment.State
+import domain.Assessment.{DurationStyle, State}
 import domain.Fixtures.studentAssessments
 import domain._
 import helpers.CleanUpDatabaseAfterEachTest
@@ -159,7 +159,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       })
     }
 
-    "findUnsubmitted" in {
+    "find past assessments with files not sent to Tabula" in {
       val pastAssessments = (1 to 3).map(_ => Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)))
       val futureAssessment = Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(startTime =  pastAssessments.head.startTime.map(_.plusDays(2)))
       val assessments = pastAssessments :+ futureAssessment
@@ -172,13 +172,70 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
 
       execWithCommit(DBIO.sequence(Seq(submitted, unSubmittedNoFile, unSubmitted).map(studentDao.insert)))
 
-      val uploadTime = pastAssessments.head.startTime.get.plusHours(25).plusMinutes(1).toInstant
+      val uploadTime = pastAssessments.head.startTime.get.plusHours(25).plusMinutes(1)
       DateTimeUtils.useMockDateTime(uploadTime, () => {
-        val result = execWithCommit(dao.getAssessmentsRequiringUpload)
+        val result = exec(dao.getAssessmentsRequiringUpload)
         result.length mustEqual 1
         result.head.id mustEqual pastAssessments.head.id
       })
+    }
 
+    "find fixed-start assessments after they have finished" in {
+      val dayWindowAssessment = Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams))
+      val fixedStartAssessment = Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(
+        duration = Some(Duration.ofHours(2)),
+        durationStyle = DurationStyle.FixedStart
+      )
+
+      val assessments = Seq(dayWindowAssessment, fixedStartAssessment)
+      execWithCommit(DBIO.sequence(assessments.map(dao.insert)))
+      assessments.foreach { a =>
+        val unsubmitted = studentAssessments.storedStudentAssessment(a.id).copy(tabulaSubmissionId = None, uploadedFiles = List(UUID.randomUUID()))
+        unsubmitted.extraTimeAdjustmentPerHour mustBe None
+        execWithCommit(studentDao.insert(unsubmitted))
+      }
+
+      // can submit day window after 25 hours (24 hours + 1 hour buffer)
+      // can submit fixed-start after 5h 45m (2h exam + 45m grace + 2h lateness + 1 hour buffer)
+      val now = dayWindowAssessment.startTime.value
+
+      withClue("Neither are available at start time") {
+        DateTimeUtils.useMockDateTime(now, () => {
+          val result = exec(dao.getAssessmentsRequiringUpload)
+          result must have size 0
+        })
+      }
+
+      withClue("Still not available after 5h 30m") {
+        DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(5).plusMinutes(30)), () => {
+          val result = exec(dao.getAssessmentsRequiringUpload)
+          result must have size 0
+        })
+      }
+
+      // FIXME don't know why it's currently only releasing after 7h 45m instead of 5h 45m
+      withClue("Fixed-start available after 7h 46m") {
+        DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(7).plusMinutes(46)), () => {
+          val result = exec(dao.getAssessmentsRequiringUpload)
+          result must have size 1
+          result.head.id mustBe fixedStartAssessment.id
+        })
+      }
+
+      withClue("Fixed-start available after 5h 46m") {
+        DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(5).plusMinutes(46)), () => {
+          val result = exec(dao.getAssessmentsRequiringUpload)
+          result must have size 1
+          result.head.id mustBe fixedStartAssessment.id
+        })
+      }
+
+      withClue("Both available after 25h m1") {
+        DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(25).plusMinutes(1)), () => {
+          val result = exec(dao.getAssessmentsRequiringUpload)
+          result must have size (2)
+        })
+      }
     }
   }
 }
