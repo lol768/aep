@@ -1,8 +1,9 @@
 package specs
 
 import java.io.{ByteArrayOutputStream, File}
-import java.util.concurrent.Executors
 
+import akka.stream.Materializer
+import akka.stream.testkit.NoMaterializer
 import akka.util.ByteString
 import domain.dao.DaoTestTrait
 import helpers.FakeRequestMethods._
@@ -25,7 +26,7 @@ import services.NoAuditLogging
 import warwick.html.{HtmlNavigation, ID7PageNavigation}
 import warwick.sso.User
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
 abstract class BaseSpec extends PlaySpec with BaseSpecLike with RunsScenarios
@@ -148,7 +149,7 @@ trait BaseSpecLike
 
   /** Scrape any validation or service errors that have been output to the page. Helps to
     * make the reason for test failures more obvious when it tells you what it's actually sad about. */
-  def htmlErrors(res: Future[Result]): Seq[String] = {
+  def htmlErrors(res: Future[Result])(implicit mat: Materializer = NoMaterializer): Seq[String] = {
     val string = contentAsString(res)
     val jdoc: org.jsoup.nodes.Document = Jsoup.parse(string)
     val serviceResultErrors = jdoc.select("ul.service-results li").eachText().asScala

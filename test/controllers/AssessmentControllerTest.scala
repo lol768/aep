@@ -1,22 +1,31 @@
 package controllers
 
 import java.io.File
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.UUID
 
+import akka.stream.Materializer
+import com.google.common.io.ByteSource
 import controllers.AssessmentController.{FinishExamFormData, UploadFilesFormData}
 import domain.Assessment.Platform
+import domain.Fixtures.uploadedFiles.specialJPG
 import domain.dao.{AssessmentDao, StudentAssessmentDao, UploadedFileDao}
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
-import domain.{Assessment, Declarations, Fixtures, StudentAssessment}
-import helpers.{CleanUpDatabaseAfterEachTest, Scenario, SimpleSemanticRelativeTime}
+import domain.{Assessment, Declarations, Fixtures, StudentAssessment, UploadedFileOwner}
+import helpers.{CleanUpDatabaseAfterEachTest, FileResourceUtils, Scenario, SimpleSemanticRelativeTime}
+import org.jclouds.io.ByteSources
+import play.api.libs.Files
 import play.api.mvc._
 import play.api.test.Helpers._
 import services.{AssessmentService, StudentAssessmentService, UploadedFileService}
 import specs.BaseSpec
-import warwick.fileuploads.UploadedFile
-import warwick.sso.{UniversityID, User}
+import warwick.core.helpers.JavaTime
+import warwick.core.system.AuditLogContext
+import warwick.fileuploads.{UploadedFile, UploadedFileSave}
+import warwick.objectstore.ObjectStorageService
+import warwick.sso.{UniversityID, User, Usercode}
 
 import scala.language.postfixOps
 import scala.concurrent.Future
@@ -28,8 +37,9 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
   private val assessmentService = get[AssessmentService]
   private val studentAssessmentService = get[StudentAssessmentService]
   private val uploadedFileService = get[UploadedFileService]
-  private val uploadedFileDao = get[UploadedFileDao]
   private val RupertsSubmission: File = new File(getClass.getResource(Fixtures.uploadedFiles.specialJPG.path).getFile)
+
+  implicit val mat: Materializer = get[Materializer]
 
   "AssessmentController" should {
     "Allow a student to view the assessment they have scheduled" in new AssessmentNotStartedScenario() { s =>
@@ -108,11 +118,11 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
       contentAsString(resFileUpload) must include("which already exists")
     }
 
-//    "Allow a user to download a file they submitted" in new FileUploadedScenario() { s =>
-//      private val resDownloadAttachment = reqDownloadAttachment(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
-//      status(resDownloadAttachment) mustBe OK
-//      htmlErrors(resDownloadAttachment) mustBe empty
-//    }
+    "Allow a user to download a file they submitted" in new FileUploadedScenario() { s =>
+      private val resDownloadAttachment = reqDownloadAttachment(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
+      status(resDownloadAttachment) mustBe OK
+      htmlErrors(resDownloadAttachment) mustBe empty
+    }
 
     "Prevent a user from finalising an assessment if the disclaimer is not agreed" in new FileUploadedScenario() { s =>
       private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = false))
@@ -193,16 +203,16 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
   }
 
   class FileUploadedScenario extends AssessmentStartedScenario {
-    // Faffy way of uploading file to get round troublesome audit log context
-    private val fileId = UUID.randomUUID
-    private val storedFile = Fixtures.uploadedFiles.storedUploadedStudentAssessmentFile(
-      studentAssessmentId = RupertsAssessment.id,
-      id = fileId,
-      createTime = now,
-    )
-    execWithCommit(uploadedFileDao.insert(storedFile))
+    private val RupertsAuditLogContext: AuditLogContext =
+      AuditLogContext.empty().copy(usercode = Some(Rupert.usercode))
 
-    val RupertsUploadedFile: UploadedFile = uploadedFileService.get(fileId).futureValue.toOption.get
+    val RupertsUploadedFile: UploadedFile = uploadedFileService.store(
+      FileResourceUtils.byteSourceResource(specialJPG.path),
+      specialJPG.uploadedFileSave,
+      RupertsAssessment.id,
+      UploadedFileOwner.StudentAssessment
+    )(RupertsAuditLogContext).futureValue.getOrElse(fail("bad service result"))
+
     private val updatedStudentAssessment = RupertsStartedAssessment.copy(
       uploadedFiles = Seq(RupertsUploadedFile)
     )
