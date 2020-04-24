@@ -3,11 +3,12 @@ package domain.dao
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
+import domain.Assessment.DurationStyle.DayWindow
 import domain.Assessment.{AssessmentType, DurationStyle, Platform, State}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
 import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredDeclarationsVersion, StoredStudentAssessment, StoredStudentAssessmentVersion}
 import domain.dao.UploadedFilesTables.{StoredUploadedFile, StoredUploadedFileVersion}
-import domain.{AssessmentClientNetworkActivity, DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
+import domain.{Assessment, AssessmentClientNetworkActivity, DatabaseOperation, DepartmentCode, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StoredVersionTable, UploadedFileOwner, VersionedTable, VersionedTables}
 import helpers.LenientTimezoneNameParsing.LenientZoneId
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -79,6 +80,9 @@ class AssessmentTables @Inject()(
       version ::
       HNil
     ).mappedWith(Generic[StoredAssessment])
+
+    def isDayWindow: Rep[Boolean] =
+      durationStyle === (DurationStyle.DayWindow: DurationStyle)
 
     def paperCodeIndex = index("idx_assessment_papercode", (paperCode, section, examProfileCode))
     def tabulaAssessmentIndex = index("idx_assessment_tabula", (tabulaAssessmentId, examProfileCode), unique = true)
