@@ -35,7 +35,7 @@ class UploadSubmissionsJob @Inject()(
     }.map { result =>
       result.left.foreach { errors =>
         val message = errors.map(_.message).mkString("; ")
-        logger.error(s"Errors sending submissions to tabula for $assessmentId: $message")
+        logger.error(s"Errors sending submissions to Tabula for $assessmentId: $message")
         errors.find(_.cause.nonEmpty).flatMap(_.cause).map(throwable =>
           throw new UnsupportedOperationException(throwable)
         ).getOrElse(

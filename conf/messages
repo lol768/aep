@@ -53,4 +53,4 @@ error.permissions.notDepartmentAdminForSelected=You are not an administrator for
 error.dataGeneration.production=Data generation is disabled on production.
 error.students.error=There was an error validating the University IDs.
 error.students.invalid=The University ID {0} was not found.
-error.tabula.assessment.invalid=No submissions can be generated with the data provided. Either the submissions has been already created or entered form data is incorrect.
+error.tabula.assessment.invalid=No submissions can be generated with the data provided. Either the submissions have already been created or entered form data is incorrect.
