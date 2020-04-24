@@ -171,7 +171,7 @@ object Fixtures {
 
     object specialJPG {
       val path = "/night-heron-500-beautiful.jpg"
-      val uploadedFileSave = UploadedFileSave(path, 8832L, "image/jpeg")
+      val uploadedFileSave: UploadedFileSave = UploadedFileSave("night-heron-500-beautiful.jpg", 8832L, "image/jpeg")
       def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
         val tempFile = temporaryFileCreator.create("night-heron-500-beautiful", ".jpg")
         byteSourceResource(path).copyTo(Files.asByteSink(tempFile))
@@ -181,19 +181,9 @@ object Fixtures {
 
     object homeOfficeStatementPDF {
       val path = "/home-office-statement.pdf"
-      val uploadedFileSave: UploadedFileSave = UploadedFileSave(path, 8153L, "application/pdf")
+      val uploadedFileSave: UploadedFileSave = UploadedFileSave("home-office-statement.pdf", 8153L, "application/pdf")
       def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
         val tempFile = temporaryFileCreator.create("home-office-statement", ".pdf")
-        byteSourceResource(path).copyTo(Files.asByteSink(tempFile))
-        TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile)
-      }
-    }
-
-    object zeroByteFile {
-      val path = "/zero.txt"
-      val uploadedFileSave: UploadedFileSave = UploadedFileSave(path, 0L, "application/txt")
-      def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
-        val tempFile = temporaryFileCreator.create("zero", ".txt")
         byteSourceResource(path).copyTo(Files.asByteSink(tempFile))
         TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile)
       }

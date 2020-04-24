@@ -103,6 +103,12 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
       status(resFileUpload) mustBe BAD_REQUEST
       contentAsString(resFileUpload) must include("which already exists")
     }
+
+//    "Allow a user to download a file they submitted" in new FileUploadedScenario() { s =>
+//      private val resDownloadAttachment = reqDownloadAttachment(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
+//      status(resDownloadAttachment) mustBe OK
+//      htmlErrors(resDownloadAttachment) mustBe empty
+//    }
   }
 
   class BasicSittingScenario extends Scenario(scenarioCtx) {
@@ -205,5 +211,10 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     req(controller.deleteFile(assessment.id, file.id).url)
       .forUser(user)
       .post(Seq.empty)
+
+  def reqDownloadAttachment(assessment: Assessment, file: UploadedFile, user: User): Future[Result] =
+    req(controller.downloadAttachment(assessment.id, file.id).url)
+      .forUser(user)
+      .get()
 
 }
