@@ -19,8 +19,9 @@ class QuartzJobHealthCheck(jobKey: JobKeys.ByName)
   @Inject private var scheduler: Scheduler = _
 
   override def run(): Unit = {
-    val errorMessage = Option(scheduler.getJobDetail(jobKey.key)).map(_.getJobDataMap.getString(JobResult.FailedJobErrorDetailsKeyName)).getOrElse("")
-    val serviceHealthCheck = Option(scheduler.getJobDetail(jobKey.key)).map(_.getJobDataMap.getBoolean(JobResult.FailedJobKeyName)) match {
+    val jobDetail = Option(scheduler.getJobDetail(jobKey.key))
+    val errorMessage = jobDetail.map(_.getJobDataMap.getString(JobResult.FailedJobErrorDetailsKeyName)).getOrElse("")
+    val serviceHealthCheck = jobDetail.map(_.getJobDataMap.getBoolean(JobResult.FailedJobKeyName)) match {
       case Some(true) => new ServiceHealthcheck(
         jobKey.healthCheckJobName,
         ServiceHealthcheck.Status.Error,
