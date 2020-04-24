@@ -44,6 +44,15 @@ function handleMessage(data) {
   } else {
     $container.prepend($newMessage);
   }
+
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(`Query from ${data.senderName}`, { // eslint-disable-line no-new
+      body: data.messageText,
+      requireInteraction: true,
+    });
+  } else {
+    window.alert(`New query from ${data.senderName}:\n${data.messageText}`); // eslint-disable-line no-alert
+  }
 }
 
 function handleAnnouncement(data) {
