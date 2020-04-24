@@ -60,7 +60,6 @@ export default class UploadWithProgress {
     }
 
     log('Failed to finish upload');
-    // TODO log to server
     formElement.querySelector('.upload-info').classList.add('hide'); // IE10
     formElement.querySelector('.upload-error').classList.remove('hide'); // IE10
     if (errorToDisplay && errorToDisplay !== '') {
@@ -137,9 +136,16 @@ export default class UploadWithProgress {
         submitBtns.forEach((e) => UploadWithProgress.disableButtonWithTitle(e, 'Please wait for the file to be uploaded'));
         cancelBtns.forEach((e) => e.classList.remove('hide'));
         cancelBtns.forEach((el) => addEventListenerOnce(el, 'click', () => {
-          // TODO log to server
           cancelledByUser = true;
           xhr.abort();
+
+          // Fire and forget
+          const id = formElement.getAttribute('data-student-assessment-id');
+          const cancelXhr = new XMLHttpRequest();
+          cancelXhr.open('POST', '/api/log-upload-cancelled', true);
+          cancelXhr.setRequestHeader('Content-Type', 'application/json');
+          cancelXhr.send(`{"id":"${id}"}`);
+
           submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
           formElement.querySelector('.upload-info').classList.add('hide');
           cancelBtns.forEach((e) => e.classList.add('hide'));
