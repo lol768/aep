@@ -13,6 +13,7 @@ import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFile
 import warwick.sso.{UniversityID, Usercode}
 import scala.language.implicitConversions
+import scala.language.postfixOps
 
 class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelativeTime {
 
