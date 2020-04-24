@@ -6,6 +6,7 @@ import java.util.UUID
 
 import controllers.AssessmentController.{FinishExamFormData, UploadFilesFormData}
 import domain.Assessment.Platform
+import domain.BaseSitting.ProgressState.Finalised
 import domain.dao.{AssessmentDao, StudentAssessmentDao, UploadedFileDao}
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
@@ -131,6 +132,17 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
       header("Location", resFinish).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
     }
 
+    "Prevent a user from finalising an already finalised assessment" in new FinishedAssessmentScenario() { s =>
+      private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = true))
+      status(resFinish) mustBe FORBIDDEN
+      contentAsString(resFinish) must include("You've already finalised your submission to this assessment")
+    }
+
+    "Still display the assessment view as normal to a user during the 45 minute grace period" in new StudentIntoGracePeriodScenario() { s =>
+      private val resView = reqView(s.TheAssessment, s.Rupert)
+      status(resView) mustBe OK
+    }
+
   }
 
   class BasicSittingScenario extends Scenario(scenarioCtx) {
@@ -158,6 +170,7 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
 
     val TheAssessment: Assessment = assessmentService.get(assessmentId).futureValue.toOption.get
   }
+
   class AssessmentNotStartedScenario extends BasicSittingScenario {
     private val storedStudentAssessments: Set[StoredStudentAssessment] =
       Set(RupertsId, BerthasId).map { uid =>
@@ -209,6 +222,17 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     studentAssessmentService.upsert(updatedStudentAssessment).futureValue
 
     val RupertsAssessmentWithFile: StudentAssessment = studentAssessmentService.get(RupertsId, TheAssessment.id).futureValue.toOption.get
+  }
+
+  class FinishedAssessmentScenario extends FileUploadedScenario {
+    studentAssessmentService.finishAssessment(RupertsAssessment).futureValue
+  }
+
+  class StudentIntoGracePeriodScenario extends AssessmentStartedScenario {
+    assessmentService.update(
+      TheAssessment.copy(startTime = Some(3.hours and 10.minutes ago)),
+      Seq.empty
+    ).futureValue
   }
 
   private val controller = controllers.routes.AssessmentController
