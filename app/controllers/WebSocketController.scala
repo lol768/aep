@@ -65,7 +65,7 @@ class WebSocketController @Inject()(
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   assessmentService: AssessmentService,
   announcementService: AnnouncementService,
-  uploadAttemptService: UploadAttemptService,
+  uploadAttemptService: UploadAuditingService,
   features: Features,
 )(implicit
   mat: Materializer,

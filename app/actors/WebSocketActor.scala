@@ -13,7 +13,7 @@ import javax.inject.Inject
 import play.api.i18n.Messages
 import play.api.libs.json._
 import play.twirl.api.Html
-import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService, UploadAttemptService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService, UploadAuditingService}
 import system.Features
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -33,7 +33,7 @@ object WebSocketActor {
     studentAssessmentService: StudentAssessmentService,
     assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
     announcementService: AnnouncementService,
-    uploadAttemptService: UploadAttemptService,
+    uploadAttemptService: UploadAuditingService,
     features: Features,
     messages: Messages,
     additionalTopics: Set[String],
@@ -115,7 +115,7 @@ class WebSocketActor @Inject() (
   @Assisted studentAssessmentService: StudentAssessmentService,
   @Assisted assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   @Assisted announcementService: AnnouncementService,
-  @Assisted uploadAttemptService: UploadAttemptService,
+  @Assisted uploadAttemptService: UploadAuditingService,
   @Assisted features: Features,
   @Assisted messages: Messages,
   additionalTopics: Set[String],
