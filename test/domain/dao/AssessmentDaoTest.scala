@@ -190,6 +190,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
 
       val assessments = Seq(dayWindowAssessment, fixedStartAssessment)
       execWithCommit(DBIO.sequence(assessments.map(dao.insert)))
+      // Give them all unsubmitted files - we're just interested in timings in this test
       assessments.foreach { a =>
         val unsubmitted = studentAssessments.storedStudentAssessment(a.id).copy(tabulaSubmissionId = None, uploadedFiles = List(UUID.randomUUID()))
         unsubmitted.extraTimeAdjustmentPerHour mustBe None
@@ -203,30 +204,21 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       withClue("Neither are available at start time") {
         DateTimeUtils.useMockDateTime(now, () => {
           val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size (0)
+          result must have size 0
         })
       }
 
       withClue("Still not available after 5h 30m") {
         DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(5).plusMinutes(30)), () => {
           val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size (0)
+          result must have size 0
         })
       }
 
-      withClue("Fixed-start available after 7h 46m") {
-        DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(9).plusMinutes(46)), () => {
-          val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size (1)
-          result.head.id mustBe fixedStartAssessment.id
-        })
-      }
-
-      // TODO this fails if the "fetch all" test is not run :|
       withClue("Fixed-start available after 5h 46m") {
         DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(5).plusMinutes(46)), () => {
           val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size (1)
+          result must have size 1
           result.head.id mustBe fixedStartAssessment.id
         })
       }
@@ -234,7 +226,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       withClue("Both available after 25h m1") {
         DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(25).plusMinutes(1)), () => {
           val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size (2)
+          result must have size 2
         })
       }
     }
