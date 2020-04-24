@@ -129,7 +129,8 @@ class VersioningSpec extends AbstractDaoTest with BeforeAndAfterEach {
     )
   }
 
-  override protected def afterEach(): Unit = {
+  override def afterEach(): Unit = {
+    super.afterEach()
     execWithCommit(
       (accountDao.accounts.table.schema ++ accountDao.accounts.versionsTable.schema).drop
     )

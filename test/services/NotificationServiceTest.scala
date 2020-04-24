@@ -43,12 +43,8 @@ class NotificationServiceTest
 
   override def afterEach(): Unit = {
     super.afterEach()
-
     // need to reset the mocked services to ready them for the next test
     reset(mockMyWarwickService)
-
-    // Reset the RNG back to how it would be at the start of the test
-    dataGeneration.random.setSeed(BindingOverrides.fixedRandomSeed)
   }
 
   private trait BaseFixture {
