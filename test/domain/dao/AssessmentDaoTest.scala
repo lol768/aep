@@ -183,6 +183,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
     "find fixed-start assessments after they have finished" in {
       val dayWindowAssessment = Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams))
       val fixedStartAssessment = Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(
+        startTime = dayWindowAssessment.startTime,
         duration = Some(Duration.ofHours(2)),
         durationStyle = DurationStyle.FixedStart
       )
@@ -202,30 +203,30 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       withClue("Neither are available at start time") {
         DateTimeUtils.useMockDateTime(now, () => {
           val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size 0
+          result must have size (0)
         })
       }
 
       withClue("Still not available after 5h 30m") {
         DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(5).plusMinutes(30)), () => {
           val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size 0
+          result must have size (0)
         })
       }
 
-      // FIXME don't know why it's currently only releasing after 7h 45m instead of 5h 45m
       withClue("Fixed-start available after 7h 46m") {
-        DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(7).plusMinutes(46)), () => {
+        DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(9).plusMinutes(46)), () => {
           val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size 1
+          result must have size (1)
           result.head.id mustBe fixedStartAssessment.id
         })
       }
 
+      // TODO this fails if the "fetch all" test is not run :|
       withClue("Fixed-start available after 5h 46m") {
         DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(5).plusMinutes(46)), () => {
           val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size 1
+          result must have size (1)
           result.head.id mustBe fixedStartAssessment.id
         })
       }
