@@ -28,6 +28,7 @@ flash.dataGeneration.randomAssessments=Added {0} randomly generated assessments 
 flash.dataGeneration.randomAssessmentsWithStudentAssessments=Added {0} randomly generated assessments with associated student assessments to the database.
 flash.assessment.announcement.created=Assessment announcement created
 flash.messages.sentToInvigilator=Message sent to invigilator
+flash.messages.sentToStudent=Message sent to student
 flash.tabulaAssessmentImports.paused=Tabula assessment imports paused.
 flash.tabulaAssessmentImports.resumed=Tabula assessment imports resumed.
 
@@ -52,4 +53,4 @@ error.permissions.notDepartmentAdminForSelected=You are not an administrator for
 error.dataGeneration.production=Data generation is disabled on production.
 error.students.error=There was an error validating the University IDs.
 error.students.invalid=The University ID {0} was not found.
-error.tabula.assessment.invalid=No submissions can be generated with the data provided. Either the submissions has been already created or entered form data is incorrect.
+error.tabula.assessment.invalid=No submissions can be generated with the data provided. Either the submissions have already been created or entered form data is incorrect.

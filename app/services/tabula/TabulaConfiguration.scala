@@ -11,7 +11,7 @@ import warwick.sso.UniversityID
 class TabulaConfiguration @Inject() (c: Configuration) {
   lazy val usercode: String = c.get[String]("tabula.usercode")
   lazy val rootUrl: String = c.get[String]("tabula.root.url")
-  lazy val assignmentNamespace: String = c.get[String]("assignmentNamespace")
+  lazy val assignmentNamespace: String = c.get[String]("tabula.assignmentNamespace")
 
   def getAssessmentsUrl(deptCode: String): String =
     s"$rootUrl/api/v1/department/$deptCode/upstreamassessments"

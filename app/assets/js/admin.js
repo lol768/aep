@@ -87,6 +87,10 @@ $(() => {
     import('./admin/assessment-announcements-and-queries');
   }
 
+  if (document.querySelector('div.notification-permission')) {
+    import('./notifications');
+  }
+
   if (document.body.classList.contains('generating-zip')) {
     setTimeout(() => {
       document.querySelectorAll('.fa-spinner-third').forEach((node) => node.parentNode.removeChild(node));

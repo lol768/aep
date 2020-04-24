@@ -63,7 +63,7 @@ class ReportingController @Inject()(
           val sorted = sittings
             .sortBy(studentAssessmentOrdering(profiles))
             .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-          Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.client).distinct, queries.count(_.sender == MessageSender.Client), announcements.length))
+          Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.student).distinct, queries.count(_.sender == MessageSender.Student), announcements.length))
         }
     }
   }
@@ -87,8 +87,8 @@ class ReportingController @Inject()(
               sorted,
               assessment.platform,
               profiles,
-              Some(queries.map(_.client).distinct),
-              queries.count(_.sender == MessageSender.Client),
+              Some(queries.map(_.student).distinct),
+              queries.count(_.sender == MessageSender.Student),
               announcements.length,
               latestActivities,
               sortByHeader,

@@ -63,7 +63,7 @@ GET         /admin/assessments/:id/view                           @controllers.a
 GET         /admin/assessments/:id/invigilators                   @controllers.admin.AdminAssessmentsController.invigilatorsAjax(id: UUID)
 GET         /admin/assessments/:id/submissions.zip                @controllers.admin.AdminSubmissionsDownloadController.download(id: UUID)
 GET         /admin/assessments/:id/student-preview                @controllers.admin.AdminAssessmentsController.studentPreview(id: UUID)
-POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AdminAssessmentsController.generateAssignments(id: UUID)
+# POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AdminAssessmentsController.generateAssignments(id: UUID)
 GET         /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.assignmentSubmissions()
 POST        /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.generateAssignmentSubmissions()
 
@@ -96,6 +96,7 @@ GET         /invigilation/assessment/:id/files/:fileId            @controllers.i
 GET         /invigilation/assessment/:id/student/:uniid/queries   @controllers.invigilation.AnnouncementAndQueriesController.view(id: UUID, uniid: UniversityID)
 GET         /invigilation/assessment/:id/queries                  @controllers.invigilation.AnnouncementAndQueriesController.viewAll(id: UUID)
 POST        /invigilation/assessment/:id/announcement/add         @controllers.invigilation.AnnouncementAndQueriesController.addAnnouncement(id: UUID)
+POST        /invigilation/assessment/:id/student/:uniid           @controllers.invigilation.AnnouncementAndQueriesController.addMessage(id: UUID, uniid: UniversityID)
 
 ## Sysadmins ##
 

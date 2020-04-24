@@ -89,13 +89,17 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   private def convertToSittings(studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
-    val saIds = studentAssessments.map(_.assessmentId).distinct
+    val assessmentIds = studentAssessments.map(_.assessmentId).distinct
+    val studentAssessmentIds = studentAssessments.map(_.id)
+
     ServiceResults.zip(
-      assessmentService.getByIds(saIds).successMapTo(_.map(a => a.id -> a).toMap),
-      getDeclarations(saIds).successMapTo(_.map(d => d.studentAssessmentId -> d).toMap)
-    ).map(_.map { case (assessmentsMap, declarationsMap) =>
-      studentAssessments.map(sa => Sitting(sa, assessmentsMap(sa.assessmentId), declarationsMap.getOrElse(sa.id, Declarations(sa.id))))
-    })
+      assessmentService.getByIds(assessmentIds).successMapTo(_.map(a => a.id -> a).toMap),
+      getDeclarations(studentAssessmentIds).successMapTo(_.map(d => d.studentAssessmentId -> d).toMap)
+    ).successMapTo { case (assessmentsMap, declarationsMap) =>
+      studentAssessments.map { sa =>
+        Sitting(sa, assessmentsMap(sa.assessmentId), declarationsMap.getOrElse(sa.id, Declarations(sa.id)))
+      }
+    }
   }
 
   override def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]] = {

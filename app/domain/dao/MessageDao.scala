@@ -4,7 +4,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import domain._
-import domain.messaging.{Message, MessageSave, MessageSender, MessageVersion}
+import domain.messaging.{Message, MessageSender, MessageVersion}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.db.NamedDatabase
@@ -27,8 +27,8 @@ class MessageDao @Inject()(
   import profile.api._
   import jdbcTypes._
 
-  def insert(message: MessageSave, client: UniversityID, assessmentId: UUID)(implicit ctx: AuditLogContext): DBIO[Message] =
-    messages.insert(message.toMessage(client, assessmentId))
+  def insert(message: Message)(implicit ctx: AuditLogContext): DBIO[Message] =
+    messages.insert(message)
 
   def findById(id: UUID)(implicit ctx: TimingContext): DBIO[Option[Message]] =
     messages.table.filter(_.id === id).result.headOption
@@ -38,9 +38,9 @@ class MessageDao @Inject()(
     .sortBy(_.created)
     .result
 
-  def forStudentAssessment(assessmentId: UUID, client: UniversityID): DBIO[Seq[Message]] = messages.table
+  def forStudentAssessment(assessmentId: UUID, student: UniversityID): DBIO[Seq[Message]] = messages.table
     .filter(_.assessmentId === assessmentId)
-    .filter(_.client === client)
+    .filter(_.studentId === student)
     .sortBy(_.created)
     .result
 
@@ -57,7 +57,8 @@ trait MessageTables extends VersionedTables {
   sealed trait CommonProperties { self: Table[_] =>
     def text = column[String]("text")
     def sender = column[MessageSender]("sender")
-    def client = column[UniversityID]("university_id")
+    def studentId = column[UniversityID]("university_id")
+    def staffId = column[Option[Usercode]]("staff_id")
     def assessmentId = column[UUID]("assessment_id")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")
@@ -68,7 +69,7 @@ trait MessageTables extends VersionedTables {
 
     def id = column[UUID]("id", O.PrimaryKey)
 
-    def * : ProvenShape[Message] = (id, text, sender, client, assessmentId, created, version).mapTo[Message]
+    def * : ProvenShape[Message] = (id, text, sender, studentId, assessmentId, staffId, created, version).mapTo[Message]
   }
 
   class MessageVersions(tag: Tag) extends Table[MessageVersion](tag, "message_version") with StoredVersionTable[Message] with CommonProperties {
@@ -77,7 +78,7 @@ trait MessageTables extends VersionedTables {
     def timestamp = column[OffsetDateTime]("version_timestamp_utc")
     def auditUser = column[Option[Usercode]]("version_user")
 
-    def * = (id, text, sender, client, assessmentId, created, version, operation, timestamp, auditUser).mapTo[MessageVersion]
+    def * = (id, text, sender, studentId, assessmentId, staffId, created, version, operation, timestamp, auditUser).mapTo[MessageVersion]
     def pk = primaryKey("pk_messageversions", (id, timestamp))
     def idx = index("idx_messageversions", (id, version))
   }
