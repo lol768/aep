@@ -2,6 +2,7 @@ import $ from 'jquery';
 
 $(() => {
   const $durationField = $('select[name=durationMinutes]');
+  const $durationStyleField = $('#durationStyle_field');
 
   $('#platform_field').on('change', (e) => {
     const count = $('#platform_field').find('input:checkbox:checked').length;
@@ -37,6 +38,7 @@ $(() => {
 
     const validDurations = $('input[name=assessmentType]:checked').data('valid-durations') || [];
     $durationField.closest('.form-group').toggle(validDurations.length > 0);
+    $durationStyleField.toggle(validDurations.length > 0);
     $durationField.find('option').each((_, option) => {
       const $option = $(option);
       const isValidOption = validDurations.includes(Number.parseInt($option.val(), 10));

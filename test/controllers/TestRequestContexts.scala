@@ -7,7 +7,7 @@ import warwick.sso.User
 import warwick.core.timing.TimingContext
 
 object TestRequestContexts {
-    def nothing(request: RequestHeader, user: Option[User]) = RequestContext(
+    def nothing(request: RequestHeader, user: Option[User]): RequestContext = RequestContext(
       path = "/",
       user = user,
       actualUser = user,
@@ -25,6 +25,7 @@ object TestRequestContexts {
       features = new Features {
         override val importStudentExtraTime: Boolean = false
         override val overwriteAssessmentTypeOnImport: Boolean = false
+        override val twoWayMessages: Boolean = false
       },
       tabulaConfiguration = null,
     )

@@ -38,8 +38,8 @@
         }
       }
       @if(context.features.importStudentExtraTime) {
-        <td data-sort="@student.extraTimeAdjustment.map(_.toMillis)">
-        @student.extraTimeAdjustment.map(d => DurationFormatUtils.formatDurationWords(d.toMillis, true, true))
+        <td data-sort="@student.extraTimeAdjustmentPerHour.map(_.toMillis)">
+        @student.extraTimeAdjustmentPerHour.map(d => DurationFormatUtils.formatDurationWords(d.toMillis, true, true))
         </td>
       }
     </tr>

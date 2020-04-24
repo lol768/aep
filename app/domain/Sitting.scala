@@ -2,7 +2,7 @@ package domain
 
 import java.time.{Duration, OffsetDateTime}
 
-import domain.Assessment.Platform
+import domain.Assessment.{DurationStyle, Platform}
 import domain.BaseSitting.{ProgressState, SubmissionState}
 import enumeratum.{EnumEntry, PlayEnum}
 import views.assessment.AssessmentTimingUpdate
@@ -28,15 +28,14 @@ sealed trait BaseSitting {
 
   lazy val inProgress: Boolean = started && !finalised
 
-  def isCurrentForStudent: Boolean = !finalised &&
-    assessment.startTime.exists(_.isBefore(JavaTime.offsetDateTime)) &&
-    assessment.lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
+  def isCurrentForStudent: Boolean = !finalised && assessment.isCurrent
 
   case class DurationInfo(durationWithExtraAdjustment: Duration, onTimeDuration: Duration, lateDuration: Duration)
+  case class TimingInfo(startTime: OffsetDateTime, uploadGraceStart: OffsetDateTime, onTimeEnd: OffsetDateTime, lateEnd: OffsetDateTime)
 
   // How long the student has to complete the assessment (excludes upload grace duration)
   lazy val duration: Option[Duration] = assessment.duration.map { d =>
-    d.plus(studentAssessment.extraTimeAdjustment.getOrElse(Duration.ZERO))
+    d.plus(studentAssessment.extraTimeAdjustment(d).getOrElse(Duration.ZERO))
   }
 
   // How long the student has to complete the assessment including submission uploads
@@ -57,7 +56,7 @@ sealed trait BaseSitting {
   /** The latest that you can submit and still be considered on time */
   lazy val onTimeEnd: Option[OffsetDateTime] =
     for {
-      start <- studentAssessment.startTime
+      start <- effectiveStartTime
       duration <- onTimeDuration
       time <- clampToWindow(start.plus(duration))
     } yield time
@@ -66,7 +65,7 @@ sealed trait BaseSitting {
   /** The latest that you can submit _at all_ */
   lazy val lateEnd: Option[OffsetDateTime] =
     for {
-      start <- studentAssessment.startTime
+      start <- effectiveStartTime
       duration <- lateDuration
       time <- clampToWindow(start.plus(duration))
     } yield time
@@ -74,7 +73,21 @@ sealed trait BaseSitting {
   private def hasLateEndPassed: Boolean =
     lateEnd.exists(_.isBefore(JavaTime.offsetDateTime))
 
+  lazy val effectiveStartTime: Option[OffsetDateTime] = assessment.durationStyle match {
+    case DurationStyle.DayWindow => studentAssessment.startTime
+    case DurationStyle.FixedStart => assessment.startTime
+  }
+
   lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
+  lazy val timingInfo: Option[TimingInfo] = for {
+    d <- duration
+    est <- effectiveStartTime
+  } yield TimingInfo(
+    startTime = est,
+    uploadGraceStart = est.plus(d),
+    onTimeEnd = onTimeEnd.get,
+    lateEnd = lateEnd.get
+  )
 
   def canModify(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = studentAssessment.startTime.exists(startTime =>
     lateDuration.exists { d =>
@@ -94,10 +107,11 @@ sealed trait BaseSitting {
       end = onTimeEnd,
       hasStarted = studentAssessment.startTime.nonEmpty,
       hasFinalised = finalised,
-      extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+      extraTimeAdjustment = assessment.duration.flatMap(studentAssessment.extraTimeAdjustment),
       showTimeRemaining = duration.isDefined,
       progressState = getProgressState,
       submissionState = getSubmissionState,
+      durationStyle = assessment.durationStyle,
     )
   }
 

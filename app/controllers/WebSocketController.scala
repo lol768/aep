@@ -15,8 +15,9 @@ import play.api.libs.json.JsValue
 import play.api.libs.streams.ActorFlow
 import play.api.mvc.{Action, AnyContent, Results, WebSocket}
 import services._
+import system.Features
 import warwick.core.helpers.JavaTime
-import warwick.sso.{LoginContext, Usercode}
+import warwick.sso.{LoginContext, UniversityID, Usercode}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -47,6 +48,12 @@ object WebSocketController {
     "assessment" -> uuid,
     "message" -> nonEmptyText,
   )(SendAssessmentAnnouncementForm.apply)(SendAssessmentAnnouncementForm.unapply))
+
+  object Topics {
+    def allStudentsAssessment(assessmentId: UUID): String = s"studentAssessment:${assessmentId.toString}"
+    def studentAssessment(universityId: UniversityID)(assessmentId: UUID): String = s"studentAssessment:${assessmentId.toString}:${universityId.string}"
+    def allInvigilatorsAssessment(assessmentId: UUID): String = s"invigilatorAssessment:${assessmentId.toString}"
+  }
 }
 
 @Singleton
@@ -58,6 +65,8 @@ class WebSocketController @Inject()(
   assessmentClientNetworkActivityService: AssessmentClientNetworkActivityService,
   assessmentService: AssessmentService,
   announcementService: AnnouncementService,
+  uploadAttemptService: UploadAttemptService,
+  features: Features,
 )(implicit
   mat: Materializer,
   actorSystem: ActorSystem,
@@ -78,10 +87,10 @@ class WebSocketController @Inject()(
           case Some(user) =>
             logger.info(s"WebSocket opening for ${user.usercode.string}")
             studentAssessmentService.byUniversityId(user.universityId.get)
-                .successMapTo(_.filter(_.inProgress).map(_.assessment.id.toString))
+                .successMapTo(_.filter(_.inProgress).map(_.assessment.id))
                 .map(_.getOrElse(Nil)).zip(
                   assessmentService.listForInvigilator(Set(user.usercode))
-                    .successMapTo(_.map(_.id.toString))
+                    .successMapTo(_.map(_.id))
                     .map(_.getOrElse(Nil))
             ).map { case (relatedStudentAssessmentIds, relatedInvigilatorAssessmentIds) =>
               ActorFlow.actorRef(out => WebSocketActor.props(
@@ -91,9 +100,17 @@ class WebSocketController @Inject()(
                 studentAssessmentService = studentAssessmentService,
                 assessmentClientNetworkActivityService = assessmentClientNetworkActivityService,
                 announcementService = announcementService,
-                additionalTopics =
-                  (relatedStudentAssessmentIds.map(id => s"studentAssessment:$id") ++
-                    relatedInvigilatorAssessmentIds.map(id => s"invigilatorAssessment:$id")).toSet
+                uploadAttemptService = uploadAttemptService,
+                features = features,
+                messages = request2Messages,
+                additionalTopics = (
+                  // Things relevant ao ALL student on the assessment e.g. announcements
+                  relatedStudentAssessmentIds.map(Topics.allStudentsAssessment) ++
+                  // Things relevant to this specific student on each assessment e.g. messages from invigilators
+                  relatedStudentAssessmentIds.map(Topics.studentAssessment(user.universityId.get)) ++
+                  // Things relevant to all invigilators e.g. announcements and messages
+                  relatedInvigilatorAssessmentIds.map(Topics.allInvigilatorsAssessment)
+                  ).toSet
               ))
             }.map(Right.apply)
           case None =>
@@ -129,11 +146,11 @@ class WebSocketController @Inject()(
       _ => BadRequest,
       data => {
         pubSub.publish(
-          s"invigilatorAssessment:${data.assessment.toString}",
+          Topics.allInvigilatorsAssessment(data.assessment),
           AssessmentAnnouncement(UUID.randomUUID.toString, data.assessment.toString, data.message, JavaTime.offsetDateTime),
         )
         pubSub.publish(
-          s"studentAssessment:${data.assessment.toString}",
+          Topics.allStudentsAssessment(data.assessment),
           AssessmentAnnouncement(UUID.randomUUID.toString, data.assessment.toString, data.message, JavaTime.offsetDateTime),
         )
         Redirect(controllers.routes.WebSocketController.broadcastTest())

@@ -8,7 +8,7 @@ import domain.tabula.{AssessmentComponent, ExamPaperSchedule}
 import domain.{Assessment, JobKeys, StudentAssessment}
 import helpers.ServiceResultUtils.traverseSerial
 import javax.inject.{Inject, Singleton}
-import org.quartz.{JobKey, Scheduler, TriggerKey}
+import org.quartz.{Scheduler, TriggerKey}
 import play.api.Configuration
 import play.api.libs.json.Json
 import services.TabulaAssessmentImportService.{AssessmentImportResult, DepartmentWithAssessments}
@@ -106,7 +106,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
           if (schedules.size == 1) schedules.head
           else {
             // Some information _must_ match, otherwise we need to change our approach
-            require(schedules.forall(_.slotId == schedules.head.slotId))
+            require(schedules.forall(_.slotId == schedules.head.slotId), s"Multiple schedules for $ac but slot ID doesn't match")
             require(schedules.forall(_.startTime == schedules.head.startTime))
 
             // We allow locationSequence and location to differ, but we treat them as one assessment
@@ -145,7 +145,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
               val additions: Seq[StudentAssessment] =
                 schedule.students.filterNot(s => studentAssessments.exists(_.studentId == s.universityID))
                   .map { scheduleStudent =>
-                    val extraTimeAdjustment = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                    val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
                     StudentAssessment(
                       id = UUID.randomUUID(),
                       assessmentId = assessment.id,
@@ -154,18 +154,19 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                       studentId = scheduleStudent.universityID,
                       inSeat = false,
                       startTime = None,
-                      extraTimeAdjustment = extraTimeAdjustment,
+                      extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour,
                       explicitFinaliseTime = None,
                       uploadedFiles = Nil,
+                      tabulaSubmissionId = None
                     )
                   }
 
               val modifications: Seq[StudentAssessment] =
                 schedule.students.flatMap { scheduleStudent =>
-                  val extraTimeAdjustment = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                  val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
                   studentAssessments.find(_.studentId == scheduleStudent.universityID).flatMap { studentAssessment =>
                     val updated = studentAssessment.copy(
-                      extraTimeAdjustment = extraTimeAdjustment,
+                      extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour,
                       occurrence = Option(scheduleStudent.occurrence),
                       academicYear = Option(schedule.academicYear),
                     )

@@ -14,13 +14,13 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import services.StudentAssessmentService._
 import slick.dbio.DBIO
-import system.routes.Types.UniversityID
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.{AuditLogContext, AuditService}
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileSave
+import warwick.sso.UniversityID
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -280,9 +280,10 @@ class StudentAssessmentServiceImpl @Inject()(
         studentId = studentAssessment.studentId,
         inSeat = studentAssessment.inSeat,
         startTime = studentAssessment.startTime,
-        extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+        extraTimeAdjustmentPerHour = studentAssessment.extraTimeAdjustmentPerHour,
         finaliseTime = studentAssessment.explicitFinaliseTime,
         uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+        tabulaSubmissionId = None,
         created = timestamp,
         version = timestamp,
       )))).map(_.map(_.asStudentAssessment(Map.empty)))
@@ -302,11 +303,12 @@ class StudentAssessmentServiceImpl @Inject()(
               academicYear = studentAssessment.academicYear,
               inSeat = studentAssessment.inSeat,
               startTime = studentAssessment.startTime,
-              extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+              extraTimeAdjustmentPerHour = studentAssessment.extraTimeAdjustmentPerHour,
               finaliseTime = studentAssessment.explicitFinaliseTime,
               uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+              tabulaSubmissionId = studentAssessment.tabulaSubmissionId,
               created = existingSA.created,
-              version = existingSA.version,
+              version = existingSA.version
             ))
             withUploadedFiles <- dao.loadWithUploadedFiles(updated.studentId, updated.assessmentId)
           } yield inflateRowWithUploadedFiles(withUploadedFiles).get)
@@ -320,9 +322,10 @@ class StudentAssessmentServiceImpl @Inject()(
             studentId = studentAssessment.studentId,
             inSeat = studentAssessment.inSeat,
             startTime = studentAssessment.startTime,
-            extraTimeAdjustment = studentAssessment.extraTimeAdjustment,
+            extraTimeAdjustmentPerHour = studentAssessment.extraTimeAdjustmentPerHour,
             finaliseTime = studentAssessment.explicitFinaliseTime,
             uploadedFiles = studentAssessment.uploadedFiles.map(_.id).toList,
+            tabulaSubmissionId = studentAssessment.tabulaSubmissionId,
             created = timestamp,
             version = timestamp,
           ))).map(_.asStudentAssessment(Map.empty))

@@ -1,0 +1,23 @@
+@import java.time.OffsetDateTime
+
+@import tags._
+@import warwick.sso.UniversityID
+@(universityID: UniversityID, studentName: String, createdDate: OffsetDateTime)(panelBodyAndFooter: Html)
+
+<div class="panel panel-default">
+  <div class="panel-heading" id="@universityID.string">
+    <h4 class="panel-title">
+      <a class="collapsed" data-toggle="collapse" data-parent="#messages-accordion" href="#collapse-@universityID.string">
+        <div class="pull-right">
+          @localisedDatetime(createdDate, inline = true)
+          <i class="fas fa-fw fa-angle-down"></i>
+          <i class="fas fa-fw fa-angle-up"></i>
+        </div>
+        @studentName
+      </a>
+    </h4>
+  </div>
+  <div id="collapse-@universityID.string" class="panel-collapse collapse">
+    @panelBodyAndFooter
+  </div>
+</div>

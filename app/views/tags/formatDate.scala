@@ -1,7 +1,7 @@
 package views.tags
 
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import java.time.{LocalDate, OffsetDateTime}
+import java.time.{LocalDate, LocalTime, OffsetDateTime}
 import java.util.Locale
 
 import warwick.core.helpers.JavaTime
@@ -16,6 +16,8 @@ object formatDate {
 
   private val compactDatetimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yy HH:mm:ss")
 
+  private val tabulaTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+
   private val dateFormatter =
     new DateTimeFormatterBuilder()
       .append(JavaTime.dateFullNoDayFormatter)
@@ -26,6 +28,15 @@ object formatDate {
 
   def sortableDateTime(date: OffsetDateTime): String =
     date.format(JavaTime.iSO8601DateFormat)
+
+  def tabulaDateTime(date: OffsetDateTime): String =
+    date.format(JavaTime.iSO8601DateFormat)
+
+  def tabulaDate(date: LocalDate): String =
+    date.format(JavaTime.localDateFormat)
+
+  def tabulaTime(time: LocalTime): String =
+    time.format(tabulaTimeFormatter)
 
   def compactDateTime(date: OffsetDateTime): String =
     date.format(compactDatetimeFormatter)

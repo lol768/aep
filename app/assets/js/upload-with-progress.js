@@ -8,6 +8,14 @@ const STATUS_ERRORS = {
   403: 'The upload failed because it looks like you might have been logged out. Do you want to refresh the page and try again?',
 };
 
+function addEventListenerOnce(element, event, fn) {
+  const func = () => {
+    element.removeEventListener(event, func);
+    fn();
+  };
+  element.addEventListener(event, func);
+}
+
 /**
  * Component which allows for file upload forms to be
  * sent via AJAX XHR, with built-in progress indicator
@@ -74,11 +82,23 @@ export default class UploadWithProgress {
    */
   attachFormListeners(element) {
     element.setAttribute('data-attached', true);
+    UploadWithProgress.setDisabledByDefault(element);
     element.addEventListener('submit', (formSubmitEvent) => {
       const formElement = formSubmitEvent.target;
+
+      if (this.attemptLogger !== undefined) {
+        try {
+          this.attemptLogger.logAttempt(formElement.getAttribute('data-student-assessment-id'));
+        } catch (e) {
+          log('Attempt log failed, ignoring as there are more pressing matters', e);
+        }
+      }
       formSubmitEvent.preventDefault(); // don't want form to submit the form normally
 
       try {
+        const submitBtns = formElement.parentElement.querySelectorAll('[type=submit]');
+        const cancelBtns = formElement.parentElement.querySelectorAll('[data-action="cancelUpload"]');
+        let cancelledByUser = false;
         const xhr = new XMLHttpRequest();
         xhr.withCredentials = true;
         // IE 10
@@ -94,9 +114,10 @@ export default class UploadWithProgress {
         xhr.addEventListener('readystatechange', () => {
           if (xhr.readyState === XMLHttpRequest.DONE) {
             formElement.querySelector('.upload-info').classList.add('hide'); // IE10
+            submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
             if (xhr.status === 200) {
               this.successCallback(formElement);
-            } else {
+            } else if (!cancelledByUser) {
               this.failureCallback(xhr);
               UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
             }
@@ -105,6 +126,7 @@ export default class UploadWithProgress {
           }
         });
         xhr.addEventListener('error', () => {
+          submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
           this.failureCallback(xhr);
           UploadWithProgress.handleErrorInUpload(formElement, xhr.responseText, xhr.getResponseHeader('Content-Type'), xhr.status);
         });
@@ -112,12 +134,45 @@ export default class UploadWithProgress {
         xhr.open('POST', formElement.getAttribute('action'), true);
         xhr.setRequestHeader('OnlineExams-Upload', 'true');
         xhr.send(formData);
+        submitBtns.forEach((e) => UploadWithProgress.disableButtonWithTitle(e, 'Please wait for the file to be uploaded'));
+        cancelBtns.forEach((e) => e.classList.remove('hide'));
+        cancelBtns.forEach((el) => addEventListenerOnce(el, 'click', () => {
+          // TODO log to server
+          cancelledByUser = true;
+          xhr.abort();
+          submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
+          formElement.querySelector('.upload-info').classList.add('hide');
+          cancelBtns.forEach((e) => e.classList.add('hide'));
+        }));
       } catch (e) {
         // if all else fails, just submit with a normal POST
         formElement.submit();
       }
       return false;
     });
+  }
+
+  static setDisabledByDefault(targetElement) {
+    const submitBtns = targetElement.querySelectorAll('[type=submit]');
+    submitBtns.forEach((e) => UploadWithProgress.disableButtonWithTitle(e));
+    const fileList = targetElement.querySelector('input[type=file]');
+    fileList.addEventListener('change', () => {
+      if (fileList.files.length !== 0) {
+        submitBtns.forEach((e) => UploadWithProgress.undisableButton(e));
+      } else {
+        submitBtns.forEach((e) => UploadWithProgress.disableButtonWithTitle(e));
+      }
+    });
+  }
+
+  static undisableButton(submitBtn) {
+    submitBtn.removeAttribute('disabled');
+    submitBtn.removeAttribute('title');
+  }
+
+  static disableButtonWithTitle(submitBtn, title = 'Please pick at least one file') {
+    submitBtn.setAttribute('disabled', 'disabled');
+    submitBtn.setAttribute('title', title);
   }
 
   /**
@@ -159,5 +214,9 @@ export default class UploadWithProgress {
         this.registerEventListeners(this.container);
       });
     }
+  }
+
+  setAttemptLogger(attemptLogger) {
+    this.attemptLogger = attemptLogger;
   }
 }

@@ -3,7 +3,7 @@ package domain
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
-import domain.Assessment.{AssessmentType, Brief, Platform}
+import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform}
 import domain.BaseSitting.ProgressState._
 import domain.BaseSitting.SubmissionState
 import helpers.SimpleSemanticRelativeTime
@@ -20,7 +20,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
     assessmentStart: Option[OffsetDateTime] = None,
     assessmentDuration: Option[Duration] = None,
     studentStart: Option[OffsetDateTime] = None,
-    extraTimeAdjustment: Option[Duration] = None,
+    extraTimeAdjustmentPerHour: Option[Duration] = None,
     finaliseTime: Option[OffsetDateTime] = None,
     uploadedFiles: Seq[UploadedFile] = Seq.empty,
   ) {
@@ -34,6 +34,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       duration = assessmentDuration,
       platform = Set(Platform.OnlineExams),
       assessmentType = Some(AssessmentType.Bespoke),
+      durationStyle = DurationStyle.DayWindow,
       state = Assessment.State.Approved,
       tabulaAssessmentId = Some(UUID.randomUUID()),
       tabulaAssignments = Set.empty,
@@ -53,9 +54,10 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       academicYear = None,
       inSeat = true,
       startTime = studentStart,
-      extraTimeAdjustment = None,
+      extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour,
       explicitFinaliseTime = None,
-      uploadedFiles = uploadedFiles
+      uploadedFiles = uploadedFiles,
+      tabulaSubmissionId = None
     )
 
     val declarations: Declarations = Declarations(studentAssessment.id)

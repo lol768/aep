@@ -2,6 +2,7 @@
 @import org.quartz.Trigger.TriggerState
 @import play.api.libs.json.Json
 @import warwick.core.helpers.JavaTime
+@import tags._
 
 @(
   activities: Seq[QueuedMyWarwickActivity]
@@ -21,7 +22,7 @@
     <tbody>
       @activities.map { activity =>
         <tr>
-          <td>@JavaTime.Relative(activity.created)</td>
+          <td>@localisedDatetime(activity.created)</td>
           <td>@activity.instanceBaseUrl</td>
           <td><pre>@Json.prettyPrint(activity.request)</pre></td>
           <td>

@@ -92,7 +92,7 @@ object DataGenerationService {
   private val invigilator1 = "Mary"
   private val invigilator2 = "Bob"
 
-  private val extraTimeAdjustmentDurations = Seq(20, 30, 45, 60, 90, 120).map(_.toLong)
+  private val extraTimeAdjustmentDurations = Seq(10, 15, 20, 30, 45, 60).map(_.toLong)
 
   def makeStoredBrief(platforms: Set[Platform])(implicit dataGeneration: DataGeneration): StoredBrief =
     StoredBrief(
@@ -120,6 +120,7 @@ object DataGenerationService {
     val assType = Some(AssessmentType.values(dataGeneration.random.nextInt(AssessmentType.values.size)))
     val moduleCode =  s"$stemModuleCode-$cats"
     val sequence = f"E${dataGeneration.random.between(1, 9)}%02d"
+    val durationStyle = Assessment.DurationStyle.DayWindow
 
     StoredAssessment(
       id = uuid,
@@ -130,6 +131,7 @@ object DataGenerationService {
       duration = duration,
       platform = Set(platform),
       assessmentType = assType,
+      durationStyle = durationStyle,
       storedBrief = makeStoredBrief(Set(platform)),
       invigilators = List(invigilator1, invigilator2),
       state = Assessment.State.Draft,
@@ -154,7 +156,7 @@ object DataGenerationService {
     // Random but deterministic for a given student
     val r = new Random(studentId.string.toLong)
     val twentyPercentChance = r.nextInt(5) == 0
-    val extraTimeAdjustment = Option.when(twentyPercentChance)(Duration.ofMinutes(extraTimeAdjustmentDurations(r.nextInt(extraTimeAdjustmentDurations.length))))
+    val extraTimeAdjustmentPerHour = Option.when(twentyPercentChance)(Duration.ofMinutes(extraTimeAdjustmentDurations(r.nextInt(extraTimeAdjustmentDurations.length))))
 
     StoredStudentAssessment(
       id = studentAssessmentId,
@@ -164,9 +166,10 @@ object DataGenerationService {
       studentId = studentId,
       inSeat = false,
       startTime = None,
-      extraTimeAdjustment = extraTimeAdjustment,
+      extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour,
       finaliseTime = None,
       uploadedFiles = List.empty,
+      tabulaSubmissionId = None,
       created = createTime.asOffsetDateTime,
       version = createTime.asOffsetDateTime,
     )

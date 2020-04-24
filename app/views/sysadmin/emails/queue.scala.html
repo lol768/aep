@@ -1,6 +1,7 @@
 @import domain.OutgoingEmail
 @import org.quartz.Trigger
 @import warwick.core.helpers.JavaTime
+@import tags._
 
 @(
   emails: Seq[(OutgoingEmail, Option[Trigger.TriggerState])]
@@ -42,8 +43,8 @@
               }
             }
           </td>
-          <td>@JavaTime.Relative(email.created)</td>
-          <td>@email.lastSendAttempt.map { dt => @JavaTime.Relative(dt) }</td>
+          <td>@localisedDatetime(email.created)</td>
+          <td>@email.lastSendAttempt.map { dt => @localisedDatetime(dt) }</td>
           <td>@email.failureReason</td>
           <td>
             @state.map { s =>

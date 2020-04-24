@@ -1,6 +1,6 @@
 package domain
 
-import domain.Assessment.{AssessmentType, Platform, State}
+import domain.Assessment.{AssessmentType, DurationStyle, Platform, State}
 import domain.dao.AssessmentsTables.StoredBrief
 import domain.messaging.MessageSender
 import enumeratum.SlickEnumSupport
@@ -63,6 +63,11 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
     AcademicYear.starting
   )
 
+  implicit val departmentCodeTypeMapper: JdbcType[DepartmentCode] = MappedColumnType.base(
+    _.string,
+    DepartmentCode.apply
+  )
+
   // Enum[] mappings
   implicit val databaseOperationTypeMapper: JdbcType[DatabaseOperation] = mappedColumnTypeForEnum(DatabaseOperation)
   implicit val uploadedFileOwnerMapper: JdbcType[UploadedFileOwner] = mappedColumnTypeForEnum(UploadedFileOwner)
@@ -70,12 +75,9 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
   implicit val stateTypeMapper: JdbcType[State] = mappedColumnTypeForEnum(State)
   implicit val assessmentTypeTypeMapper: JdbcType[AssessmentType] = mappedColumnTypeForEnum(AssessmentType)
   implicit val messageSenderMapper: JdbcType[MessageSender] = mappedColumnTypeForEnum(MessageSender)
+  implicit val durationStyleMapper: JdbcType[DurationStyle] = mappedColumnTypeForEnum(DurationStyle)
 
 }
-
-class OracleCustomJdbcTypes @Inject()(
-  dbConfigProvider: DatabaseConfigProvider
-) extends CustomJdbcTypes[JdbcProfile](dbConfigProvider)
 
 class PostgresCustomJdbcTypes @Inject()(
   dbConfigProvider: DatabaseConfigProvider
@@ -98,8 +100,4 @@ class PostgresCustomJdbcTypes @Inject()(
   implicit val listOfStringsMapper: JdbcType[Seq[String]] = jsonTypeMapper[Seq[String]]
   implicit val storedBriefMapper: JdbcType[StoredBrief] = jsonTypeMapper[StoredBrief]
 
-  implicit val departmentCodeTypeMapper: JdbcType[DepartmentCode] = MappedColumnType.base(
-    _.string,
-    DepartmentCode.apply
-  )
 }

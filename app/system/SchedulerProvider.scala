@@ -7,7 +7,6 @@ import org.quartz.impl.StdSchedulerFactory
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.inject.ApplicationLifecycle
 import play.api.libs.JNDI
-import play.db.NamedDatabase
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -42,7 +41,7 @@ class SchedulerProvider @Inject()(
       scheduler.shutdown(true)
     }
 
-    lifecycle.addStopHook(shutdown _)
+    lifecycle.addStopHook(() => shutdown)
 
     scheduler
   }

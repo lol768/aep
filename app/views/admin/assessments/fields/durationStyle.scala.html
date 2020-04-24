@@ -1,0 +1,17 @@
+@import views.html.b3.vertical.VerticalFieldConstructor
+@import controllers.admin.AdminAssessmentsController.AssessmentFormData
+@import domain.Assessment
+@import domain.Assessment.DurationStyle
+
+@(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
+
+@defining(existing.exists(_.tabulaAssessmentId.nonEmpty)) { disabled =>
+    @b3.radio(
+        form("durationStyle"),
+        Symbol("_label") -> "Duration style"
+    ) { implicit extraInfo =>
+        @DurationStyle.values.map { s =>
+            @b3.radioOption(s.entryName, s.label, Seq(Symbol("disabled") -> true).filter(_ => disabled): _*)
+        }
+    }
+}

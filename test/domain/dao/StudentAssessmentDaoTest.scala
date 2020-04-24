@@ -31,7 +31,7 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
         })
 
         assessment = assessments.storedAssessment()
-        sa = studentAssessments.storedStudentAssessment(assessment.id, student1).copy(extraTimeAdjustment = None)
+        sa = studentAssessments.storedStudentAssessment(assessment.id, student1).copy(extraTimeAdjustmentPerHour = None)
         _ <- assDao.insert(assessment)
         inserted <- dao.insert(sa)
 
@@ -46,13 +46,13 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
           inserted.assessmentId mustEqual assessment.id
           inserted.studentId mustEqual student1
           inserted.startTime mustBe None
-          inserted.extraTimeAdjustment mustBe None
+          inserted.extraTimeAdjustmentPerHour mustBe None
           inserted.finaliseTime mustBe None
           inserted.inSeat mustBe false
           inserted.uploadedFiles.isEmpty mustBe true
         })
 
-        updated <- dao.update(inserted.copy(inSeat = true, startTime = Some(JavaTime.offsetDateTime), extraTimeAdjustment = Some(Duration.ofMinutes(30L))))
+        updated <- dao.update(inserted.copy(inSeat = true, startTime = Some(JavaTime.offsetDateTime), extraTimeAdjustmentPerHour = Some(Duration.ofMinutes(30L))))
 
         _ <- DBIO.from(Future.successful {
           updated.created.toInstant mustBe sa.created.toInstant
@@ -61,7 +61,7 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
           updated.assessmentId mustEqual assessment.id
           updated.studentId mustEqual student1
           updated.startTime mustBe Some(JavaTime.offsetDateTime)
-          updated.extraTimeAdjustment mustBe Some(Duration.ofMinutes(30L))
+          updated.extraTimeAdjustmentPerHour mustBe Some(Duration.ofMinutes(30L))
           updated.finaliseTime mustBe None
           updated.inSeat mustBe true
           updated.uploadedFiles.isEmpty mustBe true
@@ -123,7 +123,7 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
         })
 
         assessment = assessments.storedAssessment()
-        sa = studentAssessments.storedStudentAssessment(assessment.id, student1).copy(extraTimeAdjustment = None)
+        sa = studentAssessments.storedStudentAssessment(assessment.id, student1).copy(extraTimeAdjustmentPerHour = None)
         declaration = studentAssessments.storedDeclarations(sa.id)
 
         _ <- assDao.insert(assessment)
