@@ -30,7 +30,7 @@ class UploadedFileServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterE
       val list = uploadedFileService.listWithoutOwner().serviceValue
 
       list must have size(2)
-      list.map(_.fileName).toSet mustBe Set(specialJPG.path, homeOfficeStatementPDF.path)
+      list.map(_.fileName).toSet mustBe Set(specialJPG.uploadedFileSave.fileName, homeOfficeStatementPDF.uploadedFileSave.fileName)
     }
 
     "delete a file based on its ID" in {
