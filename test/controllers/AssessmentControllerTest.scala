@@ -166,6 +166,7 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
       private val resView = reqView(s.TheAssessment, s.Rupert)
       status(resView) mustBe OK
       contentAsString(resView) must include(fileUploadFormElement)
+      contentAsString(resView) mustNot include(lateUploadWarning)
     }
 
     "Still display the assessment view during the late submission period but warn submission will be marked late" in new StudentIntoLatePeriodScenario() { s =>
