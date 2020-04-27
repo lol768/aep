@@ -7,7 +7,7 @@ import actors.WebSocketActor.AssessmentAnnouncement
 import akka.Done
 import com.google.inject.ImplementedBy
 import controllers.WebSocketController.Topics
-import domain.Announcement
+import domain.{Announcement, AssessmentMetadata, DepartmentCode}
 import domain.AuditEvent.{Operation, Target}
 import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.{AnnouncementDao, DaoRunner}
@@ -28,6 +28,7 @@ trait AnnouncementService {
   def getByAssessmentId(id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
   def getByAssessmentId(student: UniversityID, id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]]
   def save(announcement: Announcement)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
+  def getByDepartmentCode(departmentCode: DepartmentCode)(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Announcement)]]]
 }
 
 @Singleton
@@ -89,4 +90,7 @@ class AnnouncementServiceImpl @Inject()(
 
   override def getByAssessmentId(student: UniversityID, id: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Announcement]]] =
     daoRunner.run(dao.getByAssessmentId(student, id)).map(_.map(_.asAnnouncement)).map(ServiceResults.success)
+
+  override def getByDepartmentCode(departmentCode: DepartmentCode)(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Announcement)]]] =
+    daoRunner.run(dao.getByDepartmentCode(departmentCode)).map(_.map { case(assessment, announcement) => (assessment.asAssessmentMetadata, announcement.asAnnouncement) } ).map(ServiceResults.success)
 }

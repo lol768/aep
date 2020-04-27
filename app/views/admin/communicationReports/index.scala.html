@@ -1,0 +1,27 @@
+@import warwick.sso.LoginContext
+@import system.Roles
+@import domain.tabula
+@(adminDepartments: Seq[tabula.Department])(implicit context: RequestContext)
+
+@frontend("Communication reports") {
+  @if(adminDepartments.isEmpty) {
+    <p>Sorry, you are not an admin</p>
+  } else {
+
+    <h2>Announcements</h2>
+
+    <ul>
+    @adminDepartments.map { department =>
+      <li><a href="/admin/communication/announcements/@department.code">@department.name</a></li>
+    }
+    </ul>
+
+    <h2>Queries</h2>
+
+    <ul>
+    @adminDepartments.map { department =>
+      <li><a href="/admin/communication/queries/@department.code">@department.name</a></li>
+    }
+    </ul>
+  }
+}

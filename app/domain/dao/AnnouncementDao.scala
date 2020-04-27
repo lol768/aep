@@ -6,6 +6,7 @@ import java.util.UUID
 import com.google.inject.ImplementedBy
 import domain._
 import domain.dao.AnnouncementsTables.{StoredAnnouncement, StoredAnnouncementVersion}
+import domain.dao.AssessmentsTables.StoredAssessment
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.lifted.ProvenShape
@@ -116,6 +117,7 @@ trait AnnouncementDao {
   def getById(id: UUID): DBIO[Option[StoredAnnouncement]]
   def getByAssessmentId(id: UUID): DBIO[Seq[StoredAnnouncement]]
   def getByAssessmentId(student: UniversityID, id: UUID): DBIO[Seq[StoredAnnouncement]]
+  def getByDepartmentCode(departmentCode: DepartmentCode): DBIO[Seq[(StoredAssessment, StoredAnnouncement)]]
 }
 
 @Singleton
@@ -153,5 +155,11 @@ class AnnouncementDaoImpl @Inject()(
       .join(studentAssessments.table.filter(_.studentId === student))
       .on((a, sa) => a.assessmentId === sa.assessmentId)
       .map { case (a, _) => a }
+      .result
+
+  def getByDepartmentCode(departmentCode: DepartmentCode): DBIO[Seq[(StoredAssessment, StoredAnnouncement)]] =
+    assessmentTables.assessments.table.filter(_.departmentCode === departmentCode)
+      .join(announcements.table)
+      .on((assessment, announcement) => announcement.assessmentId === assessment.id)
       .result
 }

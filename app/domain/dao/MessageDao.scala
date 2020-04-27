@@ -4,6 +4,8 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import domain._
+import domain.dao.AssessmentsTables.StoredAssessment
+import domain.messaging.{Message, MessageSave, MessageSender, MessageVersion}
 import domain.messaging.{Message, MessageSender, MessageVersion}
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -18,6 +20,7 @@ import scala.concurrent.ExecutionContext
 @Singleton
 class MessageDao @Inject()(
   @NamedDatabase("default") protected val dbConfigProvider: DatabaseConfigProvider,
+  assessmentTables: AssessmentTables,
   val jdbcTypes: PostgresCustomJdbcTypes
 )(
   implicit ec: ExecutionContext
@@ -44,6 +47,11 @@ class MessageDao @Inject()(
     .sortBy(_.created)
     .result
 
+  def findByDepartmentCode(departmentCode: DepartmentCode): DBIO[Seq[(StoredAssessment, Message)]] =
+    assessmentTables.assessments.table.filter(_.departmentCode === departmentCode)
+      .join(messages.table)
+      .on((assessment, message) => message.assessmentId === assessment.id)
+      .result
 }
 
 trait MessageTables extends VersionedTables {
