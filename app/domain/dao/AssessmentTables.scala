@@ -42,7 +42,7 @@ class AssessmentTables @Inject()(
     def invigilators = column[List[String]]("invigilators")
     def state = column[State]("state")
     def tabulaAssessmentId = column[Option[UUID]]("tabula_assessment_id")
-    def tabulaAssignments = column[List[String]]("tabula_assignments")
+    def tabulaAssignments = column[List[UUID]]("tabula_assignments")
     def examProfileCode = column[String]("exam_profile_code")
     def moduleCode = column[String]("module_code")
     def departmentCode = column[DepartmentCode]("department_code")
