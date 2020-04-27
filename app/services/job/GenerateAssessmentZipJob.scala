@@ -8,7 +8,8 @@ import java.util.zip.Deflater
 import akka.Done
 import com.github.tototoshi.csv.CSVWriter
 import com.google.common.io.{ByteSource, Files}
-import domain.UploadedFileOwner
+import domain.Assessment.Platform
+import domain.{Assessment, Sitting, UploadedFileOwner}
 import helpers.ServiceResultUtils.traverseSerial
 import helpers.StringUtils._
 import javax.inject.Inject
@@ -17,7 +18,7 @@ import org.apache.commons.compress.archivers.zip.{ZipArchiveEntry, ZipArchiveOut
 import org.apache.commons.io.FilenameUtils
 import org.quartz.{JobExecutionContext, Scheduler}
 import play.api.libs.Files.TemporaryFileCreator
-import services.{StudentAssessmentService, UploadedFileService}
+import services.{AssessmentService, StudentAssessmentService, UploadedFileService}
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.AuditLogContext
@@ -29,13 +30,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class GenerateAssessmentZipJob @Inject()(
   scheduler: Scheduler,
+  assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
   uploadedFileService: UploadedFileService,
   objectStorageService: ObjectStorageService,
   temporaryFileCreator: TemporaryFileCreator,
 )(implicit ec: ExecutionContext) extends AbstractJob(scheduler) {
-
-  val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 
   override def run(implicit context: JobExecutionContext, audit: AuditLogContext): Future[JobResult] = {
     val assessmentId = UUID.fromString(context.getMergedJobDataMap.getString("id"))
@@ -44,7 +44,10 @@ class GenerateAssessmentZipJob @Inject()(
 
     logger.info(s"[$assessmentId] Generating a zip file of submissions")
 
-    studentAssessmentService.sittingsByAssessmentId(assessmentId).successFlatMapTo { sittings =>
+    ServiceResults.zip(
+      assessmentService.get(assessmentId),
+      studentAssessmentService.sittingsByAssessmentId(assessmentId),
+    ).successFlatMapTo { case (assessment, sittings) =>
       val uploadedFiles = sittings.flatMap(_.studentAssessment.uploadedFiles)
       val totalFileSize = uploadedFiles.map(_.contentLength).sum
 
@@ -66,20 +69,7 @@ class GenerateAssessmentZipJob @Inject()(
         // Write a CSV of the assessment data
         zip.putArchiveEntry(new ZipArchiveEntry("submissions.csv"))
         val csv = CSVWriter.open(zip)
-        // Header
-        csv.writeRow(Seq("University ID", "State", "Signed statement of authorship", "Reasonable adjustments declared", "Start time", "Finalise time", "Submission time", "Files"))
-        csv.writeAll(sittings.map { sitting =>
-          Seq(
-            sitting.studentAssessment.studentId.string,
-            sitting.getSummaryStatusLabel.getOrElse(""),
-            sitting.declarations.acceptsAuthorship.toString,
-            if (sitting.declarations.completedRA) sitting.declarations.selfDeclaredRA.toString else "",
-            sitting.studentAssessment.startTime.map(csvDateTimeFormat.format).getOrElse(""),
-            sitting.studentAssessment.explicitFinaliseTime.map(csvDateTimeFormat.format).getOrElse(""),
-            sitting.studentAssessment.submissionTime.map(csvDateTimeFormat.format).getOrElse(""),
-            sitting.studentAssessment.uploadedFiles.map(_.fileName).mkString(", ")
-          )
-        })
+        csv.writeAll(GenerateAssessmentZipJob.submissionsCSV(assessment, sittings))
         zip.closeArchiveEntry()
 
         traverseSerial(sittings.flatMap(s => s.studentAssessment.uploadedFiles.zipWithIndex.map(s -> _))) { case (sitting, (file, index)) =>
@@ -142,4 +132,51 @@ class GenerateAssessmentZipJob @Inject()(
 
   override def getDescription(context: JobExecutionContext): String = "Generate assessment zip"
 
+}
+
+object GenerateAssessmentZipJob {
+  val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+
+  /**
+    * Writes CSV information about sittings to the output stream, *without* closing it.
+    */
+  def submissionsCSV(assessment: Assessment, sittings: Seq[Sitting]): Seq[Seq[String]] = {
+    // Header
+    val header: Seq[String] =
+      Seq(
+        "University ID",
+        "State",
+        "Signed statement of authorship",
+        "Reasonable adjustments declared",
+        "Start time",
+      ) ++ (
+        if (assessment.platform.contains(Platform.OnlineExams))
+          Seq(
+            "Finalise time",
+            "Submission time",
+            "Files"
+          )
+        else Seq.empty
+      )
+
+    val rows: Seq[Seq[String]] = sittings.map { sitting =>
+      Seq(
+        sitting.studentAssessment.studentId.string,
+        sitting.getSummaryStatusLabel.getOrElse(""),
+        sitting.declarations.acceptsAuthorship.toString,
+        if (sitting.declarations.completedRA) sitting.declarations.selfDeclaredRA.toString else "",
+        sitting.studentAssessment.startTime.map(csvDateTimeFormat.format).getOrElse(""),
+      ) ++ (
+        if (assessment.platform.contains(Platform.OnlineExams))
+          Seq(
+            sitting.studentAssessment.explicitFinaliseTime.map(csvDateTimeFormat.format).getOrElse(""),
+            sitting.studentAssessment.submissionTime.map(csvDateTimeFormat.format).getOrElse(""),
+            sitting.studentAssessment.uploadedFiles.map(_.fileName).mkString(", ")
+          )
+        else Seq.empty
+      )
+    }
+
+    header +: rows
+  }
 }

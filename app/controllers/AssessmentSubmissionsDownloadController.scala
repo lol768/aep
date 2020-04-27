@@ -1,7 +1,7 @@
 package controllers
 
 import domain.Assessment.Platform
-import domain.{Assessment, JobKeys, UploadedFileOwner}
+import domain.{Assessment, JobKeys, Sitting, UploadedFileOwner}
 import javax.inject.Singleton
 import org.quartz.{JobBuilder, Scheduler, TriggerBuilder}
 import play.api.mvc.Result
@@ -60,6 +60,10 @@ abstract class AssessmentSubmissionsDownloadController(
         }
       }
     }
+  }
+
+  protected def doSubmissionsCSV(assessment: Assessment, sittings: Seq[Sitting])(implicit request: AuthenticatedRequest[_]): Result = {
+    Ok.chunked(csvSource(GenerateAssessmentZipJob.submissionsCSV(assessment, sittings))).as("text/csv")
   }
 
 }

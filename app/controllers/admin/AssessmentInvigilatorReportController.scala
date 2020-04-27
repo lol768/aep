@@ -2,16 +2,13 @@ package controllers.admin
 
 import java.time.format.DateTimeFormatter
 
-import akka.stream.scaladsl.{Source, StreamConverters}
-import akka.util.ByteString
-import com.github.tototoshi.csv.CSVWriter
 import controllers.BaseController
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent}
 import services.{AssessmentService, SecurityService}
 import warwick.sso.UserLookupService
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class AssessmentInvigilatorReportController @Inject()(
@@ -45,20 +42,6 @@ class AssessmentInvigilatorReportController @Inject()(
 
       Ok.chunked(csvSource(headerRow +: dataRows)).as("text/csv")
     }
-  }
-
-  private def csvSource(rows: Seq[Seq[String]]): Source[ByteString, Future[Unit]] = {
-    StreamConverters.asOutputStream().mapMaterializedValue(outputStream => Future {
-      val writer = CSVWriter.open(outputStream)
-      try {
-        writer.writeAll(rows)
-      } catch {
-        case t: Throwable => logger.error("Error encountered while writing CSV", t)
-      } finally {
-        writer.flush()
-        writer.close()
-      }
-    })
   }
 
 }
