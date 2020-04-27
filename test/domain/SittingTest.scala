@@ -17,6 +17,9 @@ import scala.language.postfixOps
 
 class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelativeTime {
 
+  private val ThreeHours = Some(Duration.ofHours(3L))
+  private val Now = Some(now)
+
   private case class Fixture (
     assessmentStart: Option[OffsetDateTime] = None,
     assessmentDuration: Option[Duration] = None,
@@ -24,6 +27,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
     extraTimeAdjustmentPerHour: Option[Duration] = None,
     finaliseTime: Option[OffsetDateTime] = None,
     uploadedFiles: Seq[UploadedFile] = Seq.empty,
+    durationStyle: DurationStyle = DurationStyle.DayWindow,
   ) {
 
     val assessment: Assessment = Assessment(
@@ -35,7 +39,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       duration = assessmentDuration,
       platform = Set(Platform.OnlineExams),
       assessmentType = Some(AssessmentType.Bespoke),
-      durationStyle = DurationStyle.DayWindow,
+      durationStyle = durationStyle,
       state = Assessment.State.Approved,
       tabulaAssessmentId = Some(UUID.randomUUID()),
       tabulaAssignments = Set.empty,
@@ -70,8 +74,6 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
     )
   }
 
-  private val ThreeHours = Some(Duration.ofHours(3L))
-  private val Now = Some(now)
 
   "Sitting#getProgressState" should {
 
@@ -98,6 +100,16 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       sitting.getProgressState mustBe Some(InProgress)
     }
 
+    "Respect fixed-start assessments when deciding InProgress-fulness" in new Fixture (
+      assessmentStart = Some(2.hours ago),
+      assessmentDuration = ThreeHours,
+      studentStart = Some(30.minutes ago),
+      durationStyle = DurationStyle.FixedStart
+    ) {
+      // Should be in progress - 3 hr fixed start assessment kicked off 1 1/2 hours ago
+      sitting.getProgressState mustBe Some(InProgress)
+    }
+
     "Show InProgress assessments" in new Fixture (
       assessmentStart = Some(1.hour ago),
       studentStart = Some(30.minutes ago)
@@ -114,12 +126,22 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       sitting.getProgressState mustBe Some(OnGracePeriod)
     }
 
-    "Resepct the 24 hour window when deciding GracePeriod-fulness" in new Fixture (
+    "Respect the 24 hour window when deciding GracePeriod-fulness" in new Fixture (
       assessmentStart = Some(12.hours ago),
       assessmentDuration = ThreeHours,
       studentStart = Some(3.hours and 10.minutes ago)
     ) {
       // Grace period should be calculated relative to when the student started, not the assessment
+      sitting.getProgressState mustBe Some(OnGracePeriod)
+    }
+
+    "Respect fixed-start assessments when deciding GracePeriod-fulness" in new Fixture (
+      assessmentStart = Some(3.hours and 10.minutes ago),
+      assessmentDuration = ThreeHours,
+      studentStart = Some(15.minutes ago),
+      durationStyle = DurationStyle.FixedStart
+    ) {
+      // Should be in grace period regardless of student start time
       sitting.getProgressState mustBe Some(OnGracePeriod)
     }
 
@@ -141,12 +163,32 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       sitting.getProgressState mustBe Some(Late)
     }
 
+    "Respect fixed-time assessments when deciding Late-ness" in new Fixture (
+      assessmentStart = Some(4.hours ago),
+      assessmentDuration = ThreeHours,
+      studentStart = Some(10.minutes ago),
+      durationStyle= DurationStyle.FixedStart
+    ) {
+      // Doesn't matter that they only started 10 minutes ago - this is a fixed-time assessment
+      sitting.getProgressState mustBe Some(Late)
+    }
+
     "Show as DeadlineMissed after even more time" in new Fixture (
       assessmentStart = Some(4.hours ago),
       assessmentDuration = ThreeHours,
       studentStart = Some(6.hours ago)
     ) {
       // They had 3h+45m+2h to submit late, so 6h is right out
+      sitting.getProgressState mustBe Some(DeadlineMissed)
+    }
+
+    "Respect fixed-time assessments when deciding DeadlineMissed-ness" in new Fixture (
+      assessmentStart = Some(7.hours ago),
+      assessmentDuration = ThreeHours,
+      studentStart = Some(1.hour ago),
+      durationStyle = DurationStyle.FixedStart
+    ) {
+      // Doesn't matter when they started - absolute deadline missed
       sitting.getProgressState mustBe Some(DeadlineMissed)
     }
 
@@ -207,6 +249,22 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       sitting.getSubmissionState mustBe SubmissionState.OnTime
     }
 
+    "Respect fixed-time assessments when deciding OneTime-ness" in new Fixture (
+      assessmentStart = Some(2.hours ago),
+      assessmentDuration = ThreeHours,
+      studentStart = Some(2.hours and 10.minutes ago),
+      durationStyle = DurationStyle.FixedStart,
+      uploadedFiles = Seq(
+        uploadedFile( // on time
+          uploadStarted = 2.hours ago,
+          uploadFinished = 2.hours and 10.minutes ago // ignore
+        )
+      )
+    ) {
+      // Submission happened within the absolute OnTime period for this assessment
+      sitting.getSubmissionState mustBe SubmissionState.OnTime
+    }
+
     "Resepct the 24 hour window when deciding Late-ness" in new Fixture (
       assessmentStart = Some(23.hours ago),
       assessmentDuration = ThreeHours,
@@ -220,6 +278,22 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
     ) {
       // Student started with only 1 hour of window left, submitted 2 hours later, so should
       // be late because it's outside 24 hour window, even though it's inside 3 hour duration
+      sitting.getSubmissionState mustBe SubmissionState.Late
+    }
+
+    "Respect fixed-time assessments when deciding Late-ness" in new Fixture (
+      assessmentStart = Some(4.hours ago),
+      assessmentDuration = ThreeHours,
+      studentStart = Some(4.hours and 2.minutes ago),
+      durationStyle = DurationStyle.FixedStart,
+      uploadedFiles = Seq(
+        uploadedFile(
+          uploadStarted = 2.minutes ago,
+          uploadFinished = 1.minute ago,
+        )
+      )
+    ) {
+      // Student has exceeded the absolute grace period, but not the absolute late period
       sitting.getSubmissionState mustBe SubmissionState.Late
     }
 
