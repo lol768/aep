@@ -26,7 +26,9 @@ const refreshTable = () => setTimeout(() => {
   const selectedSortHeaderValue = selectedSortHeader !== null ? selectedSortHeader.innerText : '';
   const sortDirection = selectedSortHeader !== null ? selectedSortHeader.getAttribute('aria-sort') : '';
   fetch(`/ajax/reporting/${el.getAttribute('data-id')}/${el.getAttribute('data-route')}?sort=${selectedSortHeaderValue}&direction=${sortDirection}`)
-    .then((response) => response.text())
+    .then((response) => (
+      response.status === 200 ? response.text() : Promise.reject(response.statusText)
+    ))
     .then((responseText) => {
       el.innerHTML = responseText;
       updateDocumentTitle(el);
@@ -37,6 +39,8 @@ const refreshTable = () => setTimeout(() => {
       refreshTable();
     }).catch((e) => {
       log.info('Failed to update student assessment information from server. Re-scheduling', e);
+      el.querySelector('.auto-update').classList.add('hidden');
+      el.querySelector('.auto-update-error').classList.remove('hidden');
       refreshTable();
     });
 }, INTERVAL_MS);
