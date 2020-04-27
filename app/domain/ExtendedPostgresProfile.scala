@@ -1,8 +1,9 @@
 package domain
 
-import java.time.Duration
+import java.time.{Duration, LocalDate, LocalDateTime, OffsetDateTime, OffsetTime, ZonedDateTime}
 
 import com.github.tminglei.slickpg._
+import com.github.tminglei.slickpg.date.PgDateExtensions
 import slick.basic.Capability
 import slick.jdbc.{JdbcCapabilities, JdbcType}
 import warwick.slick.jdbctypes.pg.FixedPgLocalDateTypeSupport
@@ -36,9 +37,17 @@ trait ExtendedPostgresProfile
   trait ExtendedAPI
     extends super.API
       with ArrayImplicits
-      with JsonImplicits {
-    implicit val durationTypeMapper: JdbcType[Duration] = new GenericDateJdbcType[Duration]("interval", java.sql.Types.OTHER)
+      with JsonImplicits
+      with DateTimeImplicits {
+
+    // We override these Slick types in columnTypes to UTC versions,
+    // then DateTimeImplicits overrides those to its non-UTC versions,
+    // then we override those back again here 🙄
+    override implicit val date2TzTimestampTypeMapper: JdbcType[OffsetDateTime] = columnTypes.offsetDateTimeType
+    override implicit val date2TzTimestamp1TypeMapper: JdbcType[ZonedDateTime] = columnTypes.zonedDateType
+
   }
+
 
 }
 

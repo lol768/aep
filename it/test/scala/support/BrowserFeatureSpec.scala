@@ -211,7 +211,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId, startTime = Some(OffsetDateTime.now))
       val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
 
-      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.byteSource, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
       execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
       execWithCommit(studentAssessmentDao.insert(studentAssessment))
 
@@ -226,7 +226,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(id = assessmentId, startTime = Some(OffsetDateTime.now))
       val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
 
-      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.byteSource, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
       execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
       execWithCommit(studentAssessmentDao.insert(studentAssessment))
 
@@ -246,7 +246,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
         startTime = Some(OffsetDateTime.now().minusMinutes(5))
       )
 
-      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.byteSource, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
       execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
       execWithCommit(studentAssessmentDao.insert(studentAssessment))
 
@@ -267,7 +267,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
         startTime = Some(OffsetDateTime.now().minusMinutes(studentStart))
       )
 
-      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.byteSource, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
       execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
       execWithCommit(studentAssessmentDao.insert(studentAssessment))
 
@@ -283,7 +283,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment(platformOption = Some(Moodle)).copy(id = assessmentId, startTime = Some(OffsetDateTime.now))
       val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
 
-      val brief = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Brief.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      val brief = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.byteSource, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Brief.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
       val url = "https://moodle.warwick.ac.uk/assignment"
       execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map(Moodle -> url), fileIds = Seq(brief.id)))))
       execWithCommit(studentAssessmentDao.insert(studentAssessment))
@@ -300,7 +300,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
         startTime = Some(OffsetDateTime.now().minusMinutes(5))
       )
 
-      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.byteSource, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
       execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
       execWithCommit(studentAssessmentDao.insert(studentAssessment))
 
@@ -314,7 +314,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment().copy(id = assessmentId, durationStyle = DurationStyle.FixedStart, startTime = Some(startTime), platform = Set(OnlineExams))
       val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
 
-      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.temporaryUploadedFile.in, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
+      val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.byteSource, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))
       execWithCommit(assessmentDao.insert(assessment.copy(storedBrief = StoredBrief(text = None, urls = Map.empty, fileIds = Seq(examPaper.id)))))
       execWithCommit(studentAssessmentDao.insert(studentAssessment))
 

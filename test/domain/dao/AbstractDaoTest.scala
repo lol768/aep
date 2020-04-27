@@ -1,7 +1,7 @@
 package domain.dao
 
 import helpers._
-import org.scalatest.TestSuite
+import org.scalatest.{BeforeAndAfterEach, TestSuite}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
@@ -31,6 +31,7 @@ trait DaoTestTrait
     with DaoPatience
     with DaoRunning
     with NoAuditLogging
+    with BeforeAndAfterEach
     with FutureServiceMixins { this: TestSuite =>
 
   override def fakeApplicationBuilder(user: Option[User]): GuiceApplicationBuilder = super.fakeApplicationBuilder(user)
@@ -39,6 +40,13 @@ trait DaoTestTrait
     )
 
   implicit lazy val dataGeneration: DataGeneration = get[DataGeneration]
+
+  override def afterEach(): Unit = {
+    super.afterEach()
+
+    // Reset the RNG back to how it would be at the start of the test
+    dataGeneration.random.setSeed(BindingOverrides.fixedRandomSeed)
+  }
 
   protected lazy val dbConfigProvider: DatabaseConfigProvider = get[DatabaseConfigProvider]
   lazy val dbConfig: DatabaseConfig[JdbcProfile] = dbConfigProvider.get[JdbcProfile]

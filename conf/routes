@@ -140,7 +140,9 @@ GET         /sysadmin/test/:id/download             @controllers.sysadmin.Sysadm
 +nocsrf
 POST        /api/errors/js                          @controllers.api.ErrorsController.js
 +nocsrf
-POST        /api/log-upload-attempt                 @controllers.api.UploadAttemptController.log
+POST        /api/log-upload-attempt                 @controllers.api.UploadAuditingController.logAttempt
++nocsrf
+POST        /api/log-upload-cancelled               @controllers.api.UploadAuditingController.logCancellation
 
 
 ## Fallbacks ##

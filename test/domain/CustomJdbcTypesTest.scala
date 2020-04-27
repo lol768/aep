@@ -7,9 +7,10 @@ import java.util.UUID
 import domain.ExtendedPostgresProfile.api._
 import domain.dao.AbstractDaoTest
 
+/**
+  * This isn't actually testing CustomJdbcTypes but ExtendedPostgresProfile
+  */
 class CustomJdbcTypesTest extends AbstractDaoTest {
-
-  val customJdbcTypes = get[PostgresCustomJdbcTypes]
 
   trait DatabaseFixture {
     def db: Database = dbConfig.db

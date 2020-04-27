@@ -338,9 +338,36 @@ class AssessmentDaoImpl @Inject()(
 
 
   // finds assessments where there in no possibility of further submissions being made
-  // FIXME - doesn't cater for fixed start time assessments (OE-422)
   private def pastLastSubmitTimeQuery: Query[Assessments, StoredAssessment, Seq] = {
-    assessments.table.filter(a => a.startTime < JavaTime.offsetDateTime.minus(Assessment.dayWindow).minus(Assessment.uploadProcessDuration))
+    assessments.table.filter { a =>
+      // "epoch" is the interval in seconds
+      def durationInHours: Rep[Double] =
+        (a.duration.part("epoch") / 3600.0).getOrElse(0.0)
+
+      // Make sure we've waited until the student with the longest extension
+      def biggestAdjustmentPerHour: Rep[Duration] = studentAssessments.table
+        .filter(_.assessmentId === a.id)
+        .map(_.extraTimeAdjustmentPerHour)
+        .max
+        .getOrElse(Duration.ZERO)
+
+      def biggestAdjustment: Rep[Duration] =
+        biggestAdjustmentPerHour * durationInHours
+
+      val totalTime = Case If a.isDayWindow Then {
+        LiteralColumn(Option(Assessment.dayWindow))
+      } Else {
+        a.duration +
+          Assessment.uploadGraceDuration +
+          Assessment.lateSubmissionPeriod +
+          biggestAdjustment
+      }
+
+      val lastTime: Rep[Option[OffsetDateTime]] =
+        a.startTime +++ (totalTime + Assessment.uploadProcessDuration)
+
+      lastTime < JavaTime.offsetDateTime
+    }
   }
 
   override def getAssessmentsRequiringUpload: DBIO[Seq[StoredAssessment]] = {

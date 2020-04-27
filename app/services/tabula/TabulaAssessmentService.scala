@@ -6,11 +6,10 @@ import java.util.UUID
 import akka.stream.IOResult
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
-import domain.AssessmentMetadata
+import domain.{Assessment, AssessmentMetadata, Sitting, StudentAssessment, tabula}
 import com.google.inject.ImplementedBy
 import com.google.inject.name.Named
 import domain.tabula.{Submission, TabulaAssignment}
-import domain.{Assessment, SittingMetadata, StudentAssessment, tabula}
 import helpers.{TrustedAppsHelper, WSRequestUriBuilder}
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
@@ -155,7 +154,7 @@ class TabulaAssessmentServiceImpl @Inject()(
     val isPreviousAcademicYear = academicYear != AcademicYear.forDate(JavaTime.offsetDateTime)
 
     val closeDateParams = (for {
-      st <- assessment.startTime;
+      st <- assessment.startTime
       et <- assessment.lastAllowedStartTime
     } yield Json.obj(
       "openDate" -> formatDate.tabulaDate(st.toLocalDate),
@@ -208,18 +207,19 @@ class TabulaAssessmentServiceImpl @Inject()(
       }
   }
 
-  private def createSubmission(sitting: SittingMetadata, assignmentId: UUID): Future[ServiceResult[Submission]] = {
+  private def createSubmission(sitting: Sitting, assignmentId: UUID): Future[ServiceResult[Submission]] = {
     implicit def l: Logger = logger
 
-    //Point this url to the requestbin in case want to cross check what curl request was generated(Handy)
+    // Point this url to the requestbin in case want to cross check what curl request was generated(Handy)
     val url = config.getCreateAssignmentSubmissionUrl(assignmentId)
+    val reasonableAdjustmentsDeclared: Boolean = sitting.declarations.selfDeclaredRA
 
     val fileParts = sitting.studentAssessment.uploadedFiles.map { file =>
       FilePart("attachments", file.fileName, Some(file.contentType), StreamConverters.fromInputStream(() => objectStorageService.fetch(file.id.toString).orNull))
     }
     //Required for API though it is blank data
-    val emptyJsonInputStream = new ByteArrayInputStream(Json.obj().toString().getBytes("UTF-8"))
-    val submissionJsonFile = FilePart("submission", "submission.json", Some("application/json"), StreamConverters.fromInputStream(() => emptyJsonInputStream))
+    val jsonInputStream = new ByteArrayInputStream(Json.obj("reasonableAdjustmentsDeclared" -> reasonableAdjustmentsDeclared).toString().getBytes("UTF-8"))
+    val submissionJsonFile = FilePart("submission", "submission.json", Some("application/json"), StreamConverters.fromInputStream(() => jsonInputStream))
     val data: Seq[FilePart[Source[ByteString, Future[IOResult]]]] = fileParts :+ submissionJsonFile
     val req = ws.url(url)
       .withQueryStringParameters(Seq(
@@ -235,21 +235,24 @@ class TabulaAssessmentServiceImpl @Inject()(
 
   override def generateAssignmentSubmissions(assessment: Assessment, studentAssessment: Option[StudentAssessment])(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Seq[StudentAssessment]]] =
     timing.time(TimingCategories.TabulaWrite) {
-      def createSubmissions(studentAssessments: Seq[StudentAssessment]): Future[ServiceResult[Seq[StudentAssessment]]] = {
+      def createSubmissions(sittings: Seq[Sitting]): Future[ServiceResult[Seq[StudentAssessment]]] = {
         tabulaAssignmentService.getByAssessment(assessment)
           .successFlatMapTo { tabulaAssignments =>
-            ServiceResults.futureSequence(studentAssessments.filter(s => s.tabulaSubmissionId.isEmpty && s.uploadedFiles.nonEmpty && s.academicYear.isDefined).map { sa =>
-              createSubmission(SittingMetadata(sa, assessment.asAssessmentMetadata), tabulaAssignments.filter(_.academicYear == sa.academicYear.get).head.id).successFlatMapTo { submission =>
-                studentAssessmentService.upsert(sa.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
+            ServiceResults.futureSequence(sittings
+              .filter(s => s.studentAssessment.tabulaSubmissionId.isEmpty && s.studentAssessment.uploadedFiles.nonEmpty && s.studentAssessment.academicYear.isDefined)
+              .map { sitting =>
+                createSubmission(sitting, tabulaAssignments.filter(_.academicYear == sitting.studentAssessment.academicYear.get).head.id).successFlatMapTo { submission =>
+                  studentAssessmentService.upsert(sitting.studentAssessment.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
+                }
               }
-            })
+            )
           }
       }
 
-      //Only allow tabula upload submission if not already done in the past and check we pick student assessments who actually sat for exams (would have uploaded some file in case some didn't finalise)
+      //Only allow Tabula upload submission if not already done in the past and check we pick student assessments who actually sat for exams (would have uploaded some file in case some didn't finalise)
       studentAssessment match {
-        case Some(studentAssessment) => createSubmissions(Seq(studentAssessment))
-        case _ => studentAssessmentService.byAssessmentId(assessment.id).successFlatMapTo { studentAssessments => createSubmissions(studentAssessments) }
+        case Some(studentAssessment) => studentAssessmentService.getSitting(studentAssessment.studentId, studentAssessment.assessmentId).successFlatMapTo { sitting => createSubmissions(sitting.toSeq) }
+        case _ => studentAssessmentService.sittingsByAssessmentId(assessment.id).successFlatMapTo { sittings => createSubmissions(sittings) }
       }
     }
 

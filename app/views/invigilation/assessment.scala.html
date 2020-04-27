@@ -18,9 +18,13 @@
   latestStudentActivities: Map[UUID, AssessmentClientNetworkActivity]
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
-@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation", extraClasses = Seq("connect-ws")) {
+@adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation", extraClasses = Seq("connect-ws", "allAnnouncementsAndQueries")) {
   <div class="id7-main-content">
-    <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
+      <div class="alert alert-info hidden notification-permission">
+          Alternative Exams Portal needs your permission to <a href="#" class="btn btn-primary btn-xs">show system notifications</a> for student queries
+      </div>
+
+      <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
     <div class="row">
       <div class="col-md-6">
         @moduleInfo(assessment, department)

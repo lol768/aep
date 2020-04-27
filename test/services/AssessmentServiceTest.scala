@@ -31,8 +31,8 @@ class AssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterEac
   "AssessmentService" should {
     "inflate UploadedFiles in the same order as the brief" in new Fixture {
       // Add some files to assessment1
-      val file1 = (specialJPG.temporaryUploadedFile.in, specialJPG.uploadedFileSave)
-      val file2 = (homeOfficeStatementPDF.temporaryUploadedFile.in, homeOfficeStatementPDF.uploadedFileSave)
+      val file1 = (specialJPG.byteSource, specialJPG.uploadedFileSave)
+      val file2 = (homeOfficeStatementPDF.byteSource, homeOfficeStatementPDF.uploadedFileSave)
 
       val base = service.get(storedAssessment1.id).serviceValue
 

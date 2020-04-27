@@ -62,8 +62,8 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
 
     "inflate UploadedFiles in the same order as submitted" in new Fixture {
       // Add some files to studentAssessment
-      private val file1 = (specialJPG.temporaryUploadedFile.in, specialJPG.uploadedFileSave)
-      private val file2 = (homeOfficeStatementPDF.temporaryUploadedFile.in, homeOfficeStatementPDF.uploadedFileSave)
+      private val file1 = (specialJPG.byteSource, specialJPG.uploadedFileSave)
+      private val file2 = (homeOfficeStatementPDF.byteSource, homeOfficeStatementPDF.uploadedFileSave)
 
       private val base = service.getSitting(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
 

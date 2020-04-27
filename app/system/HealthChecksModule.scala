@@ -27,6 +27,7 @@ class HealthChecksModule(environment: Environment, configuration: Configuration)
 
     healthchecks.addBinding.toInstance(new QuartzJobHealthCheck(JobKeys.ImportAssessmentJob))
     healthchecks.addBinding.toInstance(new QuartzJobHealthCheck(JobKeys.SendAssessmentRemindersJob))
+    healthchecks.addBinding.toInstance(new QuartzJobHealthCheck(JobKeys.TriggerSubmissionUploadsJob))
 
     healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("default"))
     healthchecks.addBinding.toInstance(new ThreadPoolHealthCheck("fileUploadsExecutionContext", "uploads.threads.fileUploadsExecutionContext"))
