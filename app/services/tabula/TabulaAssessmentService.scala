@@ -171,7 +171,10 @@ class TabulaAssessmentServiceImpl @Inject()(
       "resitAssessment" -> isPreviousAcademicYear,
       "academicYear" -> academicYear.toString,
       "sitsLinks" -> sitsLinks,
-      "anonymity" -> "IDOnly"
+      "anonymity" -> "IDOnly",
+      "allowExtensions" -> false,
+      "allowLateSubmissions" -> false,
+      "allowResubmission" -> false
     ) ++ closeDateParams
 
     val req = ws.url(url)
