@@ -1,0 +1,12 @@
+@import domain.Sitting
+
+@import java.time.OffsetDateTime
+@(assessment: Sitting, lastAllowedStartTime: OffsetDateTime)(implicit context: RequestContext)
+
+@frontend(assessment.assessment.title) {
+  <p>
+    You can no longer start this assessment. The latest allowed start time for this assessment was
+    @tags.bareLocalisedDateTime(lastAllowedStartTime).
+  </p>
+}
+

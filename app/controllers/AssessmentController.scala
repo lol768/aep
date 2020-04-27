@@ -115,7 +115,16 @@ class AssessmentController @Inject()(
   }
 
   def start(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
-    doStart(request.sitting.studentAssessment)
+    if (request.sitting.assessment.hasLastAllowedStartTimePassed()) {
+      val lastStartTime = request.sitting.assessment.lastAllowedStartTime.getOrElse {
+        throw new IllegalStateException(s"Assessment with id ${request.sitting.assessment.id.toString} returned last start time passed, but has no last start time");
+      }
+      Future.successful {
+        Forbidden(views.html.errors.missedLastAssessmentStartTime(request.sitting, lastStartTime))
+      }
+    } else {
+      doStart(request.sitting.studentAssessment)
+    }
   }
 
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>

@@ -111,8 +111,12 @@ object Fixtures {
 
   object assessments {
 
-    def storedAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None)(implicit dataGeneration: DataGeneration): StoredAssessment =
-      DataGenerationService.makeStoredAssessment(uuid, platformOption)
+    def storedAssessment(
+      uuid: UUID = UUID.randomUUID,
+      platformOption: Option[Platform] = None,
+      duration: Option[Duration] = Some(Duration.ofHours(3)),
+    )(implicit dataGeneration: DataGeneration): StoredAssessment =
+      DataGenerationService.makeStoredAssessment(uuid, platformOption, duration)
 
     // If you just need any old assessment that's assigned to philosophy to test with...
     lazy val philosophyAssessment: Assessment = Assessment(
@@ -168,7 +172,7 @@ object Fixtures {
 
     object specialJPG {
       val path = "/night-heron-500-beautiful.jpg"
-      val uploadedFileSave: UploadedFileSave = UploadedFileSave(path, 8832L, "image/jpeg")
+      val uploadedFileSave: UploadedFileSave = UploadedFileSave("night-heron-500-beautiful.jpg", 8832L, "image/jpeg")
       def byteSource: ByteSource = byteSourceResource(path)
       def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
         val tempFile = temporaryFileCreator.create("night-heron-500-beautiful", ".jpg")
@@ -179,7 +183,7 @@ object Fixtures {
 
     object homeOfficeStatementPDF {
       val path = "/home-office-statement.pdf"
-      val uploadedFileSave: UploadedFileSave = UploadedFileSave(path, 8153L, "application/pdf")
+      val uploadedFileSave: UploadedFileSave = UploadedFileSave("home-office-statement.pdf", 8153L, "application/pdf")
       def byteSource: ByteSource = byteSourceResource(path)
       def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
         val tempFile = temporaryFileCreator.create("home-office-statement", ".pdf")

@@ -42,6 +42,21 @@
   }
 }
 
+@lateFileUploadWarning() = {
+  <div id="late-upload-warning">
+  @if(sitting.getProgressState.contains(ProgressState.Late)) {
+    <div class="alert alert-warning media">
+      <div class="media-left">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="media-body">
+        If you upload new files at this point your submission may be considered as late.
+      </div>
+    </div>
+  }
+  </div>
+}
+
 @defining(if (sitting.canModify()) "beforeunload" else "") { className =>
   @frontend(sitting.assessment.title,
     extraClasses = Seq("grey-nopad", "connect-ws", className),
@@ -150,18 +165,7 @@
                 We accept all common file formats: PDF, Word/Excel/PowerPoint files (doc, docx, ppt, pptx, xls, xlsx, odt etc.), images (png, jpeg, svg, tiff), audio (mp3, m4a, webm, ogg, wav, flac) and video (mp4, mov, webm, avi).
               </p>
               @if(sitting.studentAssessment.uploadedFiles.nonEmpty) {
-                <div id="late-upload-warning">
-                  @if(sitting.getProgressState.contains(ProgressState.Late)) {
-                    <div class="alert alert-warning media">
-                      <div class="media-left">
-                        <i class="fas fa-exclamation-triangle"></i>
-                      </div>
-                      <div class="media-body">
-                        If you upload new files at this point your submission may be considered as late.
-                      </div>
-                    </div>
-                  }
-                </div>
+                @lateFileUploadWarning
                 @uploadForm
                 <div class="uploaded-files">
                   @sitting.studentAssessment.uploadedFiles.map { file =>
@@ -195,6 +199,7 @@
                   <h3>You've not yet uploaded any answer files</h3>
                   <div class="left-align">
                     <p>Once you've answered the assessment questions and you're ready to submit, you can upload your files below.</p>
+                    @lateFileUploadWarning
                     @uploadForm
                   </div>
                 </div>
