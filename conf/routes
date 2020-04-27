@@ -62,6 +62,7 @@ POST        /admin/assessments/:id/delete                         @controllers.a
 GET         /admin/assessments/:id/view                           @controllers.admin.AdminAssessmentsController.view(id: UUID)
 GET         /admin/assessments/:id/invigilators                   @controllers.admin.AdminAssessmentsController.invigilatorsAjax(id: UUID)
 GET         /admin/assessments/:id/submissions.zip                @controllers.admin.AdminSubmissionsDownloadController.download(id: UUID)
+GET         /admin/assessments/:id/submissions.csv                @controllers.admin.AdminSubmissionsDownloadController.submissionsCSV(id: UUID)
 GET         /admin/assessments/:id/student-preview                @controllers.admin.AdminAssessmentsController.studentPreview(id: UUID)
 # POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AdminAssessmentsController.generateAssignments(id: UUID)
 GET         /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.assignmentSubmissions()
