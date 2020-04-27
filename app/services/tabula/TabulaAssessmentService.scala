@@ -217,8 +217,11 @@ class TabulaAssessmentServiceImpl @Inject()(
     val fileParts = sitting.studentAssessment.uploadedFiles.map { file =>
       FilePart("attachments", file.fileName, Some(file.contentType), StreamConverters.fromInputStream(() => objectStorageService.fetch(file.id.toString).orNull))
     }
-    //Required for API though it is blank data
-    val jsonInputStream = new ByteArrayInputStream(Json.obj("reasonableAdjustmentsDeclared" -> reasonableAdjustmentsDeclared).toString().getBytes("UTF-8"))
+    val submissionParams = Json.obj(
+      "reasonableAdjustmentsDeclared" -> reasonableAdjustmentsDeclared,
+      "useDisability" -> false,
+    )
+    val jsonInputStream = new ByteArrayInputStream(submissionParams.toString().getBytes("UTF-8"))
     val submissionJsonFile = FilePart("submission", "submission.json", Some("application/json"), StreamConverters.fromInputStream(() => jsonInputStream))
     val data: Seq[FilePart[Source[ByteString, Future[IOResult]]]] = fileParts :+ submissionJsonFile
     val req = ws.url(url)
