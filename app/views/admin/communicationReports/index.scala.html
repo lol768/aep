@@ -12,7 +12,7 @@
 
     <ul>
     @adminDepartments.map { department =>
-      <li><a href="/admin/communication/announcements/@department.code">@department.name</a></li>
+      <li><a href="@controllers.admin.routes.CommunicationReportsController.announcementsCsv(department.code)">@department.name</a></li>
     }
     </ul>
 
@@ -20,7 +20,7 @@
 
     <ul>
     @adminDepartments.map { department =>
-      <li><a href="/admin/communication/queries/@department.code">@department.name</a></li>
+      <li><a href="@controllers.admin.routes.CommunicationReportsController.queriesCsv(department.code)">@department.name</a></li>
     }
     </ul>
   }

@@ -8,6 +8,7 @@ import java.util.zip.Deflater
 import akka.Done
 import com.github.tototoshi.csv.CSVWriter
 import com.google.common.io.{ByteSource, Files}
+import com.typesafe.config.ConfigFactory
 import domain.Assessment.Platform
 import domain.{Assessment, Sitting, UploadedFileOwner}
 import helpers.ServiceResultUtils.traverseSerial
@@ -134,9 +135,8 @@ class GenerateAssessmentZipJob @Inject()(
 
 }
 
-object GenerateAssessmentZipJob {
-  val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-
+object GenerateAssessmentZipJob  {
+  private val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(ConfigFactory.load().getString("app.csvDateTimeFormat"))
   /**
     * Writes CSV information about sittings to the output stream, *without* closing it.
     */

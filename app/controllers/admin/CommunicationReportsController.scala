@@ -36,14 +36,12 @@ class CommunicationReportsController @Inject()(
 
   def index(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     if (features.announcementsAndQueriesCsv) {
-      deptService.getDepartments.successMap { allDepts =>
         val depts = request.user.map { user =>
           val groupsForUser = groupService.getGroupsForUser(user.usercode).get
-          allDepts.filter(dept => actionRefiners.recursiveAdminGroupCheck(dept, allDepts, groupsForUser.map(_.name)))
+          request.departments.filter(dept => actionRefiners.recursiveAdminGroupCheck(dept, request.departments, groupsForUser.map(_.name)))
         }.getOrElse(Seq.empty)
-        Ok(views.html.admin.communicationReports.index(depts))
-      }
-    } else { Future.successful(NotFound(views.html.errors.notFound())) }
+        Future.successful(Ok(views.html.admin.communicationReports.index(depts)))
+      } else { Future.successful(NotFound(views.html.errors.notFound())) }
   }
 
    def announcementsCsv(departmentCode: String): Action[AnyContent] = SpecificDepartmentAdminAction(departmentCode).async { implicit request =>
