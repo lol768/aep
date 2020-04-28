@@ -8,7 +8,6 @@ import java.util.zip.Deflater
 import akka.Done
 import com.github.tototoshi.csv.CSVWriter
 import com.google.common.io.{ByteSource, Files}
-import com.typesafe.config.ConfigFactory
 import domain.Assessment.Platform
 import domain.{Assessment, Sitting, UploadedFileOwner}
 import helpers.ServiceResultUtils.traverseSerial
@@ -18,6 +17,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream.UnicodeE
 import org.apache.commons.compress.archivers.zip.{ZipArchiveEntry, ZipArchiveOutputStream}
 import org.apache.commons.io.FilenameUtils
 import org.quartz.{JobExecutionContext, Scheduler}
+import play.api.Configuration
 import play.api.libs.Files.TemporaryFileCreator
 import services.{AssessmentService, StudentAssessmentService, UploadedFileService}
 import warwick.core.helpers.ServiceResults.Implicits._
@@ -36,6 +36,7 @@ class GenerateAssessmentZipJob @Inject()(
   uploadedFileService: UploadedFileService,
   objectStorageService: ObjectStorageService,
   temporaryFileCreator: TemporaryFileCreator,
+  generateAssessmentZipJobBuilder: GenerateAssessmentZipJobBuilder
 )(implicit ec: ExecutionContext) extends AbstractJob(scheduler) {
 
   override def run(implicit context: JobExecutionContext, audit: AuditLogContext): Future[JobResult] = {
@@ -70,7 +71,7 @@ class GenerateAssessmentZipJob @Inject()(
         // Write a CSV of the assessment data
         zip.putArchiveEntry(new ZipArchiveEntry("submissions.csv"))
         val csv = CSVWriter.open(zip)
-        csv.writeAll(GenerateAssessmentZipJob.submissionsCSV(assessment, sittings))
+        csv.writeAll(generateAssessmentZipJobBuilder.submissionsCSV(assessment, sittings))
         zip.closeArchiveEntry()
 
         traverseSerial(sittings.flatMap(s => s.studentAssessment.uploadedFiles.zipWithIndex.map(s -> _))) { case (sitting, (file, index)) =>
@@ -135,8 +136,10 @@ class GenerateAssessmentZipJob @Inject()(
 
 }
 
-object GenerateAssessmentZipJob  {
-  lazy private val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(ConfigFactory.load().getString("app.csvDateTimeFormat"))
+class GenerateAssessmentZipJobBuilder @Inject() (
+  configuration: Configuration
+) {
+  lazy private val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(configuration.get[String]("app.csvDateTimeFormat"))
   /**
     * Writes CSV information about sittings to the output stream, *without* closing it.
     */
