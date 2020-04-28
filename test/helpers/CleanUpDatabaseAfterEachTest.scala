@@ -27,6 +27,8 @@ trait CleanUpDatabaseAfterEachTest extends BeforeAndAfterEach {
     |     FOR stmt IN statements LOOP
     |         EXECUTE 'DROP TABLE ' || quote_ident(stmt.tablename) || ' CASCADE;';
     |     END LOOP;
+    | EXCEPTION
+    |     WHEN deadlock_detected THEN -- ignore!?
     | END;
     | $$ LANGUAGE plpgsql;
   """.stripMargin

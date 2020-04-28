@@ -1,5 +1,7 @@
 package services
 
+import java.util.UUID
+
 import akka.Done
 import com.google.inject.ImplementedBy
 import domain.AuditEvent.{Operation, Target}
@@ -12,18 +14,27 @@ import warwick.core.system.{AuditLogContext, AuditService}
 
 import scala.concurrent.Future
 
-@ImplementedBy(classOf[UploadAttemptServiceImpl])
-trait UploadAttemptService {
+@ImplementedBy(classOf[UploadAuditingServiceImpl])
+trait UploadAuditingService {
   def logAttempt(attempt: UploadAttempt)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]]
+  def logCancellation(id: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]]
 }
 
 @Singleton
-class UploadAttemptServiceImpl @Inject()(
+class UploadAuditingServiceImpl @Inject()(
   auditService: AuditService,
-) extends UploadAttemptService {
+) extends UploadAuditingService {
+
   import UploadAttempt._
+
   override def logAttempt(attempt: UploadAttempt)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] = {
     auditService.audit(Operation.StudentAssessment.AttemptUpload, attempt.studentAssessmentId.toString, Target.StudentAssessment, Json.toJsObject(attempt)){
+      Future.successful(ServiceResults.success(Done))
+    }
+  }
+
+  override def logCancellation(id: UUID)(implicit ctx: AuditLogContext): Future[ServiceResult[Done]] = {
+    auditService.audit(Operation.StudentAssessment.CancelUpload, id.toString, Target.StudentAssessment, Json.obj()){
       Future.successful(ServiceResults.success(Done))
     }
   }

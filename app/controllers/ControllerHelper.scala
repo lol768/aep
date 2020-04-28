@@ -1,5 +1,8 @@
 package controllers
 
+import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.util.ByteString
+import com.github.tototoshi.csv.CSVWriter
 import helpers.Json._
 import play.api.libs.json.Json
 import play.api.mvc._
@@ -39,6 +42,20 @@ trait ControllerHelper extends ServiceResultErrorRendering with Logging {
 
   private def noUserException = throw new NoSuchElementException("No user associated with this request")
   private def noUniversityIdException = throw new NoSuchElementException("User associated with this request has no University ID")
+
+  def csvSource(rows: Seq[Seq[String]])(implicit ec: ExecutionContext): Source[ByteString, Future[Unit]] = {
+    StreamConverters.asOutputStream().mapMaterializedValue(outputStream => Future {
+      val writer = CSVWriter.open(outputStream)
+      try {
+        writer.writeAll(rows)
+      } catch {
+        case t: Throwable => logger.error("Error encountered while writing CSV", t)
+      } finally {
+        writer.flush()
+        writer.close()
+      }
+    })
+  }
 }
 
 trait ServiceResultErrorRendering extends Results with Rendering with AcceptExtractors with ImplicitRequestContext {

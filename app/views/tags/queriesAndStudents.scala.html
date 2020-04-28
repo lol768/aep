@@ -62,8 +62,12 @@
 }
 
 <h2>Students</h2>
-<div class="alert alert-info">
+<div class="alert alert-info auto-update">
   <i class="fad themed-duotone fa-clock" aria-hidden="true"></i> This information automatically updates every 30 seconds.
+</div>
+<div class="alert alert-danger auto-update-error hidden">
+  There was an error updating. The information will be updated again in 30 seconds but you may need to refresh the
+  page to fix the issue.
 </div>
 
 @studentAssessmentInfo(metadata, platform, userMap, studentsWithQueries, latestActivities, sortByHeader, viewSingleAnnouncementsAndQueries)

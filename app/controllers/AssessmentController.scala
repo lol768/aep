@@ -2,14 +2,14 @@ package controllers
 
 import java.util.UUID
 
-import domain.StudentAssessment
+import domain.{SelectedFile, StudentAssessment, UploadFailureType}
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.StudentAssessmentSpecificRequest
-import services.{AnnouncementService, SecurityService, StudentAssessmentService, UploadedFileService}
+import services._
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
 
@@ -59,6 +59,7 @@ class AssessmentController @Inject()(
   studentAssessmentService: StudentAssessmentService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   uploadedFileService: UploadedFileService,
+  uploadAuditingService: UploadAuditingService,
   announcementService: AnnouncementService,
 )(implicit
   ec: ExecutionContext,
@@ -114,7 +115,16 @@ class AssessmentController @Inject()(
   }
 
   def start(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
-    doStart(request.sitting.studentAssessment)
+    if (request.sitting.assessment.hasLastAllowedStartTimePassed()) {
+      val lastStartTime = request.sitting.assessment.lastAllowedStartTime.getOrElse {
+        throw new IllegalStateException(s"Assessment with id ${request.sitting.assessment.id.toString} returned last start time passed, but has no last start time");
+      }
+      Future.successful {
+        Forbidden(views.html.errors.missedLastAssessmentStartTime(request.sitting, lastStartTime))
+      }
+    } else {
+      doStart(request.sitting.studentAssessment)
+    }
   }
 
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
@@ -139,15 +149,30 @@ class AssessmentController @Inject()(
   }
 
   def uploadFiles(assessmentId: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = StudentAssessmentInProgressAction(assessmentId)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
+    import UploadFailureType._
+
     val files = request.body.files.map(_.ref)
 
-    def failedFileUpload(xhr: Boolean, fileError: Option[String]): Future[Result] = {
-      if (xhr) {
-        fileError.map { err =>
-          Future.successful(BadRequest(err))
-        }.getOrElse {
+    def failedFileUpload(xhr: Boolean, failureType: UploadFailureType, duplicates: Seq[String] = Seq.empty): Future[Result] = {
+      val id = request.sitting.studentAssessment.id
+      val fileDescriptions = files.map(f => SelectedFile.fromUploadedFileSave(f.metadata).nameAndSize).mkString(",")
+
+      val xhrReturn = failureType match {
+        case BadForm =>
           Future.successful(BadRequest)
-        }
+        case BadFileParts =>
+          logger.error(s"Bad file parts in upload for student assessment $id ($fileDescriptions)")
+          Future.successful(BadRequest(Messages("error.assessment.fileWithBadParts")))
+        case MissingFiles =>
+          logger.error(s"Missing files in upload for student assessment $id")
+          Future.successful(BadRequest(Messages("error.assessment.fileMissing")))
+        case DuplicateFiles =>
+          logger.error(s"Duplicate files in upload for student assessment $id (${duplicates.mkString(",")})")
+          Future.successful(BadRequest(Messages("flash.assessment.filesDuplicates", duplicates.head)))
+      }
+
+      if (xhr) {
+        xhrReturn
       } else {
         announcementService.getByAssessmentId(assessmentId).successMap { announcements =>
           BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements))
@@ -156,16 +181,16 @@ class AssessmentController @Inject()(
     }
 
     AssessmentController.attachFilesToAssessmentForm.bindFromRequest().fold(
-      badForm => failedFileUpload(badForm.value.exists(_.xhr == true), None),
+      badForm => failedFileUpload(badForm.value.exists(_.xhr == true), BadForm),
       form => {
         val existingUploadedFiles = request.sitting.studentAssessment.uploadedFiles
         val intersection = existingUploadedFiles.map(uf => uf.fileName.toLowerCase).intersect(files.map(f => f.metadata.fileName.toLowerCase))
         if (request.body.badParts.nonEmpty) {
-          failedFileUpload(form.xhr, Some(Messages("error.assessment.fileWithBadParts")))
+          failedFileUpload(form.xhr, BadFileParts)
         } else if (files.isEmpty) {
-          failedFileUpload(form.xhr, Some(Messages("error.assessment.fileMissing")))
+          failedFileUpload(form.xhr, MissingFiles)
         } else if (intersection.nonEmpty) {
-          failedFileUpload(form.xhr, Some(Messages("flash.assessment.filesDuplicates", intersection.head)))
+          failedFileUpload(form.xhr, DuplicateFiles, intersection)
         } else {
           studentAssessmentService.attachFilesToAssessment(request.sitting.studentAssessment, files.map(f => (f.in, f.metadata))).successMap { _ =>
             val flashMessage = "success" -> Messages("flash.assessment.filesUploaded")

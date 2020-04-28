@@ -198,7 +198,7 @@ class AdminAssessmentsController @Inject()(
 
   def index: Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     assessmentService.findByStates(Seq(State.Draft, State.Imported, State.Approved)).successMap { assessments =>
-      Ok(views.html.admin.assessments.index(filterForDeptAdmin(filterForDeptAdmin(assessments))))
+      Ok(views.html.admin.assessments.index(filterForDeptAdmin(assessments)))
     }
   }
 

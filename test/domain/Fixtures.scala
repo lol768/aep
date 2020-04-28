@@ -3,7 +3,7 @@ package domain
 import java.time._
 import java.util.UUID
 
-import com.google.common.io.Files
+import com.google.common.io.{ByteSource, Files}
 import com.typesafe.config.Config
 import domain.Assessment.{AssessmentType, Platform}
 import domain.Fixtures.uploadedFiles.specialJPG.path
@@ -111,8 +111,12 @@ object Fixtures {
 
   object assessments {
 
-    def storedAssessment(uuid: UUID = UUID.randomUUID, platformOption: Option[Platform] = None)(implicit dataGeneration: DataGeneration): StoredAssessment =
-      DataGenerationService.makeStoredAssessment(uuid, platformOption)
+    def storedAssessment(
+      uuid: UUID = UUID.randomUUID,
+      platformOption: Option[Platform] = None,
+      duration: Option[Duration] = Some(Duration.ofHours(3)),
+    )(implicit dataGeneration: DataGeneration): StoredAssessment =
+      DataGenerationService.makeStoredAssessment(uuid, platformOption, duration)
 
     // If you just need any old assessment that's assigned to philosophy to test with...
     lazy val philosophyAssessment: Assessment = Assessment(
@@ -168,25 +172,27 @@ object Fixtures {
 
     object specialJPG {
       val path = "/night-heron-500-beautiful.jpg"
-      val uploadedFileSave = UploadedFileSave(path, 8832L, "image/jpeg")
+      val uploadedFileSave: UploadedFileSave = UploadedFileSave("night-heron-500-beautiful.jpg", 8832L, "image/jpeg")
+      def byteSource: ByteSource = byteSourceResource(path)
       def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
         val tempFile = temporaryFileCreator.create("night-heron-500-beautiful", ".jpg")
-        byteSourceResource(path).copyTo(Files.asByteSink(tempFile))
+        byteSource.copyTo(Files.asByteSink(tempFile))
         TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile)
       }
     }
 
     object homeOfficeStatementPDF {
       val path = "/home-office-statement.pdf"
-      val uploadedFileSave = UploadedFileSave(path, 8153L, "application/pdf")
+      val uploadedFileSave: UploadedFileSave = UploadedFileSave("home-office-statement.pdf", 8153L, "application/pdf")
+      def byteSource: ByteSource = byteSourceResource(path)
       def temporaryUploadedFile(implicit temporaryFileCreator: TemporaryFileCreator): TemporaryUploadedFile = {
         val tempFile = temporaryFileCreator.create("home-office-statement", ".pdf")
-        byteSourceResource(path).copyTo(Files.asByteSink(tempFile))
+        byteSource.copyTo(Files.asByteSink(tempFile))
         TemporaryUploadedFile("file", Files.asByteSource(tempFile.path.toFile), uploadedFileSave, tempFile)
       }
     }
 
-    def storedUploadedAssessmentFile() = {
+    def storedUploadedAssessmentFile(): StoredUploadedFile = {
       val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
 
       StoredUploadedFile(
