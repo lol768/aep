@@ -6,7 +6,7 @@ import java.util.UUID
 import com.google.inject.ImplementedBy
 import domain.Assessment.Platform.OnlineExams
 import domain.{Assessment, DepartmentCode, StudentAssessment}
-import domain.Assessment.{AssessmentType, Platform}
+import domain.Assessment.{AssessmentType, DurationStyle, Platform}
 import domain.dao.DaoRunner
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
@@ -105,6 +105,7 @@ object DataGenerationService {
     uuid: UUID = UUID.randomUUID,
     platformOption: Option[Platform] = None,
     duration: Option[Duration] = Some(Duration.ofHours(3)),
+    durationStyle: DurationStyle = DurationStyle.DayWindow,
   )(implicit dataGeneration: DataGeneration): StoredAssessment = {
     val deptCode = dataGeneration.fakeDept
     val stemModuleCode =  f"$deptCode${dataGeneration.random.between(101, 999)}%03d"
@@ -120,7 +121,6 @@ object DataGenerationService {
     val assType = Some(AssessmentType.values(dataGeneration.random.nextInt(AssessmentType.values.size)))
     val moduleCode =  s"$stemModuleCode-$cats"
     val sequence = f"E${dataGeneration.random.between(1, 9)}%02d"
-    val durationStyle = Assessment.DurationStyle.DayWindow
 
     StoredAssessment(
       id = uuid,

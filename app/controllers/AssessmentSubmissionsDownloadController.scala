@@ -6,7 +6,7 @@ import javax.inject.Singleton
 import org.quartz.{JobBuilder, Scheduler, TriggerBuilder}
 import play.api.mvc.Result
 import services.UploadedFileService
-import services.job.{GenerateAssessmentZipJob, JobResult}
+import services.job.{GenerateAssessmentZipJob, GenerateAssessmentZipJobBuilder, JobResult}
 import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.sso.AuthenticatedRequest
@@ -18,6 +18,7 @@ abstract class AssessmentSubmissionsDownloadController(
   scheduler: Scheduler,
   uploadedFileService: UploadedFileService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
+  generateAssessmentZipJobBuilder: GenerateAssessmentZipJobBuilder
 )(implicit ec: ExecutionContext) extends BaseController {
 
   protected def doDownload(assessment: Assessment)(implicit request: AuthenticatedRequest[_]): Future[Result] = {
@@ -63,7 +64,7 @@ abstract class AssessmentSubmissionsDownloadController(
   }
 
   protected def doSubmissionsCSV(assessment: Assessment, sittings: Seq[Sitting])(implicit request: AuthenticatedRequest[_]): Result = {
-    Ok.chunked(csvSource(GenerateAssessmentZipJob.submissionsCSV(assessment, sittings))).as("text/csv")
+    Ok.chunked(csvSource(generateAssessmentZipJobBuilder.submissionsCSV(assessment, sittings))).as("text/csv")
   }
 
 }

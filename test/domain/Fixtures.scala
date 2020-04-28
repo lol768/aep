@@ -115,8 +115,9 @@ object Fixtures {
       uuid: UUID = UUID.randomUUID,
       platformOption: Option[Platform] = None,
       duration: Option[Duration] = Some(Duration.ofHours(3)),
+      durationStyle: DurationStyle = DurationStyle.DayWindow,
     )(implicit dataGeneration: DataGeneration): StoredAssessment =
-      DataGenerationService.makeStoredAssessment(uuid, platformOption, duration)
+      DataGenerationService.makeStoredAssessment(uuid, platformOption, duration, durationStyle)
 
     // If you just need any old assessment that's assigned to philosophy to test with...
     lazy val philosophyAssessment: Assessment = Assessment(

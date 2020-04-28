@@ -4,7 +4,7 @@ import com.google.inject.{ImplementedBy, Provider}
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.mvc.Call
-import system.Roles
+import system.{Features, Roles}
 import system.Roles._
 import warwick.core.timing.TimingContext
 import warwick.sso.LoginContext
@@ -56,6 +56,7 @@ trait NavigationService {
 @Singleton
 class NavigationServiceImpl @Inject()(
   assessmentService: AssessmentService,
+  features: Features,
   config: Configuration,
   securityServiceProvider: Provider[SecurityService]
 )(implicit executionContext: ExecutionContext) extends NavigationService {
@@ -73,6 +74,7 @@ class NavigationServiceImpl @Inject()(
   private lazy val tabulaAssessmentImports = NavigationPage("Tabula assessment imports", controllers.sysadmin.routes.TabulaAssessmentsImportsController.showForm())
   private lazy val generateTabulaSubmissions = NavigationPage("Generate Tabula Submissions", controllers.sysadmin.routes.SysadminTestController.assignmentSubmissions())
   private lazy val objectStorage = NavigationPage("Object storage", controllers.sysadmin.routes.ObjectStorageDownloadController.form())
+  private lazy val communicationReports = NavigationPage("Communication reports", controllers.admin.routes.CommunicationReportsController.index())
 
   private lazy val production = config.get[Boolean]("environment.production")
 
@@ -101,12 +103,19 @@ class NavigationServiceImpl @Inject()(
     else
       Nil
 
-  private lazy val admin =
-    NavigationDropdown("Administration", Call("GET", "/admin"), Seq(
+  private lazy val admin = {
+    val baseItems = Seq(
       assessments,
       //approvals,
       reporting,
-    ))
+    )
+
+    NavigationDropdown(
+      "Administration",
+      Call("GET", "/admin"),
+      if (features.announcementsAndQueriesCsv) baseItems :+ communicationReports else baseItems
+    )
+  }
 
   private def adminMenu(loginContext: LoginContext): Seq[Navigation] =
     if (securityService.isAdmin(loginContext))

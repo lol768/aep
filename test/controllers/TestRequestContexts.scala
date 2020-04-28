@@ -26,6 +26,7 @@ object TestRequestContexts {
         override val importStudentExtraTime: Boolean = false
         override val overwriteAssessmentTypeOnImport: Boolean = false
         override val twoWayMessages: Boolean = false
+        override val announcementsAndQueriesCsv: Boolean = false
       },
       tabulaConfiguration = null,
     )

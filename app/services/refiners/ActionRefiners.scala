@@ -162,7 +162,7 @@ class ActionRefiners @Inject() (
   def IsAdminForDepartment(deptCode: String): Filter[DepartmentAdminRequest] =
     new Filter[DepartmentAdminRequest] {
       override protected  def apply[A](implicit request: DepartmentAdminRequest[A]): Future[Option[Result]] = Future.successful {
-        if (request.departments.exists(_.code == deptCode)) {
+        if (request.departments.exists(_.code.toLowerCase == deptCode.toLowerCase)) {
           None
         } else {
           Some(Forbidden(views.html.errors.forbidden(request.user.flatMap(_.name.first))))
@@ -170,10 +170,10 @@ class ActionRefiners @Inject() (
       }
     }
 
-  // A user has admin permissions for a department if they're in the admin webgroup for that deprtment
+  // A user has admin permissions for a department if they're in the admin webgroup for that department
   // or the admin webgroup for a parent department of that department.
-  // Capped at a depth of 4 parent departments to avoid explosions if there's a circular reference somwhere
-  private def recursiveAdminGroupCheck(
+  // Capped at a depth of 4 parent departments to avoid explosions if there's a circular reference somewhere
+  def recursiveAdminGroupCheck(
     department: Department,
     allDepartments: Seq[Department],
     groupNamesForUser: Seq[GroupName],

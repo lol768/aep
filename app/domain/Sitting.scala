@@ -140,13 +140,13 @@ sealed trait BaseSitting {
         } else if (assessment.hasLastAllowedStartTimePassed()) {
           DeadlineMissed
         } else {
-          val studentStartTime = studentAssessment.startTime.get
+          val startTime = effectiveStartTime.get
           val inProgressState = for (ad <- assessment.duration; d <- onTimeDuration; ld <- lateDuration) yield {
-            if (studentStartTime.plus(ad).isAfter(now)) {
+            if (startTime.plus(ad).isAfter(now)) {
               InProgress
-            } else if (studentStartTime.plus(d).isAfter(now)) {
+            } else if (startTime.plus(d).isAfter(now)) {
               OnGracePeriod
-            } else if (studentStartTime.plus(ld).isAfter(now)) {
+            } else if (startTime.plus(ld).isAfter(now)) {
               Late
             } else {
               DeadlineMissed
