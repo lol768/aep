@@ -6,7 +6,8 @@ import java.util.UUID
 
 import akka.stream.Materializer
 import controllers.AssessmentController.{FinishExamFormData, UploadFilesFormData}
-import domain.Assessment.Platform
+import domain.Assessment.{DurationStyle, Platform}
+import domain.Assessment.DurationStyle._
 import domain.Fixtures.uploadedFiles.specialJPG
 import domain.dao.{AssessmentDao, StudentAssessmentDao}
 import domain.dao.AssessmentsTables.StoredAssessment
@@ -49,69 +50,104 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
   private val canNoLongerStartMessage = "You can no longer start this assessment."
 
   "AssessmentController" should {
-    "Allow a student to view the assessment they have scheduled" in new AssessmentNotStartedScenario() { s =>
+    "Allow a student to view the assessment they have scheduled (DayWindow assessment)" in new AssessmentNotStartedScenario(DayWindow) { s =>
       private val resView = reqView(s.TheAssessment, s.Rupert)
       status(resView) mustBe OK
       htmlErrors(resView) mustBe empty
     }
 
-    "Not allow a student to view an assessment that they're not scheduled to take" in new AssessmentNotStartedScenario() { s =>
+    "Allow a student to view the assessment they have scheduled (FixedStart assessment)" in new AssessmentNotStartedScenario(FixedStart) { s =>
+      private val resView = reqView(s.TheAssessment, s.Rupert)
+      status(resView) mustBe OK
+      htmlErrors(resView) mustBe empty
+    }
+
+    "Not allow a student to view an assessment that they're not scheduled to take" in new AssessmentNotStartedScenario(DayWindow) { s =>
       private val resView = reqView(s.TheAssessment, s.Herbert)
       status(resView) mustBe NOT_FOUND
     }
 
-    "Show the authorship declaration form if it has not been accepted already" in new AssessmentNotStartedScenario() { s =>
+    "Show the authorship declaration form if it has not been accepted already (DayWindow assessment)" in new AssessmentNotStartedScenario(DayWindow) { s =>
       private val resStart = reqStart(s.TheAssessment, s.Rupert)
       status(resStart) mustBe OK
       contentAsString(resStart) must include(authorshipHeader)
     }
 
-    "Not allow a student to start an assessment that they're not scheduled to take" in new AssessmentNotStartedScenario() { s =>
+    "Show the authorship declaration form if it has not been accepted already (FixedStart assessment)" in new AssessmentNotStartedScenario(FixedStart) { s =>
+      private val resStart = reqStart(s.TheAssessment, s.Rupert)
+      status(resStart) mustBe OK
+      contentAsString(resStart) must include(authorshipHeader)
+    }
+
+    "Not allow a student to start an assessment that they're not scheduled to take" in new AssessmentNotStartedScenario(DayWindow) { s =>
       private val resStart = reqStart(s.TheAssessment, s.Herbert)
       status(resStart) mustBe NOT_FOUND
     }
 
-    "Show the reasonable adjustments form if it has not been declared yet" in new OnlyAuthorshipDeclarationAcceptedScenario() { s =>
+    "Show the reasonable adjustments form if it has not been declared yet (DayWindow assessment)" in new OnlyAuthorshipDeclarationAcceptedScenario(DayWindow) { s =>
       private val resStart = reqStart(s.TheAssessment, s.Rupert)
       status(resStart) mustBe OK
       contentAsString(resStart) must include(reasonableAdjustmentsHeader)
     }
 
-    "Redirect the student to the assessment if all declarations have been accepted" in new AllDeclarationsAcceptedScenario() { s =>
+    "Show the reasonable adjustments form if it has not been declared yet (FixedStart assessment)" in new OnlyAuthorshipDeclarationAcceptedScenario(FixedStart) { s =>
+      private val resStart = reqStart(s.TheAssessment, s.Rupert)
+      status(resStart) mustBe OK
+      contentAsString(resStart) must include(reasonableAdjustmentsHeader)
+    }
+
+    "Redirect the student to the assessment if all declarations have been accepted (DayWindow assessment)" in new AllDeclarationsAcceptedScenario(DayWindow) { s =>
       private val resStart = reqStart(s.TheAssessment, s.Rupert)
       status(resStart) mustBe SEE_OTHER
       header("Location", resStart).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
     }
 
-    "Not allow upload of files to an assessment that has not yet started" in new OnlyAuthorshipDeclarationAcceptedScenario() { s =>
+    "Redirect the student to the assessment if all declarations have been accepted (FixedStart assessment)" in new AllDeclarationsAcceptedScenario(FixedStart) { s =>
+      private val resStart = reqStart(s.TheAssessment, s.Rupert)
+      status(resStart) mustBe SEE_OTHER
+      header("Location", resStart).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
+    }
+
+    "Not allow upload of files to an assessment that has not yet started" in new OnlyAuthorshipDeclarationAcceptedScenario(DayWindow) { s =>
       private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
       status(resFileUpload) mustBe FORBIDDEN
       contentAsString(resFileUpload) must include(notStartedMessage)
     }
 
-    "Allow file uploads once assessment has started" in new AssessmentStartedScenario() { s =>
+    "Allow file uploads once assessment has started (DayWindow assessment)" in new AssessmentStartedScenario(DayWindow) { s =>
       private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
       status(resFileUpload) mustBe OK
     }
 
-    "Prevent a user from uploading a file to an assessment they're not scheduled to take" in new AssessmentStartedScenario() { s =>
+    "Allow file uploads once assessment has started (FixedStart assessment)" in new AssessmentStartedScenario(FixedStart) { s =>
+      private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
+      status(resFileUpload) mustBe OK
+    }
+
+    "Prevent a user from uploading a file to an assessment they're not scheduled to take" in new AssessmentStartedScenario(DayWindow) { s =>
       private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Herbert, UploadFilesFormData(xhr = true))
       status(resFileUpload) mustBe NOT_FOUND
     }
 
-    "Warn a user if they upload no files at all" in new AssessmentStartedScenario { s =>
+    "Warn a user if they upload no files at all" in new AssessmentStartedScenario(DayWindow) { s =>
       private val resNoFileUpload = reqNoFileUpload(s.TheAssessment, s.Rupert, UploadFilesFormData(xhr = true))
       status(resNoFileUpload) mustBe BAD_REQUEST
       contentAsString(resNoFileUpload) must include(noFileMessage)
     }
 
-    "Allow a user to delete a file submission while the assessment is ongoing" in new FileUploadedScenario() { s =>
+    "Allow a user to delete a file submission while the assessment is ongoing (DayWindow assessment)" in new FileUploadedScenario(DayWindow) { s =>
       private val resDeleteFile = reqDeleteFile(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
       status(resDeleteFile) mustBe SEE_OTHER
       header("Location", resDeleteFile).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
     }
 
-    "Prevent a user from deleting somebody else's submitted file" in new FileUploadedScenario { s =>
+    "Allow a user to delete a file submission while the assessment is ongoing (FixedStart assessment)" in new FileUploadedScenario(FixedStart) { s =>
+      private val resDeleteFile = reqDeleteFile(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
+      status(resDeleteFile) mustBe SEE_OTHER
+      header("Location", resDeleteFile).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
+    }
+
+    "Prevent a user from deleting somebody else's submitted file" in new FileUploadedScenario(DayWindow) { s =>
       private val herbertResDeleteFile = reqDeleteFile(s.TheAssessment, s.RupertsUploadedFile, s.Herbert)
       status(herbertResDeleteFile) mustBe NOT_FOUND
 
@@ -119,19 +155,19 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
       status(berthaResDeleteFile) mustBe FORBIDDEN
     }
 
-    "Prevent a user from uploading a duplicate of an already uploaded file" in new FileUploadedScenario() { s =>
+    "Prevent a user from uploading a duplicate of an already uploaded file" in new FileUploadedScenario(DayWindow) { s =>
       private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
       status(resFileUpload) mustBe BAD_REQUEST
       contentAsString(resFileUpload) must include(fileExistsMessage)
     }
 
-    "Allow a user to download a file they submitted" in new FileUploadedScenario() { s =>
+    "Allow a user to download a file they submitted" in new FileUploadedScenario(DayWindow) { s =>
       private val resDownloadAttachment = reqDownloadAttachment(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
       status(resDownloadAttachment) mustBe OK
       htmlErrors(resDownloadAttachment) mustBe empty
     }
 
-    "Prevent a user from downloading someone else's submitted file" in new FileUploadedScenario() { s =>
+    "Prevent a user from downloading someone else's submitted file" in new FileUploadedScenario(DayWindow) { s =>
       private val herbertResDownloadAttachment = reqDownloadAttachment(s.TheAssessment, s.RupertsUploadedFile, s.Herbert)
       status(herbertResDownloadAttachment) mustBe NOT_FOUND
 
@@ -139,105 +175,173 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
       status(berthaResDownloadAttachemnt) mustBe FORBIDDEN
     }
 
-    "Prevent a user from finalising an assessment if the disclaimer is not agreed" in new FileUploadedScenario() { s =>
+    "Prevent a user from finalising an assessment if the disclaimer is not agreed" in new FileUploadedScenario(DayWindow) { s =>
       private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = false))
       status(resFinish) mustBe BAD_REQUEST
       htmlErrors(resFinish) must contain(untickedDisclaimerMessage)
     }
 
-    "Prevent a user from finalising an assessment they're not scheduled to take" in new FileUploadedScenario() { s =>
+    "Prevent a user from finalising an assessment they're not scheduled to take" in new FileUploadedScenario(DayWindow) { s =>
       private val resFinish = reqFinish(s.TheAssessment, s.Herbert, FinishExamFormData(agreeDisclaimer = true))
       status(resFinish) mustBe NOT_FOUND
     }
 
-    "Allow a user to finalise an unfinalised assessment if it's not late and disclaimer is agreed" in new FileUploadedScenario() { s =>
+    "Allow a user to finalise an unfinalised assessment if it's not late and disclaimer is agreed (DayWindow assessment)" in new FileUploadedScenario(DayWindow) { s =>
       private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = true))
       status(resFinish) mustBe SEE_OTHER
       header("Location", resFinish).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
     }
 
-    "Prevent a user from finalising an already finalised assessment" in new FinishedAssessmentScenario() { s =>
+    "Allow a user to finalise an unfinalised assessment if it's not late and disclaimer is agreed (FixedStart assessment)" in new FileUploadedScenario(FixedStart) { s =>
+      private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = true))
+      status(resFinish) mustBe SEE_OTHER
+      header("Location", resFinish).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
+    }
+
+    "Prevent a user from finalising an already finalised assessment" in new FinishedAssessmentScenario(DayWindow) { s =>
       private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = true))
       status(resFinish) mustBe FORBIDDEN
       contentAsString(resFinish) must include(alreadyFinalisedMessage)
     }
 
-    "Still display the assessment view as normal to a user during the 45 minute grace period" in new StudentIntoGracePeriodScenario() { s =>
+    "Still display the assessment view as normal to a user during the 45 minute grace period (DayWindow assessment)" in new StudentIntoGracePeriodScenario(DayWindow) { s =>
       private val resView = reqView(s.TheAssessment, s.Rupert)
       status(resView) mustBe OK
       contentAsString(resView) must include(fileUploadFormElement)
       contentAsString(resView) mustNot include(lateUploadWarning)
     }
 
-    "Still display the assessment view during the late submission period but warn submission will be marked late" in new StudentIntoLatePeriodScenario() { s =>
+    "Still display the assessment view as normal to a user during the 45 minute grace period (FixedStart assessment)" in new StudentIntoGracePeriodScenario(FixedStart) { s =>
+      private val resView = reqView(s.TheAssessment, s.Rupert)
+      status(resView) mustBe OK
+      contentAsString(resView) must include(fileUploadFormElement)
+      contentAsString(resView) mustNot include(lateUploadWarning)
+    }
+
+    "Still display the assessment view during the late submission period but warn submission will be marked late (DayWindow assessment)" in new StudentIntoLatePeriodScenario(DayWindow) { s =>
       private val resView = reqView(s.TheAssessment, s.Rupert)
       status(resView) mustBe OK
       contentAsString(resView) must include(fileUploadFormElement)
       contentAsString(resView) must include(lateUploadWarning)
     }
 
-    "No longer display the file upload form once the grace and late periods have passed" in new StudentMissedDeadlineScenario() { s =>
+    "Still display the assessment view during the late submission period but warn submission will be marked late (FixedStart assessment)" in new StudentIntoLatePeriodScenario(FixedStart) { s =>
+      private val resView = reqView(s.TheAssessment, s.Rupert)
+      status(resView) mustBe OK
+      contentAsString(resView) must include(fileUploadFormElement)
+      contentAsString(resView) must include(lateUploadWarning)
+    }
+
+    "No longer display the file upload form once the grace and late periods have passed (DayWindow assessment)" in new StudentMissedDeadlineScenario(DayWindow) { s =>
       private val resView = reqView(s.TheAssessment, s.Rupert)
       status(resView) mustBe OK
       contentAsString(resView) mustNot include(fileUploadFormElement)
     }
 
-    "No longer allow submission of files when the deadline has passed" in new StudentMissedDeadlineScenario() { s =>
+    "No longer display the file upload form once the grace and late periods have passed (FixedStart assessment)" in new StudentMissedDeadlineScenario(FixedStart) { s =>
+      private val resView = reqView(s.TheAssessment, s.Rupert)
+      status(resView) mustBe OK
+      contentAsString(resView) mustNot include(fileUploadFormElement)
+    }
+
+    "No longer allow submission of files when the deadline has passed (DayWindow assessment)" in new StudentMissedDeadlineScenario(DayWindow) { s =>
       private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
       status(resFileUpload) mustBe FORBIDDEN
       contentAsString(resFileUpload) must include(canNoLongerModifyMessage)
     }
 
-    "No longer allow deletion of files when the deadline has passed" in new StudentUploadedFileButMissedDeadlineScenario() { s =>
+    "No longer allow submission of files when the deadline has passed (FixedStart assessment)" in new StudentMissedDeadlineScenario(FixedStart) { s =>
+      private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
+      status(resFileUpload) mustBe FORBIDDEN
+      contentAsString(resFileUpload) must include(canNoLongerModifyMessage)
+    }
+
+    "No longer allow deletion of files when the deadline has passed (DayWindow assessment)" in new StudentUploadedFileButMissedDeadlineScenario(DayWindow) { s =>
       private val resDeleteFile = reqDeleteFile(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
       status(resDeleteFile) mustBe FORBIDDEN
       contentAsString(resDeleteFile) must include(alreadyFinalisedMessage)
     }
 
-    "No longer allow finalising of assessment when the deadline has passed" in new StudentUploadedFileButMissedDeadlineScenario() { s =>
+    "No longer allow deletion of files when the deadline has passed (FixedStart assessment)" in new StudentUploadedFileButMissedDeadlineScenario(FixedStart) { s =>
+      private val resDeleteFile = reqDeleteFile(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
+      status(resDeleteFile) mustBe FORBIDDEN
+      contentAsString(resDeleteFile) must include(alreadyFinalisedMessage)
+    }
+
+    "No longer allow finalising of assessment when the deadline has passed (DayWindow assessment)" in new StudentUploadedFileButMissedDeadlineScenario(DayWindow) { s =>
       private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = true))
       status(resFinish) mustBe FORBIDDEN
       // Assessment should be auto-finalised when the deadline passes
       contentAsString(resFinish) must include(alreadyFinalisedMessage)
     }
 
-    "Still allow download of files when the deadline has passed" in new StudentUploadedFileButMissedDeadlineScenario() { s =>
+    "No longer allow finalising of assessment when the deadline has passed (FixedStart assessment)" in new StudentUploadedFileButMissedDeadlineScenario(FixedStart) { s =>
+      private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = true))
+      status(resFinish) mustBe FORBIDDEN
+      // Assessment should be auto-finalised when the deadline passes
+      contentAsString(resFinish) must include(alreadyFinalisedMessage)
+    }
+
+    "Still allow download of files when the deadline has passed (DayWindow assessment)" in new StudentUploadedFileButMissedDeadlineScenario(DayWindow) { s =>
       private val resDownloadAttachment = reqDownloadAttachment(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
       status(resDownloadAttachment) mustBe OK
     }
 
-    "No longer allow submission of files when the 24 hour window has passed, ignoring the usual grace and late periods" in new EndOfWindowBeforeNormalDeadlineScenario() { s =>
+    "Still allow download of files when the deadline has passed (FixedStart assessment)" in new StudentUploadedFileButMissedDeadlineScenario(FixedStart) { s =>
+      private val resDownloadAttachment = reqDownloadAttachment(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
+      status(resDownloadAttachment) mustBe OK
+    }
+
+    "No longer allow submission of files when the 24 hour window has passed, ignoring the usual grace and late periods" in new EndOfWindowBeforeNormalDeadlineScenario(DayWindow) { s =>
       private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
       status(resFileUpload) mustBe FORBIDDEN
       contentAsString(resFileUpload) must include(canNoLongerModifyMessage)
     }
 
-    "No longer allow deletion of files when the 24 hour window has passed, ignoring the usual grace and late periods" in new EndOfWindowBeforeNormalDeadlineScenario() { s =>
+    "No longer allow deletion of files when the 24 hour window has passed, ignoring the usual grace and late periods" in new EndOfWindowBeforeNormalDeadlineScenario(DayWindow) { s =>
       private val resDeleteFile = reqDeleteFile(s.TheAssessment, s.RupertsUploadedFile, s.Rupert)
       status(resDeleteFile) mustBe FORBIDDEN
       contentAsString(resDeleteFile) must include(canNoLongerModifyMessage)
     }
 
-    "No longer allow finalising of assessment when the 24 hour window has passed, ignoring the usual grace and late periods" in new EndOfWindowBeforeNormalDeadlineScenario() { s =>
+    "No longer allow finalising of assessment when the 24 hour window has passed, ignoring the usual grace and late periods" in new EndOfWindowBeforeNormalDeadlineScenario(DayWindow) { s =>
       private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = true))
       status(resFinish) mustBe FORBIDDEN
       // Assessment should be auto-finalised when the end of the window passes
       contentAsString(resFinish) must include(canNoLongerModifyMessage)
     }
 
-    "Not allow a student to start their assessment if they've completely missed the 24 hour window" in new StudentCompletelyMissedWindowScenario() { s =>
+    "Not allow a student to start their DayWindow assessment if they've completely missed the 24 hour window" in new StudentCompletelyMissedWindowScenario(DayWindow) { s =>
       private val resStart = reqStart(s.TheAssessment, s.Rupert)
       status(resStart) mustBe FORBIDDEN
       contentAsString(resStart) must include(canNoLongerStartMessage)
     }
 
-    "Not allow a student to upload a file if they've completely missed the 24 hour window" in new StudentCompletelyMissedWindowScenario() { s =>
+    "Not allow a student to start their FixedStart assessment if they've missed the absolute deadline" in new StudentCompletelyMissedWindowScenario(FixedStart) { s =>
+      private val resStart = reqStart(s.TheAssessment, s.Rupert)
+      status(resStart) mustBe FORBIDDEN
+      contentAsString(resStart) must include(canNoLongerStartMessage)
+    }
+
+    "Not allow a student to upload a file if they've completely missed the 24 hour window" in new StudentCompletelyMissedWindowScenario(DayWindow) { s =>
       private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
       status(resFileUpload) mustBe FORBIDDEN
       contentAsString(resFileUpload) must include(notStartedMessage)
     }
 
-    "Not allow finalising of assessment if the 24 hour window has been completely missed" in new StudentCompletelyMissedWindowScenario() { s =>
+    "Not allow a student to upload a file if they've completely missed an absolute FixedStart deadline" in new StudentCompletelyMissedWindowScenario(FixedStart) { s =>
+      private val resFileUpload = reqFileUpload(s.TheAssessment, RupertsSubmission, s.Rupert, UploadFilesFormData(xhr = true))
+      status(resFileUpload) mustBe FORBIDDEN
+      contentAsString(resFileUpload) must include(notStartedMessage)
+    }
+
+    "Not allow finalising of assessment if the 24 hour window has been completely missed" in new StudentCompletelyMissedWindowScenario(DayWindow) { s =>
+      private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = true))
+      status(resFinish) mustBe FORBIDDEN
+      contentAsString(resFinish) must include(notStartedMessage)
+    }
+
+    "Not allow finalising of assessment if the absolute FixedStart deadline has been completely missed" in new StudentCompletelyMissedWindowScenario(FixedStart) { s =>
       private val resFinish = reqFinish(s.TheAssessment, s.Rupert, FinishExamFormData(agreeDisclaimer = true))
       status(resFinish) mustBe FORBIDDEN
       contentAsString(resFinish) must include(notStartedMessage)
@@ -245,13 +349,14 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
 
   }
 
-  class BasicSittingScenario extends Scenario(scenarioCtx) {
+  class BasicSittingScenario(durationStyle: DurationStyle) extends Scenario(scenarioCtx) {
     val assessmentId: UUID = UUID.randomUUID
     private val storedAssessment: StoredAssessment =
       Fixtures.assessments.storedAssessment(
         uuid = assessmentId,
         platformOption = Some(Platform.OnlineExams),
-        duration = Some(Duration.ofHours(3L))
+        duration = Some(Duration.ofHours(3L)),
+        durationStyle = durationStyle,
       ).copy(
         startTime = Some(2.hours ago)
       )
@@ -271,7 +376,8 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     val TheAssessment: Assessment = assessmentService.get(assessmentId).futureValue.toOption.get
   }
 
-  class AssessmentNotStartedScenario extends BasicSittingScenario {
+  class AssessmentNotStartedScenario(durationStyle: DurationStyle)
+    extends BasicSittingScenario(durationStyle) {
     private val storedStudentAssessments: Set[StoredStudentAssessment] =
       Set(RupertsId, BerthasId).map { uid =>
         Fixtures.studentAssessments.storedStudentAssessment(
@@ -283,7 +389,8 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     val RupertsAssessment: StudentAssessment = studentAssessmentService.get(RupertsId, assessmentId).futureValue.toOption.get
   }
 
-  class OnlyAuthorshipDeclarationAcceptedScenario extends AssessmentNotStartedScenario {
+  class OnlyAuthorshipDeclarationAcceptedScenario(durationStyle: DurationStyle)
+    extends AssessmentNotStartedScenario(durationStyle) {
     private val declarations = Declarations(
       RupertsAssessment.id,
       acceptsAuthorship = true,
@@ -291,7 +398,8 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     studentAssessmentService.upsert(declarations).futureValue
   }
 
-  class AllDeclarationsAcceptedScenario extends AssessmentNotStartedScenario {
+  class AllDeclarationsAcceptedScenario(durationStyle: DurationStyle)
+    extends AssessmentNotStartedScenario(durationStyle) {
     private val declarations = Declarations(
       RupertsAssessment.id,
       acceptsAuthorship = true,
@@ -300,12 +408,14 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     studentAssessmentService.upsert(declarations).futureValue
   }
 
-  class AssessmentStartedScenario extends AllDeclarationsAcceptedScenario {
+  class AssessmentStartedScenario(durationStyle: DurationStyle)
+    extends AllDeclarationsAcceptedScenario(durationStyle) {
     studentAssessmentService.startAssessment(RupertsAssessment).futureValue
     val RupertsStartedAssessment: StudentAssessment = studentAssessmentService.get(RupertsId, assessmentId).futureValue.toOption.get
   }
 
-  class FileUploadedScenario extends AssessmentStartedScenario {
+  class FileUploadedScenario(durationStyle: DurationStyle)
+    extends AssessmentStartedScenario(durationStyle) {
     private val RupertsAuditLogContext: AuditLogContext =
       AuditLogContext.empty().copy(usercode = Some(Rupert.usercode))
 
@@ -324,59 +434,107 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     val RupertsAssessmentWithFile: StudentAssessment = studentAssessmentService.get(RupertsId, TheAssessment.id).futureValue.toOption.get
   }
 
-  class FinishedAssessmentScenario extends FileUploadedScenario {
+  class FinishedAssessmentScenario(durationStyle: DurationStyle)
+    extends FileUploadedScenario(durationStyle) {
     studentAssessmentService.finishAssessment(RupertsAssessment).futureValue
   }
 
-  class StudentIntoGracePeriodScenario extends AssessmentStartedScenario {
+  class StudentIntoGracePeriodScenario(durationStyle: DurationStyle)
+    extends AssessmentStartedScenario(durationStyle) {
+
+    private val assessmentStart = durationStyle match {
+      case DayWindow => Some(5.hours ago)
+      case FixedStart => Some(3.hours and 10.minutes ago)
+    }
+
+    private val rupertStart = durationStyle match {
+      case DayWindow => Some(3.hours and 10.minutes ago)
+      case FixedStart => Some(30.minutes ago)
+    }
+
     assessmentService.update(
-      TheAssessment.copy(startTime = Some(5.hours ago)),
+      TheAssessment.copy(startTime = assessmentStart),
       Seq.empty
     ).futureValue
     studentAssessmentService.upsert(
       RupertsAssessment.copy(
-        startTime = Some(3.hours and 10.minutes ago),
+        startTime = rupertStart,
       )
     ).futureValue
   }
 
-  class StudentIntoLatePeriodScenario extends AssessmentStartedScenario {
+  class StudentIntoLatePeriodScenario(durationStyle: DurationStyle) extends
+    AssessmentStartedScenario(durationStyle) {
+
+    private val assessmentStart = Some(5.hours ago)
+
+    private val rupertStart = durationStyle match {
+      case DayWindow => Some(4.hours ago)
+      case FixedStart => Some(10.minutes ago)
+    }
+
     assessmentService.update(
-      TheAssessment.copy(startTime = Some(5.hours ago)),
+      TheAssessment.copy(startTime = assessmentStart),
       Seq.empty
     ).futureValue
     studentAssessmentService.upsert(
       RupertsAssessment.copy(
-        startTime = Some(4.hours ago)
+        startTime = rupertStart
       )
     ).futureValue
   }
 
-  class StudentMissedDeadlineScenario extends AssessmentStartedScenario {
+  class StudentMissedDeadlineScenario(durationStyle: DurationStyle)
+    extends AssessmentStartedScenario(durationStyle) {
+
+    private val assessmentStart = durationStyle match {
+      case DayWindow => Some(12.hours ago)
+      case FixedStart => Some(6.hours ago)
+    }
+
+    private val rupertStart = durationStyle match {
+      case DayWindow => Some(7.hours ago)
+      case FixedStart => Some(5.hours and 58.minutes ago)
+    }
+
     assessmentService.update(
-      TheAssessment.copy(startTime = Some(12.hours ago)),
+      TheAssessment.copy(startTime = assessmentStart),
       Seq.empty
     ).futureValue
     studentAssessmentService.upsert(
       RupertsAssessment.copy(
-        startTime = Some(7.hours ago)
+        startTime = rupertStart
       )
     ).futureValue
   }
 
-  class StudentUploadedFileButMissedDeadlineScenario extends FileUploadedScenario {
+  class StudentUploadedFileButMissedDeadlineScenario(durationStyle: DurationStyle)
+    extends FileUploadedScenario(durationStyle) {
+
+    private val assessmentStart = durationStyle match {
+      case DayWindow => Some(12.hours ago)
+      case FixedStart => Some(6.hours ago)
+    }
+
+    private val rupertStart = durationStyle match {
+      case DayWindow => Some(7.hours ago)
+      case FixedStart => Some(5.hours and 58.minutes ago)
+    }
+
     assessmentService.update(
-      TheAssessment.copy(startTime = Some(12.hours ago)),
+      TheAssessment.copy(startTime = assessmentStart),
       Seq.empty
     ).futureValue
     studentAssessmentService.upsert(
       RupertsAssessmentWithFile.copy(
-        startTime = Some(7.hours ago)
+        startTime = rupertStart
       )
     ).futureValue
   }
 
-  class EndOfWindowBeforeNormalDeadlineScenario extends FileUploadedScenario {
+  class EndOfWindowBeforeNormalDeadlineScenario(durationStyle: DurationStyle)
+    extends FileUploadedScenario(durationStyle) {
+
     assessmentService.update(
       TheAssessment.copy(startTime = Some(25.hours ago)),
       Seq.empty
@@ -388,9 +546,15 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     ).futureValue
   }
 
-  class StudentCompletelyMissedWindowScenario extends AssessmentNotStartedScenario {
+  class StudentCompletelyMissedWindowScenario(durationStyle: DurationStyle)
+    extends AssessmentNotStartedScenario(durationStyle) {
+
+    private val startTime = durationStyle match {
+      case DayWindow => Some(25.hours ago)
+      case FixedStart => Some(6.hours ago)
+    }
     assessmentService.update(
-      TheAssessment.copy(startTime = Some(25.hours ago)),
+      TheAssessment.copy(startTime = startTime),
       Seq.empty
     ).futureValue
   }
