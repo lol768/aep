@@ -4,6 +4,7 @@ import java.time.format.DateTimeFormatter
 
 import controllers.BaseController
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import play.api.mvc.{Action, AnyContent}
 import services.{AssessmentService, SecurityService}
 import warwick.sso.UserLookupService
@@ -15,11 +16,12 @@ class AssessmentInvigilatorReportController @Inject()(
   security: SecurityService,
   assessmentService: AssessmentService,
   userLookupService: UserLookupService,
+  configuration: Configuration,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
 
-  val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+  val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(configuration.get[String]("app.csvDateTimeFormat"))
 
   def invigilatorsCsv(examProfileCode: String): Action[AnyContent] = RequireAdmin.async { implicit request =>
     assessmentService.listForExamProfileCode(examProfileCode).successMap { assessments =>

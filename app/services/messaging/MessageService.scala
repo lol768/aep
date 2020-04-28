@@ -6,6 +6,7 @@ import actors.WebSocketActor.AssessmentMessage
 import akka.Done
 import controllers.WebSocketController.Topics
 import domain.AuditEvent.{Operation, Target}
+import domain.{AssessmentMetadata, DepartmentCode}
 import domain.dao.{DaoRunner, MessageDao}
 import domain.messaging.{Message, MessageSave, MessageSender}
 import javax.inject.{Inject, Singleton}
@@ -92,6 +93,13 @@ class MessageService @Inject() (
 
   def findByStudentAssessment(assessmentId: UUID, client: UniversityID)(implicit ctx: TimingContext): Future[ServiceResult[Seq[Message]]] =
     runner.run(dao.forStudentAssessment(assessmentId, client))
+      .map(ServiceResults.success)
+
+  def findByDepartmentCode(departmentCode: DepartmentCode)(implicit ctx: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Message)]]] =
+    runner.run(dao.findByDepartmentCode(departmentCode))
+      .map( _.map {
+        case (assessment, message) => (assessment.asAssessmentMetadata, message)
+      })
       .map(ServiceResults.success)
 
 }

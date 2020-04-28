@@ -6,6 +6,7 @@ import controllers.AssessmentSubmissionsDownloadController
 import javax.inject.{Inject, Singleton}
 import org.quartz.Scheduler
 import play.api.mvc.{Action, AnyContent}
+import services.job.GenerateAssessmentZipJobBuilder
 import services.{SecurityService, StudentAssessmentService, UploadedFileService}
 import warwick.fileuploads.UploadedFileControllerHelper
 
@@ -18,7 +19,8 @@ class AdminSubmissionsDownloadController @Inject()(
   uploadedFileService: UploadedFileService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   studentAssessmentService: StudentAssessmentService,
-)(implicit ec: ExecutionContext) extends AssessmentSubmissionsDownloadController(scheduler, uploadedFileService, uploadedFileControllerHelper) {
+  generateAssessmentZipJobBuilder: GenerateAssessmentZipJobBuilder
+)(implicit ec: ExecutionContext) extends AssessmentSubmissionsDownloadController(scheduler, uploadedFileService, uploadedFileControllerHelper, generateAssessmentZipJobBuilder) {
 
   import security._
 
