@@ -34,14 +34,12 @@ class CommunicationReportsController @Inject()(
 
   val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(configuration.get[String]("app.csvDateTimeFormat"))
 
-  def index(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
+  def index(): Action[AnyContent] = GeneralDepartmentAdminAction { implicit request =>
     if (features.announcementsAndQueriesCsv) {
-        val depts = request.user.map { user =>
-          val groupsForUser = groupService.getGroupsForUser(user.usercode).get
-          request.departments.filter(dept => actionRefiners.recursiveAdminGroupCheck(dept, request.departments, groupsForUser.map(_.name)))
-        }.getOrElse(Seq.empty)
-        Future.successful(Ok(views.html.admin.communicationReports.index(depts)))
-      } else { Future.successful(NotFound(views.html.errors.notFound())) }
+      Ok(views.html.admin.communicationReports.index(request.departments.sortBy(_.name)))
+    } else {
+      NotFound(views.html.errors.notFound())
+    }
   }
 
    def announcementsCsv(departmentCode: String): Action[AnyContent] = SpecificDepartmentAdminAction(departmentCode).async { implicit request =>

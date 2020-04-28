@@ -136,7 +136,7 @@ class GenerateAssessmentZipJob @Inject()(
 }
 
 object GenerateAssessmentZipJob  {
-  private val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(ConfigFactory.load().getString("app.csvDateTimeFormat"))
+  lazy private val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(ConfigFactory.load().getString("app.csvDateTimeFormat"))
   /**
     * Writes CSV information about sittings to the output stream, *without* closing it.
     */
