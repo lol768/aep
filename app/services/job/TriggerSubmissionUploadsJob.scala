@@ -60,7 +60,7 @@ class TriggerSubmissionUploadsJob @Inject()(
       )).map {
         a => {
           val failedAssessmentCount = a.filter(_.uploadAssessmentJobfailed)
-          if (!failedAssessmentCount.isEmpty) {
+          if (failedAssessmentCount.nonEmpty) {
             throw new JobExecutionException(s"Failed UploadSubmissionsJob detected, total failed assessments:${failedAssessmentCount.size}")
           } else {
             JobResult.success(s"Uploads triggered for ${a.length} assessments")

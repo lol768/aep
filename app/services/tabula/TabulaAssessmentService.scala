@@ -10,7 +10,7 @@ import domain.{Assessment, AssessmentMetadata, Sitting, StudentAssessment, tabul
 import com.google.inject.ImplementedBy
 import com.google.inject.name.Named
 import domain.tabula.{Submission, TabulaAssignment}
-import helpers.{TrustedAppsHelper, WSRequestUriBuilder}
+import helpers.{ServiceResultUtils, TrustedAppsHelper, WSRequestUriBuilder}
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.cache.AsyncCacheApi
@@ -244,14 +244,14 @@ class TabulaAssessmentServiceImpl @Inject()(
       def createSubmissions(sittings: Seq[Sitting]): Future[ServiceResult[Seq[StudentAssessment]]] = {
         tabulaAssignmentService.getByAssessment(assessment)
           .successFlatMapTo { tabulaAssignments =>
-            ServiceResults.futureSequence(sittings
-              .filter(s => s.studentAssessment.tabulaSubmissionId.isEmpty && s.studentAssessment.uploadedFiles.nonEmpty && s.studentAssessment.academicYear.isDefined)
-              .map { sitting =>
-                createSubmission(sitting, tabulaAssignments.filter(_.academicYear == sitting.studentAssessment.academicYear.get).head.id).successFlatMapTo { submission =>
-                  studentAssessmentService.upsert(sitting.studentAssessment.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
-                }
+            ServiceResultUtils.traverseSerial(
+              sittings
+                .filter(s => s.studentAssessment.tabulaSubmissionId.isEmpty && s.studentAssessment.uploadedFiles.nonEmpty && s.studentAssessment.academicYear.isDefined)
+            ) { sitting =>
+              createSubmission(sitting, tabulaAssignments.filter(_.academicYear == sitting.studentAssessment.academicYear.get).head.id).successFlatMapTo { submission =>
+                studentAssessmentService.upsert(sitting.studentAssessment.copy(tabulaSubmissionId = Some(UUID.fromString(submission.id))))
               }
-            )
+            }
           }
       }
 
