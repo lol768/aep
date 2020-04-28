@@ -49,9 +49,6 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
   private val canNoLongerModifyMessage = "You can no longer modify your submission. The latest time you could make changes has passed."
   private val canNoLongerStartMessage = "You can no longer start this assessment."
 
-  private def durationStyleError(d: DurationStyle) =
-    throw new IllegalArgumentException(s"Unrecognised duration style: ${d.label}")
-
   "AssessmentController" should {
     "Allow a student to view the assessment they have scheduled (DayWindow assessment)" in new AssessmentNotStartedScenario(DayWindow) { s =>
       private val resView = reqView(s.TheAssessment, s.Rupert)
@@ -448,13 +445,11 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     private val assessmentStart = durationStyle match {
       case DayWindow => Some(5.hours ago)
       case FixedStart => Some(3.hours and 10.minutes ago)
-      case _ => durationStyleError(durationStyle)
     }
 
     private val rupertStart = durationStyle match {
       case DayWindow => Some(3.hours and 10.minutes ago)
       case FixedStart => Some(30.minutes ago)
-      case _ => durationStyleError(durationStyle)
     }
 
     assessmentService.update(
@@ -476,7 +471,6 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     private val rupertStart = durationStyle match {
       case DayWindow => Some(4.hours ago)
       case FixedStart => Some(10.minutes ago)
-      case _ => durationStyleError(durationStyle)
     }
 
     assessmentService.update(
@@ -496,13 +490,11 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     private val assessmentStart = durationStyle match {
       case DayWindow => Some(12.hours ago)
       case FixedStart => Some(6.hours ago)
-      case _ => durationStyleError(durationStyle)
     }
 
     private val rupertStart = durationStyle match {
       case DayWindow => Some(7.hours ago)
       case FixedStart => Some(5.hours and 58.minutes ago)
-      case _ => durationStyleError(durationStyle)
     }
 
     assessmentService.update(
@@ -522,13 +514,11 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     private val assessmentStart = durationStyle match {
       case DayWindow => Some(12.hours ago)
       case FixedStart => Some(6.hours ago)
-      case _ => durationStyleError(durationStyle)
     }
 
     private val rupertStart = durationStyle match {
       case DayWindow => Some(7.hours ago)
       case FixedStart => Some(5.hours and 58.minutes ago)
-      case _ => durationStyleError(durationStyle)
     }
 
     assessmentService.update(
@@ -562,7 +552,6 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
     private val startTime = durationStyle match {
       case DayWindow => Some(25.hours ago)
       case FixedStart => Some(6.hours ago)
-      case _ => durationStyleError(durationStyle)
     }
     assessmentService.update(
       TheAssessment.copy(startTime = startTime),
