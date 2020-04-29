@@ -36,6 +36,7 @@ class AssessmentTables @Inject()(
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
     def duration = column[Option[Duration]]("duration")
     def platform = column[Set[Platform]]("platform")
+    def platforms = stringToArray(column[String]("platform"), ",")
     def assessmentType = column[Option[AssessmentType]]("type")
     def durationStyle = column[DurationStyle]("duration_style")
     def storedBrief = column[StoredBrief]("brief")
@@ -183,6 +184,15 @@ class AssessmentTables @Inject()(
       .on { case (a, f) =>
         a.id === f.ownerId && f.ownerType === (UploadedFileOwner.StudentAssessment: UploadedFileOwner) && f.id === a.uploadedFiles.any
       }
+
+    def withDeclarationAndUploadedFiles = q
+      .joinLeft(declarations.table)
+      .on(_.id === _.studentAssessmentId)
+      .joinLeft(uploadedFiles.table)
+      .on { case ((a, _), f) =>
+        a.id === f.ownerId && f.ownerType === (UploadedFileOwner.StudentAssessment: UploadedFileOwner) && f.id === a.uploadedFiles.any
+      }
+      .map { case ((a, d), f) => (a, d, f) }
   }
 
   val studentAssessments: VersionedTableQuery[StoredStudentAssessment, StoredStudentAssessmentVersion, StudentAssessments, StudentAssessmentVersions] =

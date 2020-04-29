@@ -1,8 +1,8 @@
-@import domain.Assessment
+@import domain.BaseAssessment
 @import java.time.Duration
 @import org.apache.commons.lang3.time.DurationFormatUtils
 
-@(assessment: Assessment)
+@(assessment: BaseAssessment)
 @assessment.duration match {
   case Some(d) if d == Duration.ofHours(2) => { Up to 2 hours }
   case Some(d) => { @DurationFormatUtils.formatDurationWords(d.toMillis, true, true) }

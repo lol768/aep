@@ -24,9 +24,9 @@ class AssessmentInvigilatorReportController @Inject()(
   val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(configuration.get[String]("app.csvDateTimeFormat"))
 
   def invigilatorsCsv(examProfileCode: String): Action[AnyContent] = RequireAdmin.async { implicit request =>
-    assessmentService.listForExamProfileCode(examProfileCode).successMap { assessments =>
-      val headerRow: Seq[String] = Seq("Module code", "Paper code", "Section", "Title", "Date/time", "Invigilators")
-      val dataRows: Seq[Seq[String]] = assessments.map { assessment =>
+    assessmentService.listForExamProfileCodeWithStudentCount(examProfileCode).successMap { assessments =>
+      val headerRow: Seq[String] = Seq("Module code", "Paper code", "Section", "Title", "Date/time", "Invigilators", "Students")
+      val dataRows: Seq[Seq[String]] = assessments.map { case (assessment, students) =>
         Seq(
           assessment.moduleCode,
           assessment.paperCode,
@@ -38,7 +38,8 @@ class AssessmentInvigilatorReportController @Inject()(
               user.name.full.orElse(Some(user.usercode.string)),
               user.email.map(e => s"<$e>")
             ).flatten.mkString(" ")
-          }.mkString(", ")
+          }.mkString(", "),
+          students.toString
         )
       }
 

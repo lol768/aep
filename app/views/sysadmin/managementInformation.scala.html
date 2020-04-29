@@ -1,0 +1,168 @@
+@import controllers.sysadmin.ManagementInformationController._
+@import domain.AssessmentMetadata
+@import domain.Assessment.DurationStyle
+@import tags._
+
+@(
+  startingToday: Seq[(AssessmentMetadata, Int)],
+  startingTomorrow: Seq[(AssessmentMetadata, Int)],
+  startingInTwoDays: Seq[(AssessmentMetadata, Int)],
+  metricsByExamProfile: Seq[AssessmentSetupMetrics],
+  aepParticipationMetrics: AssessmentParticipationMetrics,
+  nonAEPParticipationMetrics: AssessmentParticipationMetrics
+)(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@upcomingAssessmentsTable(title: String, assessments: Seq[(AssessmentMetadata, Int)]) = {
+  <table class="table table-striped table-sortable">
+    <caption>@title</caption>
+    <thead>
+      <tr>
+        <th>Paper code</th>
+        <th>Section</th>
+        <th>Title</th>
+        <th>Start time</th>
+        <th>Duration</th>
+        <th>Platform(s)</th>
+        <th>Students</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @assessments.map { case (assessment, students) =>
+        <tr>
+          <td>@assessment.paperCode</td>
+          <td>@assessment.section.getOrElse("")</td>
+          <td>@assessment.title</td>
+          <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
+            @assessment.startTime.map(localisedDatetime(_))
+            @assessment.durationStyle match {
+              case DurationStyle.DayWindow => { (day window) }
+              case DurationStyle.FixedStart => { (fixed-start) }
+            }
+          </td>
+          <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
+            @durationWords(assessment)
+          </td>
+          <td>
+            @assessment.platform.map(_.label).mkString(", ")
+          </td>
+          <td>@students</td>
+          <td>
+            <a href="@controllers.admin.routes.AdminAssessmentsController.view(assessment.id)" class="btn btn-default btn-sm">View all information</a>
+            <a href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)" class="btn btn-default btn-sm">Invigilation</a>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@participationMetricsRowAEP(label: String, metrics: AssessmentParticipationMetricValues) = {
+  <tr>
+    <th class="row">@label</th>
+    <td>@metrics.total</td>
+    <td>@metrics.started</td>
+    <td>@metrics.submitted</td>
+    <td>@metrics.wasLate</td>
+    <td>@metrics.explicitlyFinalised</td>
+  </tr>
+}
+
+@participationMetricsRowNonAEP(label: String, metrics: AssessmentParticipationMetricValues) = {
+  <tr>
+    <th class="row">@label</th>
+    <td>@metrics.total</td>
+    <td>@metrics.started</td>
+  </tr>
+}
+
+@adminLayout("Management information") {
+  @upcomingAssessmentsTable("Today's assessments", startingToday)
+  @upcomingAssessmentsTable("Tomorrow's assessments", startingTomorrow)
+  @upcomingAssessmentsTable("In two days", startingInTwoDays)
+
+  <table class="table table-striped">
+    <caption>Exam setup status</caption>
+    <thead>
+      <tr>
+        <th>Exam profile</th>
+        <th>Assessments</th>
+        <th>Has students</th>
+        <th>Has platform</th>
+        <th>Has duration</th>
+        <th>Has URLs (or is AEP)</th>
+        <th>Has description</th>
+        <th>Has invigilators</th>
+      </tr>
+    </thead>
+    <tbody>
+      @metricsByExamProfile.map { metrics =>
+        <tr>
+          <th scope="row">@metrics.examProfileCode</th>
+          <td>@metrics.assessmentCount</td>
+          <td>@metrics.hasStudents</td>
+          <td>@metrics.hasPlatform</td>
+          <td>@metrics.hasDuration</td>
+          <td>@metrics.hasURLOrIsAEP</td>
+          <td>@metrics.hasDescription</td>
+          <td>@metrics.hasInvigilators</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  @defining(aepParticipationMetrics) { metrics =>
+    <table class="table table-striped">
+      <caption>Participation metrics (AEP submission)</caption>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Total sittings</th>
+          <th>Started</th>
+          <th>Submitted</th>
+          <th>Was late</th>
+          <th>Explicitly finalised</th>
+        </tr>
+      </thead>
+      <tbody>
+        @participationMetricsRowAEP("Overall", metrics.overall)
+      </tbody>
+      <tbody>
+        @metrics.byDepartmentCode.map { case (departmentCode, values) =>
+          @participationMetricsRowAEP(departmentCode.string, values)
+        }
+      </tbody>
+      <tbody>
+        @metrics.byExamProfileCode.map { case (examProfileCode, values) =>
+          @participationMetricsRowAEP(examProfileCode, values)
+        }
+      </tbody>
+    </table>
+  }
+
+  @defining(nonAEPParticipationMetrics) { metrics =>
+    <table class="table table-striped">
+      <caption>Participation metrics (non-AEP submission)</caption>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Total sittings</th>
+          <th>Started</th>
+        </tr>
+      </thead>
+      <tbody>
+        @participationMetricsRowNonAEP("Overall", metrics.overall)
+      </tbody>
+      <tbody>
+        @metrics.byDepartmentCode.map { case (departmentCode, values) =>
+          @participationMetricsRowNonAEP(departmentCode.string, values)
+        }
+      </tbody>
+      <tbody>
+        @metrics.byExamProfileCode.map { case (examProfileCode, values) =>
+          @participationMetricsRowNonAEP(examProfileCode, values)
+        }
+      </tbody>
+    </table>
+  }
+}
