@@ -402,7 +402,8 @@ class AssessmentDaoImpl @Inject()(
       .exists
 
     pastLastSubmitTimeQuery
-      .filter(a => OnlineExams.entryName.bind === a.platforms.any)
+      // platform contains OnlineExams - had to come up with this nonsense as the column is a varchar
+      .filter(_.platform.asColumnOf[String] like s"%${OnlineExams.entryName}%")
       .filter(a => unsubmittedStudents(a.id))
       .sortBy(a => (a.startTime, a.duration))
       .result

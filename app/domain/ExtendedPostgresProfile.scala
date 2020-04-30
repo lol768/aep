@@ -1,14 +1,10 @@
 package domain
 
-import java.time.{Duration, LocalDate, LocalDateTime, OffsetDateTime, OffsetTime, ZonedDateTime}
+import java.time.{OffsetDateTime, ZonedDateTime}
 
 import com.github.tminglei.slickpg._
-import com.github.tminglei.slickpg.date.PgDateExtensions
-import slick.ast.Library.SqlFunction
-import slick.ast.{LiteralNode, Node}
 import slick.basic.Capability
 import slick.jdbc.{JdbcCapabilities, JdbcType}
-import slick.lifted.OptionMapperDSL
 import warwick.slick.jdbctypes.pg.FixedPgLocalDateTypeSupport
 import warwick.slick.jdbctypes.{CustomJdbcDateTypesSupport, CustomStringJdbcTypeSupport}
 
@@ -49,17 +45,6 @@ trait ExtendedPostgresProfile
     override implicit val date2TzTimestampTypeMapper: JdbcType[OffsetDateTime] = columnTypes.offsetDateTimeType
     override implicit val date2TzTimestamp1TypeMapper: JdbcType[ZonedDateTime] = columnTypes.zonedDateType
 
-    def stringToArray[R](column: Rep[String], separator: String, nullString: Option[String] = None)(
-      implicit om: OptionMapperDSL.arg[String, String]#to[List[String], R]
-    ): Rep[R] = {
-      om.column(
-        new SqlFunction("string_to_array"),
-        Seq[Node](
-          column.toNode,
-          LiteralNode(separator),
-        ) ++ nullString.toSeq.map[Node](LiteralNode(_)): _*
-      )
-    }
   }
 
 
