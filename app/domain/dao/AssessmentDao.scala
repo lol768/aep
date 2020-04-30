@@ -1,6 +1,6 @@
 package domain.dao
 
-import java.time.{Duration, OffsetDateTime}
+import java.time.{Duration, LocalDate, OffsetDateTime}
 import java.util.UUID
 
 import akka.Done
@@ -9,6 +9,7 @@ import domain.Assessment.Platform.OnlineExams
 import domain.Assessment._
 import domain._
 import domain.dao.AssessmentsTables.StoredAssessment
+import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -78,6 +79,8 @@ object AssessmentsTables {
         platform,
         assessmentType,
         durationStyle,
+        storedBrief.asBriefWithoutFiles(platform),
+        invigilators.map(Usercode).toSet,
         state,
         tabulaAssessmentId,
         tabulaAssignments.toSet,
@@ -156,9 +159,14 @@ object AssessmentsTables {
     urls: Option[Map[Platform, String]], // Not really optional, but used to handle legacy data
   ) {
     def asBrief(fileMap: Map[UUID, UploadedFile], platforms: Set[Platform]): Brief =
+      asBriefWithoutFiles(platforms).copy(
+        files = fileIds.map(fileMap)
+      )
+
+    def asBriefWithoutFiles(platforms: Set[Platform]): Brief =
       Brief(
         text,
-        fileIds.map(fileMap),
+        Seq.empty,
         urls.getOrElse(
           // If the Map is missing (rather than empty) then handle the legacy url field
           // No real way to know which platform that required a URL this one if for,
@@ -222,6 +230,7 @@ trait AssessmentDao {
 
   def getLast48Hrs: DBIO[Seq[StoredAssessment]]
   def getLast48HrsWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
+  def getAssessmentsStartingOnWithStudentCount(date: LocalDate): DBIO[Seq[(StoredAssessment, Int)]]
 
   def getAssessmentsRequiringUpload: DBIO[Seq[StoredAssessment]]
 
@@ -232,6 +241,9 @@ trait AssessmentDao {
   def getByIdAndInvigilatorWithUploadedFiles(id: UUID, usercodes: List[Usercode]): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
 
   def getByExamProfileCodeWithUploadedFiles(examProfileCode: String): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
+  def getByExamProfileCodeWithStudentCount(examProfileCode: String): DBIO[Seq[(StoredAssessment, Int)]]
+
+  def getFinishedAssessmentsWithSittingInformation(): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile], Set[(StoredStudentAssessment, Option[StoredDeclarations], Set[StoredUploadedFile])])]]
 }
 
 @Singleton
@@ -336,6 +348,19 @@ class AssessmentDaoImpl @Inject()(
     getLast48HrsQuery.withUploadedFiles.result
       .map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
 
+  override def getAssessmentsStartingOnWithStudentCount(date: LocalDate): profile.api.DBIO[Seq[(StoredAssessment, Int)]] = {
+    val startOfDay = date.atStartOfDay(JavaTime.timeZone).toOffsetDateTime
+    val endOfDay = date.plusDays(1).atStartOfDay(JavaTime.timeZone).toOffsetDateTime
+
+    assessments.table
+      .filter(a => a.startTime >= startOfDay && a.startTime < endOfDay)
+      .joinLeft(tables.studentAssessments.table)
+      .on(_.id === _.assessmentId)
+      .groupBy { case (a, _) => a }
+      .map { case (a, q) => (a, q.map(_._2.map(_.id)).countDefined) }
+      .sortBy { case (a, _) => (a.startTime, a.paperCode, a.section) }
+      .result
+  }
 
   // finds assessments where there in no possibility of further submissions being made
   private def pastLastSubmitTimeQuery: Query[Assessments, StoredAssessment, Seq] = {
@@ -408,4 +433,42 @@ class AssessmentDaoImpl @Inject()(
       .withUploadedFiles
       .result
       .map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
+
+  override def getByExamProfileCodeWithStudentCount(examProfileCode: String): DBIO[Seq[(StoredAssessment, Int)]] =
+    assessments.table
+      .filter(_.examProfileCode === examProfileCode)
+      .joinLeft(tables.studentAssessments.table)
+      .on(_.id === _.assessmentId)
+      .groupBy { case (a, _) => a }
+      .map { case (a, q) => (a, q.map(_._2.map(_.id)).countDefined) }
+      .sortBy { case (a, _) => (a.startTime, a.paperCode, a.section) }
+      .result
+
+  override def getFinishedAssessmentsWithSittingInformation(): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile], Set[(StoredStudentAssessment, Option[StoredDeclarations], Set[StoredUploadedFile])])]] =
+    pastLastSubmitTimeQuery
+      .filter(_.tabulaAssessmentId.nonEmpty)
+      .withUploadedFiles
+      .joinLeft(
+        tables.studentAssessments.table
+          .withDeclarationAndUploadedFiles
+      )
+      .on { case ((a, _), (sa, _, _)) => a.id === sa.assessmentId }
+      .result
+      .map { rows =>
+        OneToMany.leftJoinUnordered(rows.map(_._1).distinct).sortBy(_._1).map { case (assessment, assessmentFiles) =>
+          (
+            assessment,
+            assessmentFiles,
+            rows.groupBy(_._1._1) // Rows grouped by assessment
+              .getOrElse(assessment, Seq.empty)
+              .map(_._2).distinct.flatten // Student assessment rows
+              .groupBy(_._1) // Grouped by student assessment
+              .map { case (studentAssessment, saRows) =>
+                (studentAssessment, saRows.head._2, saRows.flatMap(_._3).toSet)
+              }
+              .toSet
+          )
+        }
+      }
+
 }
