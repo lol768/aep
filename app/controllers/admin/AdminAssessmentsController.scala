@@ -222,7 +222,7 @@ class AdminAssessmentsController @Inject()(
 
   def createForm(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     departments().successMap { departments =>
-      Ok(views.html.admin.assessments.create(formMapping(existing = None), departments))
+      Ok(views.html.admin.assessments.create(formMapping(existing = None).copy(data = Map("durationStyle" -> DurationStyle.DayWindow.entryName)), departments))
     }
   }
 
