@@ -31,7 +31,7 @@ object ManagementInformationController {
       assessmentCount = assessments.size,
       hasStudents = assessments.count { case (_, students) => students > 0 },
       hasPlatform = assessments.count { case (a, _) => a.platform.nonEmpty },
-      hasDuration = assessments.count { case (a, _) => a.platform.nonEmpty },
+      hasDuration = assessments.count { case (a, _) => a.duration.nonEmpty },
       hasURLOrIsAEP = assessments.count { case (a, _) => a.briefWithoutFiles.urls.view.filterKeys(_.requiresUrl).values.forall(_.hasText) },
       hasDescription = assessments.count { case (a, _) => a.briefWithoutFiles.text.exists(_.hasText) },
       hasInvigilators = assessments.count { case (a, _) => a.invigilators.nonEmpty }
