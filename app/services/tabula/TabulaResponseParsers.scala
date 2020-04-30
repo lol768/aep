@@ -87,16 +87,16 @@ object TabulaResponseParsers {
     }
 
     val memberReads: Reads[Member] = (
-      (__ \ "member" \ "universityId").read[String] and
-      (__ \ "member" \ "userId").read[String] and
-      (__ \ "member" \ "firstName").read[String] and
-      (__ \ "member" \ "lastName").read[String] and
-      (__ \ "member" \ "fullName").read[String] and
-      (__ \ "member" \ "homeDepartment").read[DepartmentIdentity](departmentIdentity) and
-      (__ \ "member" \ "email").readNullable[String] and
-      (__ \ "member" \ "disability").readNullable[SitsDisability](disabilityReads) and
-      (__ \ "member" \ "studentCourseDetails").readNullable[Seq[StudentCourseDetails]](Reads.seq(studentCourseDetailsReads)) and
-      (__ \ "member" \ "userType").read[String]
+      (__ \ "universityId").read[String] and
+      (__ \ "userId").read[String] and
+      (__ \ "firstName").read[String] and
+      (__ \ "lastName").read[String] and
+      (__ \ "fullName").read[String] and
+      (__ \ "homeDepartment").read[DepartmentIdentity](departmentIdentity) and
+      (__ \ "email").readNullable[String] and
+      (__ \ "disability").readNullable[SitsDisability](disabilityReads) and
+      (__ \ "studentCourseDetails").readNullable[Seq[StudentCourseDetails]](Reads.seq(studentCourseDetailsReads)) and
+      (__ \ "userType").read[String]
     ) (Member.apply _)
     val memberFields: Seq[String] =
       Seq(
@@ -104,6 +104,9 @@ object TabulaResponseParsers {
       ).map(f => s"member.$f") ++
         disabilityFields.map(f => s"member.disability.$f") ++
         studentCourseDetailsFields.map(f => s"member.studentCourseDetails.$f")
+
+    val singleMemberResponseReads: Reads[Member] = (__ \ "member").read(memberReads)
+    val multiMemberResponseReads: Reads[Map[UniversityID, Member]] = (__ \ "members").read(Reads.mapReads[UniversityID, Member](s => JsSuccess(UniversityID(s)))(memberReads))
   }
 
   private val codeAndNameBuilder = (__ \ "code").read[String] and (__ \ "name").read[String]

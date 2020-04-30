@@ -1,9 +1,8 @@
 package domain
 
-import java.time.{Duration, LocalDate, LocalDateTime, OffsetDateTime, OffsetTime, ZonedDateTime}
+import java.time.{OffsetDateTime, ZonedDateTime}
 
 import com.github.tminglei.slickpg._
-import com.github.tminglei.slickpg.date.PgDateExtensions
 import slick.basic.Capability
 import slick.jdbc.{JdbcCapabilities, JdbcType}
 import warwick.slick.jdbctypes.pg.FixedPgLocalDateTypeSupport

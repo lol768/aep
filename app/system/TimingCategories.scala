@@ -1,16 +1,11 @@
 package system
 
 import warwick.core.timing.TimingContext.Category
+import warwick.core.timing.{TimingCategories => CoreTimingCategories}
 
 object TimingCategories {
-  object Http extends Category(id = "HTTP", description = Some("External HTTP calls"))
-  object TabulaRead extends Category(id = "TabulaRead", description = Some("Tabula HTTP reads"), inherits = Seq(Http))
-  object TabulaWrite extends Category(id = "TabulaWrite", description = Some("Tabula HTTP writes"), inherits = Seq(Http))
-  object Db extends Category(id = "DB", description = Some("Database queries"))
-  object ObjectStorage extends Category(id = "ObjectStorage", description = Some("Object storage operations"))
-  object ObjectStorageRead extends Category(id = "ObjectStorageRead", description = Some("Object storage reads"), inherits = Seq(ObjectStorage))
-  object ObjectStorageWrite extends Category(id = "ObjectStorageWrite", description = Some("Object storage writes"), inherits = Seq(ObjectStorage))
-  object Cache extends Category(id = "Cache", description = Some("Cache operations"))
-  object CacheRead extends Category(id = "CacheRead", description = Some("Cache reads"), inherits = Seq(Cache))
-  object CacheWrite extends Category(id = "CacheWrite", description = Some("Cache writes"), inherits = Seq(Cache))
+  import CoreTimingCategories._
+
+  object TabulaRead extends Category(id = "TabulaRead", description = Some("Tabula HTTP reads"), inherits = Seq(Tabula))
+  object TabulaWrite extends Category(id = "TabulaWrite", description = Some("Tabula HTTP writes"), inherits = Seq(Tabula))
 }

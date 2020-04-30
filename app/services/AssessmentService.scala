@@ -1,6 +1,6 @@
 package services
 
-import java.time.Duration
+import java.time.{Duration, LocalDate}
 import java.util.UUID
 
 import akka.Done
@@ -10,7 +10,7 @@ import domain.Assessment.State
 import domain.AuditEvent.{Operation, Target}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao._
-import domain.{Assessment, AssessmentMetadata, UploadedFileOwner}
+import domain.{Assessment, AssessmentMetadata, Declarations, Sitting, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import services.AssessmentService._
@@ -35,11 +35,13 @@ trait AssessmentService {
 
   def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
-  def listForExamProfileCode(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+  def listForExamProfileCodeWithStudentCount(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]]
 
   def getTodaysAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
   def getLast48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+
+  def getAssessmentsStartingWithStudentCount(date: LocalDate)(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]]
 
   def getFinishedWithUnsentSubmissions(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]]
 
@@ -60,6 +62,8 @@ trait AssessmentService {
   def upsert(assessment: Assessment)(implicit ctx: AuditLogContext): Future[ServiceResult[Assessment]]
 
   def delete(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
+
+  def getFinishedAssessmentsWithSittings()(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]]
 }
 
 @Singleton
@@ -92,9 +96,9 @@ class AssessmentServiceImpl @Inject()(
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
 
-  override def listForExamProfileCode(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
-    daoRunner.run(dao.getByExamProfileCodeWithUploadedFiles(examProfileCode))
-      .map(inflateRowsWithUploadedFiles)
+  override def listForExamProfileCodeWithStudentCount(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]] =
+    daoRunner.run(dao.getByExamProfileCodeWithStudentCount(examProfileCode))
+      .map(_.map { case (a, c) => (a.asAssessmentMetadata, c) })
       .map(ServiceResults.success)
 
   override def getByIdForInvigilator(id: UUID, usercodes: List[Usercode])(implicit t: TimingContext): Future[ServiceResult[Assessment]] =
@@ -112,7 +116,12 @@ class AssessmentServiceImpl @Inject()(
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
 
-  def getFinishedWithUnsentSubmissions(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] = {
+  override def getAssessmentsStartingWithStudentCount(date: LocalDate)(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]] =
+    daoRunner.run(dao.getAssessmentsStartingOnWithStudentCount(date))
+      .map(_.map { case (a, c) => (a.asAssessmentMetadata, c) })
+      .map(ServiceResults.success)
+
+  override def getFinishedWithUnsentSubmissions(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] = {
     daoRunner.run(dao.getAssessmentsRequiringUpload)
       .map(_.map(_.asAssessmentMetadata))
       .map(ServiceResults.success)
@@ -327,6 +336,26 @@ class AssessmentServiceImpl @Inject()(
         })
       } yield done).map(ServiceResults.success)
     }
+
+  override def getFinishedAssessmentsWithSittings()(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]] =
+    daoRunner.run(dao.getFinishedAssessmentsWithSittingInformation())
+      .map { rows =>
+        rows.map { case (storedAssessment, assessmentFiles, studentAssessments) =>
+          val assessment = inflateRowWithUploadedFiles(Some((storedAssessment, assessmentFiles))).get
+
+          (
+            assessment,
+            studentAssessments.map { case (storedStudentAssessment, declaration, files) =>
+              Sitting(
+                studentAssessment = StudentAssessmentService.inflateRowWithUploadedFiles(Some((storedStudentAssessment, files))).get,
+                assessment = assessment,
+                declarations = declaration.map(_.asDeclarations).getOrElse(Declarations(storedStudentAssessment.id))
+              )
+            }
+          )
+        }
+      }
+      .map(ServiceResults.success)
 }
 
 object AssessmentService {

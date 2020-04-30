@@ -174,7 +174,7 @@ class TabulaAssessmentServiceImpl @Inject()(
       "anonymity" -> "IDOnly",
       "allowExtensions" -> false,
       "allowLateSubmissions" -> false,
-      "allowResubmission" -> false
+      "allowResubmission" -> true
     ) ++ closeDateParams
 
     val req = ws.url(url)
