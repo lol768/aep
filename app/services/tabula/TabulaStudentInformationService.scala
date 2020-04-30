@@ -14,7 +14,7 @@ import warwick.core.Logging
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
-import warwick.core.timing.{TimingContext, TimingService}
+import warwick.core.timing.{TimingCategories => CoreTimingCategories, TimingContext, TimingService}
 import warwick.sso.UniversityID
 
 import scala.concurrent.duration._
@@ -64,16 +64,14 @@ class CachingTabulaStudentInformationService @Inject() (
   override def getMultipleStudentInformation(options: GetMultipleStudentInformationOptions)(implicit t: TimingContext): Future[MultipleStudentInformationReturn] = {
     if (options.universityIDs.isEmpty) return Future.successful(ServiceResults.success(Map.empty))
 
-    Future.sequence(
+    timing.time(CoreTimingCategories.CacheRead)(Future.sequence(
       options.universityIDs.map { universityId =>
-        timing.time(TimingCategories.CacheRead) {
-          cache.get[CacheElement[StudentInformationReturn]](GetStudentInformationOptions(universityId).cacheKey)
-            .filter(_.exists(_.value.isRight)) // Only consider cached success
-            .map(universityId -> _)
-            .recover(_ => universityId -> None) // Just ignore any failed cache gets
-        }
+        cache.get[CacheElement[StudentInformationReturn]](GetStudentInformationOptions(universityId).cacheKey)
+          .filter(_.exists(_.value.isRight)) // Only consider cached success
+          .map(universityId -> _)
+          .recover(_ => universityId -> None) // Just ignore any failed cache gets
       }
-    ).flatMap { cacheResults =>
+    )).flatMap { cacheResults =>
       val missing: Seq[UniversityID] = cacheResults.filter(_._2.isEmpty).map(_._1)
 
       // Stale values (> medium expiry) are updated from source first and are only returned if there's an error
@@ -104,7 +102,7 @@ class CachingTabulaStudentInformationService @Inject() (
         val softExpiry = now.plusSeconds(ttl.soft.toSeconds).getEpochSecond
         val mediumExpiry = now.plusSeconds(ttl.medium.toSeconds).getEpochSecond
         val element = CacheElement(value, now.getEpochSecond, softExpiry, mediumExpiry)
-        timing.time(TimingCategories.CacheWrite)(cache.set(key, element, ttl.hard))
+        timing.time(CoreTimingCategories.CacheWrite)(cache.set(key, element, ttl.hard))
           .recover { case e: Throwable => logger.error(s"Failure to update cache for $key", e) }
           .map(_ => element)
       }
