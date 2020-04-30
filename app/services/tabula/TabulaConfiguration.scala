@@ -28,6 +28,9 @@ class TabulaConfiguration @Inject() (c: Configuration) {
   def getStudentInformationUrl(universityID: UniversityID): String =
     s"$rootUrl/api/v1/member/${universityID.string}"
 
+  def getMultipleStudentInformationUrl: String =
+    s"$rootUrl/api/v1/memberProfiles"
+
   def getProfileUrl(universityID: UniversityID): String =
     s"$rootUrl/profiles/view/${universityID.string}"
 
