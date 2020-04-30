@@ -89,6 +89,7 @@ class NavigationServiceImpl @Inject()(
       tabulaAssessmentImports,
       generateTabulaSubmissions,
       objectStorage,
+      managementInformation,
     )
     if (production) baseItems else baseItems :+ dataGeneration
   }
