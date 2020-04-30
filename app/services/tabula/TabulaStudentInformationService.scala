@@ -66,10 +66,12 @@ class CachingTabulaStudentInformationService @Inject() (
 
     Future.sequence(
       options.universityIDs.map { universityId =>
-        cache.get[CacheElement[StudentInformationReturn]](GetStudentInformationOptions(universityId).cacheKey)
-          .filter(_.exists(_.value.isRight)) // Only consider cached success
-          .map(universityId -> _)
-          .recover(_ => universityId -> None) // Just ignore any failed cache gets
+        timing.time(TimingCategories.CacheRead) {
+          cache.get[CacheElement[StudentInformationReturn]](GetStudentInformationOptions(universityId).cacheKey)
+            .filter(_.exists(_.value.isRight)) // Only consider cached success
+            .map(universityId -> _)
+            .recover(_ => universityId -> None) // Just ignore any failed cache gets
+        }
       }
     ).flatMap { cacheResults =>
       val missing: Seq[UniversityID] = cacheResults.filter(_._2.isEmpty).map(_._1)
