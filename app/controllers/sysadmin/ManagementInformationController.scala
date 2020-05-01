@@ -1,7 +1,7 @@
 package controllers.sysadmin
 
 import controllers.BaseController
-import domain.Assessment.Platform
+import domain.Assessment.{AssessmentType, Platform}
 import domain.BaseSitting.SubmissionState
 import domain.{Assessment, AssessmentMetadata, DepartmentCode, Sitting}
 import javax.inject.{Inject, Singleton}
@@ -14,27 +14,45 @@ import helpers.StringUtils._
 import scala.concurrent.ExecutionContext
 
 object ManagementInformationController {
-  case class AssessmentSetupMetrics(
-    examProfileCode: String,
+  case class AssessmentSetupMetricsValues(
     assessmentCount: Int,
     hasStudents: Int,
     hasPlatform: Int,
     hasDuration: Int,
     hasURLOrIsAEP: Int,
+    hasFiles: Int,
     hasDescription: Int,
     hasInvigilators: Int,
+  )
+  object AssessmentSetupMetricsValues {
+    def apply(assessments: Seq[(AssessmentMetadata, Int)]): AssessmentSetupMetricsValues =
+      AssessmentSetupMetricsValues(
+        assessmentCount = assessments.size,
+        hasStudents = assessments.count { case (_, students) => students > 0 },
+        hasPlatform = assessments.count { case (a, _) => a.platform.nonEmpty },
+        hasDuration = assessments.count { case (a, _) => a.duration.nonEmpty || a.assessmentType.contains(AssessmentType.Bespoke) },
+        hasURLOrIsAEP = assessments.count { case (a, _) => a.briefWithoutFiles.urls.view.filterKeys(_.requiresUrl).values.forall(_.hasText) },
+        hasFiles = assessments.count { case (a, _) => a.briefWithoutFiles.files.nonEmpty },
+        hasDescription = assessments.count { case (a, _) => a.briefWithoutFiles.text.exists(_.hasText) },
+        hasInvigilators = assessments.count { case (a, _) => a.invigilators.nonEmpty }
+      )
+  }
+
+  case class AssessmentSetupMetrics(
+    examProfileCode: String,
+    overall: AssessmentSetupMetricsValues,
+    byDepartmentCode: Seq[(DepartmentCode, AssessmentSetupMetricsValues)],
   )
 
   def metrics(examProfileCode: String, assessments: Seq[(AssessmentMetadata, Int)]): AssessmentSetupMetrics =
     AssessmentSetupMetrics(
       examProfileCode,
-      assessmentCount = assessments.size,
-      hasStudents = assessments.count { case (_, students) => students > 0 },
-      hasPlatform = assessments.count { case (a, _) => a.platform.nonEmpty },
-      hasDuration = assessments.count { case (a, _) => a.duration.nonEmpty },
-      hasURLOrIsAEP = assessments.count { case (a, _) => a.briefWithoutFiles.urls.view.filterKeys(_.requiresUrl).values.forall(_.hasText) },
-      hasDescription = assessments.count { case (a, _) => a.briefWithoutFiles.text.exists(_.hasText) },
-      hasInvigilators = assessments.count { case (a, _) => a.invigilators.nonEmpty }
+      overall = AssessmentSetupMetricsValues(assessments),
+      byDepartmentCode =
+        assessments.groupBy(_._1.departmentCode)
+          .map { case (d, a) => d -> AssessmentSetupMetricsValues(a) }
+          .toSeq
+          .sortBy(_._1.lowerCase),
     )
 
   case class AssessmentParticipationMetricValues(
@@ -44,15 +62,16 @@ object ManagementInformationController {
     wasLate: Int,
     explicitlyFinalised: Int,
   )
-
-  def participationMetricValues(sittings: Iterable[Sitting]): AssessmentParticipationMetricValues =
-    AssessmentParticipationMetricValues(
-      total = sittings.size,
-      started = sittings.count(_.started),
-      submitted = sittings.count(_.studentAssessment.uploadedFiles.nonEmpty),
-      wasLate = sittings.count(_.getSubmissionState == SubmissionState.Late),
-      explicitlyFinalised = sittings.count(_.explicitlyFinalised)
-    )
+  object AssessmentParticipationMetricValues {
+    def apply(sittings: Iterable[Sitting]): AssessmentParticipationMetricValues =
+      AssessmentParticipationMetricValues(
+        total = sittings.size,
+        started = sittings.count(_.started),
+        submitted = sittings.count(_.studentAssessment.uploadedFiles.nonEmpty),
+        wasLate = sittings.count(_.getSubmissionState == SubmissionState.Late),
+        explicitlyFinalised = sittings.count(_.explicitlyFinalised)
+      )
+  }
 
   case class AssessmentParticipationMetrics(
     overall: AssessmentParticipationMetricValues,
@@ -62,15 +81,15 @@ object ManagementInformationController {
 
   def participationMetrics(assessments: Seq[(Assessment, Set[Sitting])]): AssessmentParticipationMetrics =
     AssessmentParticipationMetrics(
-      overall = participationMetricValues(assessments.flatMap(_._2)),
+      overall = AssessmentParticipationMetricValues(assessments.flatMap(_._2)),
       byDepartmentCode =
         assessments.groupBy(_._1.departmentCode)
-          .map { case (d, a) => d -> participationMetricValues(a.flatMap(_._2)) }
+          .map { case (d, a) => d -> AssessmentParticipationMetricValues(a.flatMap(_._2)) }
           .toSeq
           .sortBy(_._1.lowerCase),
       byExamProfileCode =
         assessments.groupBy(_._1.examProfileCode)
-          .map { case (d, a) => d -> participationMetricValues(a.flatMap(_._2)) }
+          .map { case (d, a) => d -> AssessmentParticipationMetricValues(a.flatMap(_._2)) }
           .toSeq,
     )
 }

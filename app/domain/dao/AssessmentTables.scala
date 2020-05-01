@@ -132,6 +132,12 @@ class AssessmentTables @Inject()(
       .on { case (a, f) =>
         a.id === f.ownerId && f.ownerType === (UploadedFileOwner.AssessmentBrief: UploadedFileOwner) && (a.storedBrief.asColumnOf[JsValue] +> "fileIds") ?? f.id.asColumnOf[String]
       }
+
+    def withStudentCount = q
+      .joinLeft(studentAssessments.table)
+      .on(_.id === _.assessmentId)
+      .groupBy { case (a, _) => a }
+      .map { case (a, q) => (a, q.map(_._2.map(_.id)).countDefined) }
   }
 
   val assessments: VersionedTableQuery[StoredAssessment, StoredAssessmentVersion, Assessments, AssessmentVersions] =

@@ -25,7 +25,7 @@ class AssessmentInvigilatorReportController @Inject()(
 
   def invigilatorsCsv(examProfileCode: String): Action[AnyContent] = RequireAdmin.async { implicit request =>
     assessmentService.listForExamProfileCodeWithStudentCount(examProfileCode).successMap { assessments =>
-      val headerRow: Seq[String] = Seq("Module code", "Paper code", "Section", "Title", "Date/time", "Invigilators", "Students")
+      val headerRow: Seq[String] = Seq("Module code", "Paper code", "Section", "Title", "Date/time", "Platform(s)", "Invigilators", "Students")
       val dataRows: Seq[Seq[String]] = assessments.map { case (assessment, students) =>
         Seq(
           assessment.moduleCode,
@@ -33,6 +33,7 @@ class AssessmentInvigilatorReportController @Inject()(
           assessment.section.getOrElse(""),
           assessment.title,
           assessment.startTime.map(csvDateTimeFormat.format).getOrElse(""),
+          assessment.platform.map(_.entryName).mkString(", "),
           userLookupService.getUsers(assessment.invigilators.toSeq).getOrElse(Map.empty).values.filter(_.isFound).map { user =>
             Seq(
               user.name.full.orElse(Some(user.usercode.string)),

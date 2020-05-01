@@ -166,7 +166,7 @@ object AssessmentsTables {
     def asBriefWithoutFiles(platforms: Set[Platform]): Brief =
       Brief(
         text,
-        Seq.empty,
+        fileIds.map(_ => null),
         urls.getOrElse(
           // If the Map is missing (rather than empty) then handle the legacy url field
           // No real way to know which platform that required a URL this one if for,
@@ -203,6 +203,8 @@ trait AssessmentDao {
 
   def loadAllWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
 
+  def loadAllWithStudentCount: DBIO[Seq[(StoredAssessment, Int)]]
+
   def findByStates(states: Seq[State]): DBIO[Seq[StoredAssessment]]
 
   def findByStatesWithUploadedFiles(states: Seq[State]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
@@ -238,6 +240,8 @@ trait AssessmentDao {
 
   def getByInvigilatorWithUploadedFiles(usercodes: Set[Usercode]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
 
+  def getByInvigilatorWithStudentCount(usercodes: Set[Usercode]): DBIO[Seq[(StoredAssessment, Int)]]
+
   def getByIdAndInvigilatorWithUploadedFiles(id: UUID, usercodes: List[Usercode]): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]]
 
   def getByExamProfileCodeWithUploadedFiles(examProfileCode: String): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
@@ -265,6 +269,11 @@ class AssessmentDaoImpl @Inject()(
 
   override def loadAllWithUploadedFiles: DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
     allQuery.withUploadedFiles.result.map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
+
+  override def loadAllWithStudentCount: DBIO[Seq[(StoredAssessment, Int)]] =
+    allQuery.withStudentCount
+      .sortBy { case (a, _) => (a.startTime, a.paperCode, a.section) }
+      .result
 
   private def findByStatesQuery(states: Seq[State]): Query[Assessments, StoredAssessment, Seq] =
     assessments.table.filter(_.state inSetBind states)
@@ -354,10 +363,7 @@ class AssessmentDaoImpl @Inject()(
 
     assessments.table
       .filter(a => a.startTime >= startOfDay && a.startTime < endOfDay)
-      .joinLeft(tables.studentAssessments.table)
-      .on(_.id === _.assessmentId)
-      .groupBy { case (a, _) => a }
-      .map { case (a, q) => (a, q.map(_._2.map(_.id)).countDefined) }
+      .withStudentCount
       .sortBy { case (a, _) => (a.startTime, a.paperCode, a.section) }
       .result
   }
@@ -413,12 +419,21 @@ class AssessmentDaoImpl @Inject()(
   override def isInvigilator(usercode: Usercode): DBIO[Boolean] =
     assessments.table.filter(_.invigilators @> List(usercode.string)).exists.result
 
-  override def getByInvigilatorWithUploadedFiles(usercodes: Set[Usercode]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
+  private def getByInvigilatorQuery(usercodes: Set[Usercode]): Query[Assessments, StoredAssessment, Seq] =
     assessments.table
       .filter(_.invigilators @> usercodes.toList.map(_.string))
+
+  override def getByInvigilatorWithUploadedFiles(usercodes: Set[Usercode]): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]] =
+    getByInvigilatorQuery(usercodes)
       .withUploadedFiles
       .result
       .map(OneToMany.leftJoinUnordered(_).sortBy(_._1))
+
+  override def getByInvigilatorWithStudentCount(usercodes: Set[Usercode]): DBIO[Seq[(StoredAssessment, Int)]] =
+    getByInvigilatorQuery(usercodes)
+      .withStudentCount
+      .sortBy { case (a, _) => (a.startTime, a.paperCode, a.section) }
+      .result
 
   override def getByIdAndInvigilatorWithUploadedFiles(id: UUID, usercodes: List[Usercode]): DBIO[Option[(StoredAssessment, Set[StoredUploadedFile])]] =
     assessments.table

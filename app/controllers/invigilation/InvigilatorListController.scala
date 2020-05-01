@@ -18,12 +18,12 @@ class InvigilatorListController @Inject()(
 
   def list(): Action[AnyContent] = SigninRequiredAction.async { implicit req =>
     if(req.context.userHasRole(Roles.Admin)) {
-      assessmentService.list.successMap(assessments =>
+      assessmentService.listWithStudentCount.successMap(assessments =>
         Ok(views.html.invigilation.list(assessments))
       )
     } else {
       val user = req.user.get // SigninRequired
-      assessmentService.listForInvigilator(Set(user.usercode)).successMap(assessments =>
+      assessmentService.listForInvigilatorWithStudentCount(Set(user.usercode)).successMap(assessments =>
         Ok(views.html.invigilation.list(assessments))
       )
     }
