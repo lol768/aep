@@ -247,7 +247,7 @@ class OutgoingEmailDaoImpl @Inject()(
     outgoingEmails.table
       .filter(_.isSent)
       .filter{e =>
-        if (emailAddresses.nonEmpty) { e.emailAddress.map(_.toLowerCase.inSet(emailAddresses.map(_.toLowerCase))).getOrElse(false) } else { LiteralColumn(true) }  &&
+        if (emailAddresses.nonEmpty) { e.emailAddress.map(_.toLowerCase.inSetBind(emailAddresses.map(_.toLowerCase))).getOrElse(false) } else { LiteralColumn(true) }  &&
         startDateOpt.map { startDate => e.sent.map(d => d > startDate).getOrElse(true)}.getOrElse(LiteralColumn(true)) &&
         endDateOpt.map { endDate => e.sent.map(d => d <= endDate).getOrElse(true)}.getOrElse(LiteralColumn(true))
       }

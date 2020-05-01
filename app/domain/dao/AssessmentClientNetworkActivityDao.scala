@@ -1,13 +1,19 @@
 package domain.dao
 
+import java.sql.JDBCType
 import java.time.OffsetDateTime
-import java.util.UUID
+import java.util.{Calendar, TimeZone, UUID}
+
 import com.google.inject.ImplementedBy
 import domain.{AssessmentClientNetworkActivity, ExtendedPostgresProfile, PostgresCustomJdbcTypes, StudentAssessment}
+import helpers.LenientTimezoneNameParsing._
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import scala.concurrent.ExecutionContext
+import slick.jdbc.{GetResult, PositionedParameters, SetParameter}
+import warwick.core.helpers.JavaTime
+import warwick.sso.Usercode
 
+import scala.concurrent.ExecutionContext
 
 @ImplementedBy(classOf[AssessmentClientNetworkActivityDaoImpl])
 trait AssessmentClientNetworkActivityDao {
@@ -67,42 +73,80 @@ class AssessmentClientNetworkActivityDaoImpl @Inject()(
     clientActivityForQuery(assessments, startDateOpt, endDateOpt).length.result
   }
 
-//  Distinct on doesn't work correctly on slick https://github.com/slick/slick/issues/1340
-//  Followed https://gist.github.com/missingfaktor/aa6c264c5b7411fa48a6a5b654dd0917
-  override def getLatestActivityFor(studentAssessmentIds: Seq[UUID]): profile.api.DBIO[Seq[AssessmentClientNetworkActivity]] = {
-    assessmentClientNetworkActivities
-      .filter(assessmentFilter(studentAssessmentIds, _))
-      .join {
-        assessmentClientNetworkActivities
-          .filter(assessmentFilter(studentAssessmentIds, _))
-          .groupBy(e => (e.studentAssessmentId))
-          .map { case (key, values) => (key, values.map(_.timestamp).max)}
-      }
-      .on { case (record, (key, timestamp)) => record.studentAssessmentId === key && record.timestamp === timestamp}
-      .map { case (record, _) => record }
-      .result
+  private[this] val timestampUTCReferenceCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+
+  private[this] implicit val getAssessmentClientNetworkActivityResult: GetResult[AssessmentClientNetworkActivity] =
+    GetResult(r => AssessmentClientNetworkActivity(
+      downlink = r.nextDoubleOption,
+      downlinkMax = r.nextDoubleOption,
+      effectiveType = r.nextStringOption,
+      rtt = r.nextIntOption,
+      `type` = r.nextStringOption,
+      studentAssessmentId = r.nextStringOption.map(UUID.fromString),
+      assessmentId = r.nextStringOption.map(UUID.fromString),
+      usercode = r.nextStringOption.map(Usercode.apply),
+      localTimezoneName = r.nextStringOption.map(_.maybeZoneId),
+      timestamp = {
+        // We know that it's UTC in the database. r.nextTimestamp() doesn't pass a reference calendar, so we'll do it ourselves
+        val resultSet = r.rs
+
+        // Tell the PositionedResult to skip over the next column, we're dealing with it ourselves
+        r.skip
+
+        val ts = resultSet.getTimestamp(r.currentPos, timestampUTCReferenceCalendar)
+        OffsetDateTime.ofInstant(ts.toInstant, JavaTime.timeZone)
+      },
+    ))
+
+  private[this] val assessmentClientNetworkActivityColumns =
+    "downlink, downlink_max, effective_type, rtt, type, student_assessment_id, assessment_id, usercode, local_timezone_name, timestamp_utc"
+
+  override def getLatestActivityFor(studentAssessmentIds: Seq[UUID]): DBIO[Seq[AssessmentClientNetworkActivity]] = {
+    if (studentAssessmentIds.isEmpty) return DBIO.successful(Seq.empty)
+
+    //  Distinct on doesn't work correctly on slick https://github.com/slick/slick/issues/1340
+    // If this is ever fixed, this simple bit of Slick can replace the mess below
+    //    assessmentClientNetworkActivities
+    //      .distinctOn(_.studentAssessmentId)
+    //      .filter(assessmentFilter(studentAssessmentIds, _))
+    //      .sortBy(a => (a.studentAssessmentId, a.timestamp.desc))
+    //      .result
+
+    implicit val setUUIDListParameter: SetParameter[Seq[UUID]] =
+      (v1: Seq[UUID], v2: PositionedParameters) => v1.foreach(v2.setObject(_, JDBCType.BINARY.getVendorTypeNumber))
+
+    sql"""select distinct on (student_assessment_id)
+           #$assessmentClientNetworkActivityColumns
+         from assessment_client_network_activity
+         where student_assessment_id in ($studentAssessmentIds#${",?" * (studentAssessmentIds.size - 1)})
+         order by student_assessment_id, timestamp_utc desc""".as[AssessmentClientNetworkActivity]
   }
 
   override def getLatestInvigilatorActivityFor(assessmentId: UUID): profile.api.DBIO[Seq[AssessmentClientNetworkActivity]] = {
-    assessmentClientNetworkActivities
-      .filter { a => a.assessmentId === assessmentId && a.studentAssessmentId.isEmpty }
-      .join {
-        assessmentClientNetworkActivities
-          .filter{ a => a.assessmentId === assessmentId && a.studentAssessmentId.isEmpty }
-          .groupBy(e => e.usercode)
-          .map { case (key, values) => (key, values.map(_.timestamp).max)}
-      }
-      .on { case (record, (key, timestamp)) => record.usercode === key && record.timestamp === timestamp}
-      .map { case (record, _) => record }
-      .result
+    //  Distinct on doesn't work correctly on slick https://github.com/slick/slick/issues/1340
+    // If this is ever fixed, this simple bit of Slick can replace the mess below
+    //    assessmentClientNetworkActivities
+    //      .distinctOn(_.usercode)
+    //      .filter { a => a.assessmentId === assessmentId && a.studentAssessmentId.isEmpty }
+    //      .sortBy(a => (a.usercode, a.timestamp.desc))
+    //      .result
+
+    implicit val setUUIDParameter: SetParameter[UUID] =
+      (v1: UUID, v2: PositionedParameters) => v2.setObject(v1, JDBCType.BINARY.getVendorTypeNumber)
+
+    sql"""select distinct on (usercode)
+           #$assessmentClientNetworkActivityColumns
+         from assessment_client_network_activity
+         where assessment_id = $assessmentId and student_assessment_id is null
+         order by usercode, timestamp_utc desc""".as[AssessmentClientNetworkActivity]
   }
 
   private def assessmentFilter(studentAssessmentIds: Seq[UUID], e: AssessmentClientNetworkActivities) =
-    if (studentAssessmentIds.nonEmpty) { e.studentAssessmentId.inSet(studentAssessmentIds).getOrElse(false) } else { LiteralColumn(true) }
+    e.studentAssessmentId inSetBind studentAssessmentIds
 
   private def clientActivityForQuery(assessments: Seq[StudentAssessment],startDateOpt: Option[OffsetDateTime], endDateOpt: Option[OffsetDateTime]) = {
     assessmentClientNetworkActivities
-      .filter{ e =>
+      .filter { e =>
         startDateOpt.map { startDate => e.timestamp >= startDate}.getOrElse(LiteralColumn(true)) &&
         endDateOpt.map { endDate => e.timestamp <= endDate}.getOrElse(LiteralColumn(true)) &&
         assessmentFilter(assessments.map(_.id), e)
