@@ -13,48 +13,93 @@
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @upcomingAssessmentsTable(title: String, assessments: Seq[(AssessmentMetadata, Int)]) = {
-  <table class="table table-striped table-sortable">
-    <caption>@title</caption>
-    <thead>
-      <tr>
-        <th>Paper code</th>
-        <th>Section</th>
-        <th>Title</th>
-        <th>Start time</th>
-        <th>Duration</th>
-        <th>Platform(s)</th>
-        <th>Students</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      @assessments.map { case (assessment, students) =>
+  @if(assessments.nonEmpty) {
+    <table class="table table-striped table-sortable">
+      <caption>@title</caption>
+      <thead>
         <tr>
-          <td>@assessment.paperCode</td>
-          <td>@assessment.section.getOrElse("")</td>
-          <td>@assessment.title</td>
-          <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
-            @assessment.startTime.map(localisedDatetime(_))
-            @assessment.durationStyle match {
-              case DurationStyle.DayWindow => { (day window) }
-              case DurationStyle.FixedStart => { (fixed-start) }
-            }
-          </td>
-          <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
-            @durationWords(assessment)
-          </td>
-          <td>
-            @assessment.platform.map(_.label).mkString(", ")
-          </td>
-          <td>@students</td>
-          <td>
-            <a href="@controllers.admin.routes.AdminAssessmentsController.view(assessment.id)" class="btn btn-default btn-sm">View all information</a>
-            <a href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)" class="btn btn-default btn-sm">Invigilation</a>
-          </td>
+          <th>Start time</th>
+          <th>Paper code</th>
+          <th>Section</th>
+          <th>Title</th>
+          <th>Duration</th>
+          <th>Platform(s)</th>
+          <th>Students</th>
+          <th></th>
         </tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        @assessments.map { case (assessment, students) =>
+          <tr>
+            <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
+              @assessment.startTime.map(localisedDatetime(_))
+              @assessment.durationStyle match {
+                case DurationStyle.DayWindow => { (day window) }
+                case DurationStyle.FixedStart => { (fixed-start) }
+              }
+            </td>
+            <td>@assessment.paperCode</td>
+            <td>@assessment.section.getOrElse("")</td>
+            <td>@assessment.title</td>
+            <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
+              @durationWords(assessment)
+            </td>
+            <td>
+              @assessment.platform.map(_.label).mkString(", ")
+            </td>
+            <td>@students</td>
+            <td>
+              <a href="@controllers.admin.routes.AdminAssessmentsController.view(assessment.id)" class="btn btn-default btn-sm">View all information</a>
+              <a href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)" class="btn btn-default btn-sm">Invigilation</a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+}
+
+@setupMetricsTable(metrics: AssessmentSetupMetrics) = {
+  @if(metrics.overall.assessmentCount > 0) {
+    <table class="table table-striped">
+      <caption>Exam setup status - @metrics.examProfileCode</caption>
+      <thead>
+        <tr>
+          <th>Exam profile</th>
+          <th>Assessments</th>
+          <th>Has students</th>
+          <th>Has platform</th>
+          <th>Has duration (or is bespoke)</th>
+          <th>Has URLs (or is AEP)</th>
+          <th>Has file(s)</th>
+          <th>Has description</th>
+          <th>Has invigilators</th>
+        </tr>
+      </thead>
+      <tbody>
+        @setupMetricsRow("Overall", metrics.overall)
+      </tbody>
+      <tbody>
+        @metrics.byDepartmentCode.map { case (departmentCode, values) =>
+          @setupMetricsRow(departmentCode.string, values)
+        }
+      </tbody>
+    </table>
+  }
+}
+
+@setupMetricsRow(label: String, metrics: AssessmentSetupMetricsValues) = {
+  <tr>
+    <th scope="row">@label</th>
+    <td>@metrics.assessmentCount</td>
+    <td>@metrics.hasStudents</td>
+    <td>@metrics.hasPlatform</td>
+    <td>@metrics.hasDuration</td>
+    <td>@metrics.hasURLOrIsAEP</td>
+    <td>@metrics.hasFiles</td>
+    <td>@metrics.hasDescription</td>
+    <td>@metrics.hasInvigilators</td>
+  </tr>
 }
 
 @participationMetricsRowAEP(label: String, metrics: AssessmentParticipationMetricValues) = {
@@ -81,35 +126,9 @@
   @upcomingAssessmentsTable("Tomorrow's assessments", startingTomorrow)
   @upcomingAssessmentsTable("In two days", startingInTwoDays)
 
-  <table class="table table-striped">
-    <caption>Exam setup status</caption>
-    <thead>
-      <tr>
-        <th>Exam profile</th>
-        <th>Assessments</th>
-        <th>Has students</th>
-        <th>Has platform</th>
-        <th>Has duration</th>
-        <th>Has URLs (or is AEP)</th>
-        <th>Has description</th>
-        <th>Has invigilators</th>
-      </tr>
-    </thead>
-    <tbody>
-      @metricsByExamProfile.map { metrics =>
-        <tr>
-          <th scope="row">@metrics.examProfileCode</th>
-          <td>@metrics.assessmentCount</td>
-          <td>@metrics.hasStudents</td>
-          <td>@metrics.hasPlatform</td>
-          <td>@metrics.hasDuration</td>
-          <td>@metrics.hasURLOrIsAEP</td>
-          <td>@metrics.hasDescription</td>
-          <td>@metrics.hasInvigilators</td>
-        </tr>
-      }
-    </tbody>
-  </table>
+  @metricsByExamProfile.map { metrics =>
+    @setupMetricsTable(metrics)
+  }
 
   @defining(aepParticipationMetrics) { metrics =>
     <table class="table table-striped">

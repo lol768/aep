@@ -1,10 +1,8 @@
-@import domain.Assessment
+@import domain.AssessmentMetadata
 
-@(assessments: Seq[Assessment])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+@(assessments: Seq[(AssessmentMetadata, Int)])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 @adminLayout("View assessments") {
-    @listTable("Current assessments", assessments.filter(a => a.isCurrent))
-
-    @listTable("Upcoming assessments", assessments.filter(_.isInFuture))
-
-    @listTable("Past assessments", assessments.filter(a => !a.isCurrent && !a.isInFuture))
+    @listTable("Current assessments", assessments.filter(_._1.isCurrent))
+    @listTable("Upcoming assessments", assessments.filter(_._1.isInFuture))
+    @listTable("Past assessments", assessments.filter { case (a, _) => !a.isCurrent && !a.isInFuture })
 }

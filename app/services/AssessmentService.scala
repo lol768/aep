@@ -28,12 +28,14 @@ import scala.concurrent.{ExecutionContext, Future}
 @ImplementedBy(classOf[AssessmentServiceImpl])
 trait AssessmentService {
   def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+  def listWithStudentCount(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]]
 
   def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
 
   def isInvigilator(usercode: Usercode)(implicit t: TimingContext): Future[ServiceResult[Boolean]]
 
   def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]]
+  def listForInvigilatorWithStudentCount(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]]
 
   def listForExamProfileCodeWithStudentCount(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]]
 
@@ -82,6 +84,12 @@ class AssessmentServiceImpl @Inject()(
       .map(ServiceResults.success)
   }
 
+  override def listWithStudentCount(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]] = {
+    daoRunner.run(dao.loadAllWithStudentCount)
+      .map(_.map { case (a, c) => (a.asAssessmentMetadata, c) })
+      .map(ServiceResults.success)
+  }
+
   override def findByStates(state: Seq[State])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
     daoRunner.run(dao.findByStatesWithUploadedFiles(state))
       .map(inflateRowsWithUploadedFiles)
@@ -94,6 +102,11 @@ class AssessmentServiceImpl @Inject()(
   override def listForInvigilator(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] =
     daoRunner.run(dao.getByInvigilatorWithUploadedFiles(usercodes))
       .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
+
+  override def listForInvigilatorWithStudentCount(usercodes: Set[Usercode])(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]] =
+    daoRunner.run(dao.getByInvigilatorWithStudentCount(usercodes))
+      .map(_.map { case (a, c) => (a.asAssessmentMetadata, c) })
       .map(ServiceResults.success)
 
   override def listForExamProfileCodeWithStudentCount(examProfileCode: String)(implicit t: TimingContext): Future[ServiceResult[Seq[(AssessmentMetadata, Int)]]] =
