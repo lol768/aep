@@ -247,7 +247,7 @@ class StudentAssessmentDaoImpl @Inject()(
     getDeclarationsQuery(declarationsId).result.headOption
 
   override def getDeclarations(declarationsIds: Seq[UUID]): DBIO[Seq[StoredDeclarations]] =
-    declarations.table.filter(_.studentAssessmentId inSet declarationsIds).result
+    declarations.table.filter(_.studentAssessmentId inSetBind declarationsIds).result
 
   override def deleteDeclarations(declarationsId: UUID)(implicit ac: AuditLogContext): DBIO[Int] =
     for {

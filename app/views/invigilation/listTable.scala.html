@@ -17,12 +17,12 @@
           <th>Duration</th>
           <th>Type</th>
           <th>Platform(s)</th>
-          <th>Students</th>
           <th></th>
       </tr>
     </thead>
     <tbody>
-      @assessments.map { case (assessment, students) =>
+      @* We intentionally don't use student counts because Exams are worried about invigilators getting hung up on numbers *@
+      @assessments.map { case (assessment, _) =>
         <tr>
             <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
               @assessment.startTime.map(views.html.tags.localisedDatetime(_))
@@ -43,7 +43,6 @@
             <td>
               @assessment.platform.map(_.label).mkString(", ")
             </td>
-            <td>@students</td>
             <td class="text-right">
               <a href="@controllers.invigilation.routes.InvigilatorAssessmentController.view(assessment.id)" class="btn btn-default btn-sm">
                   View</a>
