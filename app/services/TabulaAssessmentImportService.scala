@@ -102,6 +102,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
     ac.examPaper.toSeq.flatMap(_.schedule).groupBy(_.examProfileCode).get(examProfileCode)
       .map(_.sortBy(_.locationSequence))
       .map { schedules =>
+
         val schedule: ExamPaperSchedule =
           if (schedules.size == 1) schedules.head
           else {
@@ -116,6 +117,9 @@ class TabulaAssessmentImportServiceImpl @Inject()(
               students = schedules.flatMap(_.students)
             )
           }
+
+        val academicYearLookup = (for(schedule <- schedules; student <- schedule.students)
+          yield student.universityID -> schedule.academicYear).toMap
 
         val isExcludedFromAEP = schedule.locationName.contains("Assignment") || schedule.locationName.contains("Not required in Covid-19 alternative assesssments")
 
@@ -150,7 +154,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                       id = UUID.randomUUID(),
                       assessmentId = assessment.id,
                       occurrence = Option(scheduleStudent.occurrence),
-                      academicYear = Option(schedule.academicYear),
+                      academicYear = academicYearLookup.get(scheduleStudent.universityID),
                       studentId = scheduleStudent.universityID,
                       inSeat = false,
                       startTime = None,
@@ -168,7 +172,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                     val updated = studentAssessment.copy(
                       extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour,
                       occurrence = Option(scheduleStudent.occurrence),
-                      academicYear = Option(schedule.academicYear),
+                      academicYear = academicYearLookup.get(scheduleStudent.universityID),
                     )
 
                     // Don't return no-ops
