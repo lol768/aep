@@ -247,7 +247,7 @@ trait AssessmentDao {
   def getByExamProfileCodeWithUploadedFiles(examProfileCode: String): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile])]]
   def getByExamProfileCodeWithStudentCount(examProfileCode: String): DBIO[Seq[(StoredAssessment, Int)]]
 
-  def getFinishedAssessmentsWithSittingInformation(): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile], Set[(StoredStudentAssessment, Option[StoredDeclarations], Set[StoredUploadedFile])])]]
+  def getFinishedAssessmentsWithSittingInformation(department: Option[DepartmentCode], importedOnly: Boolean): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile], Set[(StoredStudentAssessment, Option[StoredDeclarations], Set[StoredUploadedFile])])]]
 }
 
 @Singleton
@@ -460,9 +460,12 @@ class AssessmentDaoImpl @Inject()(
       .sortBy { case (a, _) => (a.startTime, a.paperCode, a.section) }
       .result
 
-  override def getFinishedAssessmentsWithSittingInformation(): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile], Set[(StoredStudentAssessment, Option[StoredDeclarations], Set[StoredUploadedFile])])]] =
+  override def getFinishedAssessmentsWithSittingInformation(department: Option[DepartmentCode], importedOnly: Boolean): DBIO[Seq[(StoredAssessment, Set[StoredUploadedFile], Set[(StoredStudentAssessment, Option[StoredDeclarations], Set[StoredUploadedFile])])]] =
     pastLastSubmitTimeQuery
-      .filter(_.tabulaAssessmentId.nonEmpty)
+      .filter { a =>
+        (if (importedOnly) a.tabulaAssessmentId.nonEmpty else true.bind) &&
+        (if (department.nonEmpty) a.departmentCode === department.get else true.bind)
+      }
       .withUploadedFiles
       .joinLeft(
         tables.studentAssessments.table

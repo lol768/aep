@@ -140,46 +140,83 @@ class GenerateAssessmentZipJobBuilder @Inject() (
   configuration: Configuration
 ) {
   lazy private val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(configuration.get[String]("app.csvDateTimeFormat"))
+
   /**
     * Writes CSV information about sittings to the output stream, *without* closing it.
     */
   def submissionsCSV(assessment: Assessment, sittings: Seq[Sitting]): Seq[Seq[String]] = {
-    // Header
-    val header: Seq[String] =
-      Seq(
-        "University ID",
-        "State",
-        "Signed statement of authorship",
-        "Reasonable adjustments declared",
-        "Start time",
-      ) ++ (
-        if (assessment.platform.contains(Platform.OnlineExams))
-          Seq(
-            "Finalise time",
-            "Submission time",
-            "Files"
-          )
-        else Seq.empty
-      )
+    val includeAssessmentInformation: Boolean = false
+    val includeFinaliseTime: Boolean = assessment.platform.contains(Platform.OnlineExams)
 
-    val rows: Seq[Seq[String]] = sittings.map { sitting =>
-      Seq(
+    val header: Seq[String] = submissionsCSVHeader(includeAssessmentInformation, includeFinaliseTime)
+    val rows: Seq[Seq[String]] = submissionsCSVRows(assessment, sittings, includeAssessmentInformation, includeFinaliseTime)
+
+    header +: rows
+  }
+
+  def multipleAssessmentSubmissionsCSV(assessments: Seq[(Assessment, Seq[Sitting])]): Seq[Seq[String]] = {
+    val includeAssessmentInformation: Boolean = true
+    val includeFinaliseTime: Boolean = assessments.exists(_._1.platform.contains(Platform.OnlineExams))
+
+    val header: Seq[String] = submissionsCSVHeader(includeAssessmentInformation, includeFinaliseTime)
+    val rows: Seq[Seq[String]] =
+      assessments.flatMap { case (assessment, sittings) =>
+        submissionsCSVRows(assessment, sittings, includeAssessmentInformation, includeFinaliseTime)
+      }
+
+    header +: rows
+  }
+
+  def submissionsCSVHeader(includeAssessmentInformation: Boolean, includeFinaliseTime: Boolean): Seq[String] =
+    (
+      if (includeAssessmentInformation)
+        Seq(
+          "Module code",
+          "Paper code",
+          "Section"
+        )
+      else Seq()
+    ) ++ Seq(
+      "University ID",
+      "State",
+      "Signed statement of authorship",
+      "Reasonable adjustments declared",
+      "Start time",
+    ) ++ (
+      if (includeFinaliseTime)
+        Seq(
+          "Finalise time",
+          "Submission time",
+          "Files"
+        )
+      else Seq.empty
+    )
+
+  def submissionsCSVRows(assessment: Assessment, sittings: Seq[Sitting], includeAssessmentInformation: Boolean, includeFinaliseTime: Boolean): Seq[Seq[String]] =
+    sittings.map { sitting =>
+      (
+        if (includeAssessmentInformation)
+          Seq(
+            assessment.moduleCode,
+            assessment.paperCode,
+            assessment.section.getOrElse("")
+          )
+        else Seq()
+      ) ++ Seq(
         sitting.studentAssessment.studentId.string,
         sitting.getSummaryStatusLabel.getOrElse(""),
         sitting.declarations.acceptsAuthorship.toString,
         if (sitting.declarations.completedRA) sitting.declarations.selfDeclaredRA.toString else "",
         sitting.studentAssessment.startTime.map(csvDateTimeFormat.format).getOrElse(""),
       ) ++ (
-        if (assessment.platform.contains(Platform.OnlineExams))
+        if (includeFinaliseTime && assessment.platform.contains(Platform.OnlineExams))
           Seq(
             sitting.studentAssessment.explicitFinaliseTime.map(csvDateTimeFormat.format).getOrElse(""),
             sitting.studentAssessment.submissionTime.map(csvDateTimeFormat.format).getOrElse(""),
             sitting.studentAssessment.uploadedFiles.map(_.fileName).mkString(", ")
           )
+        else if (includeFinaliseTime) Seq("", "", "")
         else Seq.empty
       )
     }
-
-    header +: rows
-  }
 }

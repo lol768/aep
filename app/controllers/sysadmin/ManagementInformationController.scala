@@ -4,13 +4,13 @@ import controllers.BaseController
 import domain.Assessment.{AssessmentType, Platform}
 import domain.BaseSitting.SubmissionState
 import domain.{Assessment, AssessmentMetadata, DepartmentCode, Sitting}
+import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.mvc.{Action, AnyContent}
-import services.{AssessmentService, SecurityService, StudentAssessmentService}
-import warwick.core.helpers.{JavaTime, ServiceResults}
-import helpers.StringUtils._
 import services.tabula.TabulaDepartmentService
+import services.{AssessmentService, SecurityService}
+import warwick.core.helpers.{JavaTime, ServiceResults}
 
 import scala.concurrent.ExecutionContext
 
@@ -32,7 +32,7 @@ object ManagementInformationController {
         hasStudents = assessments.count { case (_, students) => students > 0 },
         hasPlatform = assessments.count { case (a, _) => a.platform.nonEmpty },
         hasDuration = assessments.count { case (a, _) => a.duration.nonEmpty || a.assessmentType.contains(AssessmentType.Bespoke) },
-        hasURLOrIsAEP = assessments.count { case (a, _) => a.briefWithoutFiles.urls.view.filterKeys(_.requiresUrl).values.forall(_.hasText) },
+        hasURLOrIsAEP = assessments.count { case (a, _) => a.platform.nonEmpty && a.briefWithoutFiles.urls.view.filterKeys(_.requiresUrl).values.forall(_.hasText) },
         hasFiles = assessments.count { case (a, _) => a.briefWithoutFiles.files.nonEmpty },
         hasDescription = assessments.count { case (a, _) => a.briefWithoutFiles.text.exists(_.hasText) },
         hasInvigilators = assessments.count { case (a, _) => a.invigilators.nonEmpty }
@@ -126,7 +126,7 @@ class ManagementInformationController @Inject()(
       },
 
       // All assessments that completed before now (so we can get information about how many started, uploaded, finalised)
-      assessmentService.getFinishedAssessmentsWithSittings().successMapTo { assessments =>
+      assessmentService.getFinishedAssessmentsWithSittings(department = None, importedOnly = true).successMapTo { assessments =>
         // Group AEP assessments and non-AEP assessments separately for student participation metrics
         val (aep, nonAEP) = assessments.partition(_._1.platform.contains(Platform.OnlineExams))
 
