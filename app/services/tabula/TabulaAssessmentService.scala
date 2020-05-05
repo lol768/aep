@@ -197,6 +197,11 @@ class TabulaAssessmentServiceImpl @Inject()(
   override def generateAssignments(assessmentMetadata: AssessmentMetadata)(implicit t: TimingContext, ctx: AuditLogContext): Future[ServiceResult[Assessment]] = timing.time(TimingCategories.TabulaWrite) {
     studentAssessmentService.byAssessmentId(assessmentMetadata.id)
       .successFlatMapTo { students =>
+        /**
+          * We create an assignment for every academic year that students have mark records registered for the
+          * assessment. This implicitly excludes mock assessments where it's not possible to set the academic year
+          * (or occurrence, though that would just prevent SITS links being created).
+          */
         val byYear = students.filter(_.academicYear.isDefined).groupBy(_.academicYear.get)
         ServiceResults.zip(
           assessmentService.get(assessmentMetadata.id),
