@@ -67,6 +67,7 @@ GET         /admin/assessments/:id/student-preview                @controllers.a
 GET         /admin/communication-reports                                  @controllers.admin.CommunicationReportsController.index
 GET         /admin/communication-reports/announcements/:deptCode          @controllers.admin.CommunicationReportsController.announcementsCsv(deptCode: String)
 GET         /admin/communication-reports/queries/:deptCode                @controllers.admin.CommunicationReportsController.queriesCsv(deptCode: String)
+GET         /admin/:deptCode/all-submissions.csv                  @controllers.admin.AdminSubmissionsDownloadController.submissionsCSVDepartment(deptCode: String)
 # POST        /admin/assessments/:id/generate-assignments           @controllers.admin.AdminAssessmentsController.generateAssignments(id: UUID)
 GET         /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.assignmentSubmissions()
 POST        /sysadmin/generate-tabula-submissions                 @controllers.sysadmin.SysadminTestController.generateAssignmentSubmissions()
