@@ -1,6 +1,6 @@
 @import controllers.sysadmin.ManagementInformationController._
-@import domain.AssessmentMetadata
 @import domain.Assessment.DurationStyle
+@import domain.{AssessmentMetadata, DepartmentCode, tabula}
 @import tags._
 
 @(
@@ -9,7 +9,8 @@
   startingInTwoDays: Seq[(AssessmentMetadata, Int)],
   metricsByExamProfile: Seq[AssessmentSetupMetrics],
   aepParticipationMetrics: AssessmentParticipationMetrics,
-  nonAEPParticipationMetrics: AssessmentParticipationMetrics
+  nonAEPParticipationMetrics: AssessmentParticipationMetrics,
+  departments: Map[DepartmentCode, tabula.Department],
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @upcomingAssessmentsTable(title: String, assessments: Seq[(AssessmentMetadata, Int)]) = {
@@ -65,7 +66,7 @@
       <caption>Exam setup status - @metrics.examProfileCode</caption>
       <thead>
         <tr>
-          <th>Exam profile</th>
+          <th>Department</th>
           <th>Assessments</th>
           <th>Has students</th>
           <th>Has platform</th>
@@ -77,18 +78,18 @@
         </tr>
       </thead>
       <tbody>
-        @setupMetricsRow("Overall", metrics.overall)
+        @setupMetricsRow(Html("Overall"), metrics.overall)
       </tbody>
       <tbody>
         @metrics.byDepartmentCode.map { case (departmentCode, values) =>
-          @setupMetricsRow(departmentCode.string, values)
+          @setupMetricsRow(departmentName(departments.get(departmentCode), departmentCode), values)
         }
       </tbody>
     </table>
   }
 }
 
-@setupMetricsRow(label: String, metrics: AssessmentSetupMetricsValues) = {
+@setupMetricsRow(label: Html, metrics: AssessmentSetupMetricsValues) = {
   <tr>
     <th scope="row">@label</th>
     <td>@metrics.assessmentCount</td>
@@ -102,7 +103,7 @@
   </tr>
 }
 
-@participationMetricsRowAEP(label: String, metrics: AssessmentParticipationMetricValues) = {
+@participationMetricsRowAEP(label: Html, metrics: AssessmentParticipationMetricValues) = {
   <tr>
     <th class="row">@label</th>
     <td>@metrics.total</td>
@@ -144,16 +145,16 @@
         </tr>
       </thead>
       <tbody>
-        @participationMetricsRowAEP("Overall", metrics.overall)
+        @participationMetricsRowAEP(Html("Overall"), metrics.overall)
       </tbody>
       <tbody>
         @metrics.byDepartmentCode.map { case (departmentCode, values) =>
-          @participationMetricsRowAEP(departmentCode.string, values)
+          @participationMetricsRowAEP(departmentName(departments.get(departmentCode), departmentCode), values)
         }
       </tbody>
       <tbody>
         @metrics.byExamProfileCode.map { case (examProfileCode, values) =>
-          @participationMetricsRowAEP(examProfileCode, values)
+          @participationMetricsRowAEP(Html(examProfileCode), values)
         }
       </tbody>
     </table>

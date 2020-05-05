@@ -10,6 +10,7 @@ import play.api.mvc.{Action, AnyContent}
 import services.{AssessmentService, SecurityService, StudentAssessmentService}
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import helpers.StringUtils._
+import services.tabula.TabulaDepartmentService
 
 import scala.concurrent.ExecutionContext
 
@@ -98,6 +99,7 @@ object ManagementInformationController {
 class ManagementInformationController @Inject()(
   security: SecurityService,
   assessmentService: AssessmentService,
+  departmentService: TabulaDepartmentService,
   configuration: Configuration,
 )(implicit ec: ExecutionContext) extends BaseController {
 
@@ -129,8 +131,10 @@ class ManagementInformationController @Inject()(
         val (aep, nonAEP) = assessments.partition(_._1.platform.contains(Platform.OnlineExams))
 
         (ManagementInformationController.participationMetrics(aep), ManagementInformationController.participationMetrics(nonAEP))
-      }
-    ).successMap { case (startingToday, startingTomorrow, startingInTwoDays, metricsByExamProfile, (aepParticipationMetrics, nonAEPParticipationMetrics)) =>
+      },
+
+      departmentService.getDepartments(),
+    ).successMap { case (startingToday, startingTomorrow, startingInTwoDays, metricsByExamProfile, (aepParticipationMetrics, nonAEPParticipationMetrics), departments) =>
       Ok(views.html.sysadmin.managementInformation(
         startingToday,
         startingTomorrow,
@@ -138,6 +142,7 @@ class ManagementInformationController @Inject()(
         metricsByExamProfile,
         aepParticipationMetrics,
         nonAEPParticipationMetrics,
+        departments.map(d => DepartmentCode(d.code) -> d).toMap
       ))
     }
   }
