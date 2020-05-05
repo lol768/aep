@@ -170,7 +170,7 @@ export function calculateTimingInfo(data, now) {
         break;
       default:
         if (timeUntilStart > 0) {
-          text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
+          text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)} unless otherwise advised by your department.`;
           warning = true;
           hourglassSpins = true;
         } else if (timeUntilEndOfWindow > 0) {

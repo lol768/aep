@@ -21,9 +21,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class CommunicationReportsController @Inject()(
   security: SecurityService,
   userLookupService: UserLookupService,
-  deptService: TabulaDepartmentService,
-  groupService: GroupService,
-  actionRefiners: ActionRefiners,
   announcementService: AnnouncementService,
   messageService: MessageService,
   features: Features,

@@ -10,7 +10,7 @@ import domain.Assessment.State
 import domain.AuditEvent.{Operation, Target}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
 import domain.dao._
-import domain.{Assessment, AssessmentMetadata, Declarations, Sitting, UploadedFileOwner}
+import domain.{Assessment, AssessmentMetadata, Declarations, DepartmentCode, Sitting, UploadedFileOwner}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import services.AssessmentService._
@@ -65,7 +65,7 @@ trait AssessmentService {
 
   def delete(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
 
-  def getFinishedAssessmentsWithSittings()(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]]
+  def getFinishedAssessmentsWithSittings(department: Option[DepartmentCode], importedOnly: Boolean)(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]]
 }
 
 @Singleton
@@ -350,8 +350,8 @@ class AssessmentServiceImpl @Inject()(
       } yield done).map(ServiceResults.success)
     }
 
-  override def getFinishedAssessmentsWithSittings()(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]] =
-    daoRunner.run(dao.getFinishedAssessmentsWithSittingInformation())
+  override def getFinishedAssessmentsWithSittings(department: Option[DepartmentCode], importedOnly: Boolean)(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]] =
+    daoRunner.run(dao.getFinishedAssessmentsWithSittingInformation(department, importedOnly))
       .map { rows =>
         rows.map { case (storedAssessment, assessmentFiles, studentAssessments) =>
           val assessment = inflateRowWithUploadedFiles(Some((storedAssessment, assessmentFiles))).get

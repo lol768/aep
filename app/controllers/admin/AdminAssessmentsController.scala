@@ -278,7 +278,7 @@ class AdminAssessmentsController @Inject()(
                 id = UUID.randomUUID(),
                 assessmentId = newAssessment.id,
                 occurrence = None,
-                academicYear = None,
+                academicYear = None, // See comment in TabulaAssessmentService.generateAssignments
                 studentId = universityID,
                 inSeat = false,
                 startTime = None,
@@ -403,7 +403,7 @@ class AdminAssessmentsController @Inject()(
                       id = UUID.randomUUID(),
                       assessmentId = assessment.id,
                       occurrence = None,
-                      academicYear = None,
+                      academicYear = None, // See comment in TabulaAssessmentService.generateAssignments
                       studentId = universityID,
                       inSeat = false,
                       startTime = None,
