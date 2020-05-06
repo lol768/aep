@@ -56,12 +56,16 @@ function handleMessage(data) {
 }
 
 function handleAnnouncement(data) {
+  const $container = $('.announcement-container');
+
   $('<div/>')
     .addClass('announcement')
+    .append($('<div/>').addClass('message-date').html(data.timestamp))
     .append($('<div/>').addClass('message-author').text(data.senderName))
     .append($('<div/>').addClass('message-text').html(data.messageHTML))
-    .append($('<div/>').addClass('message-date').html(data.timestamp))
-    .prependTo($('.announcement-container'));
+    .prependTo($container);
+
+  $container.prev('summary').text(`Announcements (${$container.children('.announcement').length})`);
 }
 
 function init() {

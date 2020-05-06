@@ -39,7 +39,7 @@ class AnnouncementServiceTest extends AbstractDaoTest with CleanUpDatabaseAfterE
 
       // invigilators
       verify(mockPubSubService).publish(Topics.allInvigilatorsAssessment(announcement.assessment),
-        AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, s"${Fixtures.users.staff1.name.full.get}: ${announcement.text}", announcement.created))
+        AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, Fixtures.users.staff1.name.full, announcement.text, announcement.created))
     }
   }
 }
