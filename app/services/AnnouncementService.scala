@@ -61,10 +61,9 @@ class AnnouncementServiceImpl @Inject()(
       // publish announcement to invigilators
       announcement.sender.foreach { sender =>
         userLookupService.getUsers(Seq(sender)).toOption.flatMap(userMap => userMap.headOption.map(_._2)).foreach { user =>
-          val name = user.name.full.map(name => s"$name: ").getOrElse("")
           pubSubService.publish(
             topic = Topics.allInvigilatorsAssessment(announcement.assessment),
-            AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, s"$name${announcement.text.trim}", announcement.created)
+            AssessmentAnnouncement.from(announcement).copy(senderName = user.name.full)
           )
         }
       }

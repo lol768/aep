@@ -29,7 +29,7 @@ object WebSocketController {
   ) {
     /** Just for testing as it uses an ephemeral ID */
     def toTestAnnouncement: AssessmentAnnouncement = {
-      AssessmentAnnouncement(UUID.randomUUID.toString, assessmentId.toString, message, JavaTime.offsetDateTime)
+      AssessmentAnnouncement(UUID.randomUUID.toString, assessmentId.toString, None, message, JavaTime.offsetDateTime)
     }
   }
 
@@ -147,11 +147,11 @@ class WebSocketController @Inject()(
       data => {
         pubSub.publish(
           Topics.allInvigilatorsAssessment(data.assessment),
-          AssessmentAnnouncement(UUID.randomUUID.toString, data.assessment.toString, data.message, JavaTime.offsetDateTime),
+          AssessmentAnnouncement(UUID.randomUUID.toString, data.assessment.toString, None, data.message, JavaTime.offsetDateTime),
         )
         pubSub.publish(
           Topics.allStudentsAssessment(data.assessment),
-          AssessmentAnnouncement(UUID.randomUUID.toString, data.assessment.toString, data.message, JavaTime.offsetDateTime),
+          AssessmentAnnouncement(UUID.randomUUID.toString, data.assessment.toString, None, data.message, JavaTime.offsetDateTime),
         )
         Redirect(controllers.routes.WebSocketController.broadcastTest())
           .flashing("success" -> Messages("flash.websocket.published"))
