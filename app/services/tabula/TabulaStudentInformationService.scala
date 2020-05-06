@@ -3,6 +3,7 @@ package services.tabula
 import com.google.inject.ImplementedBy
 import com.google.inject.name.Named
 import domain.tabula
+import helpers.ServiceResultUtils
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.cache.AsyncCacheApi
@@ -14,7 +15,7 @@ import warwick.core.Logging
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
-import warwick.core.timing.{TimingCategories => CoreTimingCategories, TimingContext, TimingService}
+import warwick.core.timing.{TimingContext, TimingService, TimingCategories => CoreTimingCategories}
 import warwick.sso.UniversityID
 
 import scala.concurrent.duration._
@@ -172,7 +173,7 @@ class TabulaStudentInformationServiceImpl @Inject() (
     if (options.universityIDs.isEmpty) return Future.successful(ServiceResults.success(Map.empty))
 
     // Restrict the batch size to avoid hitting the HTTP header size limit on Tabula's Tomcat
-    ServiceResults.futureSequence(options.universityIDs.grouped(100).toSeq.map { universityIDs =>
+    ServiceResultUtils.traverseSerial(options.universityIDs.grouped(100).toSeq) { universityIDs =>
       val url = config.getMultipleStudentInformationUrl
       val req = ws.url(url)
         .withQueryStringParameters(
@@ -185,6 +186,6 @@ class TabulaStudentInformationServiceImpl @Inject() (
       doRequest(url, "GET", req, description = "getMultipleStudentInformation").successFlatMapTo { jsValue =>
         parseAndValidate(jsValue, TabulaResponseParsers.TabulaProfileData.multiMemberResponseReads)
       }.successMapTo(_.view.mapValues(_.toUserProfile).toMap)
-    }).successMapTo(_.fold(Map.empty)(_ ++ _))
+    }.successMapTo(_.fold(Map.empty)(_ ++ _))
   }
 }
