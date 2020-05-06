@@ -29,7 +29,7 @@
     @if(assessment.platform.exists(_.requiresUrl)) {
       <dt>URLs to assessments</dt>
       <dd>@assessment.platform.filter(_.requiresUrl).toSeq.zipWithIndex.map { case (platform, index) =>
-        @platform.label: @assessment.brief.urls(platform)
+        @platform.label: @assessment.brief.urls.getOrElse(platform, "[missing URL]")
         @if(index < assessment.platform.count(_.requiresUrl)) {
           <br />
         }
