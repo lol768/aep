@@ -1,24 +1,11 @@
 import Tablesort from 'tablesort';
 import * as log from './log';
 import TablesortNumber from './tablesort.number';
+import { updateDocumentTitle } from './sets-document-title-prefix';
 
 TablesortNumber();
 
 const INTERVAL_MS = 30 * 1000;
-
-const originalDocumentTitle = document.title;
-function updateDocumentTitle(el) {
-  let prefix = '';
-  const titlePrefixElement = el.getElementsByClassName('sets-document-title-prefix')[0];
-  if (titlePrefixElement) {
-    prefix = titlePrefixElement.getAttribute('data-document-title-prefix');
-  }
-  if (prefix.trim().length !== 0) {
-    document.title = `${prefix.trim()} ${originalDocumentTitle}`;
-  } else {
-    document.title = originalDocumentTitle;
-  }
-}
 
 const el = document.querySelectorAll('.studentAssessmentInfo')[0];
 const refreshTable = () => setTimeout(() => {
