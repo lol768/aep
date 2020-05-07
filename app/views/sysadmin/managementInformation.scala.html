@@ -114,7 +114,7 @@
   </tr>
 }
 
-@participationMetricsRowNonAEP(label: String, metrics: AssessmentParticipationMetricValues) = {
+@participationMetricsRowNonAEP(label: Html, metrics: AssessmentParticipationMetricValues) = {
   <tr>
     <th class="row">@label</th>
     <td>@metrics.total</td>
@@ -171,7 +171,7 @@
         </tr>
       </thead>
       <tbody>
-        @participationMetricsRowNonAEP("Overall", metrics.overall)
+        @participationMetricsRowNonAEP(Html("Overall"), metrics.overall)
       </tbody>
       <tbody>
         @metrics.byDepartmentCode.map { case (departmentCode, values) =>
@@ -180,7 +180,7 @@
       </tbody>
       <tbody>
         @metrics.byExamProfileCode.map { case (examProfileCode, values) =>
-          @participationMetricsRowNonAEP(examProfileCode, values)
+          @participationMetricsRowNonAEP(Html(examProfileCode), values)
         }
       </tbody>
     </table>
