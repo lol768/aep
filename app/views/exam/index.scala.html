@@ -7,10 +7,13 @@
 
 @import domain.Announcement
 @import domain.BaseSitting.ProgressState
+@import warwick.fileuploads.UploadedFileControllerHelper.UploadedFileConfiguration
+
 @(
   sitting: Sitting,
   finishExamForm: Form[FinishExamFormData],
   announcements: Seq[Announcement],
+  uploadedFileConfig: UploadedFileConfiguration,
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @uploadForm = {
@@ -88,7 +91,7 @@
 
     @assessmentPanel(sitting, isAssessmentPage = true)
     @if(sitting.started) {
-      @assessmentBrief(sitting.assessment, Some(sitting.studentAssessment.id))
+      @assessmentBrief(sitting.assessment, Some(sitting.studentAssessment.id), uploadedFileConfig)
 
       @if(sitting.assessment.platform.exists(_ != Platform.OnlineExams)) {
         <div class="panel panel-default">
