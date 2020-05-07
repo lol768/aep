@@ -37,7 +37,7 @@
           @if(numberOfStudents == 0) {
             <summary class="h3">Queries (no queries received)</summary>
           } else {
-            <summary class="h3">Queries (@numberOfMessages @pl(numberOfMessages, "query")(plural = "queries") from @numberOfStudents @pl(numberOfStudents, "student")())</summary>
+            <summary class="h3 sets-document-title-prefix" data-document-title-prefix="(@numberOfMessages)">Queries (@numberOfMessages @pl(numberOfMessages, "query")(plural = "queries") from @numberOfStudents @pl(numberOfStudents, "student")())</summary>
           }
         }
       }

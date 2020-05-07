@@ -53,13 +53,13 @@ object WebSocketActor {
       additionalTopics
     ))
 
-  case class AssessmentAnnouncement(id: String, assessmentId: String, messageText: String, timestamp: OffsetDateTime) {
+  case class AssessmentAnnouncement(id: String, assessmentId: String, senderName: Option[String], messageText: String, timestamp: OffsetDateTime) {
     val messageHTML: Html = Html(warwick.core.views.utils.nl2br(messageText).body)
   }
 
   object AssessmentAnnouncement {
     def from(announcement: Announcement): AssessmentAnnouncement =
-      AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, announcement.text, announcement.created)
+      AssessmentAnnouncement(announcement.id.toString, announcement.assessment.toString, None, announcement.text, announcement.created)
   }
 
   case class AssessmentMessage(messageId: String, studentId: String, assessmentId: String, messageText: String, sender: MessageSender, senderName: String, studentName: String, timestamp: OffsetDateTime) {
@@ -147,6 +147,7 @@ class WebSocketActor @Inject() (
       "type" -> "announcement",
       "id" -> aa.id,
       "assessmentId" -> aa.assessmentId,
+      "senderName" -> JsString(aa.senderName.getOrElse("Announcement")),
       "messageHTML" -> aa.messageHTML.body,
       "messageText" -> aa.messageText,
       "timestamp" -> views.html.tags.localisedDatetime(aa.timestamp).toString,

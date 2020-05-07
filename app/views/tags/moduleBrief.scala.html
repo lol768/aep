@@ -20,12 +20,12 @@
       @if(assessment.platform.count(_.requiresUrl) > 1) {
         <ul>
           @assessment.platform.filter(_.requiresUrl).toSeq.map { platform =>
-            <li>@platform.label: @assessment.brief.urls(platform)</li>
+            <li>@platform.label: @assessment.brief.urls.getOrElse(platform, "[missing URL]")</li>
           }
         </ul>
       } else {
         @assessment.platform.find(_.requiresUrl).map { platform =>
-          @platform.label: @assessment.brief.urls(platform)
+          @platform.label: @assessment.brief.urls.getOrElse(platform, "[missing URL]")
         }
       }
       </dd>

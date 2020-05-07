@@ -1,6 +1,7 @@
 import $ from 'jquery';
 import { postJsonWithCredentials } from '@universityofwarwick/serverpipe';
 import log from 'loglevel';
+import { updateDocumentTitle, originalDocumentTitle } from '../sets-document-title-prefix';
 
 function handleMessage(data) {
   const $newMessage = $('<div/>')
@@ -31,7 +32,6 @@ function handleMessage(data) {
       $container.prepend($newMessage);
     }
 
-
     if ($thread.find('.collapsed').length > 0 && $thread.find('.panel-title i.heartbeat').length === 0) {
       const $title = $thread.find('.panel-title');
       $('<i/>').addClass('fad fa-comment-edit heartbeat').insertAfter($title.find('a div.pull-right'));
@@ -41,6 +41,8 @@ function handleMessage(data) {
     const studentCount = $threadContainer.find('.panel').length;
     const messageCount = $threadContainer.find('.message-student').length;
     $summary.text(`Queries (${messageCount} ${messageCount === 1 ? 'query' : 'queries'} from ${studentCount} ${studentCount === 1 ? 'student' : 'students'})`);
+
+    document.title = `(${messageCount}) ${originalDocumentTitle}`;
   } else {
     $container.prepend($newMessage);
   }
@@ -56,12 +58,16 @@ function handleMessage(data) {
 }
 
 function handleAnnouncement(data) {
+  const $container = $('.announcement-container');
+
   $('<div/>')
     .addClass('announcement')
+    .append($('<div/>').addClass('message-date').html(data.timestamp))
     .append($('<div/>').addClass('message-author').text(data.senderName))
     .append($('<div/>').addClass('message-text').html(data.messageHTML))
-    .append($('<div/>').addClass('message-date').html(data.timestamp))
-    .prependTo($('.announcement-container'));
+    .prependTo($container);
+
+  $container.prev('summary').text(`Announcements (${$container.children('.announcement').length})`);
 }
 
 function init() {
@@ -116,3 +122,4 @@ function init() {
 }
 
 init();
+updateDocumentTitle(document);
