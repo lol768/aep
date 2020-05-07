@@ -100,7 +100,6 @@ class CachingTabulaAssessmentService @Inject()(
 class TabulaAssessmentServiceImpl @Inject()(
   ws: WSClient,
   config: TabulaConfiguration,
-  trustedApplicationsManager: TrustedApplicationsManager,
   tabulaHttp: TabulaHttp,
   timing: TimingService,
   assessmentService: AssessmentService,
@@ -307,7 +306,7 @@ class TabulaHttp @Inject()(
             logger.error(msg, ex)
             ServiceResults.exceptionToServiceResult(ex, Some(msg))
         }
-    }
+      }
   }
 
 
