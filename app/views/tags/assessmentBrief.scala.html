@@ -42,7 +42,7 @@
               <div class="media-body">
                 <h4 class="media-heading">@file.fileName</h4>
 
-                <a class="assessment-brief-file btn btn-default btn-sm mr-half" href="@controllers.routes.AssessmentController.downloadFile(assessment.id, file.id)"><i class="fas fa-file-download"></i>
+                <a class="assessment-brief-file btn btn-default btn-sm mr-half" target="_blank" rel="noreferrer" href="@controllers.routes.AssessmentController.downloadFile(assessment.id, file.id)"><i class="fas fa-file-download"></i>
                   Download</a>
                 @if(uploadedFileConfig.isServeInline(MediaType.parse(file.contentType))) {
                   <a class="assessment-brief-file btn btn-default btn-sm mr-half" target="_blank" rel="noreferrer" href="@controllers.routes.AssessmentController.downloadOrServeFile(assessment.id, file.id)"><i class="fas fa-file-alt"></i>
