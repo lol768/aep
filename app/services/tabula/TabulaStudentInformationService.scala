@@ -8,7 +8,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.cache.AsyncCacheApi
 import play.api.libs.ws.WSClient
-import services.tabula.TabulaStudentInformationService.{GetMultipleStudentInformationOptions, GetStudentInformationOptions, MultipleStudentInformationReturn, StudentInformationReturn}
+import services.tabula.TabulaStudentInformationService._
 import system.TimingCategories
 import warwick.caching._
 import warwick.core.Logging
@@ -30,6 +30,8 @@ trait TabulaStudentInformationService {
 object TabulaStudentInformationService {
   type StudentInformationReturn = ServiceResult[tabula.SitsProfile]
   type MultipleStudentInformationReturn = ServiceResult[Map[UniversityID, tabula.SitsProfile]]
+
+  val MultipleStudentInformationLookupBatchSize = 250
 
   case class GetStudentInformationOptions(
     universityID: UniversityID,
@@ -173,7 +175,7 @@ class TabulaStudentInformationServiceImpl @Inject() (
     if (options.universityIDs.isEmpty) return Future.successful(ServiceResults.success(Map.empty))
 
     // Restrict the batch size to avoid hitting the HTTP header size limit on Tabula's Tomcat
-    ServiceResultUtils.traverseSerial(options.universityIDs.grouped(100).toSeq) { universityIDs =>
+    ServiceResultUtils.traverseSerial(options.universityIDs.grouped(MultipleStudentInformationLookupBatchSize).toSeq) { universityIDs =>
       val url = config.getMultipleStudentInformationUrl
       val req = ws.url(url)
         .withQueryStringParameters(
