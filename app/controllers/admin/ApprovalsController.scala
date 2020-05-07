@@ -36,12 +36,11 @@ class ApprovalsController @Inject()(
   import ApprovalsController._
   import security._
 
-  def index: Action[AnyContent] = RequireApprover.async { implicit request =>
+  def index: Action[AnyContent] = TODO // RequireApprover.async { implicit request =>
 //    assessmentService.findByStates(Seq(State.Submitted)).successMap { assessments =>
 //      Ok(views.html.admin.approvals.index(assessments))
 //    }
-    throw new NotImplementedError()
-  }
+//  }
 
   def show(id: UUID): Action[AnyContent] = RequireApprover.async { implicit request =>
     assessmentService.get(id).successMap { assessment =>
@@ -49,7 +48,7 @@ class ApprovalsController @Inject()(
     }
   }
 
-  def update(id: UUID): Action[AnyContent] = RequireApprover.async { implicit request =>
+  def update(id: UUID): Action[AnyContent] = TODO // RequireApprover.async { implicit request =>
 //    assessmentService.get(id).successFlatMap { assessment =>
 //      form.bindFromRequest().fold(
 //        formWithErrors => Future.successful(Ok(views.html.admin.approvals.show(assessment, formWithErrors))),
@@ -59,13 +58,12 @@ class ApprovalsController @Inject()(
 //          }
 //        })
 //    }
-    throw new NotImplementedError()
-  }
+//  }
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = RequireApprover.async { implicit request =>
     assessmentService.get(assessmentId).successFlatMap { assessment =>
       assessment.brief.files.find(_.id == fileId)
-        .map(uploadedFileControllerHelper.serveFile)
+        .map(uploadedFileControllerHelper.serveFile(_))
         .getOrElse(Future.successful(NotFound("File not found")))
     }
   }

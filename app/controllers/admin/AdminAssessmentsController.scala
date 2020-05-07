@@ -24,7 +24,7 @@ import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileControllerHelper
-import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
+import warwick.fileuploads.UploadedFileControllerHelper.{TemporaryUploadedFile, UploadedFileConfiguration}
 import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService, Usercode}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -194,6 +194,7 @@ class AdminAssessmentsController @Inject()(
   import AdminAssessmentsController._
   import security._
 
+  private[this] lazy val uploadedFileConfig = UploadedFileConfiguration.fromConfiguration(configuration)
   private[this] lazy val overwriteAssessmentTypeOnImport = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
 
   def index: Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
@@ -353,7 +354,7 @@ class AdminAssessmentsController @Inject()(
   }
 
   def studentPreview(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id) { implicit request =>
-    Ok(views.html.admin.assessments.studentPreview(request.assessment))
+    Ok(views.html.admin.assessments.studentPreview(request.assessment, uploadedFileConfig))
   }
 
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>
@@ -472,7 +473,7 @@ class AdminAssessmentsController @Inject()(
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(assessmentId).async { implicit request =>
     request.assessment.brief.files.find(_.id == fileId)
-      .map(uploadedFileControllerHelper.serveFile)
+      .map(uploadedFileControllerHelper.serveFile(_))
       .getOrElse(Future.successful(NotFound("File not found")))
   }
 

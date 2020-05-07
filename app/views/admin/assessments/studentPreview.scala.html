@@ -1,6 +1,11 @@
 @import domain.Assessment
 @import tags._
-@(assessment: Assessment)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
+@import warwick.fileuploads.UploadedFileControllerHelper.UploadedFileConfiguration
+
+@(
+  assessment: Assessment,
+  uploadedFileConfig: UploadedFileConfiguration,
+)(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
 @adminLayout(title = s"Student preview of ${assessment.title}") {
   <div class="panel panel-default assessment-information-panel">
@@ -17,5 +22,5 @@
     </div>
   </div>
 
-  @assessmentBrief(assessment)
+  @assessmentBrief(assessment, None, uploadedFileConfig)
 }

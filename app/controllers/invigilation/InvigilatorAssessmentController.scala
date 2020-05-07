@@ -100,7 +100,7 @@ class InvigilatorAssessmentController @Inject()(
 
   def getFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = InvigilatorAssessmentAction(assessmentId).async { implicit request =>
     request.assessment.brief.files.find(_.id == fileId)
-      .map(uploadedFileControllerHelper.serveFile)
+      .map(uploadedFileControllerHelper.serveFile(_))
       .getOrElse(Future.successful(NotFound("File not found")))
   }
 
