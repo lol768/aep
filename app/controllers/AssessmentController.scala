@@ -4,6 +4,7 @@ import java.util.UUID
 
 import domain.{SelectedFile, StudentAssessment, UploadFailureType}
 import javax.inject.{Inject, Singleton}
+import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.Messages
@@ -11,7 +12,7 @@ import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.StudentAssessmentSpecificRequest
 import services._
 import warwick.fileuploads.UploadedFileControllerHelper
-import warwick.fileuploads.UploadedFileControllerHelper.TemporaryUploadedFile
+import warwick.fileuploads.UploadedFileControllerHelper.{ContentDispositionStrategy, TemporaryUploadedFile, UploadedFileConfiguration}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -58,14 +59,13 @@ class AssessmentController @Inject()(
   security: SecurityService,
   studentAssessmentService: StudentAssessmentService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
-  uploadedFileService: UploadedFileService,
-  uploadAuditingService: UploadAuditingService,
   announcementService: AnnouncementService,
-)(implicit
-  ec: ExecutionContext,
-) extends BaseController {
+  configuration: Configuration,
+)(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
+
+  private[this] lazy val uploadedFileConfig = UploadedFileConfiguration.fromConfiguration(configuration)
 
   private val redirectToAssessment = (id: UUID) => Redirect(controllers.routes.AssessmentController.view(id))
 
@@ -88,7 +88,7 @@ class AssessmentController @Inject()(
 
   def view(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
-      Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements))
+      Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig))
     )
   }
 
@@ -130,7 +130,7 @@ class AssessmentController @Inject()(
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
     AssessmentController.finishExamForm.bindFromRequest().fold(
       form => announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
-        BadRequest(views.html.exam.index(request.sitting, form, announcements))
+        BadRequest(views.html.exam.index(request.sitting, form, announcements, uploadedFileConfig))
       ),
       _ => {
         if (request.sitting.finalised) {
@@ -141,7 +141,7 @@ class AssessmentController @Inject()(
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
         } else {
           studentAssessmentService.finishAssessment(request.sitting.studentAssessment).successMap { _ =>
-            redirectToAssessment(assessmentId)
+            redirectToAssessment(assessmentId).flashing("success" -> Messages("flash.assessment.finished"))
           }
         }
       }
@@ -175,7 +175,7 @@ class AssessmentController @Inject()(
         xhrReturn
       } else {
         announcementService.getByAssessmentId(assessmentId).successMap { announcements =>
-          BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements))
+          BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig))
         }
       }
     }
@@ -220,7 +220,16 @@ class AssessmentController @Inject()(
 
     request.sitting.studentAssessment.uploadedFiles
       .find(_.id == fileId)
-      .fold(notFound)(uploadedFileControllerHelper.serveFile)
+      .fold(notFound)(uploadedFileControllerHelper.serveFile(_))
+  }
+
+  def downloadOrServeFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentIsStartedAction(assessmentId).async { implicit request =>
+    def notFound: Future[Result] =
+      Future.successful(NotFound(views.html.errors.notFound()))
+
+    request.sitting.assessment.brief.files
+      .find(_.id == fileId)
+      .fold(notFound)(uploadedFileControllerHelper.serveFile(_))
   }
 
   def downloadFile(assessmentId: UUID, fileId: UUID): Action[AnyContent] = StudentAssessmentIsStartedAction(assessmentId).async { implicit request =>
@@ -229,6 +238,6 @@ class AssessmentController @Inject()(
 
     request.sitting.assessment.brief.files
       .find(_.id == fileId)
-      .fold(notFound)(uploadedFileControllerHelper.serveFile)
+      .fold(notFound)(uploadedFileControllerHelper.serveFile(_, ContentDispositionStrategy.ForceAttachment))
   }
 }

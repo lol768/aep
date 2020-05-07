@@ -404,7 +404,8 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
     def i_download_assessment_file(filename: String): Unit = {
       val file = assessmentPage.assessmentFiles.find(_.name == filename)
       assert(file.nonEmpty, s"There was no assessment file named $filename")
-      file.get.link.click()
+      assert(file.flatMap(_.openInBrowserLink).nonEmpty, s"There was no 'Open in browser' link for $filename")
+      file.get.openInBrowserLink.get.click()
     }
 
     def a_file_should_be_displayed(): Unit = {

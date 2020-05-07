@@ -6,9 +6,10 @@ import org.openqa.selenium.{By, WebDriver, WebElement}
 import support.ServerInfo
 
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 case class UploadedFile(name: String, url: String, deleteButton: WebElement)
-case class AssessmentFile(name: String, url: String, link: WebElement)
+case class AssessmentFile(name: String, downloadUrl: String, downloadLink: WebElement, openInBrowserUrl: Option[String], openInBrowserLink: Option[WebElement])
 
 class AssessmentPage(id: UUID)(implicit driver: WebDriver, server: ServerInfo) extends AbstractPage("Assessment", driver, server) {
   override val path: String = s"/assessment/$id"
@@ -33,11 +34,16 @@ class AssessmentPage(id: UUID)(implicit driver: WebDriver, server: ServerInfo) e
 
   def finishExamButton: WebElement = driver.findElement(By.cssSelector(".finish-exam-panel button[type=submit]"))
 
-  def assessmentFiles: Seq[AssessmentFile] = driver.findElements(By.cssSelector("a.assessment-brief-file")).asScala.map { a =>
+  def assessmentFiles: Seq[AssessmentFile] = driver.findElements(By.cssSelector("li.assessment-brief-file")).asScala.map { li =>
+    val downloadLink = li.findElement(By.partialLinkText("Download"))
+    val openInBrowserLink = Try(li.findElement(By.partialLinkText("Open in browser"))).toOption
+
     AssessmentFile(
-      name = a.getText,
-      url = a.getAttribute("href"),
-      link = a
+      name = li.findElement(By.className("media-heading")).getText,
+      downloadUrl = downloadLink.getAttribute("href"),
+      downloadLink = downloadLink,
+      openInBrowserUrl = openInBrowserLink.map(_.getAttribute("href")),
+      openInBrowserLink = openInBrowserLink
     )
   }.toSeq
 

@@ -42,6 +42,6 @@ class ObjectStorageDownloadController @Inject()(
   }
 
   def downloadFile(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
-    uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile)
+    uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile(_))
   }
 }

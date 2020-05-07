@@ -98,7 +98,8 @@ class AssessmentSpec extends BrowserFeatureSpec {
       Then i_should_see_the_text "The files have been uploaded to the assessment."
 
       When.i_finish_the_assessment()
-      Then the_page_content_should_not_contain "Finish exam"
+      Then i_should_see_the_text "The assessment has been completed."
+      And the_page_content_should_not_contain "Finish exam"
     }
 
     "be able to start a Moodle assignment" in {
@@ -177,7 +178,8 @@ class AssessmentSpec extends BrowserFeatureSpec {
       Then i_should_see_the_text "The files have been uploaded to the assessment."
 
       When.i_finish_the_assessment()
-      Then the_page_content_should_not_contain "Finish exam"
+      Then i_should_see_the_text "The assessment has been completed."
+      And the_page_content_should_not_contain "Finish exam"
     }
 
     "see a late message after the grace upload period" in {

@@ -154,7 +154,7 @@ class SysadminTestController @Inject()(
   }
 
   def downloadFile(id: UUID): Action[AnyContent] = RequireSysadmin.async { implicit request =>
-    uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile)
+    uploadedFileService.get(id).successFlatMap(uploadedFileControllerHelper.serveFile(_))
   }
 
   def importAssessments(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
