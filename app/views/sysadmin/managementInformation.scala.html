@@ -175,7 +175,7 @@
       </tbody>
       <tbody>
         @metrics.byDepartmentCode.map { case (departmentCode, values) =>
-          @participationMetricsRowNonAEP(departmentCode.string, values)
+          @participationMetricsRowNonAEP(departmentName(departments.get(departmentCode), departmentCode), values)
         }
       </tbody>
       <tbody>
