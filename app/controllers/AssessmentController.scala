@@ -141,7 +141,7 @@ class AssessmentController @Inject()(
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
         } else {
           studentAssessmentService.finishAssessment(request.sitting.studentAssessment).successMap { _ =>
-            redirectToAssessment(assessmentId)
+            redirectToAssessment(assessmentId).flashing("success" -> "flash.assessment.finished")
           }
         }
       }
