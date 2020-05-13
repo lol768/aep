@@ -6,6 +6,17 @@
 <dl>
     @assessmentMetadataInternal(assessment.assessment)
 
+    @if(assessment.studentAssessment.startTime.isDefined) {
+        @if(assessment.declarations.selfDeclaredRA) {
+            <dt>Reasonable adjustments</dt>
+            <dd><i class="fad fa-check-circle" aria-hidden="true"></i>
+                You declared reasonable adjustments for this assessment</dd>
+        } else {
+            <dt>Reasonable adjustments</dt>
+            <dd><i class="fad fa-times" aria-hidden="true"></i> You stated you have not agreed any reasonable adjustments</dd>
+        }
+    }
+
     @if(assessment.finalised) {
         @assessment.assessment.durationStyle match {
             case DayWindow => {
