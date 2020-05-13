@@ -6,7 +6,7 @@
 <dl>
     @assessmentMetadataInternal(assessment.assessment)
 
-    @if(assessment.studentAssessment.startTime.isDefined) {
+    @if(assessment.studentAssessment.startTime.isDefined && assessment.declarations.completedRA) {
         @if(assessment.declarations.selfDeclaredRA) {
             <dt>Reasonable adjustments</dt>
             <dd><i class="fad fa-check-circle" aria-hidden="true"></i>
