@@ -13,7 +13,11 @@
     <div class="panel-body">
       <div class="row">
         <div class="col-lg-6">
-          <h4>@assessment.title</h4>
+          <h4>
+            @assessment.paperCode
+            @assessment.title
+            @assessment.section.map(s => s"(Section $s)")
+          </h4>
           <dl>
           @assessmentMetadataInternal(assessment)
           </dl>
