@@ -32,7 +32,7 @@ class CommunicationReportsController @Inject()(
   val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(configuration.get[String]("app.csvDateTimeFormat"))
 
   def index(): Action[AnyContent] = GeneralDepartmentAdminAction { implicit request =>
-    if (features.announcementsAndQueriesCsv) {
+    if (features.announcementsAndQueriesCsv || isAdmin(request.context)) {
       Ok(views.html.admin.communicationReports.index(request.departments.sortBy(_.name)))
     } else {
       NotFound(views.html.errors.notFound())
@@ -40,7 +40,7 @@ class CommunicationReportsController @Inject()(
   }
 
    def announcementsCsv(departmentCode: String): Action[AnyContent] = SpecificDepartmentAdminAction(departmentCode).async { implicit request =>
-     if (features.announcementsAndQueriesCsv) {
+     if (features.announcementsAndQueriesCsv || isAdmin(request.context)) {
        announcementService.getByDepartmentCode(DepartmentCode(departmentCode)).successMap { assessmentWithAnnouncements =>
          val headerRow: Seq[String] = Seq(
            "Module code", "Paper code", "Section", "Title", "Assessment date/time", "Announcement sender", "Announcement", "Sent at"
@@ -67,7 +67,7 @@ class CommunicationReportsController @Inject()(
   }
 
   def queriesCsv(departmentCode: String): Action[AnyContent] = SpecificDepartmentAdminAction(departmentCode).async { implicit request =>
-    if (features.announcementsAndQueriesCsv) {
+    if (features.announcementsAndQueriesCsv || isAdmin(request.context)) {
       messageService.findByDepartmentCode(DepartmentCode(departmentCode)).successMap{ assessmentWithMessages =>
         val headerRow: Seq[String] = Seq(
           "Module code",

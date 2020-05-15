@@ -16,7 +16,9 @@
                 @if(sitting.finalised) {
                     <i class="fas fa-check fa-fw"></i>
                 }
+                @sitting.assessment.paperCode
                 @sitting.assessment.title
+                @sitting.assessment.section.map(s => s"(Section $s)")
             </h4>
         }
 
