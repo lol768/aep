@@ -411,7 +411,6 @@ class AssessmentDaoImpl @Inject()(
       // platform contains OnlineExams - had to come up with this nonsense as the column is a varchar
       .filter(_.platform.asColumnOf[String] like s"%${OnlineExams.entryName}%")
       .filter(a => unsubmittedStudents(a.id))
-      .filter(a => !(DepartmentCode("IB").bind === a.departmentCode)) // INC0869937
       .sortBy(a => (a.startTime, a.duration))
       .result
   }
