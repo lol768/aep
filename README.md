@@ -36,3 +36,10 @@ In the SBT shell the `integration/test` task will run the integration tests - th
 They run webpack each time to ensure assets are present - if the assets are already generated and this is slowing you down you can disable this in the SBT shell with:
 
     set webpackEnabled := false
+
+Frontend (JS) tests
+-------------------
+
+```
+$ npm run test
+```
