@@ -42,49 +42,65 @@
             <div class="right">
                 <h1>
                     @bareLocalisedDateTime(timingInfo.startTime)
+
                     @if(sitting.assessment.durationStyle == DurationStyle.DayWindow) {
                         You started the assessment
                     } else {
                         The assessment started
                     }
                 </h1>
-                <p>
-                This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus @Assessment.uploadGraceDuration.toMinutes minutes to upload your answers, so you should be aiming to finish answering by @bareLocalisedDateTime(timingInfo.uploadGraceStart, includeFullStop = true)</p>
+                @defining(sitting.assessment.durationStyle == DurationStyle.DayWindow && timingInfo.uploadGraceStart == timingInfo.onTimeEnd) { closeToWindowEnd =>
+
+                  <p>
+                    This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus
+                    @Assessment.uploadGraceDuration.toMinutes minutes to upload your answers,
+                    @if(!closeToWindowEnd) {
+                      so you should be aiming to
+                      finish answering by @bareLocalisedDateTime(timingInfo.uploadGraceStart, includeFullStop = true)
+                    } else {
+                      but <strong>you started the assessment too late</strong> to use of all of this time. You must upload by @bareLocalisedDateTime(timingInfo.uploadGraceStart, includeFullStop = true)
+                    }
+                  </p>
+                }
                 <p>Please plan your time accordingly.</p>
                 @if(durationInfo.durationWithExtraAdjustment.toHours==3) {
                     <div class="duration-3-spacer"></div>
                 }
             </div>
         </div>
-        <div class="block orange @if(sitting.getProgressState.contains(OnGracePeriod)) { active } else {}" data-state="@OnGracePeriod.entryName">
+        @if(timingInfo.onTimeEnd != timingInfo.uploadGraceStart) {
+          <div class="block orange @if(sitting.getProgressState.contains(OnGracePeriod)) { active } else {}" data-state="@OnGracePeriod.entryName">
             <div class="left">
-                <div class="bubble"><i class="fal fa-cloud-upload fa-2x"></i></div>
-                <div class="stick"></div>
+              <div class="bubble"><i class="fal fa-cloud-upload fa-2x"></i></div>
+              <div class="stick"></div>
             </div>
             <div class="middle">
-                <div class="peg"></div>
+              <div class="peg"></div>
             </div>
             <div class="right">
-                <h1 class="mb-1">@bareLocalisedDateTime(timingInfo.uploadGraceStart)
-                    You have @Assessment.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(timingInfo.onTimeEnd) to upload your answers</h1>
+              <h1 class="mb-1">@bareLocalisedDateTime(timingInfo.uploadGraceStart)
+                You have @Assessment.uploadGraceDuration.toMinutes minutes until @bareLocalisedDateTime(timingInfo.onTimeEnd) to upload your answers</h1>
             </div>
-        </div>
-        <div class="block pink @if(sitting.getProgressState.contains(Late)) { active } else {}" data-state="@Late.entryName">
+          </div>
+        }
+        @if(timingInfo.onTimeEnd != timingInfo.lateEnd) {
+          <div class="block pink @if(sitting.getProgressState.contains(Late)) { active } else {}" data-state="@Late.entryName">
             <div class="left">
-                <div class="bubble"><i class="fal fa-exclamation-triangle fa-2x"></i></div>
-                <div class="stick"></div>
+              <div class="bubble"><i class="fal fa-exclamation-triangle fa-2x"></i></div>
+              <div class="stick"></div>
             </div>
             <div class="middle">
-                <div class="peg"></div>
+              <div class="peg"></div>
             </div>
             <div class="right">
-                <h1>@bareLocalisedDateTime(timingInfo.onTimeEnd)
-                    Your assessment is now late</h1>
-                <p>
+              <h1>@bareLocalisedDateTime(timingInfo.onTimeEnd)
+                Your assessment is now late</h1>
+              <p>
                 You can still upload your answers but you may be subject to late penalties, unless you have reasonable adjustments.</p>
-                <div class="vert-space"></div>
+              <div class="vert-space"></div>
             </div>
-        </div>
+          </div>
+        }
         <div class="block red @if(sitting.getProgressState.contains(DeadlineMissed)) { active } else {}" data-state="@DeadlineMissed.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-ban fa-2x"></i></div>
