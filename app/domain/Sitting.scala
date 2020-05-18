@@ -84,7 +84,7 @@ sealed trait BaseSitting {
     est <- effectiveStartTime
   } yield TimingInfo(
     startTime = est,
-    uploadGraceStart = est.plus(d),
+    uploadGraceStart = Seq(est.plus(d), onTimeEnd.get).minBy(odt => odt),
     onTimeEnd = onTimeEnd.get,
     lateEnd = lateEnd.get
   )

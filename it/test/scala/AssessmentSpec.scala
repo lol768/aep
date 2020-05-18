@@ -165,6 +165,7 @@ class AssessmentSpec extends BrowserFeatureSpec {
       Then i_should_see_the_text("You have 3 hours and 39 minutes remaining until you should upload your answers")
       And i_should_see_the_text("This is a 3 hour paper, plus 45 minutes to upload your answers")
       And i_should_see_the_text("You have 45 minutes until")
+      And the_page_content_should_not_contain ("you started the assessment too late")
     }
 
     "be able to upload files and finish the exam during the grace upload period" in {
@@ -180,6 +181,7 @@ class AssessmentSpec extends BrowserFeatureSpec {
       When.i_finish_the_assessment()
       Then i_should_see_the_text "The assessment has been completed."
       And the_page_content_should_not_contain "Finish exam"
+      And the_page_content_should_not_contain ("you started the assessment too late")
     }
 
     "see a late message after the grace upload period" in {
@@ -189,8 +191,20 @@ class AssessmentSpec extends BrowserFeatureSpec {
 
       When i_visit_the assessmentPage
       screenshot("Assessment late message")
-      Then i_should_see_the_text("You started this assessment, but missed the deadline to upload your answers.")
+      Then the_page_content_should_not_contain ("you started the assessment too late")
+      And i_should_see_the_text("You started this assessment, but missed the deadline to upload your answers.")
       And i_should_see_the_text("Exceeded deadline by 1 minute")
+    }
+
+    "see a message if I start the assessment too close to the end of the window" in {
+      Given.i_am_a_student()
+      // assessment started 23h30m ago, student started 0 minutes ago
+      And i_have_an_assessment_in_progress_that_started_x_minutes_ago(student, assessmentStart = 1410.toLong, studentStart = 0.toLong)
+
+      When i_visit_the assessmentPage
+      screenshot("Assessment window end too close (bump against wall)")
+      Then i_should_see_the_text("you started the assessment too late")
+      And the_page_content_should_not_contain("still upload your answers but you may be subject to late penalties")
     }
 
     "be unable to upload files after the late period" in {
