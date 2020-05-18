@@ -173,6 +173,9 @@ export function calculateTimingInfo(data, now) {
           text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)} unless otherwise advised by your department.`;
           warning = true;
           hourglassSpins = true;
+          if (lastRecommendedStart) {
+            text += `\n\nStart before ${new JDDT(lastRecommendedStart).localString(true)} to give yourself the full time available.`;
+          }
         } else if (timeUntilEndOfWindow > 0) {
           text = `This assessment opened at ${new JDDT(windowStart).localString(false)}, and closes ${new JDDT(windowEnd).localString(true)}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
           if (timeUntilLastRecommendedStart > 0) {
