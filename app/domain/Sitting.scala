@@ -102,7 +102,7 @@ sealed trait BaseSitting {
       id = assessment.id,
       windowStart = assessment.startTime,
       windowEnd = assessment.lastAllowedStartTime,
-      lastRecommendedStart = onTimeDuration.flatMap(d => assessment.lastAllowedStartTime.map(_.minus(d))),
+      lastRecommendedStart = Seq(onTimeDuration.flatMap(d => assessment.lastAllowedStartTime.map(_.minus(d))), assessment.startTime).max,
       start = studentAssessment.startTime,
       end = onTimeEnd,
       hasStarted = studentAssessment.startTime.nonEmpty,
