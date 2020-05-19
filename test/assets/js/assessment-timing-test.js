@@ -39,7 +39,7 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: 'You can start between 18:56, Thursday 11th April 2019 and 23:26, Thursday 11th April 2019 BST, in 1 hour and 30 minutes unless otherwise advised by your department.\n\nStart before 20:41, Thursday 11th April 2019 BST to give yourself the full time available.',
+      text: 'You can start between 18:56, Thursday 11th April 2019 and 23:26, Thursday 11th April 2019 BST, in 1 hour and 30 minutes unless otherwise advised by your department.\n\nStart no later than 20:41, Thursday 11th April 2019 BST to give yourself the full time available.',
       allowStart: false,
       hourglassSpins: true
     })
