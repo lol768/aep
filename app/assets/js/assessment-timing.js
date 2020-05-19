@@ -174,7 +174,7 @@ export function calculateTimingInfo(data, now) {
           warning = true;
           hourglassSpins = true;
           if (lastRecommendedStart) {
-            text += `\n\nStart before ${new JDDT(lastRecommendedStart).localString(true)} to give yourself the full time available.`;
+            text += `\n\nStart no later than ${new JDDT(lastRecommendedStart).localString(true)} to give yourself the full time available.`;
           }
         } else if (timeUntilEndOfWindow > 0) {
           text = `This assessment opened at ${new JDDT(windowStart).localString(false)}, and closes ${new JDDT(windowEnd).localString(true)}. You have ${msToHumanReadable(timeUntilEndOfWindow)} left to start.`;
