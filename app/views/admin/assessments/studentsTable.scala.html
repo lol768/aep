@@ -24,6 +24,7 @@
   </thead>
   <tbody>
   @students.map { student =>
+    <!-- @student.id.toString -->
     <tr>
       <td><a href="@context.tabulaConfiguration.getProfileUrl(student.studentId)" target="_blank">@student.studentId.string</a></td>
       @studentInformation.get(student.studentId) match {
