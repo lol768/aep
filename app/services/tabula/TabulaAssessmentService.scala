@@ -164,6 +164,7 @@ class TabulaAssessmentServiceImpl @Inject()(
     val body: JsValue = Json.obj(
       "name" -> s"${assessment.moduleCode} ${assessment.title} - ${assessment.paperCode}${assessment.section.map(s => s" $s").getOrElse("")} (${config.assignmentNamespace} submissions)",
       "createdByAEP" -> true,
+      "turnitinExcludeBibliography" -> true,
       "unlimitedAttachments" -> true,
       "publishFeedback" -> false,
       "automaticallySubmitToTurnitin" -> true,
