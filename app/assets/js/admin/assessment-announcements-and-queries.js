@@ -4,6 +4,12 @@ import log from 'loglevel';
 import { updateDocumentTitle, originalDocumentTitle } from '../sets-document-title-prefix';
 
 function handleMessage(data) {
+  const actualAssessmentId = data.assessmentId;
+  const expectedAssessmentId = $('.in-progress-assessment-data').data('assessment');
+  if (actualAssessmentId !== expectedAssessmentId) {
+    return;
+  }
+
   const $newMessage = $('<div/>')
     .addClass(`message message-${data.sender.toLowerCase()}`)
     .append($('<div/>').addClass('message-date').html(data.timestamp))
