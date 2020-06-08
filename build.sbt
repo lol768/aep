@@ -129,7 +129,9 @@ val appDeps = Seq(
   "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1",
 
   "org.apache.commons" % "commons-compress" % "1.20",
-  "com.github.tototoshi" %% "scala-csv" % "1.3.6"
+  "com.github.tototoshi" %% "scala-csv" % "1.3.6",
+
+  "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "6.6.1"
 )
 
 val testDeps = Seq(
@@ -167,6 +169,7 @@ resolvers += "softprops-maven" at "https://dl.bintray.com/content/softprops/mave
 resolvers += "slack-client" at "https://mvnrepository.com/artifact/net.gpedro.integrations.slack/slack-webhook"
 resolvers += "SBT plugins" at "https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"
 resolvers += "nexus" at "https://mvn.elab.warwick.ac.uk/nexus/repository/public-anonymous/"
+resolvers += "elastic-lucene-snapshots" at "http://s3.amazonaws.com/download.elasticsearch.org/lucenesnapshots/a128fcb"
 
 // Define a special test task which does not fail when any test fails, so sequential tasks will be performed no
 // matter the test result.
