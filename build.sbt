@@ -63,6 +63,7 @@ val enumeratumVersion = "1.5.15"
 val enumeratumPlayVersion = "1.5.17"
 val enumeratumSlickVersion = "1.5.16"
 val playUtilsVersion = "1.56"
+val poiVersion = "4.1.1-warwick"
 val akkaVersion = "2.6.3"
 val ssoClientVersion = "2.81"
 val warwickUtilsVersion = "20200415"
@@ -125,6 +126,10 @@ val appDeps = Seq(
   "com.beachape" %% "enumeratum-slick" % enumeratumSlickVersion,
 
   "org.apache.jclouds.api" % "filesystem" % "2.2.0",
+  "org.apache.poi" % "poi" % poiVersion,
+  "org.apache.poi" % "poi-ooxml" % poiVersion,
+  "org.apache.poi" % "poi-ooxml-schemas" % poiVersion,
+  "org.apache.poi" % "ooxml-schemas" % "1.4",
 
   "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1",
 

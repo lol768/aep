@@ -146,6 +146,8 @@ POST        /sysadmin/test/upload                   @controllers.sysadmin.Sysadm
 +nocsp
 GET         /sysadmin/test/:id/download             @controllers.sysadmin.SysadminTestController.downloadFile(id: UUID)
 
+GET         /sysadmin/clogs                         @controllers.sysadmin.SupportInvestigationController.test()
+
 +nocsrf
 POST        /api/errors/js                          @controllers.api.ErrorsController.js
 +nocsrf
