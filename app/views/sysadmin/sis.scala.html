@@ -1,0 +1,30 @@
+@import controllers.sysadmin.SupportInvestigationController.GenerateSpreadsheetForm
+
+@(generateSpreadsheetForm: Form[GenerateSpreadsheetForm])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
+
+@adminLayout("Support investigation tool") {
+    <h4>Generate spreadsheet</h4>
+
+    <p>This tool will find the student assessment/sitting for you, from the university ID and assessment ID. It'll look for all audit events written against the student assessment ID via the fields documented in the Jira.</p>
+
+    <p>Audit events will be added to a sheet called &quot;Audit&quot;, flattened from nested maps into dot-notation. The system will harvest source IP addresses as it processes e.g. the RecordNetworkActivity rows. It'll also try to determine the username (which of course may not match the university ID) from the audit entries.</p>
+
+    <p>Next, the service consults the access index. If no username was found, we hit SSO to look one up by university ID. Otherwise, we save the round-trip and use the username from one of the cached audit event log items.</p>
+
+    <p>If source IPs are available and have been harvested from the audit logs, we'll search with a disjunctive query on these and the username (where available). This means the access logs will accurately capture instances where the user ended up unauthenticated - perhaps their session expired - and had to re-hit the ACS endpoint. Note there is a risk of some pollution here in shared network situations.</p>
+
+    <p>All CLogS queries are constrained down to the assessment window, but we add a bit of leeway either side for the access logs sheet since it's sometimes useful to see e.g. the student arrive beforehand, or what they do immediately after.</p>
+
+    <p>Columns are reordered so that the most interesting are displayed on the left, automatically resized and then auto-filter'd so that it's reasonably straight-forward to filter down to specific event_types.</p>
+
+    @b3.vertical.formCSRF(action = controllers.sysadmin.routes.SupportInvestigationController.generateSpreadsheet()) { implicit vfc =>
+        @b3.text(generateSpreadsheetForm("uniId"), Symbol("_label") -> "Student id", Symbol("autocomplete") -> "off", Symbol("placeholder") -> "1234567")
+
+        @b3.text(generateSpreadsheetForm("assessment"), Symbol("_label") -> "Assessment id", Symbol("autocomplete") -> "off", Symbol("placeholder") -> "da3af017-97a1-4ced-b59d-d60dabb2b4b2")
+
+        @b3.free(Symbol("_class") -> "spaced-buttons") {
+            <button type="submit" class="btn btn-primary">Generate spreadsheet</button>
+        }
+    }
+
+}
