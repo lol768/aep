@@ -42,8 +42,8 @@ class SupportInvestigationServiceImpl @Inject()(
 
   val maxSize = 5000
 
-  var fetchFieldsForAuditIndex: Array[String] = Array[String]("username", "user-agent-detail.*", "request_headers.user-agent", "event_type", "source_ip", "onlineexams.*")
-  var fetchFieldsForAccessIndex: Array[String] = Array[String]("username", "user-agent-detail.*", "request_headers.*", "status_code", "response_headers.*", "geoip.*", "source_ip", "requested_uri", "method", "elapsed_time", "log_source_hostname")
+  var fetchFieldsForAuditIndex: Array[String] = Array[String]("@timestamp", "username", "user-agent-detail.*", "request_headers.user-agent", "event_type", "source_ip", "onlineexams.*")
+  var fetchFieldsForAccessIndex: Array[String] = Array[String]("@timestamp", "username", "user-agent-detail.*", "request_headers.*", "status_code", "response_headers.*", "geoip.*", "source_ip", "requested_uri", "method", "elapsed_time", "log_source_hostname")
 
   private def addAccessSheet(wb: SXSSFWorkbook, auditResult: AuditSheetResult, assessment: Assessment): Unit = {
     val start = assessment.startTime.get.minusHours(1)
