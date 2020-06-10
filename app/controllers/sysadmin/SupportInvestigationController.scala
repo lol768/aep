@@ -18,12 +18,10 @@ class SupportInvestigationController @Inject()(
 
   import security._
 
-  def generateSpreadsheet(): Action[AnyContent] = RequireSysadmin.async { implicit req =>
-    val userAssessmentId = req.getQueryString("assessment")
-    val uniId = req.getQueryString("uniId")
-    if (userAssessmentId.isEmpty || uniId.isEmpty)
+  def generateSpreadsheet(assessment: String, uniId: String): Action[AnyContent] = RequireSysadmin.async { implicit req =>
+    if (assessment.isEmpty || uniId.isEmpty)
       Future(BadRequest)
-    else sis.produceWorkbook(userAssessmentId.get, uniId.get, req.actualUser.get).successMap(wb => {
+    else sis.produceWorkbook(assessment, uniId, req.actualUser.get).successMap(wb => {
       val responseStream = new ByteArrayOutputStream()
       wb.write(responseStream)
       Ok(
