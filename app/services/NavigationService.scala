@@ -75,6 +75,7 @@ class NavigationServiceImpl @Inject()(
   private lazy val generateTabulaSubmissions = NavigationPage("Generate Tabula Submissions", controllers.sysadmin.routes.SysadminTestController.assignmentSubmissions())
   private lazy val objectStorage = NavigationPage("Object storage", controllers.sysadmin.routes.ObjectStorageDownloadController.form())
   private lazy val managementInformation = NavigationPage("Management information", controllers.sysadmin.routes.ManagementInformationController.home())
+  private lazy val supportInvestigation = NavigationPage("Support investigation tool", controllers.sysadmin.routes.SupportInvestigationController.form())
   private lazy val communicationReports = NavigationPage("Communication reports", controllers.admin.routes.CommunicationReportsController.index())
 
   private lazy val production = config.get[Boolean]("environment.production")
@@ -90,6 +91,7 @@ class NavigationServiceImpl @Inject()(
       generateTabulaSubmissions,
       objectStorage,
       managementInformation,
+      supportInvestigation,
     )
     if (production) baseItems else baseItems :+ dataGeneration
   }
