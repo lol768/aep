@@ -45,7 +45,7 @@ class SupportInvestigationServiceImpl @Inject()(
   var fetchFieldsForAuditIndex: Array[String] = Array[String]("username", "user-agent-detail.*", "request_headers.user-agent", "event_type", "source_ip", "onlineexams.*")
   var fetchFieldsForAccessIndex: Array[String] = Array[String]("username", "user-agent-detail.*", "request_headers.*", "status_code", "response_headers.*", "geoip.*", "source_ip", "requested_uri", "method", "elapsed_time", "log_source_hostname")
 
-  def addAccessSheet(wb: SXSSFWorkbook, auditResult: AuditSheetResult, assessment: Assessment): Unit = {
+  private def addAccessSheet(wb: SXSSFWorkbook, auditResult: AuditSheetResult, assessment: Assessment): Unit = {
     val start = assessment.startTime.get.minusHours(1)
     val end = assessment.lastAllowedStartTime.get.plusHours(1)
     val disjunctiveBuilder = QueryBuilders.boolQuery().minimumShouldMatch(1)
