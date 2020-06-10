@@ -18,9 +18,9 @@
     <p>Columns are reordered so that the most interesting are displayed on the left, automatically resized and then auto-filter'd so that it's reasonably straight-forward to filter down to specific event_types.</p>
 
     @b3.vertical.formCSRF(action = controllers.sysadmin.routes.SupportInvestigationController.generateSpreadsheet()) { implicit vfc =>
-        @b3.text(generateSpreadsheetForm("uniId"), Symbol("_label") -> "Student id", Symbol("autocomplete") -> "off", Symbol("placeholder") -> "1234567")
+        @b3.text(generateSpreadsheetForm("uniId"), Symbol("_label") -> "Student id", Symbol("placeholder") -> "1234567")
 
-        @b3.text(generateSpreadsheetForm("assessment"), Symbol("_label") -> "Assessment id", Symbol("autocomplete") -> "off", Symbol("placeholder") -> "da3af017-97a1-4ced-b59d-d60dabb2b4b2")
+        @b3.text(generateSpreadsheetForm("assessment"), Symbol("_label") -> "Assessment id", Symbol("placeholder") -> "da3af017-97a1-4ced-b59d-d60dabb2b4b2")
 
         @b3.free(Symbol("_class") -> "spaced-buttons") {
             <button type="submit" class="btn btn-primary">Generate spreadsheet</button>
