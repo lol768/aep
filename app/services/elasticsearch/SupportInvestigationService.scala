@@ -147,6 +147,7 @@ class SupportInvestigationServiceImpl @Inject()(
     val scroll = new Scroll(oneMinute)
     searchSourceBuilder.query(query)
     searchSourceBuilder.size(maxSize)
+    searchSourceBuilder.sort("@timestamp")
     searchSourceBuilder.timeout(oneMinute)
     searchSourceBuilder.fetchSource(fetchFields, null)
     searchRequest.source(searchSourceBuilder)
