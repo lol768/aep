@@ -123,7 +123,7 @@ class SupportInvestigationServiceImpl @Inject()(
     )
     val hits: ListBuffer[SearchHit] = queryToSpreadsheetResult.hits
     val sheet: SXSSFSheet = queryToSpreadsheetResult.sheet
-    val ips = hits.map(h => h.getSourceAsMap.getOrDefault("source_ip", null).toString).filterNot(v => v == null).distinct.toList
+    val ips = hits.map(h => h.getSourceAsMap.getOrDefault("source_ip", null)).filterNot(v => v == null).map(s => s.toString).distinct.toList
     val username = hits.filter(h => h.getSourceAsMap != null && h.getSourceAsMap.containsKey("username")).collectFirst(h => h.getSourceAsMap.get("username").toString)
     AuditSheetResult(sheet, ips, username)
   }
