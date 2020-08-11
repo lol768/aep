@@ -172,25 +172,25 @@ object Assessment {
     case object OpenBook extends AssessmentType {
       override val label: String = "Open Book Assessment"
       override val studentFriendlyLabel: String = "Open book"
-      override val validDurations: Seq[Long] = Seq(120, 180, 1440)
+      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180, 1440)
     }
 
     case object OpenBookFileBased extends AssessmentType {
       override val label: String = "Open Book Assessment, files based"
       override val studentFriendlyLabel: String = "Open book (file-based)"
-      override val validDurations: Seq[Long] = Seq(120, 180, 1440)
+      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180, 1440)
     }
 
     case object Spoken extends AssessmentType {
       override val label: String = "Spoken Open Book Assessment"
       override val studentFriendlyLabel: String = "Open book (spoken)"
-      override val validDurations: Seq[Long] = Seq(120, 180)
+      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180)
     }
 
     case object MultipleChoice extends AssessmentType {
       override val label: String = "MCQ"
       override val studentFriendlyLabel: String = "Multiple choice"
-      override val validDurations: Seq[Long] = Seq(120, 180)
+      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180)
     }
 
     case object Bespoke extends AssessmentType {
