@@ -4,7 +4,6 @@
 
 @(assessment: BaseAssessment)
 @assessment.duration match {
-  case Some(d) if d == Duration.ofHours(2) => { Up to 2 hours }
   case Some(d) => { @DurationFormatUtils.formatDurationWords(d.toMillis, true, true) }
   case None => { <span class="muted">N/A</span> }
 }
