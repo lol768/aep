@@ -8,7 +8,7 @@
 @defining(existing.exists(_.tabulaAssessmentId.nonEmpty)) { disabled =>
     @b3.radio(
         form("durationStyle"),
-        Symbol("_label") -> "Duration style"
+        Symbol("_label") -> (if (disabled) "Duration style (as agreed by FAARG)" else "Duration style")
     ) { implicit extraInfo =>
         @DurationStyle.values.map { s =>
             @b3.radioOption(s.entryName, s.label, Seq(Symbol("disabled") -> true).filter(_ => disabled): _*)
