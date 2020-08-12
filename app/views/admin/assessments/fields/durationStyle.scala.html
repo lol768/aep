@@ -6,6 +6,9 @@
 @(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
 
 @defining(existing.exists(_.tabulaAssessmentId.nonEmpty)) { disabled =>
+    @if(disabled) {
+        @b3.hidden(form("durationStyle"))
+    }
     @b3.radio(
         form("durationStyle"),
         Symbol("_label") -> (if (disabled) "Duration style (as agreed by FAARG)" else "Duration style")
