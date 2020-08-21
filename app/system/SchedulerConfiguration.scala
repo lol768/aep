@@ -20,7 +20,7 @@ class SchedulerConfiguration @Inject()(
   configureScheduledJob(
     JobKeys.ImportAssessmentJob.name,
     JobBuilder.newJob(classOf[ImportTabulaAssessmentsJob]),
-    CronScheduleBuilder.cronSchedule("0 30 * * * ?") // Every hour, xx:30
+    CronScheduleBuilder.cronSchedule("0-3,6-23 30 * * * ?") // Every hour, xx:30 (avoid 4am-6am reboot time)
   )
 
   configureScheduledJob(
@@ -33,7 +33,7 @@ class SchedulerConfiguration @Inject()(
   configureScheduledJob(
     JobKeys.TriggerSubmissionUploadsJob.name,
     JobBuilder.newJob(classOf[TriggerSubmissionUploadsJob]),
-    CronScheduleBuilder.cronSchedule("0 0 * * * ?") //  Every hour on the hour
+    CronScheduleBuilder.cronSchedule("0-3,6-23 5 * * * ?") //  Every hour, xx:05 (avoid running on the hour or between 4am-6am due to scheduled reboots)
   )
 
   logger.info("Starting the scheduler")

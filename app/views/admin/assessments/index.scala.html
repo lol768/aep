@@ -4,6 +4,56 @@
 
 @(assessments: Seq[Assessment])(implicit context: RequestContext)
 
+@assessmentsTable(title: String, assessments: Seq[Assessment]) = {
+  @if(assessments.nonEmpty) {
+    <h2>@title</h2>
+    <table class="table table-striped table-sortable">
+      <thead>
+        <tr>
+          <th>Module code</th>
+          <th>Paper code</th>
+          <th>Section</th>
+          <th>Title</th>
+          <th>Date/time</th>
+          <th>Duration</th>
+          <th>Type</th>
+          <th>State</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @assessments.map { assessment =>
+          <tr>
+            <td>@assessment.moduleCode</td>
+            <td>@assessment.paperCode</td>
+            <td>@assessment.section.getOrElse("")</td>
+            <td>@assessment.title</td>
+            <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
+              @assessment.startTime.map(views.html.tags.localisedDatetime(_))
+            </td>
+            <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
+              @durationWords(assessment)
+            </td>
+            <td>
+              @assessment.assessmentType.map(_.label).getOrElse("")
+            </td>
+            <td>
+              <label class="@assessment.state.cssClass">
+                @assessment.state.label
+              </label>
+            </td>
+            <td class="text-right">
+              <a href="@controllers.admin.routes.AdminAssessmentsController.view(assessment.id)" class="btn btn-default btn-sm">View all information</a>
+              <a href="@controllers.admin.routes.AdminAssessmentsController.studentPreview(assessment.id)" class="btn btn-default btn-sm">Preview as student</a>
+              <a href="@controllers.admin.routes.AdminAssessmentsController.updateForm(assessment.id)" class="btn btn-default btn-sm">Edit</a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+}
+
 @adminLayout("Assessments") {
   <h2>Assessments for setup</h2>
   <div class="row">
@@ -15,48 +65,8 @@
       </a>
     </div>
   </div>
-  <table class="table table-striped table-sortable">
-    <thead>
-      <tr>
-        <th>Module code</th>
-        <th>Paper code</th>
-        <th>Section</th>
-        <th>Title</th>
-        <th>Date/time</th>
-        <th>Duration</th>
-        <th>Type</th>
-        <th>State</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      @assessments.map { assessment =>
-        <tr>
-          <td>@assessment.moduleCode</td>
-          <td>@assessment.paperCode</td>
-          <td>@assessment.section.getOrElse("")</td>
-          <td>@assessment.title</td>
-          <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
-            @assessment.startTime.map(views.html.tags.localisedDatetime(_))
-          </td>
-          <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
-            @durationWords(assessment)
-          </td>
-          <td>
-            @assessment.assessmentType.map(_.label).getOrElse("")
-          </td>
-          <td>
-            <label class="@assessment.state.cssClass">
-              @assessment.state.label
-            </label>
-          </td>
-          <td class="text-right">
-            <a href="@controllers.admin.routes.AdminAssessmentsController.view(assessment.id)" class="btn btn-default btn-sm">View all information</a>
-            <a href="@controllers.admin.routes.AdminAssessmentsController.studentPreview(assessment.id)" class="btn btn-default btn-sm">Preview as student</a>
-            <a href="@controllers.admin.routes.AdminAssessmentsController.updateForm(assessment.id)" class="btn btn-default btn-sm">Edit</a>
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
+
+  @assessmentsTable("Current assessments", assessments.filter(_.isCurrent))
+  @assessmentsTable("Upcoming assessments", assessments.filter(_.isInFuture))
+  @assessmentsTable("Past assessments", assessments.filter(a => !a.isCurrent && !a.isInFuture))
 }
