@@ -90,11 +90,26 @@ class TabulaAssessmentImportServiceImpl @Inject()(
     logger.info(s"Processing department $departmentCode")
 
     traverseSerial(examProfileCodes) { examProfileCode =>
-      tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, inUseOnly = false, Some(examProfileCode)))
-        .successFlatMapTo { assessmentComponents =>
-          traverseSerial(assessmentComponents)(generateAssessment(_, examProfileCode))
+      ServiceResults.zip(
+        assessmentService.listForExamProfileCodeWithStudentCount(examProfileCode)
+          .successMapTo(_.map(_._1).filter(a => a.departmentCode.lowerCase == departmentCode.toLowerCase && a.tabulaAssessmentId.nonEmpty)),
+        tabulaAssessmentService.getAssessments(GetAssessmentsOptions(departmentCode, withExamPapersOnly = true, inUseOnly = false, Some(examProfileCode)))
+      ).successFlatMapTo { case (existing, assessmentComponents) =>
+        val updates = traverseSerial(assessmentComponents)(generateAssessment(_, examProfileCode)).successMapTo(_.flatten)
+
+        val assessmentIdsToDelete =
+          existing.filterNot(_.tabulaAssessmentId.exists(assessmentComponents.map(_.id).contains))
+
+        if (assessmentIdsToDelete.isEmpty) updates
+        else {
+          val deletions = assessmentService.getByIds(assessmentIdsToDelete.map(_.id)).successFlatMapTo { assessments =>
+            traverseSerial(assessments)(assessmentService.delete)
+          }
+
+          ServiceResults.zip(updates, deletions).successMapTo(_._1)
         }
-    }.successMapTo(components => DepartmentWithAssessments(departmentCode, components.flatten.flatten))
+      }
+    }.successMapTo(assessments => DepartmentWithAssessments(departmentCode, assessments.flatten))
   }
 
   private def generateAssessment(ac: AssessmentComponent, examProfileCode: String)(implicit ctx: AuditLogContext): Future[ServiceResult[Option[Assessment]]] = {
