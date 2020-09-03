@@ -65,7 +65,7 @@ val enumeratumSlickVersion = "1.5.16"
 val playUtilsVersion = "1.56"
 val poiVersion = "4.1.1-warwick"
 val akkaVersion = "2.6.3"
-val ssoClientVersion = "2.81"
+val ssoClientVersion = "2.82"
 val warwickUtilsVersion = "20200415"
 
 val appDeps = Seq(
