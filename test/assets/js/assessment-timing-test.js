@@ -259,7 +259,7 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: 'This assessment will start at 18:56, Thursday 11th April 2019, in 1 hour and 30 minutes.',
+      text: 'This assessment will start at 18:56, Thursday 11th April 2019 BST, in 1 hour and 30 minutes.',
       allowStart: false,
       hourglassSpins: true
     })
@@ -274,7 +274,7 @@ describe('calculateTimingInfo', () => {
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,
-      text: 'This assessment began at 17:16, Thursday 11th April 2019. Start now.',
+      text: 'This assessment began at 17:16, Thursday 11th April 2019 BST. Start now.',
       allowStart: true,
       hourglassSpins: true
     })

@@ -156,11 +156,11 @@ export function calculateTimingInfo(data, now) {
     switch (durationStyle) {
       case 'FixedStart':
         if (timeUntilStart > 0) {
-          text = `This assessment will start at ${new JDDT(windowStart).localString(false)}, in ${msToHumanReadable(timeUntilStart)}.`;
+          text = `This assessment will start at ${new JDDT(windowStart).localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
           warning = true;
           hourglassSpins = true;
         } else if (timeUntilEndOfWindow > 0) {
-          text = `This assessment began at ${new JDDT(windowStart).localString(false)}. Start now.`;
+          text = `This assessment began at ${new JDDT(windowStart).localString(true)}. Start now.`;
           hourglassSpins = true;
           warning = true;
         } else {
