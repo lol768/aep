@@ -49,3 +49,10 @@
         }
     </dd>
 }
+
+@assessment.startTime.map { startTime =>
+    <dt>Start time</dt>
+    <dd>
+        @localisedDatetime(startTime)
+    </dd>
+}
