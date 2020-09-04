@@ -160,7 +160,7 @@ export function calculateTimingInfo(data, now) {
           warning = true;
           hourglassSpins = true;
         } else if (timeUntilEndOfWindow > 0) {
-          text = `This assessment began at ${new JDDT(windowStart).localString(false)}. Start now.`;
+          text = `This assessment began at ${new JDDT(windowStart).localString(true)}. Start now.`;
           hourglassSpins = true;
           warning = true;
         } else {
