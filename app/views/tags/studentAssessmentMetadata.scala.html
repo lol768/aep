@@ -17,7 +17,7 @@
         }
     }
 
-    @if(assessment.finalised) {
+    @if(assessment.started) {
         @assessment.assessment.durationStyle match {
             case DayWindow => {
                 <dt>Started at</dt>
@@ -28,10 +28,12 @@
                 <dd>@tags.localisedDatetime(assessment.assessment.startTime.get)</dd>
             }
         }
+    }
 
+    @if(assessment.finalised) {
         <dt>Finished at</dt>
         @assessment.studentAssessment.submissionTime.map { time =>
-        <dd>@tags.localisedDatetime(time)</dd>
+            <dd>@tags.localisedDatetime(time)</dd>
         }.getOrElse {
             <dd><span class="text-danger">(Missing)</span></dd>
         }
