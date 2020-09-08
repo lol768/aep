@@ -20,8 +20,11 @@
         <dt>State</dt>
         <dd>@assessment.state.label</dd>
 
+        <dt>AEP assessment ID</dt>
+        <dd>@assessment.id</dd>
+
         @assessment.tabulaAssessmentId.map { tabulaId =>
-            <dt>TabulaAssessment id</dt>
+            <dt>Tabula assessment ID</dt>
             <dd>@tabulaId</dd>
         }
 
