@@ -66,7 +66,7 @@
                         <td>@activity.effectiveType.getOrElse("-")</td>
                         <td>@activity.rtt.getOrElse("-")</td>
                         <td>@{activity.`type`.getOrElse("-")}</td>
-                        <td>@{assessments.get(activity.studentAssessmentId.get).map(_.moduleCode)}</td>
+                        <td><abbr title="@{assessments.get(activity.studentAssessmentId.get).map(_.id)}">@{assessments.get(activity.studentAssessmentId.get).map(_.moduleCode)}</abbr></td>
                     </tr>
                     }
                 </tbody>
