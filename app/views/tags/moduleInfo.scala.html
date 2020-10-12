@@ -31,9 +31,9 @@
         <dt>Platforms</dt>
         <dd>@assessment.platform.map(_.label).mkString(", ")</dd>
 
-        @assessment.assessmentType.map { at =>
+        @assessment.durationStyle.map { d =>
             <dt>Type</dt>
-            <dd>@at.studentFriendlyLabel</dd>
+            <dd>@d.label</dd>
         }
 
         <dt>Starts at</dt>

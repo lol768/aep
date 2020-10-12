@@ -31,8 +31,7 @@ object AssessmentsTables {
     startTime: Option[OffsetDateTime],
     duration: Option[Duration],
     platform: Set[Platform],
-    assessmentType: Option[AssessmentType],
-    durationStyle: DurationStyle,
+    durationStyle: Option[DurationStyle],
     storedBrief: StoredBrief,
     invigilators: List[String],
     state: State,
@@ -55,7 +54,6 @@ object AssessmentsTables {
         startTime,
         duration,
         platform,
-        assessmentType,
         durationStyle,
         storedBrief.asBrief(fileMap, platform),
         invigilators.map(Usercode).toSet,
@@ -77,7 +75,6 @@ object AssessmentsTables {
         startTime,
         duration,
         platform,
-        assessmentType,
         durationStyle,
         storedBrief.asBriefWithoutFiles(platform),
         invigilators.map(Usercode).toSet,
@@ -101,7 +98,6 @@ object AssessmentsTables {
         startTime,
         duration,
         platform,
-        assessmentType,
         durationStyle,
         storedBrief,
         invigilators,
@@ -134,8 +130,7 @@ object AssessmentsTables {
     startTime: Option[OffsetDateTime],
     duration: Option[Duration],
     platform: Set[Platform],
-    assessmentType: Option[AssessmentType],
-    durationStyle: DurationStyle,
+    durationStyle: Option[DurationStyle],
     storedBrief: StoredBrief,
     invigilators: List[String],
     state: State,
@@ -385,13 +380,15 @@ class AssessmentDaoImpl @Inject()(
       def biggestAdjustment: Rep[Duration] =
         biggestAdjustmentPerHour * durationInHours
 
-      val totalTime = Case If a.isDayWindow Then {
+      val totalTime = Case If a.durationStyle === (Some(DurationStyle.DayWindow):Option[DurationStyle]) Then {
         LiteralColumn(Option(Assessment.dayWindow))
-      } Else {
+      } If a.durationStyle === (Some(DurationStyle.FixedStart):Option[DurationStyle]) Then {
         a.duration +
           Assessment.uploadGraceDuration +
           Assessment.lateSubmissionPeriod +
           biggestAdjustment
+      } Else {
+        LiteralColumn(None)
       }
 
       val lastTime: Rep[Option[OffsetDateTime]] =

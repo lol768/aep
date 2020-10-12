@@ -4,8 +4,7 @@ import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import domain.Assessment.State.Imported
-import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform}
-import services.tabula.TabulaResponseParsers.SitsAssessmentType
+import domain.Assessment.{Brief, DurationStyle, Platform}
 import uk.ac.warwick.util.termdates.AcademicYear
 
 package object tabula {
@@ -49,27 +48,14 @@ package object tabula {
 
   case class AssessmentComponent(
     id: UUID,
-    assessmentType: SitsAssessmentType,
     name: String,
     examPaper: Option[ExamPaper],
     module: Module,
     fullModuleCode: String,
     sequence: String
   ) {
-    def asAssessment(existingAssessment: Option[Assessment], schedule: ExamPaperSchedule, overwriteAssessmentType: Boolean): Assessment = {
+    def asAssessment(existingAssessment: Option[Assessment], schedule: ExamPaperSchedule): Assessment = {
       val paper = examPaper.get
-
-      lazy val locationNameToAssessmentType: Option[AssessmentType] =
-        schedule.locationName.flatMap {
-          case "Open book assessment" => Some(AssessmentType.OpenBook)
-          case "Open Book Assessment, files based" | "Files-based open book assessment" => Some(AssessmentType.OpenBookFileBased)
-          case "MCQ" | "Multiple Choice Questions" => Some(AssessmentType.MultipleChoice)
-          case "Spoken exam under time conditions" | "Spoken Open Book Assessment" => Some(AssessmentType.Spoken)
-          case "Bespoke Option (only if previously agreed) " | "Bespoke Option" | "Bespoke Online Assessment" => Some(AssessmentType.Bespoke)
-
-          // This allows the department to modify it directly in the AEP for values like "Fixed-time assessment"
-          case _ => None
-        }
 
       Assessment(
         id = existingAssessment.map(_.id).getOrElse(UUID.randomUUID()),
@@ -79,16 +65,7 @@ package object tabula {
         startTime = Some(schedule.startTime),
         duration = existingAssessment.flatMap(_.duration),
         platform = existingAssessment.map(_.platform).getOrElse(Set[Platform]()),
-        assessmentType = {
-          if (overwriteAssessmentType)
-            locationNameToAssessmentType.orElse(existingAssessment.flatMap(_.assessmentType))
-          else
-            existingAssessment.flatMap(_.assessmentType).orElse(locationNameToAssessmentType)
-        },
-        durationStyle = {
-          if (schedule.locationName.contains("Fixed-time assessment")) DurationStyle.FixedStart
-          else DurationStyle.DayWindow
-        },
+        durationStyle = None,
         brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, Map.empty)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
         state = existingAssessment.map(_.state).getOrElse(Imported),

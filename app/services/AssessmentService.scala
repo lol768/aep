@@ -208,7 +208,6 @@ class AssessmentServiceImpl @Inject()(
           startTime = assessment.startTime,
           duration = assessment.duration,
           platform = assessment.platform,
-          assessmentType = assessment.assessmentType,
           durationStyle = assessment.durationStyle,
           storedBrief = StoredBrief(
             text = assessment.brief.text,
@@ -252,7 +251,6 @@ class AssessmentServiceImpl @Inject()(
           startTime = assessment.startTime,
           duration = assessment.duration,
           platform = assessment.platform,
-          assessmentType = assessment.assessmentType,
           durationStyle = assessment.durationStyle,
           storedBrief = StoredBrief(
             text = assessment.brief.text,
@@ -291,7 +289,6 @@ class AssessmentServiceImpl @Inject()(
               duration = assessment.duration,
               durationStyle = assessment.durationStyle,
               platform = assessment.platform,
-              assessmentType = assessment.assessmentType,
               storedBrief = assessment.brief.toStoredBrief,
               invigilators = assessment.invigilators.map(_.string).toList,
               state = assessment.state,
@@ -314,7 +311,6 @@ class AssessmentServiceImpl @Inject()(
             startTime = assessment.startTime,
             duration = assessment.duration,
             platform = assessment.platform,
-            assessmentType = assessment.assessmentType,
             durationStyle = assessment.durationStyle,
             storedBrief = assessment.brief.toStoredBrief,
             invigilators = sortedInvigilators(assessment),

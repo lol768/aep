@@ -38,7 +38,6 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
             result.paperCode mustBe ass.paperCode
             result.section mustBe ass.section
             result.title mustBe ass.title
-            result.assessmentType mustBe ass.assessmentType
             result.platform mustBe ass.platform
             result.startTime mustBe ass.startTime
             result.duration mustBe ass.duration
@@ -76,7 +75,6 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
           result.paperCode mustBe ass.paperCode
           result.section mustBe ass.section
           result.title mustBe "is this fine yet"
-          result.assessmentType mustBe ass.assessmentType
           result.platform mustBe ass.platform
           result.startTime mustBe ass.startTime
           result.duration mustBe ass.duration
@@ -185,7 +183,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       val fixedStartAssessment = Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(
         startTime = dayWindowAssessment.startTime,
         duration = Some(Duration.ofHours(2)),
-        durationStyle = DurationStyle.FixedStart
+        durationStyle = Some(DurationStyle.FixedStart)
       )
 
       val assessments = Seq(dayWindowAssessment, fixedStartAssessment)

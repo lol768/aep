@@ -248,20 +248,8 @@ object TabulaResponseParsers {
     (__ \ "name").read[String]
   ) (Module.apply _)
 
-  case class SitsAssessmentType(
-    astCode: String,
-    name: String,
-    code: String,
-    value: String
-  )
-
-  object SitsAssessmentType {
-    implicit val format: OFormat[SitsAssessmentType] = Json.format[SitsAssessmentType]
-  }
-
   val assessmentComponentReads: Reads[AssessmentComponent] = (
     (__ \ "id").read[UUID] and
-    (__ \ "type").read[SitsAssessmentType] and
     (__ \ "name").read[String] and
     (__ \ "examPaper").readNullable[ExamPaper](examPaperReads) and
     (__ \ "module").read[Module](moduleReads) and

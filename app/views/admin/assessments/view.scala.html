@@ -12,7 +12,6 @@
   department: Option[Department],
   invigilators: Seq[(Usercode, String)],
   invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
-  allowAssessmentTypeChangesOnImportedAssessments: Boolean,
   numberOfPlatforms: Int = 2
 )(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 

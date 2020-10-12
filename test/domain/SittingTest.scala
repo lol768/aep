@@ -3,7 +3,7 @@ package domain
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
-import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform}
+import domain.Assessment.{Brief, DurationStyle, Platform}
 import domain.BaseSitting.ProgressState._
 import domain.BaseSitting.SubmissionState
 import helpers.SimpleSemanticRelativeTime
@@ -12,8 +12,8 @@ import org.scalatestplus.play.PlaySpec
 import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFile
 import warwick.sso.{UniversityID, Usercode}
-import scala.language.implicitConversions
-import scala.language.postfixOps
+
+import scala.language.{implicitConversions, postfixOps}
 
 class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelativeTime {
 
@@ -38,8 +38,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       startTime = assessmentStart,
       duration = assessmentDuration,
       platform = Set(Platform.OnlineExams),
-      assessmentType = Some(AssessmentType.Bespoke),
-      durationStyle = durationStyle,
+      durationStyle = Some(durationStyle),
       state = Assessment.State.Approved,
       tabulaAssessmentId = Some(UUID.randomUUID()),
       tabulaAssignments = Set.empty,
