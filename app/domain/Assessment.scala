@@ -6,6 +6,7 @@ import java.util.UUID
 import domain.Assessment._
 import domain.dao.AssessmentsTables.StoredBrief
 import enumeratum.{EnumEntry, PlayEnum}
+import play.twirl.api.Html
 import warwick.core.helpers.JavaTime
 import warwick.fileuploads.UploadedFile
 import warwick.sso.Usercode
@@ -159,17 +160,28 @@ object Assessment {
 
   sealed trait DurationStyle extends EnumEntry {
     val label: String
+    val shortLabel: Html
     val validDurations: Seq[Long]
   }
   object DurationStyle extends PlayEnum[DurationStyle] {
     /** 24 hour window to start */
     case object DayWindow extends DurationStyle {
       override val label: String = "Timed assessment to be completed within a 24 hours window"
+      override val shortLabel: Html = Html("""
+        <span data-toggle="tooltip" data-placement="top" title="%s">
+          24 hour window
+        </span>
+      """.format(label))
       override val validDurations: Seq[Long] = Seq(60, 90, 120, 180)
     }
     /** No window, exam starts at fixed time */
     case object FixedStart extends DurationStyle {
       override val label: String = "Timed assessment starting at a set time"
+      override val shortLabel: Html = Html("""
+        <span data-toggle="tooltip" data-placement="top" title="%s">
+          Fixed start time
+        </span>
+      """.format(label))
       override val validDurations: Seq[Long] = Seq(60, 90, 120, 180)
     }
     override def values: IndexedSeq[DurationStyle] = findValues
