@@ -76,18 +76,20 @@ object AdminAssessmentsController {
     title: String,
     platform: Set[Platform],
     durationMinutes: Option[Long],
-    durationStyle: DurationStyle,
+    durationStyle: Option[DurationStyle],
     urls: Map[Platform, String],
     description: Option[String],
     invigilators: Set[Usercode],
   )
 
   val durationConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
-    val validDuration = assessmentForm.durationMinutes
-      .map(d => assessmentForm.durationStyle.validDurations.contains(d))
-      .getOrElse(assessmentForm.durationStyle.validDurations.isEmpty)
-    if (validDuration) Valid
-    else Invalid(Seq(ValidationError("error.assessment.duration-not-valid", assessmentForm.durationStyle.label)))
+    assessmentForm.durationStyle.map { at =>
+      val validDuration = assessmentForm.durationMinutes
+          .map(d => at.validDurations.contains(d))
+          .getOrElse(at.validDurations.isEmpty)
+      if (validDuration) Valid
+        else Invalid(Seq(ValidationError("error.assessment.duration-not-valid", at.label)))
+    }.getOrElse(Valid) // if duration style isn't defined don't validate on duration
   }
 
   val platformConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
@@ -129,7 +131,7 @@ object AdminAssessmentsController {
       "title" -> nonEmptyText,
       "platform" -> platformsMapping,
       "durationMinutes" -> optional(longNumber),
-      "durationStyle" -> DurationStyle.formField,
+      "durationStyle" -> optional(DurationStyle.formField),
       "urls" -> mapping[Map[Platform, String], Option[String], Option[String], Option[String], Option[String], Option[String]](
         Platform.OnlineExams.entryName -> optional(text),
         Platform.Moodle.entryName -> optional(text),
@@ -158,6 +160,7 @@ object AdminAssessmentsController {
 
     Form(
       if (ready) baseMapping
+        .verifying("error.assessment.duration-style-not-specified", data => data.durationStyle.isDefined)
         .verifying(urlConstraint)
         .verifying(durationConstraint)
         .verifying(platformConstraint)

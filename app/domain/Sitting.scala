@@ -74,8 +74,9 @@ sealed trait BaseSitting {
     lateEnd.exists(_.isBefore(JavaTime.offsetDateTime))
 
   lazy val effectiveStartTime: Option[OffsetDateTime] = assessment.durationStyle match {
-    case DurationStyle.DayWindow => studentAssessment.startTime
-    case DurationStyle.FixedStart => assessment.startTime
+    case Some(DurationStyle.DayWindow) => studentAssessment.startTime
+    case Some(DurationStyle.FixedStart) => assessment.startTime
+    case _ => None
   }
 
   lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }

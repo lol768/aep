@@ -9,8 +9,10 @@
     @assessment.moduleCode
 </dd>
 
-<dt>Type</dt>
-<dd>@assessment.durationStyle.label</dd>
+@assessment.durationStyle.map { d =>
+    <dt>Type</dt>
+    <dd>@d.label</dd>
+}
 
 @assessment.brief.text.map { description =>
     <dt>Details</dt>
@@ -28,16 +30,17 @@
 
         @if(!assessment.hasLastAllowedStartTimePassed()) {
             @assessment.durationStyle match {
-                case DayWindow => {
+                case Some(DayWindow) => {
                     <div>
                         <i class="fad fa-fw fa-calendar-day" aria-hidden="true"></i> Complete anytime within the 24 hours
                     </div>
                 }
-                case FixedStart => {
+                case Some(FixedStart) => {
                     <div class="text-danger">
                         <i class="fad fa-fw fa-watch" aria-hidden="true"></i> This is a fixed time assessment. It does not run in a 24 hour window, so you must begin at the start time.
                     </div>
                 }
+                case _ => {}
             }
         }
     </dd>

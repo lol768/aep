@@ -38,7 +38,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       startTime = assessmentStart,
       duration = assessmentDuration,
       platform = Set(Platform.OnlineExams),
-      durationStyle = durationStyle,
+      durationStyle = Some(durationStyle),
       state = Assessment.State.Approved,
       tabulaAssessmentId = Some(UUID.randomUUID()),
       tabulaAssignments = Set.empty,

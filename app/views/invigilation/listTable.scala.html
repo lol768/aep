@@ -30,7 +30,9 @@
             <td>@assessment.section.getOrElse("")</td>
             <td>@assessment.title</td>
             <td>
-              @assessment.durationStyle.shortLabel
+              @assessment.durationStyle.map { d =>
+                @d.shortLabel
+              }
             </td>
             <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
               @durationWords(assessment)

@@ -5,6 +5,7 @@ const MINUTE = 60000;
 const BASE_TIME = 1555000000000; // Thu Apr 11 2019 17:26:40
 
 const dataDefaults = {
+  durationStyle: 'DayWindow',
   submissionState: SubmissionState.None
 };
 
@@ -35,7 +36,7 @@ describe('calculateTimingInfo', () => {
       ...dataDefaults,
       windowStart: BASE_TIME + 90*MINUTE,
       windowEnd: BASE_TIME + 360*MINUTE,
-      lastRecommendedStart: BASE_TIME + 105*MINUTE + 90*MINUTE
+      lastRecommendedStart: BASE_TIME + 105*MINUTE + 90*MINUTE,
     }, BASE_TIME);
     expect(result).to.deep.equal({
       warning: true,

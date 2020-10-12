@@ -36,7 +36,7 @@ class AssessmentTables @Inject()(
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
     def duration = column[Option[Duration]]("duration")
     def platform = column[Set[Platform]]("platform")
-    def durationStyle = column[DurationStyle]("duration_style")
+    def durationStyle = column[Option[DurationStyle]]("duration_style")
     def storedBrief = column[StoredBrief]("brief")
     def invigilators = column[List[String]]("invigilators")
     def state = column[State]("state")
@@ -78,9 +78,6 @@ class AssessmentTables @Inject()(
       version ::
       HNil
     ).mappedWith(Generic[StoredAssessment])
-
-    def isDayWindow: Rep[Boolean] =
-      durationStyle === (DurationStyle.DayWindow: DurationStyle)
 
     def paperCodeIndex = index("idx_assessment_papercode", (paperCode, section, examProfileCode))
     def tabulaAssessmentIndex = index("idx_assessment_tabula", (tabulaAssessmentId, examProfileCode), unique = true)

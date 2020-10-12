@@ -21,7 +21,7 @@ case class AssessmentTimingUpdate(
   showTimeRemaining: Boolean,
   progressState: Option[ProgressState],
   submissionState: SubmissionState,
-  durationStyle: DurationStyle,
+  durationStyle: Option[DurationStyle],
 )
 
 object AssessmentTimingUpdate {

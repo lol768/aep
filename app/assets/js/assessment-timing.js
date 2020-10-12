@@ -168,7 +168,7 @@ export function calculateTimingInfo(data, now) {
           warning = true;
         }
         break;
-      default:
+      case 'DayWindow':
         if (timeUntilStart > 0) {
           text = `You can start between ${new JDDT(windowStart).localString(false)} and ${new JDDT(windowEnd).localString(true)}, in ${msToHumanReadable(timeUntilStart)} unless otherwise advised by your department.`;
           warning = true;
@@ -187,6 +187,9 @@ export function calculateTimingInfo(data, now) {
           text = 'The assessment window has now passed.';
           warning = true;
         }
+        break;
+      default:
+        break;
     }
   }
 

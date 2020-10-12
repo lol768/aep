@@ -27,7 +27,9 @@
             @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)
           </td>
           <td>
-            @assessment.durationStyle.shortLabel
+            @assessment.durationStyle.map { d =>
+              @d.shortLabel
+            }
           </td>
           <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
             @durationWords(assessment)
