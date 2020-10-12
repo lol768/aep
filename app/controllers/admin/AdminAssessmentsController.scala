@@ -4,10 +4,11 @@ import java.time.{Duration, LocalDateTime}
 import java.util.UUID
 
 import akka.Done
+import controllers.invigilation.InvigilatorAssessmentController.lookupInvigilatorUsers
 import controllers.{BaseController, FormMappings}
-import domain.Assessment.{AssessmentType, Brief, DurationStyle, Platform, State}
+import domain.Assessment.{Brief, DurationStyle, Platform, State}
 import domain.tabula.SitsProfile
-import domain.{Assessment, Department, DepartmentCode, Sitting, StudentAssessment}
+import domain.{Assessment, Department, DepartmentCode, StudentAssessment}
 import helpers.StringUtils._
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
@@ -20,15 +21,14 @@ import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaAssessmentService, TabulaAssignmentService, TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentClientNetworkActivityService, AssessmentService, SecurityService, StudentAssessmentService}
-import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.helpers.ServiceResults.ServiceResult
+import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.timing.TimingContext
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.{TemporaryUploadedFile, UploadedFileConfiguration}
 import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService, Usercode}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
-import controllers.invigilation.InvigilatorAssessmentController.lookupInvigilatorUsers
 
 object AdminAssessmentsController {
 
@@ -75,7 +75,6 @@ object AdminAssessmentsController {
     students: Set[UniversityID],
     title: String,
     platform: Set[Platform],
-    assessmentType: Option[AssessmentType],
     durationMinutes: Option[Long],
     durationStyle: DurationStyle,
     urls: Map[Platform, String],
@@ -84,13 +83,11 @@ object AdminAssessmentsController {
   )
 
   val durationConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
-    assessmentForm.assessmentType.map { at =>
-      val validDuration = assessmentForm.durationMinutes
-        .map(d => at.validDurations.contains(d))
-        .getOrElse(at.validDurations.isEmpty)
-      if (validDuration) Valid
-      else Invalid(Seq(ValidationError("error.assessment.duration-not-valid", at.label)))
-    }.getOrElse(Valid) // if assessment type isn't defined don't validate on duration
+    val validDuration = assessmentForm.durationMinutes
+      .map(d => assessmentForm.durationStyle.validDurations.contains(d))
+      .getOrElse(assessmentForm.durationStyle.validDurations.isEmpty)
+    if (validDuration) Valid
+    else Invalid(Seq(ValidationError("error.assessment.duration-not-valid", assessmentForm.durationStyle.label)))
   }
 
   val platformConstraint: Constraint[AssessmentFormData] = Constraint { assessmentForm =>
@@ -131,7 +128,6 @@ object AdminAssessmentsController {
       "students" -> existing.filter(_.tabulaAssessmentId.nonEmpty).map(_ => ignored(Set.empty[UniversityID])).getOrElse(studentsFieldMapping),
       "title" -> nonEmptyText,
       "platform" -> platformsMapping,
-      "assessmentType" -> optional(AssessmentType.formField),
       "durationMinutes" -> optional(longNumber),
       "durationStyle" -> DurationStyle.formField,
       "urls" -> mapping[Map[Platform, String], Option[String], Option[String], Option[String], Option[String], Option[String]](
@@ -162,7 +158,6 @@ object AdminAssessmentsController {
 
     Form(
       if (ready) baseMapping
-        .verifying("error.assessment.assessment-type-not-specified", data => data.assessmentType.isDefined)
         .verifying(urlConstraint)
         .verifying(durationConstraint)
         .verifying(platformConstraint)
@@ -195,7 +190,6 @@ class AdminAssessmentsController @Inject()(
   import security._
 
   private[this] lazy val uploadedFileConfig = UploadedFileConfiguration.fromConfiguration(configuration)
-  private[this] lazy val overwriteAssessmentTypeOnImport = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
 
   def index: Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     assessmentService.findByStates(Seq(State.Draft, State.Imported, State.Approved)).successMap { assessments =>
@@ -217,13 +211,13 @@ class AdminAssessmentsController @Inject()(
       studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
-          Ok(views.html.admin.assessments.form(assessment, studentAssessments, studentInformation, assessmentForm, departments, !overwriteAssessmentTypeOnImport, canBeDeleted(assessment, studentAssessments)))
+          Ok(views.html.admin.assessments.form(assessment, studentAssessments, studentInformation, assessmentForm, departments, canBeDeleted(assessment, studentAssessments)))
         }
     }
 
   def createForm(): Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     departments().successMap { departments =>
-      Ok(views.html.admin.assessments.create(formMapping(existing = None).copy(data = Map("durationStyle" -> DurationStyle.DayWindow.entryName)), departments))
+      Ok(views.html.admin.assessments.create(formMapping(existing = None), departments))
     }
   }
 
@@ -255,7 +249,6 @@ class AdminAssessmentsController @Inject()(
               startTime = data.startTime.map(_.asOffsetDateTime),
               duration = data.durationMinutes.map(Duration.ofMinutes),
               platform = data.platform,
-              assessmentType = data.assessmentType,
               durationStyle = data.durationStyle,
               brief = Brief(
                 text = data.description,
@@ -318,7 +311,6 @@ class AdminAssessmentsController @Inject()(
         students = studentAssessments.map(_.studentId).toSet,
         title = assessment.title,
         platform = assessment.platform,
-        assessmentType = assessment.assessmentType,
         durationMinutes = assessment.duration.map(_.toMinutes),
         durationStyle = assessment.durationStyle,
         urls = assessment.brief.urls,
@@ -347,7 +339,6 @@ class AdminAssessmentsController @Inject()(
             departments.find(_.code == assessment.departmentCode.string),
             lookupInvigilatorUsers(assessment)(userLookup),
             invigilatorActivity,
-            !overwriteAssessmentTypeOnImport
           ))
         }
     }
@@ -383,11 +374,8 @@ class AdminAssessmentsController @Inject()(
               departmentCode = data.departmentCode,
               sequence = data.sequence,
               startTime = data.startTime.map(_.asOffsetDateTime),
-              assessmentType = data.assessmentType,
               durationStyle = data.durationStyle,
             )
-          } else if (assessment.assessmentType.isEmpty || !overwriteAssessmentTypeOnImport) {
-            assessment.copy(assessmentType = data.assessmentType)
           } else assessment
 
         val updateStudents: Future[ServiceResult[Done]] =
@@ -442,7 +430,6 @@ class AdminAssessmentsController @Inject()(
               paperCode = updatedIfAdHoc.paperCode,
               section = updatedIfAdHoc.section,
               startTime = updatedIfAdHoc.startTime,
-              assessmentType = updatedIfAdHoc.assessmentType,
               tabulaAssessmentId = updatedIfAdHoc.tabulaAssessmentId,
               tabulaAssignments = updatedIfAdHoc.tabulaAssignments,
               examProfileCode = updatedIfAdHoc.examProfileCode,

@@ -1,0 +1,59 @@
+@import controllers.admin.AdminAssessmentsController.AssessmentFormData
+@import domain.Assessment
+@import domain.Assessment.Platform
+@import views.html.b3.vertical.VerticalFieldConstructor
+@import domain.Assessment.DurationStyle
+@(existing: Option[Assessment])(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider, vfc: VerticalFieldConstructor, form: Form[AssessmentFormData])
+
+<div class="row">
+  <div class="col-sm-6">
+    @defining(existing.exists(_.tabulaAssessmentId.nonEmpty)) { disabled =>
+      @if(disabled) {
+        @b3.hidden(form("durationStyle"))
+      }
+      @b3.radio(
+        form("durationStyle"),
+        Symbol("_label") -> "Type",
+      ) { implicit extraInfo =>
+        @DurationStyle.values.map { s =>
+          @b3.radioOption(
+            s.entryName,
+            s.label,
+            Seq(
+              Some(Symbol("data-valid-durations") -> s.validDurations.mkString("[", ",", "]")),
+              /* Intentionally disabled, not readonly here - radio buttons don't support readonly. Bug in b3.radioOption prevents us doing 'disabled -> booleanfunc */
+              Some(Symbol("disabled") -> true).filter(_ => disabled)
+            ).flatten: _*
+          )
+        }
+      }
+    }
+  </div>
+  <div class="col-sm-6">
+    @defining(form.errors("platform")) { errors =>
+      @if(errors.nonEmpty) {
+        <div class="has-error">
+        }
+      @b3.multiCheckbox(
+        Platform.values.map { p =>
+          form("platform[]") -> Seq(
+            Symbol("id") -> s"platform_${p.entryName}",
+            Symbol("_text") -> p.label,
+            Symbol("value") -> p.entryName,
+            Symbol("checked") -> form.data.filter(_._1.contains("platform")).values.toSeq.contains(p.entryName)
+          )
+        }: _*
+      )(
+        Symbol("_id") -> "platform_field",
+        Symbol("_label") -> "Platform",
+        Symbol("class") -> "multi-checkbox-list"
+      )
+      @if(errors.nonEmpty) {
+      </div>
+      }
+      @errors.map { error =>
+        <div class="text-danger">@error.format</div>
+      }
+    }
+  </div>
+</div>

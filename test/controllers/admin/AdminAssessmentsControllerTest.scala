@@ -4,7 +4,7 @@ import java.io.File
 import java.util.UUID
 
 import controllers.admin.AdminAssessmentsController.AssessmentFormData
-import domain.Assessment.{AssessmentType, DurationStyle, Platform}
+import domain.Assessment.{DurationStyle, Platform}
 import domain.{DepartmentCode, Fixtures}
 import helpers.{CleanUpDatabaseAfterEachTest, Scenario}
 import play.api.mvc._
@@ -132,7 +132,6 @@ class AdminAssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterE
       durationMinutes = Some(120L),
       durationStyle = DurationStyle.DayWindow,
       platform = Set(Platform.OnlineExams),
-      assessmentType = Some(AssessmentType.OpenBook),
       students = Set.empty,
       urls = Map.empty,
     )
@@ -152,7 +151,6 @@ class AdminAssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterE
       durationMinutes = a.duration.map(_.toMinutes),
       durationStyle = DurationStyle.DayWindow,
       platform = a.platform,
-      assessmentType = a.assessmentType,
       urls = a.platform.map(p => p -> "https://www.warwick.ac.uk").toMap,
       students = Set.empty,
       invigilators = Set.empty,
@@ -197,7 +195,6 @@ class AdminAssessmentsControllerTest extends BaseSpec with CleanUpDatabaseAfterE
       "durationMinutes" -> data.durationMinutes.map(_.toString).getOrElse(""),
       "durationStyle" -> data.durationStyle.entryName,
       "platform[]" -> data.platform.mkString(","),
-      "assessmentType" -> data.assessmentType.map(_.toString).getOrElse(""),
       "students" -> data.students.toSeq.map(_.string).sorted.mkString("\n"),
     ) ++ data.urls.map { case (platform, url) =>
       s"urls.${platform.entryName}" -> url

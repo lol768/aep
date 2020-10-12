@@ -1,6 +1,6 @@
 package domain
 
-import domain.Assessment.{AssessmentType, DurationStyle, Platform, State}
+import domain.Assessment.{DurationStyle, Platform, State}
 import domain.dao.AssessmentsTables.StoredBrief
 import domain.messaging.MessageSender
 import enumeratum.SlickEnumSupport
@@ -73,7 +73,6 @@ abstract class CustomJdbcTypes[Profile <: JdbcProfile] @Inject()(
   implicit val uploadedFileOwnerMapper: JdbcType[UploadedFileOwner] = mappedColumnTypeForEnum(UploadedFileOwner)
   implicit val platformTypeMapper: JdbcType[Platform] = mappedColumnTypeForEnum(Platform)
   implicit val stateTypeMapper: JdbcType[State] = mappedColumnTypeForEnum(State)
-  implicit val assessmentTypeTypeMapper: JdbcType[AssessmentType] = mappedColumnTypeForEnum(AssessmentType)
   implicit val messageSenderMapper: JdbcType[MessageSender] = mappedColumnTypeForEnum(MessageSender)
   implicit val durationStyleMapper: JdbcType[DurationStyle] = mappedColumnTypeForEnum(DurationStyle)
 

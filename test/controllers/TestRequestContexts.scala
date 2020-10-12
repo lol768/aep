@@ -24,7 +24,6 @@ object TestRequestContexts {
       appContactEmail = null,
       features = new Features {
         override val importStudentExtraTime: Boolean = false
-        override val overwriteAssessmentTypeOnImport: Boolean = false
         override val twoWayMessages: Boolean = false
         override val announcementsAndQueriesCsv: Boolean = false
       },

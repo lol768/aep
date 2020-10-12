@@ -1,5 +1,4 @@
 @import domain.Assessment
-@import warwick.core.helpers.JavaTime
 @import views.html.tags.durationWords
 
 @(assessments: Seq[Assessment])(implicit context: RequestContext)
@@ -15,8 +14,8 @@
           <th>Section</th>
           <th>Title</th>
           <th>Date/time</th>
-          <th>Duration</th>
           <th>Type</th>
+          <th>Duration</th>
           <th>State</th>
           <th></th>
         </tr>
@@ -31,11 +30,11 @@
             <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
               @assessment.startTime.map(views.html.tags.localisedDatetime(_))
             </td>
+            <td>
+              @assessment.durationStyle.label
+            </td>
             <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
               @durationWords(assessment)
-            </td>
-            <td>
-              @assessment.assessmentType.map(_.label).getOrElse("")
             </td>
             <td>
               <label class="@assessment.state.cssClass">

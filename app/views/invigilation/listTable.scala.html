@@ -1,6 +1,5 @@
 @import domain.AssessmentMetadata
 @import domain.Assessment.DurationStyle
-@import warwick.core.helpers.JavaTime
 @import views.html.tags.durationWords
 
 @(title: String, assessments: Seq[(AssessmentMetadata, Int)])(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
@@ -14,8 +13,8 @@
           <th>Paper code</th>
           <th>Section</th>
           <th>Title</th>
-          <th>Duration</th>
           <th>Type</th>
+          <th>Duration</th>
           <th>Platform(s)</th>
           <th></th>
       </tr>
@@ -26,19 +25,15 @@
         <tr>
             <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
               @assessment.startTime.map(views.html.tags.localisedDatetime(_))
-              @assessment.durationStyle match {
-                case DurationStyle.DayWindow => { (day window) }
-                case DurationStyle.FixedStart => { (fixed-start) }
-              }
             </td>
             <td>@assessment.paperCode</td>
             <td>@assessment.section.getOrElse("")</td>
             <td>@assessment.title</td>
+            <td>
+              @assessment.durationStyle.label
+            </td>
             <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
               @durationWords(assessment)
-            </td>
-            <td>
-              @assessment.assessmentType.map(_.label).getOrElse("")
             </td>
             <td>
               @assessment.platform.map(_.label).mkString(", ")

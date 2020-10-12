@@ -3,7 +3,7 @@ package domain
 import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
-import domain.Assessment.{AssessmentType, _}
+import domain.Assessment._
 import domain.dao.AssessmentsTables.StoredBrief
 import enumeratum.{EnumEntry, PlayEnum}
 import warwick.core.helpers.JavaTime
@@ -18,7 +18,6 @@ sealed trait BaseAssessment extends DefinesStartWindow {
   val startTime: Option[OffsetDateTime]
   val duration: Option[Duration]
   val platform: Set[Platform]
-  val assessmentType: Option[AssessmentType]
   val durationStyle: DurationStyle
   val state: State
   val tabulaAssessmentId: Option[UUID]
@@ -64,7 +63,6 @@ case class Assessment(
   startTime: Option[OffsetDateTime],
   duration: Option[Duration],
   platform: Set[Platform],
-  assessmentType: Option[AssessmentType],
   durationStyle: DurationStyle,
   brief: Brief,
   invigilators: Set[Usercode],
@@ -84,7 +82,6 @@ case class Assessment(
     startTime,
     duration,
     platform,
-    assessmentType,
     durationStyle,
     brief.copy(files = Seq.empty),
     invigilators,
@@ -113,7 +110,6 @@ case class AssessmentMetadata(
   startTime: Option[OffsetDateTime],
   duration: Option[Duration],
   platform: Set[Platform],
-  assessmentType: Option[AssessmentType],
   durationStyle: DurationStyle,
   briefWithoutFiles: Brief,
   invigilators: Set[Usercode],
@@ -161,58 +157,20 @@ object Assessment {
     val values: IndexedSeq[Platform] = findValues
   }
 
-  sealed trait AssessmentType extends EnumEntry {
-    val label: String
-    val studentFriendlyLabel: String
-    val validDurations: Seq[Long]
-  }
-
-  object AssessmentType extends PlayEnum[AssessmentType] {
-
-    case object OpenBook extends AssessmentType {
-      override val label: String = "Open Book Assessment"
-      override val studentFriendlyLabel: String = "Open book"
-      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180, 1440)
-    }
-
-    case object OpenBookFileBased extends AssessmentType {
-      override val label: String = "Open Book Assessment, files based"
-      override val studentFriendlyLabel: String = "Open book (file-based)"
-      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180, 1440)
-    }
-
-    case object Spoken extends AssessmentType {
-      override val label: String = "Spoken Open Book Assessment"
-      override val studentFriendlyLabel: String = "Open book (spoken)"
-      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180)
-    }
-
-    case object MultipleChoice extends AssessmentType {
-      override val label: String = "MCQ"
-      override val studentFriendlyLabel: String = "Multiple choice"
-      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180)
-    }
-
-    case object Bespoke extends AssessmentType {
-      override val label: String = "Bespoke Option (only if previously agreed)"
-      override val studentFriendlyLabel: String = "Custom (see assessment brief)"
-      override val validDurations: Seq[Long] = Nil
-    }
-
-    val values: IndexedSeq[AssessmentType] = findValues
-  }
-
   sealed trait DurationStyle extends EnumEntry {
-    def label: String
+    val label: String
+    val validDurations: Seq[Long]
   }
   object DurationStyle extends PlayEnum[DurationStyle] {
     /** 24 hour window to start */
     case object DayWindow extends DurationStyle {
-      override val label: String = "24-hour window"
+      override val label: String = "Timed assessment to be completed within a 24 hours window"
+      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180)
     }
     /** No window, exam starts at fixed time */
     case object FixedStart extends DurationStyle {
-      override val label: String = "Fixed start time"
+      override val label: String = "Timed assessment starting at a set time"
+      override val validDurations: Seq[Long] = Seq(60, 90, 120, 180)
     }
     override def values: IndexedSeq[DurationStyle] = findValues
   }

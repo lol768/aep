@@ -1,7 +1,7 @@
 package controllers.sysadmin
 
 import controllers.BaseController
-import domain.Assessment.{AssessmentType, Platform}
+import domain.Assessment.Platform
 import domain.BaseSitting.SubmissionState
 import domain.{Assessment, AssessmentMetadata, DepartmentCode, Sitting}
 import helpers.StringUtils._
@@ -31,7 +31,7 @@ object ManagementInformationController {
         assessmentCount = assessments.size,
         hasStudents = assessments.count { case (_, students) => students > 0 },
         hasPlatform = assessments.count { case (a, _) => a.platform.nonEmpty },
-        hasDuration = assessments.count { case (a, _) => a.duration.nonEmpty || a.assessmentType.contains(AssessmentType.Bespoke) },
+        hasDuration = assessments.count { case (a, _) => a.duration.nonEmpty },
         hasURLOrIsAEP = assessments.count { case (a, _) => a.platform.nonEmpty && a.briefWithoutFiles.urls.view.filterKeys(_.requiresUrl).values.forall(_.hasText) },
         hasFiles = assessments.count { case (a, _) => a.briefWithoutFiles.files.nonEmpty },
         hasDescription = assessments.count { case (a, _) => a.briefWithoutFiles.text.exists(_.hasText) },

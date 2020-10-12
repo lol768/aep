@@ -27,18 +27,9 @@ $(() => {
     }
   }).trigger('change');
 
-  $('#assessmentType_field').on('change', () => {
-    const isBespoke = $('#assessmentType_Bespoke').is(':checked');
-
-    if (isBespoke) {
-      $('#platform_OnlineExams').prop('disabled', true).prop('checked', false);
-    } else {
-      $('#platform_OnlineExams').prop('disabled', false);
-    }
-
-    const validDurations = $('input[name=assessmentType]:checked').data('valid-durations') || [];
+  $durationStyleField.on('change', () => {
+    const validDurations = $('input[name=durationStyle]:checked').data('valid-durations') || [];
     $durationField.closest('.form-group').toggle(validDurations.length > 0);
-    $durationStyleField.toggle(validDurations.length > 0);
     $durationField.find('option').each((_, option) => {
       const $option = $(option);
       const isValidOption = validDurations.includes(Number.parseInt($option.val(), 10));

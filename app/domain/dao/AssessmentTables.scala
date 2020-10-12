@@ -4,7 +4,7 @@ import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import domain.Assessment.DurationStyle.DayWindow
-import domain.Assessment.{AssessmentType, DurationStyle, Platform, State}
+import domain.Assessment.{DurationStyle, Platform, State}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredAssessmentVersion, StoredBrief}
 import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredDeclarationsVersion, StoredStudentAssessment, StoredStudentAssessmentVersion}
 import domain.dao.UploadedFilesTables.{StoredUploadedFile, StoredUploadedFileVersion}
@@ -36,7 +36,6 @@ class AssessmentTables @Inject()(
     def startTime = column[Option[OffsetDateTime]]("start_time_utc")
     def duration = column[Option[Duration]]("duration")
     def platform = column[Set[Platform]]("platform")
-    def assessmentType = column[Option[AssessmentType]]("type")
     def durationStyle = column[DurationStyle]("duration_style")
     def storedBrief = column[StoredBrief]("brief")
     def invigilators = column[List[String]]("invigilators")
@@ -65,7 +64,6 @@ class AssessmentTables @Inject()(
       startTime ::
       duration ::
       platform ::
-      assessmentType ::
       durationStyle ::
       storedBrief ::
       invigilators ::
@@ -104,7 +102,6 @@ class AssessmentTables @Inject()(
       startTime ::
       duration ::
       platform ::
-      assessmentType ::
       durationStyle ::
       storedBrief ::
       invigilators ::

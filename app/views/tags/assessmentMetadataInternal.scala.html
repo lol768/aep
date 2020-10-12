@@ -9,15 +9,8 @@
     @assessment.moduleCode
 </dd>
 
-@assessment.assessmentType.map { at =>
-    <dt>Type</dt>
-    <dd>
-        @at.studentFriendlyLabel
-        @if(assessment.durationStyle == FixedStart) {
-            (fixed-time)
-        }
-    </dd>
-}
+<dt>Type</dt>
+<dd>@assessment.durationStyle.label</dd>
 
 @assessment.brief.text.map { description =>
     <dt>Details</dt>

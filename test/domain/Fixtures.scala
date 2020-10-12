@@ -5,14 +5,12 @@ import java.util.UUID
 
 import com.google.common.io.{ByteSource, Files}
 import com.typesafe.config.Config
-import domain.Assessment.{AssessmentType, Platform}
-import domain.Fixtures.uploadedFiles.specialJPG.path
+import domain.Assessment.{DurationStyle, Platform}
 import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
-import domain.Assessment.{AssessmentType, DurationStyle, Platform}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.Files.TemporaryFileCreator
 import services.DataGenerationService
@@ -122,7 +120,7 @@ object Fixtures {
     // If you just need any old assessment that's assigned to philosophy to test with...
     lazy val philosophyAssessment: Assessment = Assessment(
       UUID.randomUUID, "ph-assessment", None, "Philosophy Assessment", Some(JavaTime.offsetDateTime.plusHours(1)),  Some(Duration.ofHours(3)), Set(Platform.OnlineExams),
-      Some(AssessmentType.OpenBook), DurationStyle.DayWindow, Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, Set.empty, "meh", "ph101", DepartmentCode("ph"),
+      DurationStyle.DayWindow, Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, Set.empty, "meh", "ph101", DepartmentCode("ph"),
       "sequence"
     )
   }

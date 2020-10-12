@@ -9,7 +9,6 @@
   studentInformation: Map[UniversityID, SitsProfile],
   form: Form[AssessmentFormData],
   departments: Seq[Department],
-  allowAssessmentTypeChangesOnImportedAssessments: Boolean,
   canBeDeleted: Boolean,
   numberOfPlatforms: Int = 2
 )(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
@@ -50,9 +49,8 @@
           <legend>Alternative assessment details</legend>
 
           @fields.title()
-          @fields.assessmentType(Some(assessment), allowAssessmentTypeChangesOnImportedAssessments)
+          @fields.durationStyleAndPlatform(Some(assessment))
           @fields.duration()
-          @fields.durationStyle(Some(assessment))
           @fields.urls()
         </div>
       </fieldset>

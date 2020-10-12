@@ -143,14 +143,14 @@ class TabulaAssessmentImportServiceImpl @Inject()(
             assessmentService.delete(existingAssessment).successMapTo(_ => None)
 
           case Some(existingAssessment) =>
-            val updated = ac.asAssessment(Some(existingAssessment), schedule, features.overwriteAssessmentTypeOnImport)
+            val updated = ac.asAssessment(Some(existingAssessment), schedule)
             if (updated == existingAssessment)
               Future.successful(ServiceResults.success(Some(existingAssessment)))
             else
               assessmentService.update(updated, Nil).successMapTo(Some(_))
 
           case None if !isExcludedFromAEP =>
-            val newAssessment = ac.asAssessment(None, schedule, features.overwriteAssessmentTypeOnImport)
+            val newAssessment = ac.asAssessment(None, schedule)
             assessmentService.insert(newAssessment, Nil).successMapTo(Some(_))
 
           case _ => Future.successful(ServiceResults.success(None))
