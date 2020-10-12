@@ -10,8 +10,10 @@
     <dt>Title</dt>
     <dd>@assessment.title</dd>
 
-    <dt>Type</dt>
-    <dd>@assessment.durationStyle.label</dd>
+    @assessment.durationStyle.map {d =>
+      <dt>Type</dt>
+      <dd>@d.label</dd>
+    }
 
     <dt>Platforms</dt>
     <dd>@assessment.platform.map(_.label).mkString(",")</dd>

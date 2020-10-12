@@ -65,10 +65,7 @@ package object tabula {
         startTime = Some(schedule.startTime),
         duration = existingAssessment.flatMap(_.duration),
         platform = existingAssessment.map(_.platform).getOrElse(Set[Platform]()),
-        durationStyle = {
-          if (schedule.locationName.contains("Fixed-time assessment")) DurationStyle.FixedStart
-          else DurationStyle.DayWindow
-        },
+        durationStyle = None,
         brief = existingAssessment.map(_.brief).getOrElse(Brief(None, Nil, Map.empty)),
         invigilators = existingAssessment.map(_.invigilators).getOrElse(Set.empty),
         state = existingAssessment.map(_.state).getOrElse(Imported),

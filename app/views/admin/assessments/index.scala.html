@@ -31,7 +31,9 @@
               @assessment.startTime.map(views.html.tags.localisedDatetime(_))
             </td>
             <td>
-              @assessment.durationStyle.label
+              @assessment.durationStyle.map { d =>
+                @d.label
+              }
             </td>
             <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
               @durationWords(assessment)

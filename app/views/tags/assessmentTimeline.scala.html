@@ -13,7 +13,7 @@
     if sitting.assessment.platform.contains(Platform.OnlineExams)
 ) {
     <div class="timeline" data-id="@sitting.assessment.id">
-        @if(sitting.assessment.durationStyle == DurationStyle.DayWindow) {
+        @if(sitting.assessment.durationStyle.contains(DurationStyle.DayWindow)) {
             <div class="block turqoise @if(sitting.getProgressState.contains(AssessmentOpenNotStarted)) { active } else {}" data-state="@AssessmentOpenNotStarted.entryName">
                 <div class="left">
                     <div class="bubble"><i class="fal fa-2x fa-clock"></i></div>
@@ -43,13 +43,13 @@
                 <h1>
                     @bareLocalisedDateTime(timingInfo.startTime)
 
-                    @if(sitting.assessment.durationStyle == DurationStyle.DayWindow) {
+                    @if(sitting.assessment.durationStyle.contains(DurationStyle.DayWindow)) {
                         You started the assessment
                     } else {
                         The assessment started
                     }
                 </h1>
-                @defining(sitting.assessment.durationStyle == DurationStyle.DayWindow && timingInfo.uploadGraceStart == timingInfo.onTimeEnd) { closeToWindowEnd =>
+                @defining(sitting.assessment.durationStyle.contains(DurationStyle.DayWindow) && timingInfo.uploadGraceStart == timingInfo.onTimeEnd) { closeToWindowEnd =>
 
                   <p>
                     This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus

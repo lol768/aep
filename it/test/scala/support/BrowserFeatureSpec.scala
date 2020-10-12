@@ -311,7 +311,7 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       Given("I have a fixed-start assessment to take")
 
       val assessmentId: UUID = UUID.randomUUID()
-      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment().copy(id = assessmentId, durationStyle = DurationStyle.FixedStart, startTime = Some(startTime), platform = Set(OnlineExams))
+      val assessment: AssessmentsTables.StoredAssessment = assessments.storedAssessment().copy(id = assessmentId, durationStyle = Some(DurationStyle.FixedStart), startTime = Some(startTime), platform = Set(OnlineExams))
       val studentAssessment = studentAssessments.storedStudentAssessment(assessment.id, student.universityId.get)
 
       val examPaper = execWithCommit(uploadedFileService.storeDBIO(Fixtures.uploadedFiles.specialJPG.byteSource, Fixtures.uploadedFiles.specialJPG.uploadedFileSave.copy(fileName = "Exam paper.pdf"), Usercode("thisisfine"), assessment.id, UploadedFileOwner.AssessmentBrief))

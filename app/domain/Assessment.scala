@@ -18,7 +18,7 @@ sealed trait BaseAssessment extends DefinesStartWindow {
   val startTime: Option[OffsetDateTime]
   val duration: Option[Duration]
   val platform: Set[Platform]
-  val durationStyle: DurationStyle
+  val durationStyle: Option[DurationStyle]
   val state: State
   val tabulaAssessmentId: Option[UUID]
   val examProfileCode: String
@@ -35,11 +35,11 @@ trait DefinesStartWindow {
   // (earliest allowed) start time
   val startTime: Option[OffsetDateTime]
   val duration: Option[Duration]
-  val durationStyle: DurationStyle
+  val durationStyle: Option[DurationStyle]
 
   val lastAllowedStartTime: Option[OffsetDateTime] = durationStyle match {
-    case DurationStyle.DayWindow => startTime.map(_.plus(Assessment.dayWindow))
-    case DurationStyle.FixedStart => for {
+    case Some(DurationStyle.DayWindow) => startTime.map(_.plus(Assessment.dayWindow))
+    case Some(DurationStyle.FixedStart) => for {
         start <- startTime
         dur <- duration
       } yield {
@@ -48,6 +48,7 @@ trait DefinesStartWindow {
           .plus(Assessment.uploadGraceDuration)
           .plus(Assessment.lateSubmissionPeriod)
       }
+    case _ => None
   }
 
   def hasLastAllowedStartTimePassed(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = lastAllowedStartTime.exists(_.isBefore(referenceDate))
@@ -63,7 +64,7 @@ case class Assessment(
   startTime: Option[OffsetDateTime],
   duration: Option[Duration],
   platform: Set[Platform],
-  durationStyle: DurationStyle,
+  durationStyle: Option[DurationStyle],
   brief: Brief,
   invigilators: Set[Usercode],
   state: State,
@@ -110,7 +111,7 @@ case class AssessmentMetadata(
   startTime: Option[OffsetDateTime],
   duration: Option[Duration],
   platform: Set[Platform],
-  durationStyle: DurationStyle,
+  durationStyle: Option[DurationStyle],
   briefWithoutFiles: Brief,
   invigilators: Set[Usercode],
   state: State,

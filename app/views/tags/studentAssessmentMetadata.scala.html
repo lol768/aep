@@ -19,14 +19,15 @@
 
     @if(assessment.started) {
         @assessment.assessment.durationStyle match {
-            case DayWindow => {
+            case Some(DayWindow) => {
                 <dt>Started at</dt>
                 <dd>@tags.localisedDatetime(assessment.studentAssessment.startTime.get)</dd>
             }
-            case FixedStart => {
+            case Some(FixedStart) => {
                 <dt>Started at</dt>
                 <dd>@tags.localisedDatetime(assessment.assessment.startTime.get)</dd>
             }
+            case _ => {}
         }
     }
 

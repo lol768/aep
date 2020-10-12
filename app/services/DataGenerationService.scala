@@ -129,7 +129,7 @@ object DataGenerationService {
       startTime = Some(startTime),
       duration = duration,
       platform = Set(platform),
-      durationStyle = durationStyle,
+      durationStyle = Some(durationStyle),
       storedBrief = makeStoredBrief(Set(platform)),
       invigilators = List(invigilator1, invigilator2),
       state = Assessment.State.Draft,

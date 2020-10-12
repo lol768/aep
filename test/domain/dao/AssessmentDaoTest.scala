@@ -183,7 +183,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       val fixedStartAssessment = Fixtures.assessments.storedAssessment(platformOption = Some(OnlineExams)).copy(
         startTime = dayWindowAssessment.startTime,
         duration = Some(Duration.ofHours(2)),
-        durationStyle = DurationStyle.FixedStart
+        durationStyle = Some(DurationStyle.FixedStart)
       )
 
       val assessments = Seq(dayWindowAssessment, fixedStartAssessment)
