@@ -164,7 +164,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
               val additions: Seq[StudentAssessment] =
                 schedule.students.filterNot(s => studentAssessments.exists(_.studentId == s.universityID))
                   .map { scheduleStudent =>
-                    val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                    val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.totalExtraTimePerHour else None
                     StudentAssessment(
                       id = UUID.randomUUID(),
                       assessmentId = assessment.id,
@@ -182,7 +182,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
 
               val modifications: Seq[StudentAssessment] =
                 schedule.students.flatMap { scheduleStudent =>
-                  val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                  val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.totalExtraTimePerHour else None
                   studentAssessments.find(_.studentId == scheduleStudent.universityID).flatMap { studentAssessment =>
                     val updated = studentAssessment.copy(
                       extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour,

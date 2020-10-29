@@ -38,7 +38,17 @@ package object tabula {
     sprCode: String,
     occurrence: String,
     extraTimePerHour: Option[Duration],
-  )
+    hourlyRestMinutes: Option[Duration],
+  ) {
+    lazy val totalExtraTimePerHour: Option[Duration] = {
+      if (extraTimePerHour.nonEmpty || hourlyRestMinutes.nonEmpty) {
+        Some(extraTimePerHour.getOrElse(Duration.ofMinutes(0))
+          .plus(hourlyRestMinutes.getOrElse(Duration.ofMinutes(0))))
+      } else {
+        None
+      }
+    }
+  }
 
   case class Module(
     adminDepartment: DepartmentIdentity,
@@ -109,6 +119,7 @@ package object tabula {
     yearOfStudy: Option[YearOfStudy],
     disability: Option[SitsDisability],
     specialExamArrangementsExtraTime: Option[Duration],
+    specialExamArrangementsHourlyRestMinutes: Option[Duration],
     userType: UserType
   )
 
