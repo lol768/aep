@@ -191,14 +191,36 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                     )
 
                     // Don't return no-ops
+                    if (updated.studentId.string == "1951127") {
+                      println(updated)
+                    }
                     Some(updated).filterNot(_ == studentAssessment)
                   }
                 }
 
-              ServiceResults.futureSequence(
-                deletions.map(studentAssessmentService.delete) ++
-                (additions ++ modifications).map(studentAssessmentService.upsert)
-              ).successMapTo(_ => Some(assessment))
+              val mockUpdates: Future[Seq[StudentAssessment]] =
+                studentAssessmentService.byUniversityIds(schedule.students.map(_.universityID)).map {
+                  _.toOption.map { studentAssessments =>
+                    studentAssessments.filter(_.tabulaSubmissionId.isEmpty).map { original =>
+                      val scheduleStudent = schedule.students.find(_.universityID == original.studentId).getOrElse(
+                        throw new IllegalStateException(s"Could not find schedule student with ID ${original.studentId}")
+                      )
+                      val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.totalExtraTimePerHour else None
+                      original.copy(
+                        extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour
+                      )
+                    }
+                  }.getOrElse {
+                    Seq.empty
+                  }
+                }
+
+              mockUpdates.flatMap { mocks =>
+                ServiceResults.futureSequence(
+                  deletions.map(studentAssessmentService.delete) ++
+                    (additions ++ modifications ++ mocks).map(studentAssessmentService.upsert)
+                ).successMapTo(_ => Some(assessment))
+              }
           }
         }
     }.getOrElse(Future.successful(ServiceResults.success(None)))

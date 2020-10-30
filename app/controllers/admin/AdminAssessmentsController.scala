@@ -21,6 +21,7 @@ import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaAssessmentService, TabulaAssignmentService, TabulaDepartmentService, TabulaStudentInformationService}
 import services.{AssessmentClientNetworkActivityService, AssessmentService, SecurityService, StudentAssessmentService}
+import system.Features
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.timing.TimingContext
@@ -184,6 +185,7 @@ class AdminAssessmentsController @Inject()(
   tabulaAssignmentService: TabulaAssignmentService,
   networkActivityService: AssessmentClientNetworkActivityService,
   configuration: Configuration,
+  features: Features,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
   ec: ExecutionContext
@@ -270,21 +272,23 @@ class AdminAssessmentsController @Inject()(
             ),
             files = request.body.files.map(_.ref).map(f => (f.in, f.metadata)),
           ).successFlatMapTo(newAssessment =>
-            studentAssessmentService.insert(data.students.map(universityID =>
-              StudentAssessment(
-                id = UUID.randomUUID(),
-                assessmentId = newAssessment.id,
-                occurrence = None,
-                academicYear = None, // See comment in TabulaAssessmentService.generateAssignments
-                studentId = universityID,
-                inSeat = false,
-                startTime = None,
-                extraTimeAdjustmentPerHour = None,
-                explicitFinaliseTime = None,
-                uploadedFiles = Nil,
-                tabulaSubmissionId = None
-              )
-            ))
+            studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(data.students.toSeq)).successFlatMapTo { studentInfos =>
+              studentAssessmentService.insert(data.students.map(universityID =>
+                StudentAssessment(
+                  id = UUID.randomUUID(),
+                  assessmentId = newAssessment.id,
+                  occurrence = None,
+                  academicYear = None, // See comment in TabulaAssessmentService.generateAssignments
+                  studentId = universityID,
+                  inSeat = false,
+                  startTime = None,
+                  extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) studentInfos.get(universityID).flatMap(_.totalExtraTimePerHour) else None,
+                  explicitFinaliseTime = None,
+                  uploadedFiles = Nil,
+                  tabulaSubmissionId = None
+                )
+              ))
+            }
           ).successMap(_ =>
             Redirect(routes.AdminAssessmentsController.index()).flashing {
               if (newState == State.Approved)
@@ -384,32 +388,35 @@ class AdminAssessmentsController @Inject()(
         val updateStudents: Future[ServiceResult[Done]] =
           if (assessment.tabulaAssessmentId.isEmpty) {
             studentAssessmentService.byAssessmentId(assessment.id).successFlatMapTo { studentAssessments =>
-              val deletions: Seq[StudentAssessment] =
-                studentAssessments.filterNot(sa => data.students.contains(sa.studentId))
+              studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(data.students.toSeq)).successFlatMapTo { studentInfos =>
+                  val deletions: Seq[StudentAssessment] =
+                    studentAssessments.filterNot(sa => data.students.contains(sa.studentId))
 
-              val additions: Seq[StudentAssessment] =
-                data.students.filterNot(s => studentAssessments.exists(_.studentId == s))
-                  .toSeq
-                  .map { universityID =>
-                    StudentAssessment(
-                      id = UUID.randomUUID(),
-                      assessmentId = assessment.id,
-                      occurrence = None,
-                      academicYear = None, // See comment in TabulaAssessmentService.generateAssignments
-                      studentId = universityID,
-                      inSeat = false,
-                      startTime = None,
-                      extraTimeAdjustmentPerHour = None,
-                      explicitFinaliseTime = None,
-                      uploadedFiles = Nil,
-                      tabulaSubmissionId = None
-                    )
-                  }
+                  val additions: Seq[StudentAssessment] =
+                    data.students.filterNot(s => studentAssessments.exists(_.studentId == s))
+                      .toSeq
+                      .map { universityID =>
+                        StudentAssessment(
+                          id = UUID.randomUUID(),
+                          assessmentId = assessment.id,
+                          occurrence = None,
+                          academicYear = None, // See comment in TabulaAssessmentService.generateAssignments
+                          studentId = universityID,
+                          inSeat = false,
+                          startTime = None,
+                          extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) studentInfos.get(universityID).flatMap(_.totalExtraTimePerHour) else None,
+                          explicitFinaliseTime = None,
+                          uploadedFiles = Nil,
+                          tabulaSubmissionId = None
+                        )
+                      }
 
-              ServiceResults.futureSequence(
-                deletions.map(studentAssessmentService.delete) ++
-                additions.map(studentAssessmentService.upsert)
-              ).successMapTo(_ => Done)
+                  ServiceResults.futureSequence(
+                    deletions.map(studentAssessmentService.delete) ++
+                      additions.map(studentAssessmentService.upsert)
+                  ).successMapTo(_ => Done)
+              }
+
             }
           } else Future.successful(ServiceResults.success(Done))
 
