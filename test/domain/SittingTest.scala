@@ -19,6 +19,8 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
 
   private val ThreeHours = Some(Duration.ofHours(3L))
   private val Now = Some(now)
+  private val defaultLatePeriodAllowance = Duration.ZERO
+  private val TwoHours = Duration.ofHours(2L)
 
   private case class Fixture (
     assessmentStart: Option[OffsetDateTime] = None,
@@ -79,7 +81,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
     "Show as not yet open before the start date" in new Fixture (
       assessmentStart = Some(24.hours fromNow),
     ) {
-      sitting.getProgressState mustBe Some(AssessmentNotYetOpen)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(AssessmentNotYetOpen)
     }
 
     "Show the generic Started state for inProgress assessments without a duration" in new Fixture (
@@ -87,7 +89,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       assessmentDuration = ThreeHours,
       studentStart = Some(30.minutes ago)
     ) {
-      sitting.getProgressState mustBe Some(InProgress)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(InProgress)
     }
 
     "Respect the 24 hour window when deciding InProgress-fulness" in new Fixture (
@@ -96,7 +98,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       studentStart = Some(30.minutes ago)
     ) {
       // Should be in progress - 3 hr assessment started 11 1/2 hrs into 24 hr window
-      sitting.getProgressState mustBe Some(InProgress)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(InProgress)
     }
 
     "Respect fixed-start assessments when deciding InProgress-fulness" in new Fixture (
@@ -106,14 +108,14 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       durationStyle = DurationStyle.FixedStart
     ) {
       // Should be in progress - 3 hr fixed start assessment kicked off 1 1/2 hours ago
-      sitting.getProgressState mustBe Some(InProgress)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(InProgress)
     }
 
     "Show InProgress assessments" in new Fixture (
       assessmentStart = Some(1.hour ago),
       studentStart = Some(30.minutes ago)
     ) {
-      sitting.getProgressState mustBe Some(Started)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(Started)
     }
 
     "Show as GracePeriod just after the main exam writing period" in new Fixture (
@@ -122,7 +124,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       studentStart = Some(3.hours and 10.minutes ago)
     ) {
       // They had 3h+45m to submit, 3h+10m is in the grace upload period
-      sitting.getProgressState mustBe Some(OnGracePeriod)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(OnGracePeriod)
     }
 
     "Respect the 24 hour window when deciding GracePeriod-fulness" in new Fixture (
@@ -131,7 +133,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       studentStart = Some(3.hours and 10.minutes ago)
     ) {
       // Grace period should be calculated relative to when the student started, not the assessment
-      sitting.getProgressState mustBe Some(OnGracePeriod)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(OnGracePeriod)
     }
 
     "Respect fixed-start assessments when deciding GracePeriod-fulness" in new Fixture (
@@ -141,7 +143,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       durationStyle = DurationStyle.FixedStart
     ) {
       // Should be in grace period regardless of student start time
-      sitting.getProgressState mustBe Some(OnGracePeriod)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(OnGracePeriod)
     }
 
     "Not have a grace or late period if assessment is started too late into the window" in new Fixture (
@@ -150,35 +152,54 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       studentStart = Some(2.hours ago)
     ) {
       // Student started with 1 hr of 24 hr window to go, and is now 10 mins past the window
-      sitting.getProgressState mustBe Some(DeadlineMissed)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(DeadlineMissed)
     }
 
-    "Show as Late after the on time duration" in new Fixture (
+    "Show as Late after the on time duration if late period allowance is active" in new Fixture (
       assessmentStart =  Some(4.hours ago),
       assessmentDuration = ThreeHours,
       studentStart = Some(4.hours ago)
     ) {
       // They had 3h+45m to submit, so 4h is in the "Late" section
-      sitting.getProgressState mustBe Some(Late)
+      sitting.getProgressState(TwoHours) mustBe Some(Late)
     }
 
-    "Respect fixed-time assessments when deciding Late-ness" in new Fixture (
+    "Show as DeadlineMissed after the on time duration if late period allowance is not active" in new Fixture (
+      assessmentStart =  Some(4.hours ago),
+      assessmentDuration = ThreeHours,
+      studentStart = Some(4.hours ago)
+    ) {
+      // They had 3h+45m to submit, so 4h is in the "Late" section
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(DeadlineMissed)
+    }
+
+    "Respect fixed-time assessments when deciding Late-ness if late time allowance is active" in new Fixture (
       assessmentStart = Some(4.hours ago),
       assessmentDuration = ThreeHours,
       studentStart = Some(10.minutes ago),
       durationStyle= DurationStyle.FixedStart
     ) {
       // Doesn't matter that they only started 10 minutes ago - this is a fixed-time assessment
-      sitting.getProgressState mustBe Some(Late)
+      sitting.getProgressState(TwoHours) mustBe Some(Late)
     }
 
-    "Show as DeadlineMissed after even more time" in new Fixture (
+    "Show DeadlineMissed for late fixed-time assessments if late time allowance is not active" in new Fixture (
+      assessmentStart = Some(4.hours ago),
+      assessmentDuration = ThreeHours,
+      studentStart = Some(10.minutes ago),
+      durationStyle= DurationStyle.FixedStart
+    ) {
+      // Doesn't matter that they only started 10 minutes ago - this is a fixed-time assessment
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(DeadlineMissed)
+    }
+
+    "Show as DeadlineMissed after even more time and late time allowance is active" in new Fixture (
       assessmentStart = Some(4.hours ago),
       assessmentDuration = ThreeHours,
       studentStart = Some(6.hours ago)
     ) {
       // They had 3h+45m+2h to submit late, so 6h is right out
-      sitting.getProgressState mustBe Some(DeadlineMissed)
+      sitting.getProgressState(TwoHours) mustBe Some(DeadlineMissed)
     }
 
     "Respect fixed-time assessments when deciding DeadlineMissed-ness" in new Fixture (
@@ -188,7 +209,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       durationStyle = DurationStyle.FixedStart
     ) {
       // Doesn't matter when they started - absolute deadline missed
-      sitting.getProgressState mustBe Some(DeadlineMissed)
+      sitting.getProgressState(defaultLatePeriodAllowance) mustBe Some(DeadlineMissed)
     }
 
   }
@@ -198,7 +219,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       assessmentStart = Some(1.hour ago),
       studentStart = Some(30.minutes ago)
     ) {
-      sitting.getSubmissionState mustBe SubmissionState.None
+      sitting.getSubmissionState(defaultLatePeriodAllowance) mustBe SubmissionState.None
     }
 
     "Be OnTime if all files on time" in new Fixture (
@@ -212,7 +233,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
         )
       )
     ) {
-      sitting.getSubmissionState mustBe SubmissionState.OnTime
+      sitting.getSubmissionState(defaultLatePeriodAllowance) mustBe SubmissionState.OnTime
     }
 
     "Be Late if there are late files" in new Fixture (
@@ -230,7 +251,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
         )
       )
     ) {
-      sitting.getSubmissionState mustBe SubmissionState.Late
+      sitting.getSubmissionState(defaultLatePeriodAllowance) mustBe SubmissionState.Late
     }
 
     "Respect the 24 hour window when deciding OnTime-ness" in new Fixture (
@@ -245,7 +266,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       )
     ) {
       // Student starts 6 hours into the 24 hour window, submits 8 hours in, duration = 3 hours so on time
-      sitting.getSubmissionState mustBe SubmissionState.OnTime
+      sitting.getSubmissionState(defaultLatePeriodAllowance) mustBe SubmissionState.OnTime
     }
 
     "Respect fixed-time assessments when deciding OneTime-ness" in new Fixture (
@@ -261,7 +282,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       )
     ) {
       // Submission happened within the absolute OnTime period for this assessment
-      sitting.getSubmissionState mustBe SubmissionState.OnTime
+      sitting.getSubmissionState(defaultLatePeriodAllowance) mustBe SubmissionState.OnTime
     }
 
     "Resepct the 24 hour window when deciding Late-ness" in new Fixture (
@@ -277,7 +298,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
     ) {
       // Student started with only 1 hour of window left, submitted 2 hours later, so should
       // be late because it's outside 24 hour window, even though it's inside 3 hour duration
-      sitting.getSubmissionState mustBe SubmissionState.Late
+      sitting.getSubmissionState(defaultLatePeriodAllowance) mustBe SubmissionState.Late
     }
 
     "Respect fixed-time assessments when deciding Late-ness" in new Fixture (
@@ -293,7 +314,7 @@ class SittingTest extends PlaySpec with MockitoSugar with SimpleSemanticRelative
       )
     ) {
       // Student has exceeded the absolute grace period, but not the absolute late period
-      sitting.getSubmissionState mustBe SubmissionState.Late
+      sitting.getSubmissionState(defaultLatePeriodAllowance) mustBe SubmissionState.Late
     }
 
   }
