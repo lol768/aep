@@ -1,8 +1,10 @@
 package services
 
+import java.time.OffsetDateTime
+
 import com.google.inject.ImplementedBy
 import domain.messaging.Message
-import domain.{Announcement, Assessment}
+import domain.{Announcement, Assessment, Sitting}
 import helpers.LenientTimezoneNameParsing._
 import javax.inject.{Inject, Singleton}
 import org.quartz.Scheduler
@@ -23,7 +25,7 @@ trait NotificationService {
   def newAnnouncement(announcement: Announcement)(implicit t: TimingContext): Future[ServiceResult[Activity]]
   def newMessageFromStudent(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]]
   def newMessageFromInvigilator(message: Message)(implicit t: TimingContext): Future[ServiceResult[Activity]]
-  def sendReminders(assessment: Assessment)(implicit t: TimingContext): Future[ServiceResult[Activity]]
+  def sendReminders(assessment: Assessment)(implicit t: TimingContext): Future[ServiceResult[Seq[Activity]]]
 }
 
 @Singleton
@@ -34,6 +36,7 @@ class NotificationServiceImpl @Inject()(
   scheduler: Scheduler,
   userLookupService: UserLookupService,
   configuration: Configuration,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends NotificationService {
 
   private[this] lazy val domain = configuration.get[String]("domain")
@@ -107,41 +110,47 @@ class NotificationServiceImpl @Inject()(
     }
   }
 
-  override def sendReminders(assessment: Assessment)(implicit t: TimingContext): Future[ServiceResult[Activity]] =
-    studentAssessmentService.byAssessmentId(assessment.id).successFlatMapTo { students =>
-      val universityIds = students.map(_.studentId)
+  override def sendReminders(assessment: Assessment)(implicit t: TimingContext): Future[ServiceResult[Seq[Activity]]] =
+    studentAssessmentService.sittingsByAssessmentId(assessment.id).successFlatMapTo { sittings =>
+      ServiceResults.futureSequence{
+        val universityIds = sittings.map(_.studentAssessment.studentId)
+        val sittingsByTime = sittings.groupBy(_.lastAllowedStartTimeForStudent(timingInfo.lateSubmissionPeriod)).toSeq
 
-      Future.successful(ServiceResults.fromTry(userLookupService.getUsers(universityIds))).successMapTo { users =>
-        val usercodes = users.values.map(_.usercode.string).toSet
+        sittingsByTime.map { case (lastStartTimeOption: Option[OffsetDateTime], seqOfSittings: Seq[Sitting]) =>
+          Future.successful(ServiceResults.fromTry(userLookupService.getUsers(seqOfSittings.map(_.studentAssessment.studentId))))
+            .successMapTo { users =>
+              val usercodes = users.values.map(_.usercode.string).toSet
 
-        val timezone: LenientZoneId = Right(JavaTime.timeZone)
+              val timezone: LenientZoneId = Right(JavaTime.timeZone)
 
-        val activity = new Activity(
-          usercodes.asJava,
-          s"${assessment.paperCode}: Your alternative assessment for '${assessment.title}' is due today",
-          controllers.routes.AssessmentController.view(assessment.id).absoluteURL(true, domain),
-          (assessment.startTime, assessment.lastAllowedStartTime) match {
-            // Special case where this crosses the DST boundary
-            case (Some(startTime), Some(lastAllowedStartTime)) if timezone.timezoneAbbr(startTime) != timezone.timezoneAbbr(lastAllowedStartTime) =>
-              s"You can start this assessment between ${JavaTime.Relative(startTime)} (${timezone.timezoneAbbr(startTime)}) and ${JavaTime.Relative(lastAllowedStartTime)} (${timezone.timezoneAbbr(lastAllowedStartTime)})."
+              val activity = new Activity(
+                usercodes.asJava,
+                s"${assessment.paperCode}: Your alternative assessment for '${assessment.title}' is due today",
+                controllers.routes.AssessmentController.view(assessment.id).absoluteURL(true, domain),
+                (assessment.startTime, lastStartTimeOption) match {
+                  // Special case where this crosses the DST boundary
+                  case (Some(startTime), Some(lastAllowedStartTime)) if timezone.timezoneAbbr(startTime) != timezone.timezoneAbbr(lastAllowedStartTime) =>
+                    s"You can start this assessment between ${JavaTime.Relative(startTime)} (${timezone.timezoneAbbr(startTime)}) and ${JavaTime.Relative(lastAllowedStartTime)} (${timezone.timezoneAbbr(lastAllowedStartTime)})."
 
-            case (Some(startTime), Some(lastAllowedStartTime)) =>
-              s"You can start this assessment between ${JavaTime.Relative(startTime)} and ${JavaTime.Relative(lastAllowedStartTime)} (${timezone.timezoneAbbr(lastAllowedStartTime)})."
+                  case (Some(startTime), Some(lastAllowedStartTime)) =>
+                    s"You can start this assessment between ${JavaTime.Relative(startTime)} and ${JavaTime.Relative(lastAllowedStartTime)} (${timezone.timezoneAbbr(lastAllowedStartTime)})."
 
-            case (Some(startTime), _) =>
-              s"You can start this assessment at ${JavaTime.Relative(startTime)} (${timezone.timezoneAbbr(startTime)})."
+                  case (Some(startTime), _) =>
+                    s"You can start this assessment at ${JavaTime.Relative(startTime)} (${timezone.timezoneAbbr(startTime)})."
 
-            // Should be filtered before it gets here (how can it be today without a start time?), but just ignore
-            case _ => ""
-          },
-          "assessment-reminder"
-        )
+                  // Should be filtered before it gets here (how can it be today without a start time?), but just ignore
+                  case _ => ""
+                },
+                "assessment-reminder"
+              )
 
-        if (usercodes.nonEmpty) {
-          myWarwickService.queueNotification(activity, scheduler)
+              if (usercodes.nonEmpty) {
+                myWarwickService.queueNotification(activity, scheduler)
+              }
+
+              activity
+            }
         }
-
-        activity
       }
     }
 

@@ -3,28 +3,32 @@
 @import warwick.core.helpers.JavaTime
 @import tags._
 
+@import services.TimingInfoService
+@import java.time.OffsetDateTime
 @(
   assessment: Assessment,
   downloadUri: Call,
   csvUri: Call,
+  timingInfo: TimingInfoService,
+  timeAvailable: Option[OffsetDateTime],
 )(implicit request: RequestHeader, context: RequestContext)
 
 <div class="panel panel-default">
   <div class="panel-body">
     @if(assessment.platform.contains(Platform.OnlineExams)) {
-      @if(assessment.isDownloadAvailable) {
+      @if(assessment.isDownloadAvailable(timingInfo.lateSubmissionPeriod)) {
         <a href="@downloadUri" class="btn btn-default"><i class="fad themed-duotone fa-folder-download"></i> Download submissions</a>
       } else {
         <button type="button" class="btn btn-default disabled"><i class="fad themed-duotone fa-folder-download"></i> Download submissions</button>
-        @assessment.lastAllowedStartTime.map(_.plus(Assessment.uploadProcessDuration)).map { t => <div class="text-muted">Available at @localisedDatetime(t)</div> }
+        @timeAvailable.map { t => <div class="text-muted">Available at @localisedDatetime(t)</div> }
       }
     } else {
       @* Just trying to avoid multiple versions of this CSV existing while the assessment is in progress *@
-      @if(assessment.isDownloadAvailable) {
+      @if(assessment.isDownloadAvailable(timingInfo.lateSubmissionPeriod)) {
         <a href="@csvUri" class="btn btn-default"><i class="fad themed-duotone fa-file-spreadsheet"></i> Download student details</a>
       } else {
         <button type="button" class="btn btn-default disabled"><i class="fad themed-duotone fa-file-spreadsheet"></i> Download student details</button>
-        @assessment.lastAllowedStartTime.map(_.plus(Assessment.uploadProcessDuration)).map { t => <div class="text-muted">Available at @localisedDatetime(t)</div> }
+        @timeAvailable.map { t => <div class="text-muted">Available at @localisedDatetime(t)</div> }
       }
     }
   </div>

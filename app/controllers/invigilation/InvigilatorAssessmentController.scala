@@ -11,7 +11,7 @@ import play.api.mvc.{Action, AnyContent}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
-import services.{AnnouncementService, AssessmentClientNetworkActivityService, ReportingService, SecurityService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, ReportingService, SecurityService, TimingInfoService}
 import warwick.core.helpers.ServiceResults
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.sso.{User, UserLookupService, Usercode}
@@ -50,6 +50,7 @@ class InvigilatorAssessmentController @Inject()(
   networkActivityService: AssessmentClientNetworkActivityService,
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   announcementService: AnnouncementService,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -93,6 +94,7 @@ class InvigilatorAssessmentController @Inject()(
               totalAnnouncements = announcements.length,
               studentsWithQueries = queries.map(_.student).distinct,
               latestStudentActivities = latestActivities,
+              timingInfo = timingInfo,
             ))
           }
     }

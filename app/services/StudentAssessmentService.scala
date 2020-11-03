@@ -57,6 +57,7 @@ class StudentAssessmentServiceImpl @Inject()(
   assessmentService: AssessmentService,
   assessmentDao: AssessmentDao,
   assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
 
 
@@ -153,7 +154,7 @@ class StudentAssessmentServiceImpl @Inject()(
 
   private def assertTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
     require(storedAssessment.hasStartTimePassed(), "Cannot do assessment, too early")
-    require(!storedAssessment.hasLastAllowedStartTimePassed(), "Cannot do assessment, too late")
+    require(!storedAssessment.hasDefaultLastAllowedStartTimePassed(timingInfo.lateSubmissionPeriod), "Cannot do assessment, too late")
   }
 
   private def hasAcceptedDeclarations(storedDeclarations: Option[StoredDeclarations]): Future[Unit] = Future.successful {

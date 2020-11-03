@@ -61,6 +61,7 @@ class AssessmentController @Inject()(
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   announcementService: AnnouncementService,
   configuration: Configuration,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -88,7 +89,7 @@ class AssessmentController @Inject()(
 
   def view(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
-      Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig))
+      Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig, timingInfo))
     )
   }
 
@@ -115,8 +116,8 @@ class AssessmentController @Inject()(
   }
 
   def start(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
-    if (request.sitting.assessment.hasLastAllowedStartTimePassed()) {
-      val lastStartTime = request.sitting.assessment.lastAllowedStartTime.getOrElse {
+    if (request.sitting.hasLastAllowedStartTimeForStudentPassed(timingInfo.lateSubmissionPeriod)) {
+      val lastStartTime = request.sitting.lastAllowedStartTimeForStudent(timingInfo.lateSubmissionPeriod).getOrElse {
         throw new IllegalStateException(s"Assessment with id ${request.sitting.assessment.id.toString} returned last start time passed, but has no last start time");
       }
       Future.successful {
@@ -130,13 +131,13 @@ class AssessmentController @Inject()(
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
     AssessmentController.finishExamForm.bindFromRequest().fold(
       form => announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
-        BadRequest(views.html.exam.index(request.sitting, form, announcements, uploadedFileConfig))
+        BadRequest(views.html.exam.index(request.sitting, form, announcements, uploadedFileConfig, timingInfo))
       ),
       _ => {
-        if (request.sitting.finalised) {
+        if (request.sitting.finalised(timingInfo.lateSubmissionPeriod)) {
           val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
-        } else if (!request.sitting.canModify()) {
+        } else if (!request.sitting.canModify(timingInfo.lateSubmissionPeriod)) {
           val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
         } else {
@@ -175,7 +176,7 @@ class AssessmentController @Inject()(
         xhrReturn
       } else {
         announcementService.getByAssessmentId(assessmentId).successMap { announcements =>
-          BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig))
+          BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig, timingInfo))
         }
       }
     }

@@ -20,7 +20,7 @@ import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.DepartmentAdminRequest
 import services.tabula.TabulaStudentInformationService.GetMultipleStudentInformationOptions
 import services.tabula.{TabulaAssessmentService, TabulaAssignmentService, TabulaDepartmentService, TabulaStudentInformationService}
-import services.{AssessmentClientNetworkActivityService, AssessmentService, SecurityService, StudentAssessmentService}
+import services.{AssessmentClientNetworkActivityService, AssessmentService, SecurityService, StudentAssessmentService, TimingInfoService}
 import system.Features
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
@@ -186,6 +186,7 @@ class AdminAssessmentsController @Inject()(
   networkActivityService: AssessmentClientNetworkActivityService,
   configuration: Configuration,
   features: Features,
+  timingInfo: TimingInfoService,
 )(implicit
   studentInformationService: TabulaStudentInformationService,
   ec: ExecutionContext
@@ -198,7 +199,7 @@ class AdminAssessmentsController @Inject()(
 
   def index: Action[AnyContent] = GeneralDepartmentAdminAction.async { implicit request =>
     assessmentService.findByStates(Seq(State.Draft, State.Imported, State.Approved)).successMap { assessments =>
-      Ok(views.html.admin.assessments.index(filterForDeptAdmin(assessments)))
+      Ok(views.html.admin.assessments.index(filterForDeptAdmin(assessments), timingInfo))
     }
   }
 
@@ -330,29 +331,30 @@ class AdminAssessmentsController @Inject()(
   def view(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id).async { implicit request =>
     val assessment = request.assessment
     ServiceResults.zip(
-      studentAssessmentService.byAssessmentId(assessment.id),
+      studentAssessmentService.sittingsByAssessmentId(assessment.id),
       departmentService.getDepartments(),
       tabulaAssignmentService.getByAssessment(assessment),
       networkActivityService.getLatestInvigilatorActivityFor(assessment.id),
-    ).successFlatMap { case (studentAssessments, departments, tabulaAssignments, invigilatorActivity) =>
-      studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = studentAssessments.map(_.studentId)))
+    ).successFlatMap { case (sittings, departments, tabulaAssignments, invigilatorActivity) =>
+      studentInformationService.getMultipleStudentInformation(GetMultipleStudentInformationOptions(universityIDs = sittings.map(_.studentAssessment.studentId)))
         .map(_.fold(_ => Map.empty[UniversityID, SitsProfile], identity))
         .map { studentInformation =>
           Ok(views.html.admin.assessments.view(
             assessment,
             tabulaAssignments,
-            studentAssessments,
+            sittings,
             studentInformation,
             departments.find(_.code == assessment.departmentCode.string),
             lookupInvigilatorUsers(assessment)(userLookup),
             invigilatorActivity,
+            timingInfo = timingInfo
           ))
         }
     }
   }
 
   def studentPreview(id: UUID): Action[AnyContent] = AssessmentDepartmentAdminAction(id) { implicit request =>
-    Ok(views.html.admin.assessments.studentPreview(request.assessment, uploadedFileConfig))
+    Ok(views.html.admin.assessments.studentPreview(request.assessment, uploadedFileConfig, timingInfo))
   }
 
   def update(id: UUID): Action[MultipartFormData[TemporaryUploadedFile]] = AssessmentDepartmentAdminAction(id)(uploadedFileControllerHelper.bodyParser).async { implicit request =>

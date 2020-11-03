@@ -1,7 +1,8 @@
 @import domain.Assessment
 @import views.html.tags.durationWords
 
-@(assessments: Seq[Assessment])(implicit context: RequestContext)
+@import services.TimingInfoService
+@(assessments: Seq[Assessment], timingInfo: TimingInfoService)(implicit context: RequestContext)
 
 @assessmentsTable(title: String, assessments: Seq[Assessment]) = {
   @if(assessments.nonEmpty) {
@@ -67,7 +68,7 @@
     </div>
   </div>
 
-  @assessmentsTable("Current assessments", assessments.filter(_.isCurrent))
+  @assessmentsTable("Current assessments", assessments.filter(_.isCurrent(timingInfo.lateSubmissionPeriod)))
   @assessmentsTable("Upcoming assessments", assessments.filter(_.isInFuture))
-  @assessmentsTable("Past assessments", assessments.filter(a => !a.isCurrent && !a.isInFuture))
+  @assessmentsTable("Past assessments", assessments.filter(a => !a.isCurrent(timingInfo.lateSubmissionPeriod) && !a.isInFuture))
 }

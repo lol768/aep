@@ -3,12 +3,33 @@
 @import domain.Assessment
 @import domain.tabula
 @import warwick.sso.UniversityID
-@(assessment: Assessment, metadata: Seq[SittingMetadata], userMap: Map[UniversityID, tabula.SitsProfile], title: String, route: String, studentsWithQueries: Seq[UniversityID], totalQueries: Int, totalAnnouncements: Int)(implicit context: RequestContext)
+@import services.TimingInfoService
+@(
+  assessment: Assessment,
+  metadata: Seq[SittingMetadata],
+  userMap: Map[UniversityID, tabula.SitsProfile],
+  title: String,
+  route: String,
+  studentsWithQueries: Seq[UniversityID],
+  totalQueries: Int,
+  totalAnnouncements: Int,
+  timingInfo: TimingInfoService,
+)(implicit context: RequestContext)
 
 @frontend(assessment.title) {
-  @assessmentMetadata(assessment)
+  @assessmentMetadata(assessment, timingInfo)
 
   <div class="studentAssessmentInfo" data-id="@assessment.id" data-route="@route">
-    @queriesAndStudents(metadata, assessment.platform, userMap, Some(studentsWithQueries), totalQueries, totalAnnouncements, viewAllAnnouncementsAndQueries = Some(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessment.id)), viewSingleAnnouncementsAndQueries = Some(sa => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, sa.studentId)))
+    @queriesAndStudents(
+      metadata,
+      assessment.platform,
+      userMap,
+      Some(studentsWithQueries),
+      totalQueries,
+      totalAnnouncements,
+      viewAllAnnouncementsAndQueries = Some(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessment.id)),
+      viewSingleAnnouncementsAndQueries = Some(sa => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, sa.studentId)),
+      timingInfo = timingInfo
+    )
   </div>
 }

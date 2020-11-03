@@ -2,6 +2,7 @@
 @import domain.{Announcement, Assessment, SittingMetadata, StudentAssessment, tabula}
 @import tags._
 @import warwick.sso.{UniversityID, User, Usercode}
+@import services.TimingInfoService
 @(
     assessment: Assessment,
     studentAssessment: StudentAssessment,
@@ -10,12 +11,19 @@
     student: Map[UniversityID, tabula.SitsProfile],
     invigilators: Map[Usercode, User],
     department: Option[tabula.Department],
+    timingInfo: TimingInfoService,
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @adminLayout("Queries from " + student.get(studentAssessment.studentId).map(_.fullName).getOrElse(studentAssessment.studentId.string) + " for " + assessment.moduleCode, extraClasses = Seq("connect-ws")) {
   <div class="id7-main-content">
     <span class="in-progress-assessment-data" data-assessment="@assessment.id" data-usercode="@context.user.map(_.usercode.string)"></span>
-    @studentAssessmentInfo(Seq(SittingMetadata(studentAssessment, assessment.asAssessmentMetadata)), assessment.platform, student, viewAnnouncementsAndQueries = Some(s => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, s.studentId)))
+    @studentAssessmentInfo(
+      Seq(SittingMetadata(studentAssessment, assessment.asAssessmentMetadata)),
+      assessment.platform,
+      student,
+      viewAnnouncementsAndQueries = Some(s => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, s.studentId)),
+      timingInfo = timingInfo
+    )
     <details>
       <summary class="h3">Announcements (@announcements.size)</summary>
       @displayAnnouncements(announcements, invigilators)

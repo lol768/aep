@@ -8,12 +8,14 @@
 @import domain.Announcement
 @import domain.BaseSitting.ProgressState
 @import warwick.fileuploads.UploadedFileControllerHelper.UploadedFileConfiguration
+@import services.TimingInfoService
 
 @(
   sitting: Sitting,
   finishExamForm: Form[FinishExamFormData],
   announcements: Seq[Announcement],
   uploadedFileConfig: UploadedFileConfiguration,
+  timingInfo: TimingInfoService,
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @uploadForm = {
@@ -47,7 +49,7 @@
 
 @lateFileUploadWarning() = {
   <div id="late-upload-warning">
-  @if(sitting.getProgressState.contains(ProgressState.Late)) {
+  @if(sitting.getProgressState(timingInfo.lateSubmissionPeriod).contains(ProgressState.Late)) {
     <div class="alert alert-warning media">
       <div class="media-left">
         <i class="fas fa-exclamation-triangle"></i>
@@ -60,7 +62,7 @@
   </div>
 }
 
-@defining(if (sitting.canModify()) "beforeunload" else "") { className =>
+@defining(if (sitting.canModify(timingInfo.lateSubmissionPeriod)) "beforeunload" else "") { className =>
   @frontend(sitting.assessment.title,
     extraClasses = Seq("grey-nopad", "connect-ws", className),
     dataAttributes = Map(
@@ -89,7 +91,7 @@
       Alternative Exams Portal needs your permission to <a href="#" class="btn btn-primary btn-xs">show system notifications</a> for assessment announcements
     </div>
 
-    @assessmentPanel(sitting, isAssessmentPage = true)
+    @assessmentPanel(sitting, timingInfo, isAssessmentPage = true)
     @if(sitting.started) {
       @assessmentBrief(sitting.assessment, Some(sitting.studentAssessment.id), uploadedFileConfig)
 
@@ -139,7 +141,7 @@
         </div>
       }
 
-      @if(sitting.isCurrentForStudent || sitting.assessment.duration.isEmpty && sitting.started) {
+      @if(sitting.isCurrentForStudent(timingInfo.lateSubmissionPeriod) || sitting.assessment.duration.isEmpty && sitting.started) {
         <div class="panel panel-default">
           <div class="brand-stripe"></div>
           <div class="panel-body">
@@ -159,7 +161,7 @@
       }
 
       @if(sitting.assessment.platform.contains(Platform.OnlineExams)) {
-        @if(sitting.canModify()) {
+        @if(sitting.canModify(timingInfo.lateSubmissionPeriod)) {
           <div class="panel panel-default">
             <div class="brand-stripe"></div>
             <div class="panel-body">

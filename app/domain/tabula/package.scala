@@ -42,8 +42,10 @@ package object tabula {
   ) {
     lazy val totalExtraTimePerHour: Option[Duration] = {
       if (extraTimePerHour.nonEmpty || hourlyRestMinutes.nonEmpty) {
-        Some(extraTimePerHour.getOrElse(Duration.ofMinutes(0))
-          .plus(hourlyRestMinutes.getOrElse(Duration.ofMinutes(0))))
+        Some(
+          extraTimePerHour.getOrElse(Duration.ofMinutes(0))
+          .plus(hourlyRestMinutes.getOrElse(Duration.ofMinutes(0)))
+        )
       } else {
         None
       }
