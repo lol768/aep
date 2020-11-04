@@ -153,7 +153,7 @@ sealed trait BaseSitting {
           DeadlineMissed
         } else {
           val startTime = effectiveStartTime.get
-          val inProgressState = for (ad <- assessment.duration; d <- onTimeDuration; ld <- lateDuration(latePeriodAllowance)) yield {
+          val inProgressState = for (ad <- duration; d <- onTimeDuration; ld <- lateDuration(latePeriodAllowance)) yield {
             if (startTime.plus(ad).isAfter(now)) {
               InProgress
             } else if (startTime.plus(d).isAfter(now)) {

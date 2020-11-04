@@ -147,14 +147,17 @@ object DataGenerationService {
   def makeStoredStudentAssessment(
     assessmentId: UUID,
     studentId: UniversityID,
-    studentAssessmentId: UUID = UUID.randomUUID
+    studentAssessmentId: UUID = UUID.randomUUID,
+    hourlyExtraTime: Option[Option[Duration]] = None, // If None is passed, random generation occurs, if it's Some(None), you always get None
   ): StoredStudentAssessment = {
 
     val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
     // Random but deterministic for a given student
     val r = new Random(studentId.string.toLong)
     val twentyPercentChance = r.nextInt(5) == 0
-    val extraTimeAdjustmentPerHour = Option.when(twentyPercentChance)(Duration.ofMinutes(extraTimeAdjustmentDurations(r.nextInt(extraTimeAdjustmentDurations.length))))
+    val extraTimeAdjustmentPerHour = hourlyExtraTime.getOrElse(
+      Option.when(twentyPercentChance)(Duration.ofMinutes(extraTimeAdjustmentDurations(r.nextInt(extraTimeAdjustmentDurations.length))))
+    )
 
     StoredStudentAssessment(
       id = studentAssessmentId,
