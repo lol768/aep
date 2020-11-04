@@ -9,6 +9,7 @@ import domain.dao.{AbstractDaoTest, AssessmentDao, StudentAssessmentDao, Uploade
 import helpers.{CleanUpDatabaseAfterEachTest, DaoPatience}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.mockito.MockitoSugar
+import system.Features
 import uk.ac.warwick.util.core.DateTimeUtils
 import warwick.core.helpers.JavaTime
 
@@ -24,6 +25,7 @@ class ReportingServiceTest
   private lazy val sittingDao = get[StudentAssessmentDao]
   private lazy val fileDao = get[UploadedFileDao]
   private lazy val service = get[ReportingService]
+  private val features = get[Features]
 
   private val baseTime = LocalDateTime.of(2019, 4, 20, 0, 0, 0, 0)
 
@@ -88,8 +90,13 @@ class ReportingServiceTest
 
           // Not sure what makes sense in this section following new approach to timings (OE-116)
           val startedAndSubmittableResults = service.startedAndSubmittableAssessments.serviceValue
-          startedAndSubmittableResults must have size 20
-          startedAndSubmittableResults.map(_.startTime.value.getHour) mustEqual (4 to 23)
+          if (features.importStudentExtraTime) {
+            startedAndSubmittableResults must have size 18
+            startedAndSubmittableResults.map(_.startTime.value.getHour) mustEqual (6 to 23)
+          } else {
+            startedAndSubmittableResults must have size 20
+            startedAndSubmittableResults.map(_.startTime.value.getHour) mustEqual (4 to 23)
+          }
 
           val expectedResults = service.expectedSittings(sampleAssessment).serviceValue
           expectedResults.length mustBe 20

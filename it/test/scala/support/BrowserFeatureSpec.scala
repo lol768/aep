@@ -184,6 +184,11 @@ abstract class BrowserFeatureSpec extends AbstractFunctionalTest
       eventually(pageMustContain(text))
     }
 
+    def i_should_not_see_the_text(text: String): Unit = {
+      Then(s"I should not see the text '${unescape(text)}'")
+      eventually(pageContentMustNotContain(text))
+    }
+
     def the_page_content_should_contain(text: String): Unit = {
       Then(s"I should see in the content the text '${unescape(text)}'")
       pageContentMustContain(text)

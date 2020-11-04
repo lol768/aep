@@ -18,6 +18,7 @@ import play.api.mvc._
 import play.api.test.Helpers._
 import services.{AssessmentService, StudentAssessmentService, UploadedFileService}
 import specs.BaseSpec
+import system.Features
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
 import warwick.sso.{UniversityID, User}
@@ -32,6 +33,7 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
   private val assessmentService = get[AssessmentService]
   private val studentAssessmentService = get[StudentAssessmentService]
   private val uploadedFileService = get[UploadedFileService]
+  private val features = get[Features]
   private val RupertsSubmission: File = new File(getClass.getResource(Fixtures.uploadedFiles.specialJPG.path).getFile)
 
   implicit val mat: Materializer = get[Materializer]
@@ -218,18 +220,22 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
       contentAsString(resView) mustNot include(lateUploadWarning)
     }
 
-    "Still display the assessment view during the late submission period but warn submission will be marked late (DayWindow assessment)" in new StudentIntoLatePeriodScenario(DayWindow) { s =>
+    "Still display the assessment view during the late submission period but warn submission will be marked late if late period is active (DayWindow assessment)" in new StudentIntoLatePeriodScenario(DayWindow) { s =>
       private val resView = reqView(s.TheAssessment, s.Rupert)
       status(resView) mustBe OK
-      contentAsString(resView) must include(fileUploadFormElement)
-      contentAsString(resView) must include(lateUploadWarning)
+      if (!features.importStudentExtraTime) {
+        contentAsString(resView) must include(fileUploadFormElement)
+        contentAsString(resView) must include(lateUploadWarning)
+      }
     }
 
-    "Still display the assessment view during the late submission period but warn submission will be marked late (FixedStart assessment)" in new StudentIntoLatePeriodScenario(FixedStart) { s =>
+    "Still display the assessment view during the late submission period but warn submission will be marked late if late period is active (FixedStart assessment)" in new StudentIntoLatePeriodScenario(FixedStart) { s =>
       private val resView = reqView(s.TheAssessment, s.Rupert)
       status(resView) mustBe OK
-      contentAsString(resView) must include(fileUploadFormElement)
-      contentAsString(resView) must include(lateUploadWarning)
+      if (!features.importStudentExtraTime) {
+        contentAsString(resView) must include(fileUploadFormElement)
+        contentAsString(resView) must include(lateUploadWarning)
+      }
     }
 
     "No longer display the file upload form once the grace and late periods have passed (DayWindow assessment)" in new StudentMissedDeadlineScenario(DayWindow) { s =>

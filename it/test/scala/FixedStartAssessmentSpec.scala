@@ -64,7 +64,7 @@ class FixedStartAssessmentSpec extends BrowserFeatureSpec {
 
       And i_should_see_the_text s"you should be aiming to finish answering by ${time(uploadGraceStart)}"
       And i_should_see_the_text s"${time(uploadGraceStart)} You have 45 minutes until ${time(onTimeEnd)} to upload your answers"
-      And i_should_see_the_text s"${time(onTimeEnd)} Your assessment is now late"
+      And i_should_not_see_the_text s"${time(onTimeEnd)} Your assessment is now late"
       And i_should_see_the_text s"${time(lateEnd)} You can't upload answers at all after this point"
     }
 
