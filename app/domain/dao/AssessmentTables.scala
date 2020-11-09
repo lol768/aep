@@ -257,7 +257,7 @@ class AssessmentTables @Inject()(
 
   trait DeclarationsCommonProperties { self: Table[_] =>
     def acceptsAuthorship = column[Boolean]("accepts_authorship")
-    def selfDeclaredRA = column[Boolean]("self_declared_ra")
+    def selfDeclaredRA = column[Option[Boolean]]("self_declared_ra")
     def completedRADeclaration = column[Boolean]("completed_ra")
     def created = column[OffsetDateTime]("created_utc")
     def version = column[OffsetDateTime]("version_utc")

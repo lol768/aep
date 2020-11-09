@@ -221,7 +221,7 @@ class TabulaAssessmentServiceImpl @Inject()(
 
     // Point this url to the requestbin in case want to cross check what curl request was generated(Handy)
     val url = config.getCreateAssignmentSubmissionUrl(assignmentId)
-    val reasonableAdjustmentsDeclared: Boolean = sitting.declarations.selfDeclaredRA
+    val reasonableAdjustmentsDeclared: Option[Boolean] = sitting.declarations.selfDeclaredRA
 
     val fileParts = sitting.studentAssessment.uploadedFiles.map { file =>
       FilePart("attachments", file.fileName, Some(file.contentType), StreamConverters.fromInputStream(() => objectStorageService.fetch(file.id.toString).orNull))
