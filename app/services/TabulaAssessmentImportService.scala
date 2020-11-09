@@ -193,9 +193,6 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                     )
 
                     // Don't return no-ops
-                    if (updated.studentId.string == "1951127") {
-                      println(updated)
-                    }
                     Some(updated)
                       .filterNot(_ == studentAssessment)
                       .filter(sa => shouldBeUpdated(assessment, sa))
