@@ -1,5 +1,6 @@
 package services
 
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
@@ -50,6 +51,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   features: Features,
   scheduler: Scheduler,
   auditService: AuditService,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
 
@@ -194,7 +196,9 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                     if (updated.studentId.string == "1951127") {
                       println(updated)
                     }
-                    Some(updated).filterNot(_ == studentAssessment)
+                    Some(updated)
+                      .filterNot(_ == studentAssessment)
+                      .filter(sa => shouldBeUpdated(assessment, sa))
                   }
                 }
 
@@ -212,7 +216,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                     }
                   }.getOrElse {
                     Seq.empty
-                  }
+                  }.filter(sa => shouldBeUpdated(assessment, sa))
                 }
 
               mockUpdates.flatMap { mocks =>
@@ -224,6 +228,19 @@ class TabulaAssessmentImportServiceImpl @Inject()(
           }
         }
     }.getOrElse(Future.successful(ServiceResults.success(None)))
+  }
+
+  private def shouldBeUpdated(assessment: Assessment, studentAssessment: StudentAssessment): Boolean = {
+    val lastStartTime = if (features.importStudentExtraTime) {
+      assessment.defaultLastAllowedStartTime(timingInfo.lateSubmissionPeriod)
+        .map(_.plus(
+          studentAssessment.extraTimeAdjustment(assessment.duration.getOrElse(Duration.ZERO)).getOrElse(Duration.ZERO)
+        ))
+    } else {
+      assessment.defaultLastAllowedStartTime(timingInfo.lateSubmissionPeriod)
+    }
+    (studentAssessment.startTime.isEmpty || studentAssessment.startTime.exists(_.isAfter(OffsetDateTime.now))) &&
+      (lastStartTime.isEmpty || lastStartTime.exists(_.isAfter(OffsetDateTime.now)))
   }
 }
 

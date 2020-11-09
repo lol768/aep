@@ -1,20 +1,9 @@
 package services
 
 import java.time.Duration
-import java.util.UUID
-
-import akka.Done
 import com.google.inject.ImplementedBy
-import domain.AuditEvent.{Operation, Target}
-import domain.UploadAttempt
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.Json
 import system.Features
-import warwick.core.helpers.ServiceResults
-import warwick.core.helpers.ServiceResults.ServiceResult
-import warwick.core.system.{AuditLogContext, AuditService}
-
-import scala.concurrent.Future
 
 @ImplementedBy(classOf[TimingInfoServiceImpl])
 trait TimingInfoService {
