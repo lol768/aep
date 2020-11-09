@@ -8,7 +8,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.mvc.{ActionFilter, ActionRefiner, MultipartFormData, Result}
 import services.tabula.TabulaDepartmentService
-import services.{AssessmentService, StudentAssessmentService}
+import services.{AssessmentService, StudentAssessmentService, TimingInfoService}
 import system.Roles
 import warwick.core.helpers.JavaTime
 import warwick.core.helpers.ServiceResults.Implicits._
@@ -24,6 +24,7 @@ class ActionRefiners @Inject() (
   groupService: GroupService,
   deptService: TabulaDepartmentService,
   configuration: Configuration,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends ServiceResultErrorRendering {
 
   // Type aliases to shorten some long lines
@@ -122,7 +123,7 @@ class ActionRefiners @Inject() (
     new Filter[StudentAssessmentSpecificRequest] {
       override protected def apply[A](implicit request: StudentAssessmentSpecificRequest[A]): Future[Option[Result]] =
         Future.successful {
-          if (request.sitting.finalised)
+          if (request.sitting.finalised(timingInfo.lateSubmissionPeriod))
             Some(Forbidden(views.html.errors.assessmentFinished(request.sitting)))
           else
             None
@@ -141,7 +142,7 @@ class ActionRefiners @Inject() (
             case _ => JavaTime.offsetDateTime
           }
 
-          if (request.sitting.canModify(referenceDate) || allowWhereNoDuration && request.sitting.assessment.duration.isEmpty && request.sitting.started)
+          if (request.sitting.canModify(timingInfo.lateSubmissionPeriod, referenceDate) || allowWhereNoDuration && request.sitting.assessment.duration.isEmpty && request.sitting.started)
             None
           else
             Some(Forbidden(views.html.errors.studentCannotModifySubmission(request.sitting)))

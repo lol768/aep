@@ -96,6 +96,11 @@ object Fixtures {
       universityId = Some(UniversityID("1900003")),
       name = Name(Some("Student"), Some("User3"))
     )
+    val student4: User = baseStudent.copy(
+      usercode = Usercode("student4"),
+      universityId = Some(UniversityID("1900004")),
+      name = Name(Some("Student"), Some("User4"))
+    )
 
     def students(count: Int = 9): Set[User] = (1 to count).map { i =>
       val index = f"$i%03d"
@@ -128,8 +133,12 @@ object Fixtures {
   object studentAssessments {
     import helpers.DateConversion._
 
-    def storedStudentAssessment(assId: UUID, studentId: UniversityID = users.student1.universityId.get): StoredStudentAssessment = {
-      DataGenerationService.makeStoredStudentAssessment(assId, studentId)
+    def storedStudentAssessment(
+      assId: UUID,
+      studentId: UniversityID = users.student1.universityId.get,
+      hourlyExtraTime: Option[Option[Duration]] = None
+    ): StoredStudentAssessment = {
+      DataGenerationService.makeStoredStudentAssessment(assId, studentId, hourlyExtraTime = hourlyExtraTime)
     }
 
     def storedDeclarations(id: UUID): StoredDeclarations = {

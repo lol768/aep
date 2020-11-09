@@ -31,6 +31,7 @@ trait StudentAssessmentService {
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def sittingsByAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
+  def byUniversityIds(universityIds: Seq[UniversityID])(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
   def getSittingsMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]]
   def getSittingsMetadata(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]]
@@ -56,6 +57,7 @@ class StudentAssessmentServiceImpl @Inject()(
   assessmentService: AssessmentService,
   assessmentDao: AssessmentDao,
   assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
 
 
@@ -86,6 +88,12 @@ class StudentAssessmentServiceImpl @Inject()(
     daoRunner.run(dao.loadByUniversityIdWithUploadedFiles(universityId))
       .map(inflateRowsWithUploadedFiles)
       .flatMap(convertToSittings)
+  }
+
+  override def byUniversityIds(universityIds: Seq[UniversityID])(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] = {
+    daoRunner.run(dao.loadByUniversityIDsWithUploadedFiles(universityIds))
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
   }
 
   private def convertToSittings(studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
@@ -146,7 +154,7 @@ class StudentAssessmentServiceImpl @Inject()(
 
   private def assertTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
     require(storedAssessment.hasStartTimePassed(), "Cannot do assessment, too early")
-    require(!storedAssessment.hasLastAllowedStartTimePassed(), "Cannot do assessment, too late")
+    require(!storedAssessment.hasDefaultLastAllowedStartTimePassed(timingInfo.lateSubmissionPeriod), "Cannot do assessment, too late")
   }
 
   private def hasAcceptedDeclarations(storedDeclarations: Option[StoredDeclarations]): Future[Unit] = Future.successful {

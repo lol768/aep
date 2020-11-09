@@ -1,5 +1,6 @@
 package services
 
+import java.time.{Duration, OffsetDateTime}
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
@@ -50,6 +51,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
   features: Features,
   scheduler: Scheduler,
   auditService: AuditService,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentImportService with Logging {
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
 
@@ -164,7 +166,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
               val additions: Seq[StudentAssessment] =
                 schedule.students.filterNot(s => studentAssessments.exists(_.studentId == s.universityID))
                   .map { scheduleStudent =>
-                    val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                    val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.totalExtraTimePerHour else None
                     StudentAssessment(
                       id = UUID.randomUUID(),
                       assessmentId = assessment.id,
@@ -182,7 +184,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
 
               val modifications: Seq[StudentAssessment] =
                 schedule.students.flatMap { scheduleStudent =>
-                  val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.extraTimePerHour else None
+                  val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.totalExtraTimePerHour else None
                   studentAssessments.find(_.studentId == scheduleStudent.universityID).flatMap { studentAssessment =>
                     val updated = studentAssessment.copy(
                       extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour,
@@ -191,17 +193,51 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                     )
 
                     // Don't return no-ops
-                    Some(updated).filterNot(_ == studentAssessment)
+                    Some(updated)
+                      .filterNot(_ == studentAssessment)
+                      .filter(sa => shouldBeUpdated(assessment, sa))
                   }
                 }
 
-              ServiceResults.futureSequence(
-                deletions.map(studentAssessmentService.delete) ++
-                (additions ++ modifications).map(studentAssessmentService.upsert)
-              ).successMapTo(_ => Some(assessment))
+              val mockUpdates: Future[Seq[StudentAssessment]] =
+                studentAssessmentService.byUniversityIds(schedule.students.map(_.universityID)).map {
+                  _.toOption.map { studentAssessments =>
+                    studentAssessments.filter(_.tabulaSubmissionId.isEmpty).map { original =>
+                      val scheduleStudent = schedule.students.find(_.universityID == original.studentId).getOrElse(
+                        throw new IllegalStateException(s"Could not find schedule student with ID ${original.studentId}")
+                      )
+                      val extraTimeAdjustmentPerHour = if (features.importStudentExtraTime) scheduleStudent.totalExtraTimePerHour else None
+                      original.copy(
+                        extraTimeAdjustmentPerHour = extraTimeAdjustmentPerHour
+                      )
+                    }
+                  }.getOrElse {
+                    Seq.empty
+                  }.filter(sa => shouldBeUpdated(assessment, sa))
+                }
+
+              mockUpdates.flatMap { mocks =>
+                ServiceResults.futureSequence(
+                  deletions.map(studentAssessmentService.delete) ++
+                    (additions ++ modifications ++ mocks).map(studentAssessmentService.upsert)
+                ).successMapTo(_ => Some(assessment))
+              }
           }
         }
     }.getOrElse(Future.successful(ServiceResults.success(None)))
+  }
+
+  private def shouldBeUpdated(assessment: Assessment, studentAssessment: StudentAssessment): Boolean = {
+    val lastStartTime = if (features.importStudentExtraTime) {
+      assessment.defaultLastAllowedStartTime(timingInfo.lateSubmissionPeriod)
+        .map(_.plus(
+          studentAssessment.extraTimeAdjustment(assessment.duration.getOrElse(Duration.ZERO)).getOrElse(Duration.ZERO)
+        ))
+    } else {
+      assessment.defaultLastAllowedStartTime(timingInfo.lateSubmissionPeriod)
+    }
+    (studentAssessment.startTime.isEmpty || studentAssessment.startTime.exists(_.isAfter(OffsetDateTime.now))) &&
+      (lastStartTime.isEmpty || lastStartTime.exists(_.isAfter(OffsetDateTime.now)))
   }
 }
 

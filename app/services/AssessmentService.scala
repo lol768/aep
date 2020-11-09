@@ -75,7 +75,8 @@ class AssessmentServiceImpl @Inject()(
   dao: AssessmentDao,
   studentAssessmentDao: StudentAssessmentDao,
   uploadedFileService: UploadedFileService,
-  assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao
+  assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends AssessmentService {
 
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
@@ -157,7 +158,7 @@ class AssessmentServiceImpl @Inject()(
               a.startTime.exists {
                 st => st
                   .plus(a.duration.getOrElse(Duration.ZERO))
-                  .plus(Assessment.lateSubmissionPeriod)
+                  .plus(timingInfo.lateSubmissionPeriod)
                   .plus(adjustment)
                   .isAfter(now)
               }

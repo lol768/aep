@@ -3,6 +3,7 @@ import java.time.{Duration, LocalTime, OffsetDateTime}
 
 import domain.Fixtures
 import support.BrowserFeatureSpec
+import system.Features
 import warwick.core.helpers.JavaTime
 
 import scala.language.postfixOps
@@ -11,6 +12,8 @@ import scala.languageFeature.postfixOps
 class FixedStartAssessmentSpec extends BrowserFeatureSpec {
 
   import Fixtures.users.{student1 => student}
+
+  private val features = get[Features]
 
   "A student" should {
     "be able to view an upcoming assessment" in {
@@ -59,12 +62,20 @@ class FixedStartAssessmentSpec extends BrowserFeatureSpec {
 
       val uploadGraceStart = startTime.plusHours(3)
       val onTimeEnd = startTime.plusHours(3).plusMinutes(45)
-      val lateEnd = startTime.plusHours(3).plusMinutes(45).plusHours(2)
+      val lateEnd = if (features.importStudentExtraTime) {
+        onTimeEnd // No late period allowance
+      } else {
+        startTime.plusHours(3).plusMinutes(45).plusHours(2)
+      }
       def time(odt: OffsetDateTime) = JavaTime.Relative(odt, printToday = false)
 
       And i_should_see_the_text s"you should be aiming to finish answering by ${time(uploadGraceStart)}"
       And i_should_see_the_text s"${time(uploadGraceStart)} You have 45 minutes until ${time(onTimeEnd)} to upload your answers"
-      And i_should_see_the_text s"${time(onTimeEnd)} Your assessment is now late"
+      if (features.importStudentExtraTime) {
+        And i_should_not_see_the_text s"${time(onTimeEnd)} Your assessment is now late"
+      } else {
+        And i_should_see_the_text s"${time(onTimeEnd)} Your assessment is now late"
+      }
       And i_should_see_the_text s"${time(lateEnd)} You can't upload answers at all after this point"
     }
 

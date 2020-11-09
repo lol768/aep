@@ -8,6 +8,7 @@ import domain.Assessment.{DurationStyle, State}
 import domain.Fixtures.studentAssessments
 import domain._
 import helpers.CleanUpDatabaseAfterEachTest
+import system.Features
 import uk.ac.warwick.util.core.DateTimeUtils
 import warwick.core.helpers.JavaTime
 
@@ -19,6 +20,7 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
 
   private val dao = get[AssessmentDao]
   private val studentDao = get[StudentAssessmentDao]
+  private val features = get[Features]
   private def lookupException = throw new Exception("DAO lookup failed")
 
   "AssessmentDao" should {
@@ -209,7 +211,11 @@ class AssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfterEachTes
       withClue("Still not available after 5h 30m") {
         DateTimeUtils.useMockDateTime(now.plus(Duration.ofHours(5).plusMinutes(30)), () => {
           val result = exec(dao.getAssessmentsRequiringUpload)
-          result must have size 0
+          if (features.importStudentExtraTime) {
+            result must have size 1
+          } else {
+            result must have size 0
+          }
         })
       }
 

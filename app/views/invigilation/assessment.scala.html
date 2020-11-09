@@ -5,6 +5,7 @@
 @import tags._
 @import warwick.sso.{UniversityID, Usercode}
 
+@import services.TimingInfoService
 @(
   assessment: Assessment,
   sittingMetadata: Seq[SittingMetadata],
@@ -15,7 +16,8 @@
   queriesFromStudents: Seq[Message],
   totalAnnouncements: Int,
   invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
-  latestStudentActivities: Map[UUID, AssessmentClientNetworkActivity]
+  latestStudentActivities: Map[UUID, AssessmentClientNetworkActivity],
+  timingInfo: TimingInfoService,
 )(implicit request: RequestHeader, messagesProvider: MessagesProvider, context: RequestContext)
 
 @adminLayout(s"Invigilation for assessment ${assessment.moduleCode}", headTitle = s"${assessment.moduleCode} invigilation", extraClasses = Seq("connect-ws", "allAnnouncementsAndQueries")) {
@@ -35,7 +37,18 @@
       </div>
     </div>
     <div class="studentAssessmentInfo no-wide-tables" data-id="@assessment.id" data-route="expected">
-      @queriesAndStudents(sittingMetadata, assessment.platform, students, Some(studentsWithQueries), queriesFromStudents.size, totalAnnouncements, latestStudentActivities, viewAllAnnouncementsAndQueries = Some(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessment.id)), viewSingleAnnouncementsAndQueries = Some(sa => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, sa.studentId)))
+      @queriesAndStudents(
+        sittingMetadata,
+        assessment.platform,
+        students,
+        Some(studentsWithQueries),
+        queriesFromStudents.size,
+        totalAnnouncements,
+        latestStudentActivities,
+        viewAllAnnouncementsAndQueries = Some(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessment.id)),
+        viewSingleAnnouncementsAndQueries = Some(sa => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, sa.studentId)),
+        timingInfo = timingInfo
+      )
     </div>
   </div>
 }

@@ -153,6 +153,7 @@ trait StudentAssessmentDao {
   def loadByAssessmentIdWithUploadedFiles(assessmentId: UUID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]]
   def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
+  def loadByUniversityIDsWithUploadedFiles(universityIds: Seq[UniversityID]): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def get(studentId: UniversityID, assessmentId: UUID): DBIO[Option[StoredStudentAssessment]]
   def loadWithUploadedFiles(studentId: UniversityID, assessmentId: UUID): DBIO[Option[(StoredStudentAssessment, Set[StoredUploadedFile])]]
   def delete(studentId: UniversityID, assessmentId: UUID)(implicit ac: AuditLogContext): DBIO[Int]
@@ -195,11 +196,17 @@ class StudentAssessmentDaoImpl @Inject()(
   private def getByUniversityIdQuery(studentId: UniversityID): Query[StudentAssessments, StoredStudentAssessment, Seq] =
     studentAssessments.table.filter(_.studentId === studentId)
 
+  private def getByUniversityIdsQuery(universityIds: Seq[UniversityID]): Query[StudentAssessments, StoredStudentAssessment, Seq] =
+    studentAssessments.table.filter(_.studentId inSetBind universityIds)
+
   override def getByUniversityId(studentId: UniversityID): DBIO[Seq[StoredStudentAssessment]] =
     getByUniversityIdQuery(studentId).result
 
   override def loadByUniversityIdWithUploadedFiles(studentId: UniversityID): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]] =
     getByUniversityIdQuery(studentId).withUploadedFiles.result.map(OneToMany.leftJoinUnordered)
+
+  override def loadByUniversityIDsWithUploadedFiles(universityIds: Seq[UniversityID]): DBIO[Seq[(StoredStudentAssessment, Set[StoredUploadedFile])]] =
+    getByUniversityIdsQuery(universityIds).withUploadedFiles.result.map(OneToMany.leftJoinUnordered)
 
   private def getByAssessmentIdQuery(assessmentId: UUID): Query[StudentAssessments, StoredStudentAssessment, Seq] =
     studentAssessments.table.filter(_.assessmentId === assessmentId)

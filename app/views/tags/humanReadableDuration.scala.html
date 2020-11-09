@@ -1,0 +1,16 @@
+@import java.time.Duration
+@(duration: Duration)
+  @defining(duration.toHours) { hours =>
+    @defining(duration.toMinutes - (hours * 60)) { minutes =>
+      @if(hours > 0L) {
+        @hours hour@if(hours > 1L){s}
+      }
+      @if(minutes > 0L) {
+        @if(hours > 0L) {
+          and
+        }
+        @minutes minute@if(minutes > 1L){s}
+      }
+    }
+  }
+

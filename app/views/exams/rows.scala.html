@@ -1,7 +1,12 @@
 @import domain.Sitting
 @import tags._
 
-@(title: String, assessments: Seq[Sitting])(implicit requestHeader: RequestHeader, context: RequestContext)
+@import services.TimingInfoService
+@(
+  title: String,
+  assessments: Seq[Sitting],
+  timingInfo: TimingInfoService,
+)(implicit requestHeader: RequestHeader, context: RequestContext)
 
 @if(assessments.nonEmpty) {
   <h2>@title</h2>
@@ -10,7 +15,7 @@
   <div class="row">
     @row.map { a =>
       <div class="col-md-6">
-        @assessmentPanel(a)
+        @assessmentPanel(a, timingInfo)
       </div>
     }
   </div>

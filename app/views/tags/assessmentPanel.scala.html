@@ -2,7 +2,12 @@
 @import domain.Assessment.Platform
 @import tags._
 
-@(sitting: Sitting, isAssessmentPage: Boolean = false)(implicit request: RequestHeader, context: RequestContext)
+@import services.TimingInfoService
+@(
+  sitting: Sitting,
+  timingInfo: TimingInfoService,
+  isAssessmentPage: Boolean = false,
+)(implicit request: RequestHeader, context: RequestContext)
 <div class="panel panel-default assessment-information-panel">
     @if(isAssessmentPage) {
         <div class="brand-stripe"></div>
@@ -13,7 +18,7 @@
                 <div class="col-lg-6">
         } else {
             <h4>
-                @if(sitting.finalised) {
+                @if(sitting.finalised(timingInfo.lateSubmissionPeriod)) {
                     <i class="fas fa-check fa-fw"></i>
                 }
                 @sitting.assessment.paperCode
@@ -22,23 +27,23 @@
             </h4>
         }
 
-        @studentAssessmentMetadata(sitting)
+        @studentAssessmentMetadata(sitting, timingInfo)
 
         @if(isAssessmentPage) {
             @b3.vertical.formCSRF(controllers.routes.AssessmentController.start(sitting.assessment.id)) { implicit fc =>
                 @if(sitting.studentAssessment.startTime.isEmpty) {
-                    <button type="submit" class="btn btn-primary @if(!sitting.assessment.hasStartTimePassed() || sitting.assessment.hasLastAllowedStartTimePassed()) {hide}" id="startAssessment">
+                    <button type="submit" class="btn btn-primary @if(!sitting.assessment.hasStartTimePassed() || sitting.hasLastAllowedStartTimeForStudentPassed(timingInfo.lateSubmissionPeriod)) {hide}" id="startAssessment">
                         Start
                     </button>
-                } else if (!sitting.assessment.platform.contains(Platform.OnlineExams) && sitting.assessment.hasStartTimePassed() && !sitting.assessment.hasLastAllowedStartTimePassed()) {
+                } else if (!sitting.assessment.platform.contains(Platform.OnlineExams) && sitting.assessment.hasStartTimePassed() && !sitting.hasLastAllowedStartTimeForStudentPassed(timingInfo.lateSubmissionPeriod)) {
                     <button disabled="disabled" class="btn btn-default">Started</button>
                 }
-                @assessmentTiming(sitting)
+                @assessmentTiming(sitting, timingInfo)
             }
             </div>
-            @if(!sitting.finalised) {
+            @if(!sitting.finalised(timingInfo.lateSubmissionPeriod)) {
                 <div class="col-lg-6">
-                    @assessmentTimeline(sitting)
+                    @assessmentTimeline(sitting, timingInfo)
                 </div>
             }
         </div>
@@ -46,7 +51,7 @@
             <a href="@routes.AssessmentController.view(sitting.assessment.id)" class="btn btn-primary">
                 View
             </a>
-            @assessmentTiming(sitting)
+            @assessmentTiming(sitting, timingInfo)
         }
     </div>
 </div>

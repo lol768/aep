@@ -1,8 +1,14 @@
 @import domain.Assessment
 @import views.html.tags._
 @import Assessment.DurationStyle._
+@import services.TimingInfoService
 
-@(assessment: Assessment)(implicit context: RequestContext)
+@import domain.Sitting
+@(
+  assessment: Assessment,
+  timingInfo: TimingInfoService,
+  sitting: Option[Sitting] = None,
+)(implicit context: RequestContext)
 
 <dt>Module</dt>
 <dd>
@@ -28,7 +34,7 @@
     <dd>
         <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@durationWords(assessment)
 
-        @if(!assessment.hasLastAllowedStartTimePassed()) {
+        @if(!assessment.hasDefaultLastAllowedStartTimePassed(timingInfo.lateSubmissionPeriod)) {
             @assessment.durationStyle match {
                 case Some(DayWindow) => {
                     <div>
@@ -42,6 +48,13 @@
                 }
                 case _ => {}
             }
+        }
+        @sitting.map{ s =>
+          @if(!s.totalExtraTime.isZero) {
+              <div class="text-info">
+                  You have @humanReadableDuration(s.totalExtraTime) agreed extra time in addition to this
+              </div>
+          }
         }
     </dd>
 }

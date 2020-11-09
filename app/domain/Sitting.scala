@@ -18,24 +18,33 @@ sealed trait BaseSitting {
 
   val started: Boolean = studentAssessment.startTime.nonEmpty
 
+  val totalExtraTime: Duration = studentAssessment.extraTimeAdjustment(assessment.duration.getOrElse(Duration.ofMinutes(0L)))
+    .getOrElse(Duration.ofMinutes(0L))
+
   /** Finalised either explicitly or by the exam ending (as long as some files were uploaded) */
-  lazy val finalised: Boolean = finalisedTime.nonEmpty
+  def finalised(latePeriodAllowance: Duration): Boolean = finalisedTime(latePeriodAllowance).nonEmpty
 
   lazy val explicitlyFinalised: Boolean = studentAssessment.hasExplicitlyFinalised
 
-  lazy val finalisedTime: Option[OffsetDateTime] = studentAssessment.explicitFinaliseTime
-    .orElse(studentAssessment.submissionTime.filter(_ => hasLateEndPassed))
+  def finalisedTime(latePeriodAllowance: Duration): Option[OffsetDateTime] = studentAssessment.explicitFinaliseTime
+    .orElse(studentAssessment.submissionTime.filter(_ => hasLateEndPassed(latePeriodAllowance)))
 
-  lazy val inProgress: Boolean = started && !finalised
+  def inProgress(latePeriodAllowance: Duration): Boolean = started && !finalised(latePeriodAllowance)
 
-  def isCurrentForStudent: Boolean = !finalised && assessment.isCurrent
+  def lastAllowedStartTimeForStudent(latePeriodAllowance: Duration): Option[OffsetDateTime] =
+    assessment.defaultLastAllowedStartTime(latePeriodAllowance).map(_.plus(totalExtraTime))
+
+  def hasLastAllowedStartTimeForStudentPassed(latePeriodAllowance: Duration, referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean =
+    lastAllowedStartTimeForStudent(latePeriodAllowance).exists(_.isBefore(referenceDate))
+
+  def isCurrentForStudent(latePeriodAllowance: Duration): Boolean = !finalised(latePeriodAllowance) && assessment.isCurrent(latePeriodAllowance)
 
   case class DurationInfo(durationWithExtraAdjustment: Duration, onTimeDuration: Duration, lateDuration: Duration)
   case class TimingInfo(startTime: OffsetDateTime, uploadGraceStart: OffsetDateTime, onTimeEnd: OffsetDateTime, lateEnd: OffsetDateTime)
 
   // How long the student has to complete the assessment (excludes upload grace duration)
   lazy val duration: Option[Duration] = assessment.duration.map { d =>
-    d.plus(studentAssessment.extraTimeAdjustment(d).getOrElse(Duration.ZERO))
+    d.plus(totalExtraTime)
   }
 
   // How long the student has to complete the assessment including submission uploads
@@ -45,33 +54,32 @@ sealed trait BaseSitting {
   }
 
   // Hard limit for student submitting, though they may be counted late.
-  lazy val lateDuration: Option[Duration] = onTimeDuration.map { d =>
-    require(Assessment.lateSubmissionPeriod != null, "Assessment.lateSubmissionPeriod is null!")
-    d.plus(Assessment.lateSubmissionPeriod)
+  def lateDuration(latePeriodAllowance: Duration): Option[Duration] = onTimeDuration.map { d =>
+    d.plus(latePeriodAllowance)
   }
 
-  private def clampToWindow(time: OffsetDateTime): Option[OffsetDateTime] =
-    (Seq(time) ++ assessment.lastAllowedStartTime).minOption
+  private def clampToWindow(time: OffsetDateTime, latePeriodAllowance: Duration): Option[OffsetDateTime] =
+    (Seq(time) ++ lastAllowedStartTimeForStudent(latePeriodAllowance)).minOption
 
   /** The latest that you can submit and still be considered on time */
-  lazy val onTimeEnd: Option[OffsetDateTime] =
+  def onTimeEnd(latePeriodAllowance: Duration): Option[OffsetDateTime] =
     for {
       start <- effectiveStartTime
-      duration <- onTimeDuration
-      time <- clampToWindow(start.plus(duration))
+      otDuration <- onTimeDuration
+      time <- clampToWindow(start.plus(otDuration), latePeriodAllowance)
     } yield time
 
 
   /** The latest that you can submit _at all_ */
-  lazy val lateEnd: Option[OffsetDateTime] =
+  def lateEnd(latePeriodAllowance: Duration): Option[OffsetDateTime] =
     for {
       start <- effectiveStartTime
-      duration <- lateDuration
-      time <- clampToWindow(start.plus(duration))
+      duration <- lateDuration(latePeriodAllowance)
+      time <- clampToWindow(start.plus(duration), latePeriodAllowance)
     } yield time
 
-  private def hasLateEndPassed: Boolean =
-    lateEnd.exists(_.isBefore(JavaTime.offsetDateTime))
+  private def hasLateEndPassed(latePeriodAllowance: Duration): Boolean =
+    lateEnd(latePeriodAllowance).exists(_.isBefore(JavaTime.offsetDateTime))
 
   lazy val effectiveStartTime: Option[OffsetDateTime] = assessment.durationStyle match {
     case Some(DurationStyle.DayWindow) => studentAssessment.startTime
@@ -79,70 +87,73 @@ sealed trait BaseSitting {
     case _ => None
   }
 
-  lazy val durationInfo: Option[DurationInfo] = duration.map { d => DurationInfo(d, onTimeDuration.get, lateDuration.get) }
-  lazy val timingInfo: Option[TimingInfo] = for {
+  def durationInfo(latePeriodAllowance: Duration): Option[DurationInfo] = duration.map { d =>
+    DurationInfo(d, onTimeDuration.get, lateDuration(latePeriodAllowance).get)
+  }
+
+  def timingInfo(latePeriodAllowance: Duration): Option[TimingInfo] = for {
     d <- duration
     est <- effectiveStartTime
   } yield TimingInfo(
     startTime = est,
-    uploadGraceStart = Seq(est.plus(d), onTimeEnd.get).min,
-    onTimeEnd = onTimeEnd.get,
-    lateEnd = lateEnd.get
+    uploadGraceStart = Seq(est.plus(d), onTimeEnd(latePeriodAllowance).get).min,
+    onTimeEnd = onTimeEnd(latePeriodAllowance).get,
+    lateEnd = lateEnd(latePeriodAllowance).get
   )
 
-  def canModify(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = studentAssessment.startTime.exists(startTime =>
-    lateDuration.exists { d =>
-      !finalised &&
+  def canModify(latePeriodAllowance: Duration, referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = studentAssessment.startTime.exists(startTime =>
+    lateDuration(latePeriodAllowance).exists { d =>
+      !finalised(latePeriodAllowance) &&
         startTime.plus(d).isAfter(referenceDate) &&
-        !assessment.hasLastAllowedStartTimePassed(referenceDate)
+        !hasLastAllowedStartTimeForStudentPassed(latePeriodAllowance, referenceDate)
     }
   )
 
-  def getTimingInfo: AssessmentTimingUpdate = {
+  def getTimingInfo(latePeriodAllowance: Duration): AssessmentTimingUpdate = {
     AssessmentTimingUpdate(
       id = assessment.id,
       windowStart = assessment.startTime,
-      windowEnd = assessment.lastAllowedStartTime,
-      lastRecommendedStart = Seq(onTimeDuration.flatMap(d => assessment.lastAllowedStartTime.map(_.minus(d))), assessment.startTime).max,
+      windowEnd = lastAllowedStartTimeForStudent(latePeriodAllowance),
+      lastRecommendedStart = Seq(onTimeDuration.flatMap(d => lastAllowedStartTimeForStudent(latePeriodAllowance).map(_.minus(d))), assessment.startTime).max,
       start = studentAssessment.startTime,
-      end = onTimeEnd,
+      end = onTimeEnd(latePeriodAllowance),
       hasStarted = studentAssessment.startTime.nonEmpty,
-      hasFinalised = finalised,
+      hasFinalised = finalised(latePeriodAllowance),
       extraTimeAdjustment = assessment.duration.flatMap(studentAssessment.extraTimeAdjustment),
       showTimeRemaining = duration.isDefined,
-      progressState = getProgressState,
-      submissionState = getSubmissionState,
+      progressState = getProgressState(latePeriodAllowance),
+      submissionState = getSubmissionState(latePeriodAllowance),
       durationStyle = assessment.durationStyle,
     )
   }
 
-  lazy val getSubmissionState: SubmissionState =
+  def getSubmissionState(latePeriodAllowance: Duration): SubmissionState =
     studentAssessment.submissionTime match {
-      case Some(submitTime) if onTimeEnd.exists(submitTime.isBefore) => SubmissionState.OnTime
-      case Some(_) if onTimeEnd.isEmpty => SubmissionState.Submitted
+      case Some(submitTime) if onTimeEnd(latePeriodAllowance).exists(submitTime.isBefore) => SubmissionState.OnTime
+      case Some(_) if onTimeEnd(latePeriodAllowance).isEmpty => SubmissionState.Submitted
       case Some(_) => SubmissionState.Late
       case None => SubmissionState.None
     }
 
-  def getProgressState: Option[ProgressState] = {
+  def getProgressState(latePeriodAllowance: Duration): Option[ProgressState] = {
     val now = JavaTime.offsetDateTime
     assessment.startTime.map { assessmentStartTime =>
       if (assessmentStartTime.isAfter(now)) {
         AssessmentNotYetOpen
       } else if (studentAssessment.startTime.isEmpty) {
-        if (assessment.hasLastAllowedStartTimePassed()) {
+        if (hasLastAllowedStartTimeForStudentPassed(latePeriodAllowance)) {
           NoShow
         } else {
           AssessmentOpenNotStarted
         }
-      } else if (inProgress) {
+      } else if (inProgress(latePeriodAllowance)) {
         if (!assessment.platform.contains(Platform.OnlineExams)) {
           Started
-        } else if (assessment.hasLastAllowedStartTimePassed()) {
+        } else if (hasLastAllowedStartTimeForStudentPassed(latePeriodAllowance)) {
           DeadlineMissed
         } else {
           val startTime = effectiveStartTime.get
-          val inProgressState = for (ad <- assessment.duration; d <- onTimeDuration; ld <- lateDuration) yield {
+          val inProgressState = for (ad <- duration; d <- onTimeDuration; ld <- lateDuration(latePeriodAllowance)) yield {
             if (startTime.plus(ad).isAfter(now)) {
               InProgress
             } else if (startTime.plus(d).isAfter(now)) {
@@ -162,9 +173,9 @@ sealed trait BaseSitting {
   }
 
   /** Summary for invigilators */
-  def getSummaryStatusLabel: Option[String] = {
-    lazy val submission = getSubmissionState
-    getProgressState map {
+  def getSummaryStatusLabel(latePeriodAllowance: Duration): Option[String] = {
+    lazy val submission = getSubmissionState(latePeriodAllowance)
+    getProgressState(latePeriodAllowance) map {
       case ProgressState.Late if submission == SubmissionState.OnTime => "Submitted, not finalised"
       case ProgressState.Late if submission == SubmissionState.Late => "Submitted late, not finalised"
       case ProgressState.Finalised if submission == SubmissionState.Late => "Finalised (submitted late)"

@@ -67,6 +67,7 @@ class WebSocketController @Inject()(
   announcementService: AnnouncementService,
   uploadAttemptService: UploadAuditingService,
   features: Features,
+  timingInfo: TimingInfoService,
 )(implicit
   mat: Materializer,
   actorSystem: ActorSystem,
@@ -87,7 +88,7 @@ class WebSocketController @Inject()(
           case Some(user) =>
             logger.info(s"WebSocket opening for ${user.usercode.string}")
             studentAssessmentService.byUniversityId(user.universityId.get)
-                .successMapTo(_.filter(_.inProgress).map(_.assessment.id))
+                .successMapTo(_.filter(_.inProgress(timingInfo.lateSubmissionPeriod)).map(_.assessment.id))
                 .map(_.getOrElse(Nil)).zip(
                   assessmentService.listForInvigilator(Set(user.usercode))
                     .successMapTo(_.map(_.id))
@@ -103,6 +104,7 @@ class WebSocketController @Inject()(
                 uploadAttemptService = uploadAttemptService,
                 features = features,
                 messages = request2Messages,
+                timingInfo = timingInfo,
                 additionalTopics = (
                   // Things relevant ao ALL student on the assessment e.g. announcements
                   relatedStudentAssessmentIds.map(Topics.allStudentsAssessment) ++

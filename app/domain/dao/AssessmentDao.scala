@@ -14,6 +14,7 @@ import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json._
+import services.TimingInfoService
 import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
@@ -250,6 +251,7 @@ class AssessmentDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
   val jdbcTypes: PostgresCustomJdbcTypes,
   tables: AssessmentTables,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends AssessmentDao with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
 
   import profile.api._
@@ -385,7 +387,7 @@ class AssessmentDaoImpl @Inject()(
       } If a.durationStyle === (Some(DurationStyle.FixedStart):Option[DurationStyle]) Then {
         a.duration +
           Assessment.uploadGraceDuration +
-          Assessment.lateSubmissionPeriod +
+          timingInfo.lateSubmissionPeriod +
           biggestAdjustment
       } Else {
         LiteralColumn(None)

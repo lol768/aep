@@ -10,7 +10,7 @@ import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService
 import services.tabula.TabulaStudentInformationService._
-import services.{AnnouncementService, AssessmentClientNetworkActivityService, AssessmentService, ReportingService, SecurityService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, AssessmentService, ReportingService, SecurityService, TimingInfoService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.sso.{AuthenticatedRequest, UniversityID}
@@ -27,6 +27,7 @@ class ReportingController @Inject()(
   messageService: MessageService,
   networkActivityService: AssessmentClientNetworkActivityService,
   announcementService: AnnouncementService,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -46,7 +47,7 @@ class ReportingController @Inject()(
       assessmentService.get(id),
       reportingService.assessmentReport(id),
     ).successMap { case (assessment, report) =>
-      Ok(views.html.admin.reporting.assessment(assessment, report))
+      Ok(views.html.admin.reporting.assessment(assessment, report, timingInfo))
     }
   }
 
@@ -63,7 +64,17 @@ class ReportingController @Inject()(
           val sorted = sittings
             .sortBy(studentAssessmentOrdering(profiles))
             .map(SittingMetadata(_, assessment.asAssessmentMetadata))
-          Ok(views.html.admin.reporting.expandedList(assessment, sorted, profiles, title, route, queries.map(_.student).distinct, queries.count(_.sender == MessageSender.Student), announcements.length))
+          Ok(views.html.admin.reporting.expandedList(
+            assessment,
+            sorted,
+            profiles,
+            title,
+            route,
+            queries.map(_.student).distinct,
+            queries.count(_.sender == MessageSender.Student),
+            announcements.length,
+            timingInfo
+          ))
         }
     }
   }
@@ -94,6 +105,7 @@ class ReportingController @Inject()(
               sortByHeader,
               viewAllAnnouncementsAndQueries = Some(controllers.invigilation.routes.AnnouncementAndQueriesController.viewAll(assessment.id)),
               viewSingleAnnouncementsAndQueries = Some(sa => controllers.invigilation.routes.AnnouncementAndQueriesController.view(assessment.id, sa.studentId)),
+              timingInfo,
             ))
           }
     }

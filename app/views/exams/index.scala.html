@@ -1,7 +1,11 @@
 @import domain.Sitting
 
 @import views.html.exams.rows
-@(assessments: Seq[Sitting])(implicit requestHeader: RequestHeader, context: RequestContext)
+@import services.TimingInfoService
+@(
+  assessments: Seq[Sitting],
+  timingInfo: TimingInfoService,
+)(implicit requestHeader: RequestHeader, context: RequestContext)
 
 @frontend("My assessments", extraClasses = Seq("grey-nopad", "connect-ws")) {
 
@@ -17,9 +21,21 @@
 
   <hr>
 
-  @rows("Current assessments", assessments.filter(a => a.canModify() || a.isCurrentForStudent))
+  @rows(
+    "Current assessments",
+    assessments.filter(a => a.canModify(timingInfo.lateSubmissionPeriod) || a.isCurrentForStudent(timingInfo.lateSubmissionPeriod)),
+    timingInfo,
+  )
 
-  @rows("Upcoming assessments", assessments.filter(_.assessment.isInFuture))
+  @rows(
+    "Upcoming assessments",
+    assessments.filter(_.assessment.isInFuture),
+    timingInfo,
+  )
 
-  @rows("Past assessments", assessments.filter(a => !a.canModify() && !a.isCurrentForStudent && !a.assessment.isInFuture))
+  @rows(
+    "Past assessments",
+    assessments.filter(a => !a.canModify(timingInfo.lateSubmissionPeriod) && !a.isCurrentForStudent(timingInfo.lateSubmissionPeriod) && !a.assessment.isInFuture),
+    timingInfo,
+  )
 }

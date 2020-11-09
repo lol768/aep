@@ -9,7 +9,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.mvc.{Action, AnyContent}
 import services.tabula.TabulaDepartmentService
-import services.{AssessmentService, SecurityService}
+import services.{AssessmentService, SecurityService, TimingInfoService}
 import warwick.core.helpers.{JavaTime, ServiceResults}
 
 import scala.concurrent.ExecutionContext
@@ -64,12 +64,12 @@ object ManagementInformationController {
     explicitlyFinalised: Int,
   )
   object AssessmentParticipationMetricValues {
-    def apply(sittings: Iterable[Sitting]): AssessmentParticipationMetricValues =
+    def apply(sittings: Iterable[Sitting], timingInfo: TimingInfoService): AssessmentParticipationMetricValues =
       AssessmentParticipationMetricValues(
         total = sittings.size,
         started = sittings.count(_.started),
         submitted = sittings.count(_.studentAssessment.uploadedFiles.nonEmpty),
-        wasLate = sittings.count(_.getSubmissionState == SubmissionState.Late),
+        wasLate = sittings.count(_.getSubmissionState(timingInfo.lateSubmissionPeriod) == SubmissionState.Late),
         explicitlyFinalised = sittings.count(_.explicitlyFinalised)
       )
   }
@@ -80,17 +80,17 @@ object ManagementInformationController {
     byExamProfileCode: Seq[(String, AssessmentParticipationMetricValues)],
   )
 
-  def participationMetrics(assessments: Seq[(Assessment, Set[Sitting])]): AssessmentParticipationMetrics =
+  def participationMetrics(assessments: Seq[(Assessment, Set[Sitting])], timingInfo: TimingInfoService): AssessmentParticipationMetrics =
     AssessmentParticipationMetrics(
-      overall = AssessmentParticipationMetricValues(assessments.flatMap(_._2)),
+      overall = AssessmentParticipationMetricValues(assessments.flatMap(_._2), timingInfo),
       byDepartmentCode =
         assessments.groupBy(_._1.departmentCode)
-          .map { case (d, a) => d -> AssessmentParticipationMetricValues(a.flatMap(_._2)) }
+          .map { case (d, a) => d -> AssessmentParticipationMetricValues(a.flatMap(_._2), timingInfo) }
           .toSeq
           .sortBy(_._1.lowerCase),
       byExamProfileCode =
         assessments.groupBy(_._1.examProfileCode)
-          .map { case (d, a) => d -> AssessmentParticipationMetricValues(a.flatMap(_._2)) }
+          .map { case (d, a) => d -> AssessmentParticipationMetricValues(a.flatMap(_._2), timingInfo) }
           .toSeq,
     )
 }
@@ -101,6 +101,7 @@ class ManagementInformationController @Inject()(
   assessmentService: AssessmentService,
   departmentService: TabulaDepartmentService,
   configuration: Configuration,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -130,7 +131,7 @@ class ManagementInformationController @Inject()(
         // Group AEP assessments and non-AEP assessments separately for student participation metrics
         val (aep, nonAEP) = assessments.partition(_._1.platform.contains(Platform.OnlineExams))
 
-        (ManagementInformationController.participationMetrics(aep), ManagementInformationController.participationMetrics(nonAEP))
+        (ManagementInformationController.participationMetrics(aep, timingInfo), ManagementInformationController.participationMetrics(nonAEP, timingInfo))
       },
 
       departmentService.getDepartments(),

@@ -2,10 +2,15 @@
 @import domain.Assessment
 @import services.ReportingService.AssessmentReport
 @import domain.Assessment.Platform.OnlineExams
-@(assessment: Assessment, report: AssessmentReport)(implicit context: RequestContext)
+@import services.TimingInfoService
+@(
+  assessment: Assessment,
+  report: AssessmentReport,
+  timingInfo: TimingInfoService,
+)(implicit context: RequestContext)
 
 @frontend(assessment.title) {
-  @assessmentMetadata(assessment)
+  @assessmentMetadata(assessment, timingInfo)
 
   <table class="table table-bordered">
     <thead>

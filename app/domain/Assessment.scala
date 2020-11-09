@@ -27,9 +27,9 @@ sealed trait BaseAssessment extends DefinesStartWindow {
   val departmentCode: DepartmentCode
   val sequence: String //MAB sequence
 
-  def isCurrent: Boolean = startTime.exists(_.isBefore(JavaTime.offsetDateTime)) && lastAllowedStartTime.exists(_.isAfter(JavaTime.offsetDateTime))
+  def isCurrent(latePeriodAllowance: Duration): Boolean = startTime.exists(_.isBefore(JavaTime.offsetDateTime)) && defaultLastAllowedStartTime(latePeriodAllowance).exists(_.isAfter(JavaTime.offsetDateTime))
   def isInFuture: Boolean = startTime.exists(_.isAfter(JavaTime.offsetDateTime))
-  def isDownloadAvailable: Boolean = lastAllowedStartTime.exists(_.isBefore(JavaTime.offsetDateTime.minus(uploadProcessDuration)))
+  def isDownloadAvailable(latePeriodAllowance: Duration): Boolean = defaultLastAllowedStartTime(latePeriodAllowance).exists(_.isBefore(JavaTime.offsetDateTime.minus(uploadProcessDuration)))
 }
 
 trait DefinesStartWindow {
@@ -38,7 +38,8 @@ trait DefinesStartWindow {
   val duration: Option[Duration]
   val durationStyle: Option[DurationStyle]
 
-  val lastAllowedStartTime: Option[OffsetDateTime] = durationStyle match {
+  // May be different for each student depending on extra time allowance - see similar method in Sitting
+  def defaultLastAllowedStartTime(latePeriodAllowance: Duration): Option[OffsetDateTime] = durationStyle match {
     case Some(DurationStyle.DayWindow) => startTime.map(_.plus(Assessment.dayWindow))
     case Some(DurationStyle.FixedStart) => for {
         start <- startTime
@@ -47,12 +48,14 @@ trait DefinesStartWindow {
         start
           .plus(dur)
           .plus(Assessment.uploadGraceDuration)
-          .plus(Assessment.lateSubmissionPeriod)
+          .plus(latePeriodAllowance)
       }
     case _ => None
   }
 
-  def hasLastAllowedStartTimePassed(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = lastAllowedStartTime.exists(_.isBefore(referenceDate))
+  // May be different for each student depending on extra time allowance - see similar method in Sitting
+  def hasDefaultLastAllowedStartTimePassed(latePeriodAllowance: Duration, referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean =
+    defaultLastAllowedStartTime(latePeriodAllowance).exists(_.isBefore(referenceDate))
 
   def hasStartTimePassed(referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean = startTime.exists(_.isBefore(referenceDate))
 }
@@ -203,12 +206,6 @@ object Assessment {
   object Brief {
     def empty: Brief = Brief(None, Seq.empty, Map.empty)
   }
-
-  // Students are allowed 2 extra hours after the official finish time of the exam
-  // for them to make submissions. Anything submitted during this period should be
-  // marked as LATE though.
-  // Updated in OE-148
-  val lateSubmissionPeriod: Duration = Duration.ofHours(2)
 
   val uploadGraceDuration: Duration = Duration.ofMinutes(45)
 
