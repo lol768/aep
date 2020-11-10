@@ -104,7 +104,7 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
 
       if (features.importStudentExtraTime) {
         status(resStart) mustBe SEE_OTHER
-        header("Location", resStart).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url        
+        header("Location", resStart).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
       } else {
         status(resStart) mustBe OK
         contentAsString(resStart) must include(reasonableAdjustmentsHeader)
