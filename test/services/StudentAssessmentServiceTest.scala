@@ -9,6 +9,7 @@ import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAss
 import domain.dao.{AbstractDaoTest, AssessmentDao, StudentAssessmentDao}
 import helpers.CleanUpDatabaseAfterEachTest
 import play.api.libs.Files.TemporaryFileCreator
+import system.Features
 import uk.ac.warwick.util.core.DateTimeUtils
 import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
@@ -21,6 +22,8 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
 
   private lazy val service = get[StudentAssessmentService]
   private implicit lazy val temporaryFileCreator: TemporaryFileCreator = get[TemporaryFileCreator]
+
+  private val features = get[Features]
 
   private trait Fixture {
     private val assessmentDao = get[AssessmentDao]
@@ -50,11 +53,14 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
       }
       noAuthorshipCaught.getMessage must include("declarations not made")
 
-      private val noRASitting = service.getSitting(storedStudentAssessmentNoRA.studentId, storedStudentAssessmentNoRA.assessmentId).serviceValue.get
-      private val noRACaught = intercept[IllegalArgumentException] {
-        service.startAssessment(noRASitting.studentAssessment).serviceValue
+      // Students don't need to complete reasonable adjustments if imports are on
+      if (!features.importStudentExtraTime) {
+        val noRASitting = service.getSitting(storedStudentAssessmentNoRA.studentId, storedStudentAssessmentNoRA.assessmentId).serviceValue.get
+        val noRACaught = intercept[IllegalArgumentException] {
+          service.startAssessment(noRASitting.studentAssessment).serviceValue
+        }
+        noRACaught.getMessage must include("declarations not made")
       }
-      noRACaught.getMessage must include("declarations not made")
 
       private val goodSitting = service.getSitting(storedStudentAssessment.studentId, storedStudentAssessment.assessmentId).serviceValue.get
       service.startAssessment(goodSitting.studentAssessment).serviceValue
@@ -133,16 +139,16 @@ class StudentAssessmentServiceTest extends AbstractDaoTest with CleanUpDatabaseA
       service.upsert(newDeclarations.asDeclarations).serviceValue
 
       private val declarationsFromDB = service.getOrDefaultDeclarations(newDeclarations.studentAssessmentId).serviceValue
-      declarationsFromDB.acceptable mustBe true
+      declarationsFromDB.acceptable(features) mustBe true
 
       private val finaliseTime = JavaTime.offsetDateTime
       private val updatedDeclarations = declarationsFromDB.copy(
-        selfDeclaredRA = true
+        selfDeclaredRA = Some(true)
       )
 
       service.upsert(updatedDeclarations).serviceValue
 
-      service.getOrDefaultDeclarations(newDeclarations.studentAssessmentId).serviceValue.selfDeclaredRA mustBe true
+      service.getOrDefaultDeclarations(newDeclarations.studentAssessmentId).serviceValue.selfDeclaredRA mustBe Some(true)
     }
   }
 }

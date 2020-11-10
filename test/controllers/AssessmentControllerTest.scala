@@ -87,16 +87,28 @@ class AssessmentControllerTest extends BaseSpec with CleanUpDatabaseAfterEachTes
       status(resStart) mustBe NOT_FOUND
     }
 
-    "Show the reasonable adjustments form if it has not been declared yet (DayWindow assessment)" in new OnlyAuthorshipDeclarationAcceptedScenario(DayWindow) { s =>
+    "Show the reasonable adjustments form if it has not been declared yet and imports are off (DayWindow assessment)" in new OnlyAuthorshipDeclarationAcceptedScenario(DayWindow) { s =>
       private val resStart = reqStart(s.TheAssessment, s.Rupert)
-      status(resStart) mustBe OK
-      contentAsString(resStart) must include(reasonableAdjustmentsHeader)
+
+      if (features.importStudentExtraTime) {
+        status(resStart) mustBe SEE_OTHER
+        header("Location", resStart).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url
+      } else {
+        status(resStart) mustBe OK
+        contentAsString(resStart) must include(reasonableAdjustmentsHeader)
+      }
     }
 
-    "Show the reasonable adjustments form if it has not been declared yet (FixedStart assessment)" in new OnlyAuthorshipDeclarationAcceptedScenario(FixedStart) { s =>
+    "Show the reasonable adjustments form if it has not been declared yet and imports are off (FixedStart assessment)" in new OnlyAuthorshipDeclarationAcceptedScenario(FixedStart) { s =>
       private val resStart = reqStart(s.TheAssessment, s.Rupert)
-      status(resStart) mustBe OK
-      contentAsString(resStart) must include(reasonableAdjustmentsHeader)
+
+      if (features.importStudentExtraTime) {
+        status(resStart) mustBe SEE_OTHER
+        header("Location", resStart).value mustBe controllers.routes.AssessmentController.view(s.TheAssessment.id).url        
+      } else {
+        status(resStart) mustBe OK
+        contentAsString(resStart) must include(reasonableAdjustmentsHeader)
+      }
     }
 
     "Redirect the student to the assessment if all declarations have been accepted (DayWindow assessment)" in new AllDeclarationsAcceptedScenario(DayWindow) { s =>

@@ -143,7 +143,7 @@ class StudentAssessmentDaoTest extends AbstractDaoTest with CleanUpDatabaseAfter
           inserted.completedRA mustEqual declaration.completedRA
         })
 
-        updated <- dao.update(inserted.copy(selfDeclaredRA = true))
+        updated <- dao.update(inserted.copy(selfDeclaredRA = Some(true)))
 
         _ <- DBIO.from(Future.successful {
           updated.created.toInstant mustBe declaration.created.toInstant
