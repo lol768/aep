@@ -45,16 +45,19 @@ class FixedStartAssessmentSpec extends BrowserFeatureSpec {
 
       When.i_click_to_confirm_the_authorship_declaration()
 
-      Then i_should_see_the_text "I have already agreed reasonable adjustments"
-      And.the_ra_declaration_button_is_disabled()
+      // Students only see the reasonable adjustments form if we're not importing them
+      if (!features.importStudentExtraTime) {
+        Then i_should_see_the_text "I have already agreed reasonable adjustments"
+        And.the_ra_declaration_button_is_disabled()
 
-      When.i_choose_the_no_ra_declaration()
-      Then.the_ra_declaration_button_is_enabled()
+        When.i_choose_the_no_ra_declaration()
+        Then.the_ra_declaration_button_is_enabled()
 
-      When.i_choose_the_has_ra_declaration()
-      Then.the_ra_declaration_button_is_enabled()
+        When.i_choose_the_has_ra_declaration()
+        Then.the_ra_declaration_button_is_enabled()
 
-      When.i_click_to_confirm_the_ra_declaration()
+        When.i_click_to_confirm_the_ra_declaration()
+      }
       Then i_should_see_the_text "The assessment has begun."
       And i_should_see_the_text "This is a fixed time assessment. It does not run in a 24 hour window, so you must begin at the start time."
 

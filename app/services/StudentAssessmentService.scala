@@ -14,6 +14,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import services.StudentAssessmentService._
 import slick.dbio.DBIO
+import system.Features
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
@@ -58,6 +59,7 @@ class StudentAssessmentServiceImpl @Inject()(
   assessmentDao: AssessmentDao,
   assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao,
   timingInfo: TimingInfoService,
+  features: Features,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
 
 
@@ -158,7 +160,7 @@ class StudentAssessmentServiceImpl @Inject()(
   }
 
   private def hasAcceptedDeclarations(storedDeclarations: Option[StoredDeclarations]): Future[Unit] = Future.successful {
-    require(storedDeclarations.exists(_.asDeclarations.acceptable), "Cannot start assessment, declarations not made")
+    require(storedDeclarations.exists(_.asDeclarations.acceptable(features)), "Cannot start assessment, declarations not made")
   }
 
   private def startedNotFinalised(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {

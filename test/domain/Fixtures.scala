@@ -147,7 +147,7 @@ object Fixtures {
       StoredDeclarations(
         studentAssessmentId = id,
         acceptsAuthorship = true,
-        selfDeclaredRA = false,
+        selfDeclaredRA = Some(false),
         completedRA = true,
         created = createTime.asOffsetDateTime,
         version = createTime.asOffsetDateTime

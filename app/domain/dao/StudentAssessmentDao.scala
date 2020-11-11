@@ -94,7 +94,7 @@ object StudentAssessmentsTables {
   case class StoredDeclarations(
     studentAssessmentId: UUID,
     acceptsAuthorship: Boolean,
-    selfDeclaredRA: Boolean,
+    selfDeclaredRA: Option[Boolean],
     completedRA: Boolean,
     created: OffsetDateTime,
     version: OffsetDateTime
@@ -126,7 +126,7 @@ object StudentAssessmentsTables {
   case class StoredDeclarationsVersion(
     studentAssessmentId: UUID,
     acceptsAuthorship: Boolean,
-    selfDeclaredRA: Boolean,
+    selfDeclaredRA: Option[Boolean],
     completedRA: Boolean,
     created: OffsetDateTime,
     version: OffsetDateTime,
