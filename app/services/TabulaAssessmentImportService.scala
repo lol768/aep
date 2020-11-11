@@ -199,10 +199,12 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                   }
                 }
 
+              val modifiedIds = modifications.map(_.id);
+
               val mockUpdates: Future[Seq[StudentAssessment]] =
                 studentAssessmentService.byUniversityIds(schedule.students.map(_.universityID)).map {
                   _.toOption.map { studentAssessments =>
-                    studentAssessments.filter(sa => sa.tabulaSubmissionId.isEmpty && !modifications.map(_.id).contains(sa.id)).map { original =>
+                    studentAssessments.filter(sa => sa.tabulaSubmissionId.isEmpty && !modifiedIds.contains(sa.id)).map { original =>
                       val scheduleStudent = schedule.students.find(_.universityID == original.studentId).getOrElse(
                         throw new IllegalStateException(s"Could not find schedule student with ID ${original.studentId}")
                       )
