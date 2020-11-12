@@ -199,7 +199,7 @@ class TabulaAssessmentImportServiceImpl @Inject()(
                   }
                 }
 
-              val modifiedIds = modifications.map(_.id);
+              val modifiedIds = modifications.map(_.id)
 
               val mockUpdates: Future[Seq[StudentAssessment]] =
                 studentAssessmentService.byUniversityIds(schedule.students.map(_.universityID)).map {
