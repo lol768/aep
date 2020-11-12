@@ -33,6 +33,7 @@ trait StudentAssessmentService {
   def sittingsByAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def byUniversityIds(universityIds: Seq[UniversityID])(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
+  def sittingsByUniversityIds(universityIds: Seq[UniversityID])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
   def getSittingsMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]]
   def getSittingsMetadata(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]]
@@ -97,6 +98,11 @@ class StudentAssessmentServiceImpl @Inject()(
       .map(inflateRowsWithUploadedFiles)
       .map(ServiceResults.success)
   }
+
+  override def sittingsByUniversityIds(universityIds: Seq[UniversityID])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] =
+    daoRunner.run(dao.loadByUniversityIDsWithUploadedFiles(universityIds))
+      .map(inflateRowsWithUploadedFiles)
+      .flatMap(convertToSittings)
 
   private def convertToSittings(studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
     val assessmentIds = studentAssessments.map(_.assessmentId).distinct
