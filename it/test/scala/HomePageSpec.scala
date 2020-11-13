@@ -16,7 +16,7 @@ class HomePageSpec extends BrowserFeatureSpec {
       visit(homePage)
 
       Then("I should have been redirected to the assessments page")
-      pageContentMustContain("This page lists all the assessments you are scheduled to take during September 2020")
+      pageContentMustContain("This page lists all the assessments you are scheduled to take during December 2020")
 
       screenshot("Home page for student")
 
