@@ -14,6 +14,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import services.StudentAssessmentService._
 import slick.dbio.DBIO
+import system.Features
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.helpers.{JavaTime, ServiceResults}
@@ -31,6 +32,8 @@ trait StudentAssessmentService {
   def byAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
   def sittingsByAssessmentId(assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def byUniversityId(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
+  def byUniversityIds(universityIds: Seq[UniversityID])(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]]
+  def sittingsByUniversityIds(universityIds: Seq[UniversityID])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]]
   def getSitting(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[Option[Sitting]]]
   def getSittingsMetadata(universityId: UniversityID, assessmentId: UUID)(implicit t: TimingContext): Future[ServiceResult[SittingMetadata]]
   def getSittingsMetadata(universityId: UniversityID)(implicit t: TimingContext): Future[ServiceResult[Seq[SittingMetadata]]]
@@ -56,6 +59,8 @@ class StudentAssessmentServiceImpl @Inject()(
   assessmentService: AssessmentService,
   assessmentDao: AssessmentDao,
   assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao,
+  timingInfo: TimingInfoService,
+  features: Features,
 )(implicit ec: ExecutionContext) extends StudentAssessmentService {
 
 
@@ -87,6 +92,17 @@ class StudentAssessmentServiceImpl @Inject()(
       .map(inflateRowsWithUploadedFiles)
       .flatMap(convertToSittings)
   }
+
+  override def byUniversityIds(universityIds: Seq[UniversityID])(implicit t: TimingContext): Future[ServiceResult[Seq[StudentAssessment]]] = {
+    daoRunner.run(dao.loadByUniversityIDsWithUploadedFiles(universityIds))
+      .map(inflateRowsWithUploadedFiles)
+      .map(ServiceResults.success)
+  }
+
+  override def sittingsByUniversityIds(universityIds: Seq[UniversityID])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] =
+    daoRunner.run(dao.loadByUniversityIDsWithUploadedFiles(universityIds))
+      .map(inflateRowsWithUploadedFiles)
+      .flatMap(convertToSittings)
 
   private def convertToSittings(studentAssessments: Seq[StudentAssessment])(implicit t: TimingContext): Future[ServiceResult[Seq[Sitting]]] = {
     val assessmentIds = studentAssessments.map(_.assessmentId).distinct
@@ -146,11 +162,11 @@ class StudentAssessmentServiceImpl @Inject()(
 
   private def assertTimeInRange(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {
     require(storedAssessment.hasStartTimePassed(), "Cannot do assessment, too early")
-    require(!storedAssessment.hasLastAllowedStartTimePassed(), "Cannot do assessment, too late")
+    require(!storedAssessment.hasDefaultLastAllowedStartTimePassed(timingInfo.lateSubmissionPeriod), "Cannot do assessment, too late")
   }
 
   private def hasAcceptedDeclarations(storedDeclarations: Option[StoredDeclarations]): Future[Unit] = Future.successful {
-    require(storedDeclarations.exists(_.asDeclarations.acceptable), "Cannot start assessment, declarations not made")
+    require(storedDeclarations.exists(_.asDeclarations.acceptable(features)), "Cannot start assessment, declarations not made")
   }
 
   private def startedNotFinalised(storedAssessment: StoredAssessment, storedStudentAssessment: StoredStudentAssessment): Future[Unit] = Future.successful {

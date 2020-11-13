@@ -16,7 +16,7 @@ import play.api.mvc.{Action, AnyContent, Result}
 import services.messaging.MessageService
 import services.tabula.TabulaStudentInformationService.{GetMultipleStudentInformationOptions, GetStudentInformationOptions}
 import services.tabula.{TabulaDepartmentService, TabulaStudentInformationService}
-import services.{AnnouncementService, SecurityService, StudentAssessmentService}
+import services.{AnnouncementService, SecurityService, StudentAssessmentService, TimingInfoService}
 import system.Features
 import warwick.core.helpers.ServiceResults
 import warwick.sso.{AuthenticatedRequest, UniversityID, UserLookupService}
@@ -39,6 +39,7 @@ class AnnouncementAndQueriesController @Inject()(
   announcementService: AnnouncementService,
   userLookupService: UserLookupService,
   features: Features,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -61,6 +62,7 @@ class AnnouncementAndQueriesController @Inject()(
           Map(universityId -> profile),
           invigilators,
           department = departments.find(_.code == req.assessment.departmentCode.string),
+          timingInfo = timingInfo
         ))
     }
   }

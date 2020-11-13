@@ -3,7 +3,8 @@
 @import play.api.libs.json.Json
 @import tags._
 
-@(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
+@import services.TimingInfoService
+@(sitting: Sitting, timingInfoService: TimingInfoService)(implicit request: RequestHeader, context: RequestContext)
 @sitting.assessment.startTime.map { startTime =>
     <div class="media">
         @if(sitting.assessment.platform.contains(Platform.OnlineExams) || sitting.studentAssessment.startTime.isEmpty) {
@@ -11,7 +12,7 @@
             <div
             class="media-body timing-information"
             data-id="@sitting.assessment.id"
-            data-rendering="@Json.stringify(Json.toJson(sitting.getTimingInfo))"
+            data-rendering="@Json.stringify(Json.toJson(sitting.getTimingInfo(timingInfoService.lateSubmissionPeriod)))"
             ></div>
         } else {
             @sitting.studentAssessment.startTime.map { studentStartTime =>

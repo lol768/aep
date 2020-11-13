@@ -43,6 +43,7 @@ class ReportingServiceImpl @Inject()(
   assessmentService: AssessmentService,
   sittingService: StudentAssessmentService,
   sittingDao: StudentAssessmentDao,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends ReportingService {
 
   override def last48HrsAssessments(implicit t: TimingContext): Future[ServiceResult[Seq[AssessmentMetadata]]] =
@@ -61,7 +62,7 @@ class ReportingServiceImpl @Inject()(
         startedSittings = sittings.filter(_.studentAssessment.startTime.isDefined).map(_.studentAssessment),
         notStartedSittings = sittings.filter(_.studentAssessment.startTime.isEmpty).map(_.studentAssessment),
         submittedSittings = sittings.filter(_.studentAssessment.uploadedFiles.nonEmpty).map(_.studentAssessment),
-        finalisedSittings = sittings.filter(_.finalised).map(_.studentAssessment)
+        finalisedSittings = sittings.filter(_.finalised(timingInfo.lateSubmissionPeriod)).map(_.studentAssessment)
       )
     )
   }

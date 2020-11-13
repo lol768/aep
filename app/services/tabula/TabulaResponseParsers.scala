@@ -35,6 +35,7 @@ object TabulaResponseParsers {
       course: Course,
       level: Option[String],
       specialExamArrangementsExtraTime: Option[Duration],
+      specialExamArrangementsHourlyRestMinutes: Option[Duration],
       studentCourseYearDetails: Seq[StudentCourseYearDetails],
     )
 
@@ -44,6 +45,7 @@ object TabulaResponseParsers {
       (__ \ "course").read[Course](courseReads) and
       (__ \ "levelCode").readNullable[String] and
       (__ \ "specialExamArrangementsExtraTime").readNullable[String].map(_.map(Duration.parse)) and
+      (__ \ "specialExamArrangementsHourlyRestMinutes").readNullable[String].map(_.map(Duration.parse)) and
       (__ \ "studentCourseYearDetails").read[Seq[StudentCourseYearDetails]](Reads.seq(studentCourseYearDetailsReads))
     ) (StudentCourseDetails.apply _)
     val studentCourseDetailsFields: Seq[String] =
@@ -81,6 +83,7 @@ object TabulaResponseParsers {
           yearOfStudy = latestScyd.map(scyd => YearOfStudy(scyd.yearOfStudy, scyd.studyLevel)),
           disability = disability,
           specialExamArrangementsExtraTime = latestScd.flatMap(_.specialExamArrangementsExtraTime),
+          specialExamArrangementsHourlyRestMinutes = latestScd.flatMap(_.specialExamArrangementsHourlyRestMinutes),
           userType = UserType.withName(userType)
         )
       }
@@ -220,7 +223,8 @@ object TabulaResponseParsers {
     (__ \ "universityId").read[String].map(UniversityID.apply) and
     (__ \ "sprCode").read[String] and
     (__ \ "occurrence").read[String] and
-    (__ \ "specialExamArrangementsExtraTime").readNullable[Duration]
+    (__ \ "specialExamArrangementsExtraTime").readNullable[Duration] and
+    (__ \ "specialExamArrangementsHourlyRestMinutes").readNullable[Duration]
   ) (ExamPaperScheduleStudent.apply _)
 
   val examPaperScheduleReads: Reads[ExamPaperSchedule] = (
@@ -248,20 +252,8 @@ object TabulaResponseParsers {
     (__ \ "name").read[String]
   ) (Module.apply _)
 
-  case class SitsAssessmentType(
-    astCode: String,
-    name: String,
-    code: String,
-    value: String
-  )
-
-  object SitsAssessmentType {
-    implicit val format: OFormat[SitsAssessmentType] = Json.format[SitsAssessmentType]
-  }
-
   val assessmentComponentReads: Reads[AssessmentComponent] = (
     (__ \ "id").read[UUID] and
-    (__ \ "type").read[SitsAssessmentType] and
     (__ \ "name").read[String] and
     (__ \ "examPaper").readNullable[ExamPaper](examPaperReads) and
     (__ \ "module").read[Module](moduleReads) and

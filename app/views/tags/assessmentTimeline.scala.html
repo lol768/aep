@@ -5,16 +5,17 @@
 @import tags._
 
 @import domain.Assessment
-@(sitting: Sitting)(implicit request: RequestHeader, context: RequestContext)
+@import services.TimingInfoService
+@(sitting: Sitting, timingInfoService: TimingInfoService)(implicit request: RequestHeader, context: RequestContext)
 @for(
     startTime <- sitting.studentAssessment.startTime;
-    durationInfo <- sitting.durationInfo;
-    timingInfo <- sitting.timingInfo
+    durationInfo <- sitting.durationInfo(timingInfoService.lateSubmissionPeriod);
+    timingInfo <- sitting.timingInfo(timingInfoService.lateSubmissionPeriod)
     if sitting.assessment.platform.contains(Platform.OnlineExams)
 ) {
     <div class="timeline" data-id="@sitting.assessment.id">
-        @if(sitting.assessment.durationStyle == DurationStyle.DayWindow) {
-            <div class="block turqoise @if(sitting.getProgressState.contains(AssessmentOpenNotStarted)) { active } else {}" data-state="@AssessmentOpenNotStarted.entryName">
+        @if(sitting.assessment.durationStyle.contains(DurationStyle.DayWindow)) {
+            <div class="block turqoise @if(sitting.getProgressState(timingInfoService.lateSubmissionPeriod).contains(AssessmentOpenNotStarted)) { active } else {}" data-state="@AssessmentOpenNotStarted.entryName">
                 <div class="left">
                     <div class="bubble"><i class="fal fa-2x fa-clock"></i></div>
                     <div class="stick"></div>
@@ -24,14 +25,14 @@
                 </div>
                 <div class="right">
                     <h1>@bareLocalisedDateTime(sitting.assessment.startTime.get) Assessment opened</h1>
-                    @sitting.assessment.lastAllowedStartTime.map { end =>
+                    @sitting.lastAllowedStartTimeForStudent(timingInfoService.lateSubmissionPeriod).map { end =>
                         <p>
                             The assessment can be started any time between @bareLocalisedDateTime(sitting.assessment.startTime.get) and @bareLocalisedDateTime(end, includeFullStop = true)</p>
                     }
                 </div>
             </div>
         }
-        <div class="block green @if(sitting.getProgressState.contains(InProgress)) { active } else {}" data-state="@InProgress.entryName">
+        <div class="block green @if(sitting.getProgressState(timingInfoService.lateSubmissionPeriod).contains(InProgress)) { active } else {}" data-state="@InProgress.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-2x fa-stopwatch"></i></div>
                 <div class="stick"></div>
@@ -43,16 +44,22 @@
                 <h1>
                     @bareLocalisedDateTime(timingInfo.startTime)
 
-                    @if(sitting.assessment.durationStyle == DurationStyle.DayWindow) {
+                    @if(sitting.assessment.durationStyle.contains(DurationStyle.DayWindow)) {
                         You started the assessment
                     } else {
                         The assessment started
                     }
                 </h1>
-                @defining(sitting.assessment.durationStyle == DurationStyle.DayWindow && timingInfo.uploadGraceStart == timingInfo.onTimeEnd) { closeToWindowEnd =>
+                @defining(sitting.assessment.durationStyle.contains(DurationStyle.DayWindow) && timingInfo.uploadGraceStart == timingInfo.onTimeEnd) { closeToWindowEnd =>
 
                   <p>
-                    This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus
+                    @if(sitting.studentAssessment.extraTimeAdjustmentPerHour.exists(_.toMinutes > 0)) {
+                      You have @humanReadableDuration(durationInfo.durationWithExtraAdjustment) to complete this paper (including your agreed
+                      extra time allowance of @sitting.studentAssessment.extraTimeAdjustmentPerHour.get.toMinutes minutes
+                      per hour), plus
+                    } else {
+                      This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus
+                    }
                     @Assessment.uploadGraceDuration.toMinutes minutes to upload your answers,
                     @if(!closeToWindowEnd) {
                       so you should be aiming to
@@ -69,7 +76,7 @@
             </div>
         </div>
         @if(timingInfo.onTimeEnd != timingInfo.uploadGraceStart) {
-          <div class="block orange @if(sitting.getProgressState.contains(OnGracePeriod)) { active } else {}" data-state="@OnGracePeriod.entryName">
+          <div class="block orange @if(sitting.getProgressState(timingInfoService.lateSubmissionPeriod).contains(OnGracePeriod)) { active } else {}" data-state="@OnGracePeriod.entryName">
             <div class="left">
               <div class="bubble"><i class="fal fa-cloud-upload fa-2x"></i></div>
               <div class="stick"></div>
@@ -84,7 +91,7 @@
           </div>
         }
         @if(timingInfo.onTimeEnd != timingInfo.lateEnd) {
-          <div class="block pink @if(sitting.getProgressState.contains(Late)) { active } else {}" data-state="@Late.entryName">
+          <div class="block pink @if(sitting.getProgressState(timingInfoService.lateSubmissionPeriod).contains(Late)) { active } else {}" data-state="@Late.entryName">
             <div class="left">
               <div class="bubble"><i class="fal fa-exclamation-triangle fa-2x"></i></div>
               <div class="stick"></div>
@@ -101,7 +108,7 @@
             </div>
           </div>
         }
-        <div class="block red @if(sitting.getProgressState.contains(DeadlineMissed)) { active } else {}" data-state="@DeadlineMissed.entryName">
+        <div class="block red @if(sitting.getProgressState(timingInfoService.lateSubmissionPeriod).contains(DeadlineMissed)) { active } else {}" data-state="@DeadlineMissed.entryName">
             <div class="left">
                 <div class="bubble"><i class="fal fa-ban fa-2x"></i></div>
             </div>

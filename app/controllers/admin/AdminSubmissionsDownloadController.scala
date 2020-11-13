@@ -8,7 +8,7 @@ import javax.inject.{Inject, Singleton}
 import org.quartz.Scheduler
 import play.api.mvc.{Action, AnyContent}
 import services.job.GenerateAssessmentZipJobBuilder
-import services.{AssessmentService, SecurityService, StudentAssessmentService, UploadedFileService}
+import services.{AssessmentService, SecurityService, StudentAssessmentService, TimingInfoService, UploadedFileService}
 import warwick.fileuploads.UploadedFileControllerHelper
 
 import scala.concurrent.ExecutionContext
@@ -21,8 +21,9 @@ class AdminSubmissionsDownloadController @Inject()(
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
-  generateAssessmentZipJobBuilder: GenerateAssessmentZipJobBuilder
-)(implicit ec: ExecutionContext) extends AssessmentSubmissionsDownloadController(scheduler, uploadedFileService, uploadedFileControllerHelper, generateAssessmentZipJobBuilder) {
+  generateAssessmentZipJobBuilder: GenerateAssessmentZipJobBuilder,
+  timingInfo: TimingInfoService,
+)(implicit ec: ExecutionContext) extends AssessmentSubmissionsDownloadController(scheduler, uploadedFileService, uploadedFileControllerHelper, generateAssessmentZipJobBuilder, timingInfo, studentAssessmentService) {
 
   import security._
 

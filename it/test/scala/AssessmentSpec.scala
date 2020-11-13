@@ -1,10 +1,13 @@
 import domain.Fixtures
 import support.BrowserFeatureSpec
+import system.Features
 
 import scala.language.postfixOps
 import scala.languageFeature.postfixOps
 
 class AssessmentSpec extends BrowserFeatureSpec {
+
+  private val features = get[Features]
 
   import Fixtures.users.{student1 => student}
 
@@ -29,18 +32,22 @@ class AssessmentSpec extends BrowserFeatureSpec {
 
       When.i_click_to_confirm_the_authorship_declaration()
 
-      screenshot("Reasonable adjustments declaration")
+      // This form only shows if we're not importing extra time
+      if (!features.importStudentExtraTime) {
+        screenshot("Reasonable adjustments declaration")
 
-      Then i_should_see_the_text "I have already agreed reasonable adjustments"
-      And.the_ra_declaration_button_is_disabled()
+        Then i_should_see_the_text "I have already agreed reasonable adjustments"
+        And.the_ra_declaration_button_is_disabled()
 
-      When.i_choose_the_no_ra_declaration()
-      Then.the_ra_declaration_button_is_enabled()
+        When.i_choose_the_no_ra_declaration()
+        Then.the_ra_declaration_button_is_enabled()
 
-      When.i_choose_the_has_ra_declaration()
-      Then.the_ra_declaration_button_is_enabled()
+        When.i_choose_the_has_ra_declaration()
+        Then.the_ra_declaration_button_is_enabled()
 
-      When.i_click_to_confirm_the_ra_declaration()
+        When.i_click_to_confirm_the_ra_declaration()
+      }
+
       Then i_should_see_the_text "The assessment has begun."
     }
 
@@ -120,18 +127,21 @@ class AssessmentSpec extends BrowserFeatureSpec {
 
       When.i_click_to_confirm_the_authorship_declaration()
 
-      screenshot("Reasonable adjustments declaration")
+      if (!features.importStudentExtraTime) {
+        screenshot("Reasonable adjustments declaration")
 
-      Then i_should_see_the_text "I have already agreed reasonable adjustments"
-      And.the_ra_declaration_button_is_disabled()
+        Then i_should_see_the_text "I have already agreed reasonable adjustments"
+        And.the_ra_declaration_button_is_disabled()
 
-      When.i_choose_the_no_ra_declaration()
-      Then.the_ra_declaration_button_is_enabled()
+        When.i_choose_the_no_ra_declaration()
+        Then.the_ra_declaration_button_is_enabled()
 
-      When.i_choose_the_has_ra_declaration()
-      Then.the_ra_declaration_button_is_enabled()
+        When.i_choose_the_has_ra_declaration()
+        Then.the_ra_declaration_button_is_enabled()
 
-      When.i_click_to_confirm_the_ra_declaration()
+        When.i_click_to_confirm_the_ra_declaration()
+      }
+
       Then i_should_see_the_text "Started"
       And i_should_see_the_text "View your assessment in Moodle"
     }

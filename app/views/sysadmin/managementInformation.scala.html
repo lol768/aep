@@ -34,10 +34,6 @@
           <tr>
             <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
               @assessment.startTime.map(localisedDatetime(_))
-              @assessment.durationStyle match {
-                case DurationStyle.DayWindow => { (day window) }
-                case DurationStyle.FixedStart => { (fixed-start) }
-              }
             </td>
             <td>@assessment.paperCode</td>
             <td>@assessment.section.getOrElse("")</td>

@@ -13,7 +13,7 @@ import javax.inject.Inject
 import play.api.i18n.Messages
 import play.api.libs.json._
 import play.twirl.api.Html
-import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService, UploadAuditingService}
+import services.{AnnouncementService, AssessmentClientNetworkActivityService, StudentAssessmentService, TimingInfoService, UploadAuditingService}
 import system.Features
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.ServiceResults.ServiceResult
@@ -37,6 +37,7 @@ object WebSocketActor {
     features: Features,
     messages: Messages,
     additionalTopics: Set[String],
+    timingInfo: TimingInfoService,
   )(implicit ec: ExecutionContext, ac: AuditLogContext): Props =
     Props(new WebSocketActor(
       out,
@@ -50,7 +51,8 @@ object WebSocketActor {
       uploadAttemptService,
       features,
       messages,
-      additionalTopics
+      additionalTopics,
+      timingInfo,
     ))
 
   case class AssessmentAnnouncement(id: String, assessmentId: String, senderName: Option[String], messageText: String, timestamp: OffsetDateTime) {
@@ -119,6 +121,7 @@ class WebSocketActor @Inject() (
   @Assisted features: Features,
   @Assisted messages: Messages,
   additionalTopics: Set[String],
+  timingInfo: TimingInfoService,
 )(implicit
   ec: ExecutionContext
 ) extends Actor with ActorLogging {
@@ -236,7 +239,7 @@ class WebSocketActor @Inject() (
             out ! Json.obj(
               "type"-> "AssessmentTimingInformation",
               "now"-> JavaTime.instant.toEpochMilli,
-              "assessments"-> assessments.map(a => Json.toJson(a.getTimingInfo))
+              "assessments"-> assessments.map(a => Json.toJson(a.getTimingInfo(timingInfo.lateSubmissionPeriod)))
             )
           }
 

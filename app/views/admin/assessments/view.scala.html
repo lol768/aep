@@ -4,23 +4,31 @@
 @import warwick.core.views.utils._
 @import warwick.sso.{UniversityID, Usercode}
 
+@import services.TimingInfoService
+@import domain.Sitting
 @(
   assessment: Assessment,
   tabulaAssignments: Seq[TabulaAssignment],
-  studentAssessments: Seq[StudentAssessment],
+  sittings: Seq[Sitting],
   studentInformation: Map[UniversityID, SitsProfile],
   department: Option[Department],
   invigilators: Seq[(Usercode, String)],
   invigilatorActivities: Map[Usercode, AssessmentClientNetworkActivity],
-  allowAssessmentTypeChangesOnImportedAssessments: Boolean,
-  numberOfPlatforms: Int = 2
+  numberOfPlatforms: Int = 2,
+  timingInfo: TimingInfoService,
 )(implicit context: RequestContext, request: RequestHeader, messages: MessagesProvider)
 
 @adminLayout(title = s"Assessment for ${assessment.title} (${assessment.moduleCode})", extraClasses = Seq("grey-nopad")) {
   <div class="row">
     <div class="col-md-6">
       @moduleInfo(assessment, department)
-      @downloadSubmissionsPanel(assessment, controllers.admin.routes.AdminSubmissionsDownloadController.download(assessment.id), controllers.admin.routes.AdminSubmissionsDownloadController.submissionsCSV(assessment.id))
+      @downloadSubmissionsPanel(
+        assessment,
+        controllers.admin.routes.AdminSubmissionsDownloadController.download(assessment.id),
+        controllers.admin.routes.AdminSubmissionsDownloadController.submissionsCSV(assessment.id),
+        timingInfo,
+        sittings.flatMap(_.lastAllowedStartTimeForStudent(timingInfo.lateSubmissionPeriod)).maxOption.map(_.plus(Assessment.uploadProcessDuration)),
+      )
       @if(tabulaAssignments.nonEmpty) {
         <dl class="panel panel-default">
           <div class="panel-body">
@@ -44,8 +52,8 @@
   <div class="panel panel-default">
     <div class="panel-body">
       <details>
-        <summary class="text-muted">@studentAssessments.size @pl(studentAssessments.size, "student")()</summary>
-        @studentsTable(Some(assessment), studentAssessments, studentInformation)
+        <summary class="text-muted">@sittings.size @pl(sittings.size, "student")()</summary>
+        @studentsTable(Some(assessment), sittings.map(_.studentAssessment), studentInformation)
       </details>
     </div>
   </div>

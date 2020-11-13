@@ -19,7 +19,7 @@ import org.apache.commons.io.FilenameUtils
 import org.quartz.{JobExecutionContext, Scheduler}
 import play.api.Configuration
 import play.api.libs.Files.TemporaryFileCreator
-import services.{AssessmentService, StudentAssessmentService, UploadedFileService}
+import services.{AssessmentService, StudentAssessmentService, TimingInfoService, UploadedFileService}
 import warwick.core.helpers.ServiceResults.Implicits._
 import warwick.core.helpers.{JavaTime, ServiceResults}
 import warwick.core.system.AuditLogContext
@@ -137,7 +137,8 @@ class GenerateAssessmentZipJob @Inject()(
 }
 
 class GenerateAssessmentZipJobBuilder @Inject() (
-  configuration: Configuration
+  configuration: Configuration,
+  timingInfo: TimingInfoService,
 ) {
   lazy private val csvDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(configuration.get[String]("app.csvDateTimeFormat"))
 
@@ -204,7 +205,7 @@ class GenerateAssessmentZipJobBuilder @Inject() (
         else Seq()
       ) ++ Seq(
         sitting.studentAssessment.studentId.string,
-        sitting.getSummaryStatusLabel.getOrElse(""),
+        sitting.getSummaryStatusLabel(timingInfo.lateSubmissionPeriod).getOrElse(""),
         sitting.declarations.acceptsAuthorship.toString,
         if (sitting.declarations.completedRA) sitting.declarations.selfDeclaredRA.toString else "",
         sitting.studentAssessment.startTime.map(csvDateTimeFormat.format).getOrElse(""),

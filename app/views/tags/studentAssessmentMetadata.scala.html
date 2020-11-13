@@ -1,10 +1,11 @@
 @import domain.Assessment.DurationStyle._
 @import domain.Sitting
 @import views.html.tags._
-@(assessment: Sitting)(implicit context: RequestContext)
+@import services.TimingInfoService
+@(assessment: Sitting, timingInfo: TimingInfoService)(implicit context: RequestContext)
 
 <dl>
-    @assessmentMetadataInternal(assessment.assessment)
+    @assessmentMetadataInternal(assessment.assessment, timingInfo, Some(assessment))
 
     @if(assessment.studentAssessment.startTime.isDefined && assessment.declarations.completedRA) {
         @if(assessment.declarations.selfDeclaredRA) {
@@ -19,18 +20,19 @@
 
     @if(assessment.started) {
         @assessment.assessment.durationStyle match {
-            case DayWindow => {
+            case Some(DayWindow) => {
                 <dt>Started at</dt>
                 <dd>@tags.localisedDatetime(assessment.studentAssessment.startTime.get)</dd>
             }
-            case FixedStart => {
+            case Some(FixedStart) => {
                 <dt>Started at</dt>
                 <dd>@tags.localisedDatetime(assessment.assessment.startTime.get)</dd>
             }
+            case _ => {}
         }
     }
 
-    @if(assessment.finalised) {
+    @if(assessment.finalised(timingInfo.lateSubmissionPeriod)) {
         <dt>Finished at</dt>
         @assessment.studentAssessment.submissionTime.map { time =>
             <dd>@tags.localisedDatetime(time)</dd>

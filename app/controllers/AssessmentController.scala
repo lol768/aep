@@ -11,6 +11,7 @@ import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, MultipartFormData, Result}
 import services.refiners.StudentAssessmentSpecificRequest
 import services._
+import system.Features
 import warwick.fileuploads.UploadedFileControllerHelper
 import warwick.fileuploads.UploadedFileControllerHelper.{ContentDispositionStrategy, TemporaryUploadedFile, UploadedFileConfiguration}
 
@@ -61,6 +62,8 @@ class AssessmentController @Inject()(
   uploadedFileControllerHelper: UploadedFileControllerHelper,
   announcementService: AnnouncementService,
   configuration: Configuration,
+  timingInfo: TimingInfoService,
+  features: Features,
 )(implicit ec: ExecutionContext) extends BaseController {
 
   import security._
@@ -71,13 +74,13 @@ class AssessmentController @Inject()(
 
   private def doStart(studentAssessment: StudentAssessment)(implicit request: StudentAssessmentSpecificRequest[AnyContent]): Future[Result] = {
     studentAssessmentService.getOrDefaultDeclarations(studentAssessment.id).successFlatMap { declarations =>
-      if (declarations.acceptable) {
+      if (declarations.acceptable(features)) {
         studentAssessmentService.startAssessment(request.sitting.studentAssessment).successMap { _ =>
           redirectToAssessment(studentAssessment.assessmentId).flashing("success" -> Messages("flash.assessment.started"))
         }
       } else if (!declarations.acceptsAuthorship) {
         Future.successful(Ok(views.html.exam.authorshipDeclaration(studentAssessment.assessmentId, AssessmentController.authorshipDeclarationForm)))
-      } else if (!declarations.completedRA) {
+      } else if (!declarations.completedRA && !features.importStudentExtraTime) {
         Future.successful(Ok(views.html.exam.reasonableAdjustmentsDeclaration(studentAssessment.assessmentId, AssessmentController.reasonableAdjustmentsDeclarationForm)))
       } else {
         Future.failed(throw new IllegalStateException("Unexpected declarations state"))
@@ -88,7 +91,7 @@ class AssessmentController @Inject()(
 
   def view(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
     announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
-      Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig))
+      Ok(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig, timingInfo))
     )
   }
 
@@ -107,7 +110,11 @@ class AssessmentController @Inject()(
     AssessmentController.reasonableAdjustmentsDeclarationForm.bindFromRequest().fold(
       form => Future.successful(BadRequest(views.html.exam.reasonableAdjustmentsDeclaration(assessmentId, form))),
       formData => {
-        studentAssessmentService.upsert(request.sitting.declarations.copy(selfDeclaredRA = formData.hasDeclaredRA, completedRA = true)).successFlatMap { _ =>
+        if (!features.importStudentExtraTime) {
+          studentAssessmentService.upsert(request.sitting.declarations.copy(selfDeclaredRA = Some(formData.hasDeclaredRA), completedRA = true)).successFlatMap { _ =>
+            doStart(request.sitting.studentAssessment)
+          }
+        } else {
           doStart(request.sitting.studentAssessment)
         }
       }
@@ -115,8 +122,8 @@ class AssessmentController @Inject()(
   }
 
   def start(assessmentId: UUID): Action[AnyContent] = StudentAssessmentAction(assessmentId).async { implicit request =>
-    if (request.sitting.assessment.hasLastAllowedStartTimePassed()) {
-      val lastStartTime = request.sitting.assessment.lastAllowedStartTime.getOrElse {
+    if (request.sitting.hasLastAllowedStartTimeForStudentPassed(timingInfo.lateSubmissionPeriod)) {
+      val lastStartTime = request.sitting.lastAllowedStartTimeForStudent(timingInfo.lateSubmissionPeriod).getOrElse {
         throw new IllegalStateException(s"Assessment with id ${request.sitting.assessment.id.toString} returned last start time passed, but has no last start time");
       }
       Future.successful {
@@ -130,13 +137,13 @@ class AssessmentController @Inject()(
   def finish(assessmentId: UUID): Action[AnyContent] = StudentAssessmentInProgressAction(assessmentId).async { implicit request =>
     AssessmentController.finishExamForm.bindFromRequest().fold(
       form => announcementService.getByAssessmentId(assessmentId).successMap(announcements =>
-        BadRequest(views.html.exam.index(request.sitting, form, announcements, uploadedFileConfig))
+        BadRequest(views.html.exam.index(request.sitting, form, announcements, uploadedFileConfig, timingInfo))
       ),
       _ => {
-        if (request.sitting.finalised) {
+        if (request.sitting.finalised(timingInfo.lateSubmissionPeriod)) {
           val flashMessage = "error" -> Messages("flash.assessment.alreadyFinalised")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
-        } else if (!request.sitting.canModify()) {
+        } else if (!request.sitting.canModify(timingInfo.lateSubmissionPeriod)) {
           val flashMessage = "error" -> Messages("flash.assessment.lastFinaliseTimePassed")
           Future.successful(redirectToAssessment(assessmentId).flashing(flashMessage))
         } else {
@@ -175,7 +182,7 @@ class AssessmentController @Inject()(
         xhrReturn
       } else {
         announcementService.getByAssessmentId(assessmentId).successMap { announcements =>
-          BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig))
+          BadRequest(views.html.exam.index(request.sitting, AssessmentController.finishExamForm, announcements, uploadedFileConfig, timingInfo))
         }
       }
     }

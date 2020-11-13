@@ -80,9 +80,9 @@ class NotificationServiceTest
 
       val activity: Activity = activityCaptor.getValue
       activity.getRecipients.getUsers.asScala mustBe Set(Fixtures.users.student1.usercode.string, Fixtures.users.student2.usercode.string, Fixtures.users.student3.usercode.string)
-      activity.getTitle mustBe "CY5637 Information theory: Testing Adventurous Promiscuities and Fury: Announcement"
+      activity.getTitle mustBe s"CY5637 ${assessment.title}: Announcement"
       activity.getUrl mustBe s"https://example.warwick.ac.uk/assessment/${assessment.id}"
-      activity.getText mustBe "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Lut enim ad minim veniam, quis nostrud exercitation ullamco"
+      activity.getText mustBe announcement.text
       activity.getType mustBe "assessment-announcement"
     }
 
@@ -97,7 +97,7 @@ class NotificationServiceTest
 
         val activity: Activity = activityCaptor.getValue
         activity.getRecipients.getUsers.asScala mustBe Set(Fixtures.users.student1.usercode.string, Fixtures.users.student2.usercode.string, Fixtures.users.student3.usercode.string)
-        activity.getTitle mustBe "CY5637: Your alternative assessment for 'Information theory: Testing Adventurous Promiscuities and Fury' is due today"
+        activity.getTitle mustBe s"CY5637: Your alternative assessment for '${assessment.title}' is due today"
         activity.getUrl mustBe s"https://example.warwick.ac.uk/assessment/${assessment.id}"
         activity.getText mustBe "You can start this assessment between 10:00 today and 10:00, Tue 2nd Jan (GMT)."
         activity.getType mustBe "assessment-reminder"

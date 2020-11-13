@@ -1,15 +1,17 @@
 package controllers
 
+import java.time.Duration
+
 import domain.Sitting
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc.{Action, AnyContent, RequestHeader}
-import services.{SecurityService, StudentAssessmentService}
+import services.{SecurityService, StudentAssessmentService, TimingInfoService}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object AssessmentsController {
-  def toJson(assessments: Seq[Sitting])(implicit request: RequestHeader): JsValue = {
+  def toJson(assessments: Seq[Sitting], latePeriodAllowance: Duration)(implicit request: RequestHeader): JsValue = {
     // We only want to include basic information here
     val sittingWrites: Writes[Sitting] = sitting => Json.obj(
       "id" -> sitting.studentAssessment.id,
@@ -17,14 +19,14 @@ object AssessmentsController {
       "title" -> sitting.assessment.title,
       "paperCode" -> sitting.assessment.paperCode,
       "section" -> sitting.assessment.section,
-      "assessmentType" -> sitting.assessment.assessmentType,
       "description" -> sitting.assessment.brief.text,
+      "durationStyle" -> sitting.assessment.durationStyle,
       "duration" -> sitting.assessment.duration,
       "startTime" -> sitting.assessment.startTime,
-      "lastAllowedStartTime" -> sitting.assessment.lastAllowedStartTime,
+      "lastAllowedStartTime" -> sitting.lastAllowedStartTimeForStudent(latePeriodAllowance),
       "startedTime" -> sitting.studentAssessment.startTime,
-      "finalisedTime" -> sitting.finalisedTime,
-      "finalised" -> sitting.finalised
+      "finalisedTime" -> sitting.finalisedTime(latePeriodAllowance),
+      "finalised" -> sitting.finalised(latePeriodAllowance)
     )
 
     implicit val seqSittingWrites: Writes[Seq[Sitting]] = Writes.seq(sittingWrites)
@@ -38,6 +40,7 @@ object AssessmentsController {
 class AssessmentsController @Inject()(
   security: SecurityService,
   studentAssessmentService: StudentAssessmentService,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends BaseController {
   import security._
 
@@ -45,8 +48,8 @@ class AssessmentsController @Inject()(
     request.user.flatMap(_.universityId).map { universityId =>
       studentAssessmentService.byUniversityId(universityId).successMap { assessments =>
         render {
-          case Accepts.Json() => Ok(AssessmentsController.toJson(assessments))
-          case _ => Ok(views.html.exams.index(assessments))
+          case Accepts.Json() => Ok(AssessmentsController.toJson(assessments, timingInfo.lateSubmissionPeriod))
+          case _ => Ok(views.html.exams.index(assessments, timingInfo))
         }
       }
     }.getOrElse {

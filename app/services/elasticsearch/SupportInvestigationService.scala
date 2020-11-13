@@ -4,7 +4,7 @@ import java.util
 import java.util.UUID
 
 import com.google.inject.ImplementedBy
-import domain.{Assessment, StudentAssessment}
+import domain.{Assessment, Sitting, StudentAssessment}
 import javax.inject.Inject
 import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.streaming.{SXSSFSheet, SXSSFWorkbook}
@@ -14,7 +14,7 @@ import org.elasticsearch.common.unit.TimeValue
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder, QueryBuilders}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.{Scroll, SearchHit}
-import services.{AssessmentService, StudentAssessmentService}
+import services.{AssessmentService, StudentAssessmentService, TimingInfoService}
 import warwick.core.helpers.ServiceResults
 import warwick.core.helpers.ServiceResults.ServiceResult
 import warwick.core.timing.TimingContext
@@ -33,7 +33,8 @@ class SupportInvestigationServiceImpl @Inject()(
   client: ESClientConfig,
   studentAssessmentService: StudentAssessmentService,
   assessmentService: AssessmentService,
-  userLookup: UserLookupService
+  userLookup: UserLookupService,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends SupportInvestigationService {
 
   private val oneMinute = TimeValue.timeValueMinutes(1L)
@@ -42,12 +43,13 @@ class SupportInvestigationServiceImpl @Inject()(
 
   val maxSize = 5000
 
+
   var fetchFieldsForAuditIndex: Array[String] = Array[String]("@timestamp", "username", "user-agent-detail.*", "request_headers.user-agent", "event_type", "source_ip", "onlineexams.*")
   var fetchFieldsForAccessIndex: Array[String] = Array[String]("@timestamp", "username", "user-agent-detail.*", "request_headers.*", "status_code", "response_headers.*", "geoip.*", "source_ip", "requested_uri", "method", "elapsed_time", "log_source_hostname")
 
-  private def addAccessSheet(wb: SXSSFWorkbook, auditResult: AuditSheetResult, assessment: Assessment): Unit = {
-    val start = assessment.startTime.get.minusHours(1)
-    val end = assessment.lastAllowedStartTime.get.plusHours(1)
+  private def addAccessSheet(wb: SXSSFWorkbook, auditResult: AuditSheetResult, sitting: Sitting): Unit = {
+    val start = sitting.assessment.startTime.get.minusHours(1)
+    val end = sitting.lastAllowedStartTimeForStudent(timingInfo.lateSubmissionPeriod).get.plusHours(1)
     val disjunctiveBuilder = QueryBuilders.boolQuery().minimumShouldMatch(1)
 
     if (auditResult.username.isDefined) {
@@ -74,15 +76,19 @@ class SupportInvestigationServiceImpl @Inject()(
   override def produceWorkbook(assessmentIdText: String, uniIdStr: String, currentUser: User)(implicit t: TimingContext): Future[ServiceResult[SXSSFWorkbook]] = {
     val assessmentId = UUID.fromString(assessmentIdText)
     val uniId = UniversityID(uniIdStr)
-    ServiceResults.zip(studentAssessmentService.get(uniId, assessmentId), assessmentService.get(assessmentId)).successFlatMapTo { case (sa, assessment) =>
+    ServiceResults.zip(studentAssessmentService.getSitting(uniId, assessmentId), assessmentService.get(assessmentId)).successFlatMapTo { case (sitting, assessment) =>
       val wb = new SXSSFWorkbook
       val coreProp = wb.getXSSFWorkbook.getProperties.getCoreProperties
       coreProp.setCreator("AEP, exported by " + currentUser.usercode)
       coreProp.setTitle(assessmentId.toString + "_" + uniIdStr)
-      val auditResult = supplyUsernameIfUnavailable(addAuditSheet(wb, assessment, sa), uniId)
+      val auditResult = supplyUsernameIfUnavailable(addAuditSheet(wb, assessment, sitting.getOrElse(
+        throw new NoSuchElementException(s"Could not find StudentAssessment data for assessment ${assessmentId} and UniversityID ${uniId}"))
+      ), uniId)
 
       if (auditResult.possibleIps.nonEmpty || auditResult.username.nonEmpty) {
-        addAccessSheet(wb, auditResult, assessment)
+        addAccessSheet(wb, auditResult, sitting.getOrElse(
+          throw new NoSuchElementException(s"Could not find Sitting data for assessment ${assessmentId} and UniversityID ${uniId}")
+        ))
       }
 
       Future(ServiceResults.success(wb))
@@ -99,10 +105,10 @@ class SupportInvestigationServiceImpl @Inject()(
     auditResult
   }
 
-  private def addAuditSheet(wb: SXSSFWorkbook, assessment: Assessment, sa: StudentAssessment): AuditSheetResult = {
-    val saId = sa.id.toString
+  private def addAuditSheet(wb: SXSSFWorkbook, assessment: Assessment, sitting: Sitting): AuditSheetResult = {
+    val saId = sitting.studentAssessment.id.toString
     val start = assessment.startTime.get
-    val end = assessment.lastAllowedStartTime.get
+    val end = sitting.lastAllowedStartTimeForStudent(timingInfo.lateSubmissionPeriod).get
     val query: BoolQueryBuilder = QueryBuilders.boolQuery
       .must(QueryBuilders.termQuery("node_deployment", "prod"))
       .must(QueryBuilders.termQuery("node_app", "onlineexams"))

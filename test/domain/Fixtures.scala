@@ -5,14 +5,12 @@ import java.util.UUID
 
 import com.google.common.io.{ByteSource, Files}
 import com.typesafe.config.Config
-import domain.Assessment.{AssessmentType, Platform}
-import domain.Fixtures.uploadedFiles.specialJPG.path
+import domain.Assessment.{DurationStyle, Platform}
 import domain.dao.AnnouncementsTables.StoredAnnouncement
 import domain.dao.AssessmentsTables.StoredAssessment
 import domain.dao.StudentAssessmentsTables.{StoredDeclarations, StoredStudentAssessment}
 import domain.dao.UploadedFilesTables.StoredUploadedFile
 import domain.dao.{AuditEventsTable, OutgoingEmailsTables}
-import domain.Assessment.{AssessmentType, DurationStyle, Platform}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.Files.TemporaryFileCreator
 import services.DataGenerationService
@@ -98,6 +96,11 @@ object Fixtures {
       universityId = Some(UniversityID("1900003")),
       name = Name(Some("Student"), Some("User3"))
     )
+    val student4: User = baseStudent.copy(
+      usercode = Usercode("student4"),
+      universityId = Some(UniversityID("1900004")),
+      name = Name(Some("Student"), Some("User4"))
+    )
 
     def students(count: Int = 9): Set[User] = (1 to count).map { i =>
       val index = f"$i%03d"
@@ -122,7 +125,7 @@ object Fixtures {
     // If you just need any old assessment that's assigned to philosophy to test with...
     lazy val philosophyAssessment: Assessment = Assessment(
       UUID.randomUUID, "ph-assessment", None, "Philosophy Assessment", Some(JavaTime.offsetDateTime.plusHours(1)),  Some(Duration.ofHours(3)), Set(Platform.OnlineExams),
-      Some(AssessmentType.OpenBook), DurationStyle.DayWindow, Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, Set.empty, "meh", "ph101", DepartmentCode("ph"),
+      Some(DurationStyle.DayWindow), Assessment.Brief.empty, Set.empty, Assessment.State.Approved, None, Set.empty, "meh", "ph101", DepartmentCode("ph"),
       "sequence"
     )
   }
@@ -130,8 +133,12 @@ object Fixtures {
   object studentAssessments {
     import helpers.DateConversion._
 
-    def storedStudentAssessment(assId: UUID, studentId: UniversityID = users.student1.universityId.get): StoredStudentAssessment = {
-      DataGenerationService.makeStoredStudentAssessment(assId, studentId)
+    def storedStudentAssessment(
+      assId: UUID,
+      studentId: UniversityID = users.student1.universityId.get,
+      hourlyExtraTime: Option[Option[Duration]] = None
+    ): StoredStudentAssessment = {
+      DataGenerationService.makeStoredStudentAssessment(assId, studentId, hourlyExtraTime = hourlyExtraTime)
     }
 
     def storedDeclarations(id: UUID): StoredDeclarations = {
@@ -140,7 +147,7 @@ object Fixtures {
       StoredDeclarations(
         studentAssessmentId = id,
         acceptsAuthorship = true,
-        selfDeclaredRA = false,
+        selfDeclaredRA = Some(false),
         completedRA = true,
         created = createTime.asOffsetDateTime,
         version = createTime.asOffsetDateTime

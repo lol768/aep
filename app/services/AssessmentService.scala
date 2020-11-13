@@ -75,7 +75,8 @@ class AssessmentServiceImpl @Inject()(
   dao: AssessmentDao,
   studentAssessmentDao: StudentAssessmentDao,
   uploadedFileService: UploadedFileService,
-  assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao
+  assessmentClientNetworkActivityDao: AssessmentClientNetworkActivityDao,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends AssessmentService {
 
   override def list(implicit t: TimingContext): Future[ServiceResult[Seq[Assessment]]] = {
@@ -157,7 +158,7 @@ class AssessmentServiceImpl @Inject()(
               a.startTime.exists {
                 st => st
                   .plus(a.duration.getOrElse(Duration.ZERO))
-                  .plus(Assessment.lateSubmissionPeriod)
+                  .plus(timingInfo.lateSubmissionPeriod)
                   .plus(adjustment)
                   .isAfter(now)
               }
@@ -208,7 +209,6 @@ class AssessmentServiceImpl @Inject()(
           startTime = assessment.startTime,
           duration = assessment.duration,
           platform = assessment.platform,
-          assessmentType = assessment.assessmentType,
           durationStyle = assessment.durationStyle,
           storedBrief = StoredBrief(
             text = assessment.brief.text,
@@ -252,7 +252,6 @@ class AssessmentServiceImpl @Inject()(
           startTime = assessment.startTime,
           duration = assessment.duration,
           platform = assessment.platform,
-          assessmentType = assessment.assessmentType,
           durationStyle = assessment.durationStyle,
           storedBrief = StoredBrief(
             text = assessment.brief.text,
@@ -291,7 +290,6 @@ class AssessmentServiceImpl @Inject()(
               duration = assessment.duration,
               durationStyle = assessment.durationStyle,
               platform = assessment.platform,
-              assessmentType = assessment.assessmentType,
               storedBrief = assessment.brief.toStoredBrief,
               invigilators = assessment.invigilators.map(_.string).toList,
               state = assessment.state,
@@ -314,7 +312,6 @@ class AssessmentServiceImpl @Inject()(
             startTime = assessment.startTime,
             duration = assessment.duration,
             platform = assessment.platform,
-            assessmentType = assessment.assessmentType,
             durationStyle = assessment.durationStyle,
             storedBrief = assessment.brief.toStoredBrief,
             invigilators = sortedInvigilators(assessment),

@@ -10,9 +10,9 @@
     <dt>Title</dt>
     <dd>@assessment.title</dd>
 
-    @assessment.assessmentType.map { at =>
+    @assessment.durationStyle.map {d =>
       <dt>Type</dt>
-      <dd>@at.label</dd>
+      <dd>@d.label</dd>
     }
 
     <dt>Platforms</dt>

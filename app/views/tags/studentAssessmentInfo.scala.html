@@ -7,6 +7,7 @@
 @import tags._
 @import warwick.sso.UniversityID
 
+@import services.TimingInfoService
 @(
   metadata: Seq[SittingMetadata],
   platform: Set[Platform],
@@ -15,6 +16,7 @@
   latestActivities: Map[UUID, AssessmentClientNetworkActivity] = Map.empty,
   sortByHeader: Option[String] = None,
   viewAnnouncementsAndQueries: Option[StudentAssessment => Call] = None,
+  timingInfo: TimingInfoService,
 )(implicit context: RequestContext)
 
 @sortBy(header: Option[String], value: String, default: Option[String] = None) = {
@@ -62,7 +64,7 @@
             <td>Unknown department</td>
           }
           <td>
-            @md.getSummaryStatusLabel
+            @md.getSummaryStatusLabel(timingInfo.lateSubmissionPeriod)
           </td>
           @md.studentAssessment.startTime.map {time =>
             <td data-sort="@time.toInstant.toEpochMilli">
@@ -72,7 +74,7 @@
             <td></td>
           }
           @if(platform.contains(Platform.OnlineExams)) {
-            @md.finalisedTime.map {time =>
+            @md.finalisedTime(timingInfo.lateSubmissionPeriod).map {time =>
               <td data-sort="@views.tags.formatDate.sortableDateTime(time)">
                 @localisedDatetime(time)
               </td>
@@ -90,7 +92,7 @@
             }
           }
           <td>
-            @if(md.finalised) {
+            @if(md.finalised(timingInfo.lateSubmissionPeriod)) {
               <span class="text-muted">No information</span>
             } else {
               @latestActivities.get(md.studentAssessment.id).map { a =>

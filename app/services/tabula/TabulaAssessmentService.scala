@@ -18,7 +18,7 @@ import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSRequest}
 import play.api.mvc.MultipartFormData.FilePart
 import services.tabula.TabulaAssessmentService._
-import services.{AssessmentService, StudentAssessmentService}
+import services.{AssessmentService, StudentAssessmentService, TimingInfoService}
 import system.TimingCategories
 import uk.ac.warwick.sso.client.trusted.{TrustedApplicationUtils, TrustedApplicationsManager}
 import uk.ac.warwick.util.termdates.AcademicYear
@@ -105,7 +105,8 @@ class TabulaAssessmentServiceImpl @Inject()(
   assessmentService: AssessmentService,
   studentAssessmentService: StudentAssessmentService,
   tabulaAssignmentService: TabulaAssignmentService,
-  objectStorageService: ObjectStorageService
+  objectStorageService: ObjectStorageService,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends TabulaAssessmentService with Logging {
 
   import tabulaHttp._
@@ -154,7 +155,7 @@ class TabulaAssessmentServiceImpl @Inject()(
 
     val closeDateParams = (for {
       st <- assessment.startTime
-      et <- assessment.lastAllowedStartTime
+      et <- assessment.defaultLastAllowedStartTime(timingInfo.lateSubmissionPeriod)
     } yield Json.obj(
       "openDate" -> formatDate.tabulaDate(st.toLocalDate),
       "closeDate" -> formatDate.tabulaDate(et.toLocalDate),
@@ -220,7 +221,7 @@ class TabulaAssessmentServiceImpl @Inject()(
 
     // Point this url to the requestbin in case want to cross check what curl request was generated(Handy)
     val url = config.getCreateAssignmentSubmissionUrl(assignmentId)
-    val reasonableAdjustmentsDeclared: Boolean = sitting.declarations.selfDeclaredRA
+    val reasonableAdjustmentsDeclared: Option[Boolean] = sitting.declarations.selfDeclaredRA
 
     val fileParts = sitting.studentAssessment.uploadedFiles.map { file =>
       FilePart("attachments", file.fileName, Some(file.contentType), StreamConverters.fromInputStream(() => objectStorageService.fetch(file.id.toString).orNull))
@@ -236,7 +237,7 @@ class TabulaAssessmentServiceImpl @Inject()(
       .withQueryStringParameters(Seq(
         Some("universityId" -> sitting.studentAssessment.studentId.string),
         Some("submittedDate" -> formatDate.tabulaDateTime(sitting.studentAssessment.submissionTime.get)), //Explicitly decided against using Sitting.finalisedTime as some may not finalise
-        Some("submissionDeadline" -> formatDate.tabulaDateTime(sitting.onTimeEnd.get)),
+        Some("submissionDeadline" -> formatDate.tabulaDateTime(sitting.onTimeEnd(timingInfo.lateSubmissionPeriod).get)),
       ).flatten: _*)
       .withBody(Source(data))
     doRequest(url, "POST", req, description = "createSubmission").successFlatMapTo { jsValue =>

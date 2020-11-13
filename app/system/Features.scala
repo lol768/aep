@@ -8,8 +8,6 @@ import play.api.Configuration
 trait Features {
   def importStudentExtraTime: Boolean
 
-  def overwriteAssessmentTypeOnImport: Boolean
-
   def twoWayMessages: Boolean
 
   def announcementsAndQueriesCsv: Boolean
@@ -18,8 +16,6 @@ trait Features {
 @Singleton
 class ConfiguredFeatures @Inject()(private val configuration: Configuration) extends Features {
   override val importStudentExtraTime: Boolean = configuration.get[Boolean]("app.importStudentExtraTime")
-
-  override val overwriteAssessmentTypeOnImport: Boolean = configuration.get[Boolean]("app.overwriteAssessmentTypeOnImport")
 
   override val twoWayMessages: Boolean = configuration.get[Boolean]("app.twoWayMessages")
 

@@ -12,8 +12,8 @@
         <th>Section</th>
         <th>Title</th>
         <th>Date</th>
-        <th>Duration</th>
         <th>Type</th>
+        <th>Duration</th>
         <th></th>
       </tr>
     </thead>
@@ -26,11 +26,13 @@
           <td data-sort="@assessment.startTime.map(views.tags.formatDate.sortableDateTime)">
             @assessment.startTime.map(JavaTime.dateFullNoDayFormatter.format)
           </td>
+          <td>
+            @assessment.durationStyle.map { d =>
+              @d.shortLabel
+            }
+          </td>
           <td data-sort="@assessment.duration.map(_.toMillis).getOrElse(0L)">
             @durationWords(assessment)
-          </td>
-          <td>
-            @assessment.assessmentType.map(_.label).getOrElse("")
           </td>
           <td class="text-right">
 @*            <a href="@controllers.admin.routes.ApprovalsController.show(assessment.id)" class="btn btn-default btn-sm">View</a>*@

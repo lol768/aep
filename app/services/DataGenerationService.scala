@@ -5,11 +5,11 @@ import java.util.UUID
 
 import com.google.inject.ImplementedBy
 import domain.Assessment.Platform.OnlineExams
-import domain.{Assessment, DepartmentCode, StudentAssessment}
-import domain.Assessment.{AssessmentType, DurationStyle, Platform}
-import domain.dao.DaoRunner
+import domain.Assessment.{DurationStyle, Platform}
 import domain.dao.AssessmentsTables.{StoredAssessment, StoredBrief}
+import domain.dao.DaoRunner
 import domain.dao.StudentAssessmentsTables.StoredStudentAssessment
+import domain.{Assessment, DepartmentCode, StudentAssessment}
 import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import services.sandbox.DataGeneration
@@ -86,8 +86,8 @@ class DataGenerationServiceImpl @Inject()(
 
 object DataGenerationService {
 
-  import warwick.core.helpers.JavaTime.{timeZone => zone}
   import helpers.DateConversion._
+  import warwick.core.helpers.JavaTime.{timeZone => zone}
 
   private val invigilator1 = "Mary"
   private val invigilator2 = "Bob"
@@ -118,7 +118,6 @@ object DataGenerationService {
     val startTime = localStartTime.atOffset(zone.getRules.getOffset(localStartTime))
     val paperCode = s"$stemModuleCode${dataGeneration.random.between(1, 9)}"
     val platform = platformOption.getOrElse(Platform.values(dataGeneration.random.nextInt(Platform.values.size)))
-    val assType = Some(AssessmentType.values(dataGeneration.random.nextInt(AssessmentType.values.size)))
     val moduleCode =  s"$stemModuleCode-$cats"
     val sequence = f"E${dataGeneration.random.between(1, 9)}%02d"
 
@@ -130,8 +129,7 @@ object DataGenerationService {
       startTime = Some(startTime),
       duration = duration,
       platform = Set(platform),
-      assessmentType = assType,
-      durationStyle = durationStyle,
+      durationStyle = Some(durationStyle),
       storedBrief = makeStoredBrief(Set(platform)),
       invigilators = List(invigilator1, invigilator2),
       state = Assessment.State.Draft,
@@ -149,14 +147,17 @@ object DataGenerationService {
   def makeStoredStudentAssessment(
     assessmentId: UUID,
     studentId: UniversityID,
-    studentAssessmentId: UUID = UUID.randomUUID
+    studentAssessmentId: UUID = UUID.randomUUID,
+    hourlyExtraTime: Option[Option[Duration]] = None, // If None is passed, random generation occurs, if it's Some(None), you always get None
   ): StoredStudentAssessment = {
 
     val createTime = LocalDateTime.of(2016, 1, 1, 8, 0, 0, 0)
     // Random but deterministic for a given student
     val r = new Random(studentId.string.toLong)
     val twentyPercentChance = r.nextInt(5) == 0
-    val extraTimeAdjustmentPerHour = Option.when(twentyPercentChance)(Duration.ofMinutes(extraTimeAdjustmentDurations(r.nextInt(extraTimeAdjustmentDurations.length))))
+    val extraTimeAdjustmentPerHour = hourlyExtraTime.getOrElse(
+      Option.when(twentyPercentChance)(Duration.ofMinutes(extraTimeAdjustmentDurations(r.nextInt(extraTimeAdjustmentDurations.length))))
+    )
 
     StoredStudentAssessment(
       id = studentAssessmentId,

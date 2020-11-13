@@ -14,6 +14,7 @@ import domain.dao.UploadedFilesTables.StoredUploadedFile
 import javax.inject.{Inject, Singleton}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.libs.json._
+import services.TimingInfoService
 import warwick.core.helpers.JavaTime
 import warwick.core.system.AuditLogContext
 import warwick.fileuploads.UploadedFile
@@ -31,8 +32,7 @@ object AssessmentsTables {
     startTime: Option[OffsetDateTime],
     duration: Option[Duration],
     platform: Set[Platform],
-    assessmentType: Option[AssessmentType],
-    durationStyle: DurationStyle,
+    durationStyle: Option[DurationStyle],
     storedBrief: StoredBrief,
     invigilators: List[String],
     state: State,
@@ -55,7 +55,6 @@ object AssessmentsTables {
         startTime,
         duration,
         platform,
-        assessmentType,
         durationStyle,
         storedBrief.asBrief(fileMap, platform),
         invigilators.map(Usercode).toSet,
@@ -77,7 +76,6 @@ object AssessmentsTables {
         startTime,
         duration,
         platform,
-        assessmentType,
         durationStyle,
         storedBrief.asBriefWithoutFiles(platform),
         invigilators.map(Usercode).toSet,
@@ -101,7 +99,6 @@ object AssessmentsTables {
         startTime,
         duration,
         platform,
-        assessmentType,
         durationStyle,
         storedBrief,
         invigilators,
@@ -134,8 +131,7 @@ object AssessmentsTables {
     startTime: Option[OffsetDateTime],
     duration: Option[Duration],
     platform: Set[Platform],
-    assessmentType: Option[AssessmentType],
-    durationStyle: DurationStyle,
+    durationStyle: Option[DurationStyle],
     storedBrief: StoredBrief,
     invigilators: List[String],
     state: State,
@@ -255,6 +251,7 @@ class AssessmentDaoImpl @Inject()(
   protected val dbConfigProvider: DatabaseConfigProvider,
   val jdbcTypes: PostgresCustomJdbcTypes,
   tables: AssessmentTables,
+  timingInfo: TimingInfoService,
 )(implicit ec: ExecutionContext) extends AssessmentDao with HasDatabaseConfigProvider[ExtendedPostgresProfile] {
 
   import profile.api._
@@ -385,13 +382,15 @@ class AssessmentDaoImpl @Inject()(
       def biggestAdjustment: Rep[Duration] =
         biggestAdjustmentPerHour * durationInHours
 
-      val totalTime = Case If a.isDayWindow Then {
+      val totalTime = Case If a.durationStyle === (Some(DurationStyle.DayWindow):Option[DurationStyle]) Then {
         LiteralColumn(Option(Assessment.dayWindow))
-      } Else {
+      } If a.durationStyle === (Some(DurationStyle.FixedStart):Option[DurationStyle]) Then {
         a.duration +
           Assessment.uploadGraceDuration +
-          Assessment.lateSubmissionPeriod +
+          timingInfo.lateSubmissionPeriod +
           biggestAdjustment
+      } Else {
+        LiteralColumn(None)
       }
 
       val lastTime: Rep[Option[OffsetDateTime]] =
