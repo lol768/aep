@@ -383,7 +383,6 @@ class AdminAssessmentsController @Inject()(
               departmentCode = data.departmentCode,
               sequence = data.sequence,
               startTime = data.startTime.map(_.asOffsetDateTime),
-              durationStyle = data.durationStyle,
             )
           } else assessment
 
@@ -430,6 +429,7 @@ class AdminAssessmentsController @Inject()(
               title = data.title,
               duration = data.durationMinutes.map(Duration.ofMinutes),
               platform = data.platform,
+              durationStyle = data.durationStyle,
               invigilators = data.invigilators,
               state = newState,
               brief = assessment.brief.copy(
@@ -438,7 +438,6 @@ class AdminAssessmentsController @Inject()(
               ),
               // Rest are unchanged (may have been changed above)
               id = updatedIfAdHoc.id,
-              durationStyle = updatedIfAdHoc.durationStyle,
               paperCode = updatedIfAdHoc.paperCode,
               section = updatedIfAdHoc.section,
               startTime = updatedIfAdHoc.startTime,
