@@ -141,6 +141,9 @@ export function calculateTimingInfo(data, now) {
     } else if (submissionState === SubmissionState.OnTime && progressState === 'Late') {
       text = 'You uploaded your answers on time. If you upload any more answers you may be counted as late.';
       hourglassSpins = true;
+    } else if (timeRemaining === null) {
+      // This is technically possible if durationStyle is undefined...
+      text = `This assessment opened at ${new JDDT(windowStart).localString(false)}`;
     } else {
       // In practice I don't think we will ever print the "finalise your submission" version any
       // more, because if you submitted anything and the time ran out, it's considered finalised
@@ -189,6 +192,15 @@ export function calculateTimingInfo(data, now) {
         }
         break;
       default:
+        // undefined durationStyle is a valid thing
+        if (timeUntilStart > 0) {
+          text = `This assessment will start at ${new JDDT(windowStart).localString(true)}, in ${msToHumanReadable(timeUntilStart)}.`;
+          warning = true;
+          hourglassSpins = true;
+        } else {
+          // We should never get here, but just in case...
+          text = `This assessment opened at ${new JDDT(windowStart).localString(false)}`;
+        }
         break;
     }
   }
