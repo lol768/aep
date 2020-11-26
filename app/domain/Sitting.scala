@@ -34,6 +34,7 @@ sealed trait BaseSitting {
   def lastAllowedStartTimeForStudent(latePeriodAllowance: Duration): Option[OffsetDateTime] = assessment.durationStyle match {
     case Some(DurationStyle.FixedStart) => assessment.defaultLastAllowedStartTime(latePeriodAllowance).map(_.plus(totalExtraTime))
     case Some(DurationStyle.DayWindow) => assessment.defaultLastAllowedStartTime(latePeriodAllowance)
+    case None => None
   }
 
   def hasLastAllowedStartTimeForStudentPassed(latePeriodAllowance: Duration, referenceDate: OffsetDateTime = JavaTime.offsetDateTime): Boolean =
