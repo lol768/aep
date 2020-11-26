@@ -33,6 +33,13 @@
     <dt>Duration</dt>
     <dd>
         <i class="fad themed-duotone fa-stopwatch fa-fw"></i>@durationWords(assessment)
+        @sitting.map { s =>
+            @if(!s.totalExtraTime.isZero) {
+                <span class="text-info">
+                    (+@humanReadableDuration(s.totalExtraTime) agreed extra time)
+                </span>
+            }
+        }
 
         @if(!assessment.hasDefaultLastAllowedStartTimePassed(timingInfo.lateSubmissionPeriod)) {
             @assessment.durationStyle match {
@@ -48,13 +55,6 @@
                 }
                 case _ => {}
             }
-        }
-        @sitting.map{ s =>
-          @if(!s.totalExtraTime.isZero) {
-              <div class="text-info">
-                  You have @humanReadableDuration(s.totalExtraTime) agreed extra time in addition to this
-              </div>
-          }
         }
     </dd>
 }
