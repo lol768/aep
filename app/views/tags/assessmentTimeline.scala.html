@@ -55,7 +55,7 @@
                   <p>
                     @if(sitting.studentAssessment.extraTimeAdjustmentPerHour.exists(_.toMinutes > 0)) {
                       You have @humanReadableDuration(durationInfo.durationWithExtraAdjustment) to complete this paper (including your agreed
-                      extra time allowance of @sitting.studentAssessment.extraTimeAdjustmentPerHour.get.toMinutes minutes
+                      extra time/rest break allowance of @sitting.studentAssessment.extraTimeAdjustmentPerHour.get.toMinutes minutes
                       per hour), plus
                     } else {
                       This is a @durationInfo.durationWithExtraAdjustment.toHours hour paper, plus
