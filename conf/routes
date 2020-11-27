@@ -93,6 +93,8 @@ GET         /ajax/reporting/:id/notstarted                        @controllers.a
 GET         /ajax/reporting/:id/submitted                         @controllers.admin.ReportingController.submittedTable(id: UUID)
 GET         /ajax/reporting/:id/finalised                         @controllers.admin.ReportingController.finalisedTable(id: UUID)
 
+GET         /admin/mi                                             @controllers.admin.ManagementInformationController.home()
+
 ## Invigilation ##
 
 GET         /invigilation                                         @controllers.invigilation.InvigilatorListController.list()
@@ -137,7 +139,6 @@ POST        /sysadmin/object-storage                @controllers.sysadmin.Object
 # https://repo.elab.warwick.ac.uk/projects/EXAMS/repos/onlineexams/pull-requests/44/overview?commentId=32833
 +nocsp
 GET         /sysadmin/object-storage/:id            @controllers.sysadmin.ObjectStorageDownloadController.downloadFile(id: UUID)
-GET         /sysadmin/mi                            @controllers.sysadmin.ManagementInformationController.home()
 
 POST        /sysadmin/test/email                    @controllers.sysadmin.SysadminTestController.sendEmail()
 POST        /sysadmin/test/mywarwick                @controllers.sysadmin.SysadminTestController.sendMyWarwick()

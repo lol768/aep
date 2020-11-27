@@ -1,4 +1,4 @@
-package controllers.sysadmin
+package controllers.admin
 
 import controllers.BaseController
 import domain.Assessment.Platform
@@ -108,7 +108,7 @@ class ManagementInformationController @Inject()(
 
   private[this] lazy val examProfileCodes = configuration.get[Seq[String]]("tabula.examProfileCodes")
 
-  def home(): Action[AnyContent] = RequireSysadmin.async { implicit request =>
+  def home(): Action[AnyContent] = RequireAdmin.async { implicit request =>
     ServiceResults.zip(
       // Assessments starting today
       assessmentService.getAssessmentsStartingWithStudentCount(JavaTime.localDate),
@@ -127,16 +127,16 @@ class ManagementInformationController @Inject()(
       },
 
       // All assessments that completed before now (so we can get information about how many started, uploaded, finalised)
-      assessmentService.getFinishedAssessmentsWithSittings(department = None, importedOnly = true).successMapTo { assessments =>
+      ServiceResults.futureSequence(examProfileCodes.map(c => assessmentService.getFinishedAssessmentsWithSittings(department = None, examProfileCode = Some(c), importedOnly = true))).successMapTo { assessments =>
         // Group AEP assessments and non-AEP assessments separately for student participation metrics
-        val (aep, nonAEP) = assessments.partition(_._1.platform.contains(Platform.OnlineExams))
+        val (aep, nonAEP) = assessments.flatten.partition(_._1.platform.contains(Platform.OnlineExams))
 
         (ManagementInformationController.participationMetrics(aep, timingInfo), ManagementInformationController.participationMetrics(nonAEP, timingInfo))
       },
 
       departmentService.getDepartments(),
     ).successMap { case (startingToday, startingTomorrow, startingInTwoDays, metricsByExamProfile, (aepParticipationMetrics, nonAEPParticipationMetrics), departments) =>
-      Ok(views.html.sysadmin.managementInformation(
+      Ok(views.html.admin.managementInformation(
         startingToday,
         startingTomorrow,
         startingInTwoDays,

@@ -38,7 +38,7 @@ class AdminSubmissionsDownloadController @Inject()(
   }
 
   def submissionsCSVDepartment(departmentCode: String): Action[AnyContent] = SpecificDepartmentAdminAction(departmentCode).async { implicit request =>
-    assessmentService.getFinishedAssessmentsWithSittings(department = Some(DepartmentCode(departmentCode)), importedOnly = false).successMap { assessments =>
+    assessmentService.getFinishedAssessmentsWithSittings(department = Some(DepartmentCode(departmentCode)), examProfileCode = None, importedOnly = false).successMap { assessments =>
       Ok.chunked(csvSource(generateAssessmentZipJobBuilder.multipleAssessmentSubmissionsCSV(assessments.map { case (a, s) => a -> s.toSeq }))).as("text/csv")
     }
   }
