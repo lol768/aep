@@ -65,7 +65,7 @@ trait AssessmentService {
 
   def delete(assessment: Assessment)(implicit ac: AuditLogContext): Future[ServiceResult[Done]]
 
-  def getFinishedAssessmentsWithSittings(department: Option[DepartmentCode], importedOnly: Boolean)(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]]
+  def getFinishedAssessmentsWithSittings(department: Option[DepartmentCode], examProfileCode: Option[String], importedOnly: Boolean)(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]]
 }
 
 @Singleton
@@ -347,8 +347,8 @@ class AssessmentServiceImpl @Inject()(
       } yield done).map(ServiceResults.success)
     }
 
-  override def getFinishedAssessmentsWithSittings(department: Option[DepartmentCode], importedOnly: Boolean)(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]] =
-    daoRunner.run(dao.getFinishedAssessmentsWithSittingInformation(department, importedOnly))
+  override def getFinishedAssessmentsWithSittings(department: Option[DepartmentCode], examProfileCode: Option[String], importedOnly: Boolean)(implicit t: TimingContext): Future[ServiceResult[Seq[(Assessment, Set[Sitting])]]] =
+    daoRunner.run(dao.getFinishedAssessmentsWithSittingInformation(department, examProfileCode, importedOnly))
       .map { rows =>
         rows.map { case (storedAssessment, assessmentFiles, studentAssessments) =>
           val assessment = inflateRowWithUploadedFiles(Some((storedAssessment, assessmentFiles))).get
