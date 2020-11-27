@@ -134,7 +134,7 @@ export function calculateTimingInfo(data, now) {
       if (showTimeRemaining) {
         text += ` You have ${msToHumanReadable(timeRemaining)} remaining until you should upload your answers`;
         if (extraTimeAdjustment) {
-          text += ` (including ${msToHumanReadable(extraTimeAdjustment)} additional time)`;
+          text += ` (including ${msToHumanReadable(extraTimeAdjustment)} extra time/rest breaks)`;
         }
         text += '.';
       }

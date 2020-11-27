@@ -98,7 +98,7 @@ describe('calculateTimingInfo', () => {
     data.extraTimeAdjustment = 21*MINUTE;
     expect(calculateTimingInfo(data, BASE_TIME)).to.deep.equal({
       warning: false,
-      text: 'You started 10 minutes ago. You have 1 hour and 5 minutes remaining until you should upload your answers (including 21 minutes additional time).',
+      text: 'You started 10 minutes ago. You have 1 hour and 5 minutes remaining until you should upload your answers (including 21 minutes extra time/rest breaks).',
       allowStart: false,
       hourglassSpins: true
     });

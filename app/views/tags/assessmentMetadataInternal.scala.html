@@ -36,7 +36,7 @@
         @sitting.map { s =>
             @if(!s.totalExtraTime.isZero) {
                 <span class="text-info">
-                    (+@humanReadableDuration(s.totalExtraTime) agreed extra time)
+                    (+@humanReadableDuration(s.totalExtraTime) agreed extra time/rest breaks)
                 </span>
             }
         }
